@@ -250,8 +250,7 @@ axisOnBasis
 axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
   where
     tStroke = stroke . lmap l . transform t
-    -- TODO: - apply styles
-    --       -
+
     -- axis labels (x,y etc.)
     axLabels = if null txt
                  then mempty
@@ -260,7 +259,7 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
                          # applyStyle (axLabelD ^. axisLabelStyle)
 
       where
-        p' = (p & traversablePoint . el e .~ x)
+        p' = p # over traversablePoint ((el e .~ x) . (el eO .~ y0))
                # transform (translationE eO (- labelGap) <> t)
                # lmap l
         labelGap = axLabelD ^. axisLabelGap
@@ -273,8 +272,10 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
 
     -- tick labels
     tickLabels = foldMap drawLabels (take 1 ys)
+                   # applyStyle (tickLabelsD ^. tickLabelStyle)
       where
-        labelFun     = a ^. axisTickLabels . el e . tickLabelFunction
+        tickLabelsD  = a ^. axisTickLabels . el e
+        labelFun     = tickLabelsD ^. tickLabelFunction
         drawLabels y = foldMap f (labelFun majorTickXs b)
           where
             f (x, dia) = place dia p'
@@ -332,7 +333,9 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
              # transform t
              # lmap l
              # stroke
+             # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
       where
+        -- TODO: Arrow for R3
         mkline y = pathFromVertices
          $ map (\x -> over traversablePoint ((el e .~ x) . (el eO .~ y)) p)
                [x0, x1]

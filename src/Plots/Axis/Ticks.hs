@@ -50,8 +50,8 @@ instance Default Ticks where
           , _minorTickType   = AutoTick
           , _majorTickLength = 5
           , _minorTickLength = 3
-          , _minorTickStyle  = mempty # lwO 0.05
-          , _majorTickStyle  = mempty # lwO 0.1
+          , _minorTickStyle  = mempty # lwO 0.4
+          , _majorTickStyle  = mempty # lwO 0.6
           }
 
 -- functions for common ticks

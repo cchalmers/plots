@@ -34,8 +34,6 @@ Library
                        Plots.Name
                        Plots.CmdLine
                        Diagrams.Extra
-                       Diagrams.TwoD.Polar
-                       Diagrams.Transfiguration
                        Diagrams.Coordinates.Traversals
                        Diagrams.LinearMap
                        Diagrams.Projections
