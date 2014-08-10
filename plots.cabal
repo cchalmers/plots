@@ -1,0 +1,77 @@
+Name:                plots
+Version:             0.1.0.0
+Synopsis:            Diagrams based plotting library.
+Homepage:            http://github.com/cchalmers/plots
+License:             BSD3
+License-file:        LICENSE
+Extra-source-files:  README.md, CHANGES.markdown
+Author:              Christopher Chalmers
+Maintainer:          c.chalmers@me.com
+Bug-reports:         http://github.com/cchalmers/plots
+Stability:           Experimental
+Category:            Graphics
+Build-type:          Simple
+Cabal-version:       >=1.10
+Description:         Diagrams based plotting library.
+
+Source-repository head
+ type:     git
+ location: http://github.com/cchalmers/plots
+
+Library
+  Exposed-modules:     Plots
+                       Plots.Themes
+                       Plots.Types
+                       Plots.Types.Line
+                       Plots.Types.Scatter
+                       Plots.Types.Function
+                       Plots.Types.Bar
+                       Plots.Axis
+                       Plots.Axis.Ticks
+                       Plots.Axis.Labels
+                       Plots.Axis.Grid
+                       Plots.Legend
+                       Plots.Name
+                       Plots.CmdLine
+                       Diagrams.Extra
+                       Diagrams.TwoD.Polar
+                       Diagrams.Transfiguration
+                       Diagrams.Coordinates.Traversals
+                       Diagrams.LinearMap
+                       Diagrams.Projections
+                       Diagrams.Prelude2
+  Hs-source-dirs:      src
+  Build-depends:       base          >= 4.3   && < 5.0
+                     , old-time
+                     , process
+                     , directory
+                     , filepath
+                     , data-default  >= 0.5   && < 0.6
+                     , mtl           >= 1     && < 3.2
+                     , bytestring    >= 0.9   && < 1.0
+                     , vector-space  >= 0.7   && < 0.9
+                     , colour
+                     , diagrams-core >= 1.0   && < 1.3
+                     , diagrams-lib  >= 1.0   && < 1.3
+                     , monoid-extras >= 0.3   && < 0.6
+                     , blaze-svg     >= 0.2.3 && < 1.0
+                     , blaze-markup  >= 0.5   && < 0.7
+                     , split         >= 0.1.2 && < 0.5
+                     , time
+                     , containers    >= 0.3 && < 0.6
+                     , lens          >= 3.8 && < 5.0
+                     , hashable      >= 1.1 && < 1.3
+                     , monoid-extras
+                     , optparse-applicative
+                     , MemoTrie
+                     , vector-space-points
+                     , semigroups
+                     , linear
+                     , semigroupoids
+                     , distributive
+                     , adjunctions
+                     , fingertree
+
+  Ghc-options:         -Wall
+
+  Default-language:  Haskell2010
