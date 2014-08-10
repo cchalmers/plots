@@ -44,10 +44,10 @@ makeLenses ''FunctionPlot
 instance HasGenericPlot (FunctionPlot b v) b v where
   genericPlot = functionPlotGeneric
 
-instance HasStyle (FunctionPlot b R2) where
-  applyStyle sty = over plotLineStyle   (applyStyle sty)
-                 . over plotMarkerStyle (applyStyle sty)
-                 . over plotFillStyle   (applyStyle sty)
+-- instance HasStyle (FunctionPlot b R2) where
+--   applyStyle sty = over plotLineStyle   (applyStyle sty)
+--                  . over plotMarkerStyle (applyStyle sty)
+--                  . over plotFillStyle   (applyStyle sty)
 
 
 instance Renderable (Path R2) b => Default (FunctionPlot b R2) where
@@ -62,7 +62,7 @@ instance Renderable (Path R2) b => Default (FunctionPlot b R2) where
 drawFunctionPlot :: Renderable (Path R2) b => T2 -> FunctionPlot b R2 -> Diagram b R2
 drawFunctionPlot t fp = fromVertices functionPath
                           # transform t
-                          # applyStyle (fp^. genericPlot . themeLineStyle)
+                          # applyStyle (fp ^. themeLineStyle)
   where
     functionPath = map f [a, a + 1 / (fp ^. functionPlotNumPoints . to fromIntegral) .. b]
     f            = fp ^. functionPlotFunction

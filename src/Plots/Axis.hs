@@ -151,7 +151,7 @@ instance (Renderable Text b, Renderable (Path R2) b) => Default (Axis b R2) wher
           , _axisSize       = Width 300
           , _axisPlots      = []
           , _axisLegend     = def
-          , _axisTheme      = def
+          , _axisTheme      = coolTheme
           , _axisLinearMap  = idL
           , _axisAxisBounds = pure def
           , _axisGridLines  = pure def
@@ -171,7 +171,7 @@ renderR2Axis a = P2.frame 15
               <> drawAxis ex ey
               <> drawAxis ey ex
   where
-    plots = foldMap (plot xs (a ^. axisLinearMap) t) (a ^. axisPlots)
+    plots = foldMap (plot xs (a ^. axisLinearMap) t) (a ^. axisPlots . to applyTheme)
     drawAxis = axisOnBasis origin xs a t (a ^. axisLinearMap)
     --
     (xs, t) = workOutScale
@@ -183,6 +183,9 @@ renderR2Axis a = P2.frame 15
     --
     legend = drawLegend (a ^. axisLegend)
                         (a ^.. axisPlots . traversed . genericPlot)
+    --
+    -- TODO: fix this
+    applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
 
 -- R3 Axis
 
@@ -192,7 +195,7 @@ instance (Renderable Text b, Renderable (Path R2) b) => Default (Axis b R3) wher
           , _axisSize       = Width 300
           , _axisPlots      = []
           , _axisLegend     = def
-          , _axisTheme      = def
+          , _axisTheme      = coolTheme
           , _axisLinearMap  = linear isometricProjection
           , _axisAxisBounds = pure def
           , _axisGridLines  = pure def
@@ -284,6 +287,7 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
                        # transform (translationE eO (-8) <> t)
                        # lmap l
 
+    -- grid
     grid = majorLines <> minorLines
       where
         majorLines = foldMap mkGridLine majorGridXs

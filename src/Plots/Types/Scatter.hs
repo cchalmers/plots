@@ -21,6 +21,7 @@ import Data.Default
 import Data.Typeable
 import Diagrams.Prelude
 import Diagrams.BoundingBox
+import Diagrams.Extra
 -- import Diagrams.TwoD.Text
 
 import Plots.Types
@@ -36,8 +37,8 @@ makeLenses ''ScatterPlot
 
 type instance V (ScatterPlot b v) = v
 
-instance HasStyle (ScatterPlot b R2) where
-  applyStyle sty = over (genericPlot . themeMarker) (applyStyle sty)
+-- instance HasStyle (ScatterPlot b R2) where
+--   applyStyle sty = over (themeEntry . themeMarker . recommend) (applyStyle sty)
 
 instance Renderable (Path R2) b => Default (ScatterPlot b R2) where
   def = ScatterPlot
@@ -49,8 +50,8 @@ instance Renderable (Path R2) b => Default (ScatterPlot b R2) where
 instance HasGenericPlot (ScatterPlot b v) b v where
   genericPlot = scatterGenericPlot
 
-instance HasLinearMap v => Transformable (ScatterPlot b v) where
-  transform t = over scatterPlotPoints (transform t)
+-- instance HasLinearMap v => Transformable (ScatterPlot b v) where
+--   transform t = over scatterPlotPoints (transform t)
 
 _ScatterPlot :: Plotable (ScatterPlot b v) b v => Prism' (Plot b v) (ScatterPlot b v)
 _ScatterPlot = _Plot
@@ -60,13 +61,13 @@ instance (Typeable b, Renderable (Path R2) b) => Plotable (ScatterPlot b R2) b R
 
 drawScatterPlot :: Renderable (Path R2) b => ScatterPlot b R2 -> Diagram b R2
 drawScatterPlot sp = position (zip (sp^.scatterPlotPoints) (repeat mark))
-                  <> if sp^.scatterPlotLines
+                  <> if sp ^. scatterPlotLines
                        then fromVertices (sp^.scatterPlotPoints)
-                              # applyStyle (sp ^. genericPlot . themeLineStyle)
+                              # applyStyle (sp ^. themeLineStyle)
                        else mempty
   where
-    mark = (sp^. genericPlot . themeMarker)
-             # applyStyle (sp ^. genericPlot . themeMarkerStyle)
+    mark = (sp ^. themeMarker)
+             # applyStyle (sp ^. themeMarkerStyle)
 
 -- mkScatterPlot :: (Renderable (Path R2) b, Renderable Text b) => [P2] -> Bool -> String -> Plot b
 -- mkScatterPlot points line legendName = review _ScatterPlot $

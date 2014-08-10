@@ -40,10 +40,10 @@ makeLenses ''BarPlot
 instance HasGenericPlot (BarPlot b) b R2 where
   genericPlot = barPlotGeneric
 
-instance HasStyle (BarPlot b) where
-  applyStyle sty = over (genericPlot . themeLineStyle)   (applyStyle sty)
-                 . over (genericPlot . themeMarkerStyle) (applyStyle sty)
-                 . over (genericPlot . themeFillStyle)   (applyStyle sty)
+-- instance HasStyle (BarPlot b) where
+--   applyStyle sty = over (genericPlot . themeLineStyle)   (applyStyle sty)
+--                  . over (genericPlot . themeMarkerStyle) (applyStyle sty)
+--                  . over (genericPlot . themeFillStyle)   (applyStyle sty)
 
 instance Renderable (Path R2) b => Default (BarPlot b) where
   def = BarPlot
@@ -76,7 +76,7 @@ drawBarPlot bp = ifoldMap makeBar (bp^.barPlotBars)
     makeBar _ _ = mempty
 
 instance (Typeable b, Renderable (Path R2) b) => Plotable (BarPlot b) b R2 where
-  plot _ _ t = transform t . drawBarPlot
+  plot _r _ t = transform t . drawBarPlot
 
 _BarPlot :: Plotable (BarPlot b) b R2 => Prism' (Plot b R2) (BarPlot b)
 _BarPlot = _Plot

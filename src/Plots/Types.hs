@@ -10,6 +10,7 @@
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE DefaultSignatures         #-}
 {-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE OverlappingInstances             #-}
 
 {-# LANGUAGE CPP             #-}
 
@@ -43,13 +44,17 @@ module Plots.Types
   , GenericPlot
   , HasGenericPlot (..)
 
+  -- ** Themes
+  , commitTheme
+  , commitCurrentTheme
+
   -- * Plot / Plotable
   , Plotable (..)
   , Plot
   , _Plot
-  , plotLineStyle
-  , plotMarkerStyle
-  , plotFillStyle
+  -- , plotLineStyle
+  -- , plotMarkerStyle
+  -- , plotFillStyle
   ) where
 
 import Control.Lens     as L hiding (transform, ( # ), (|>))
@@ -302,13 +307,13 @@ instance Default (LegendEntry b) where
 
 -- | Data type for holding information all plots must contain.
 data GenericPlot b v = GenericPlot
-  { _plotTransform     :: Transformation v
-  , _plotBounds        :: Bounds v
-  , _clipPlot          :: Bool
-  , _genericThemeEntry :: ThemeEntry b
-  , _legendEntries     :: [LegendEntry b]
-  , _plotName          :: Name
-  , _plotBoundingBox   :: BoundingBox v
+  { _plotTransform   :: Transformation v
+  , _plotBounds      :: Bounds v
+  , _clipPlot        :: Bool
+  , _plotThemeEntry  :: Recommend (ThemeEntry b)
+  , _legendEntries   :: [LegendEntry b]
+  , _plotName        :: Name
+  , _plotBoundingBox :: BoundingBox v
   } deriving Typeable
 
 -- makeLensesWith (classyRules & generateSignatures .~ False) ''GenericPlot
@@ -333,11 +338,11 @@ class HasGenericPlot t b v | t -> b, t -> v where
   {-# INLINE clipPlot #-}
 
   -- | The theme entry to be used for the current plot.
-  genericThemeEntry :: Lens' t (ThemeEntry b)
-  genericThemeEntry = genericPlot . lens
-    (\GenericPlot { _genericThemeEntry = a } -> a)
-    (\g a -> g { _genericThemeEntry = a})
-  {-# INLINE genericThemeEntry #-}
+  plotThemeEntry :: Lens' t (Recommend (ThemeEntry b))
+  plotThemeEntry = genericPlot . lens
+    (\GenericPlot { _plotThemeEntry = a } -> a)
+    (\g a -> g { _plotThemeEntry = a})
+  {-# INLINE plotThemeEntry #-}
 
   -- | The legend entries to be used for the current plot.
   legendEntries :: Lens' t [LegendEntry b]
@@ -378,51 +383,93 @@ instance HasGenericPlot (GenericPlot b v) b v where
   genericPlot = id
   {-# INLINE genericPlot #-}
 
-instance HasThemeEntry (GenericPlot b v) b where
-  themeEntry = genericThemeEntry
+-- Some orphan overlapping instances. Should be alright as long as these 
+-- instances arn't defined for anything with HasGenericPlot elsewhere. The 
+-- alternative is to have this all these instances defined for each plot or 
+-- rewrite lenses specific to HasGenericPlot.
+
+instance HasGenericPlot a b v => HasThemeEntry a b where
+  themeEntry = plotThemeEntry . recommend
+
+-- | The style is applied to all theme styles. Only works for R2 due to 
+--   HasStyle limitations.
+instance (HasGenericPlot a b v, V a ~ R2) => HasStyle a where
+  applyStyle sty = over themeEntry
+                 $ over themeLineStyle (applyStyle sty)
+                 . over themeMarkerStyle (applyStyle sty)
+                 . over themeFillStyle (applyStyle sty)
+
+instance (HasGenericPlot a b (V a), HasLinearMap (V a)) => Transformable a where
+  transform = over plotTransform . transform
+
+instance HasGenericPlot a b v => HasBounds a v where
+  bounds = plotBounds
+
+-- | Move origin by applying to @plotTransform@.
+instance (HasGenericPlot a b (V a), HasLinearMap (V a)) => HasOrigin a where
+  moveOriginTo = over plotTransform . moveOriginTo
+
+instance HasGenericPlot a b v => Qualifiable a where
+  n |> p = over plotName (n |>) p
+
+-- | The @themeEntry@ lens goes though recommend, so @set themeEntry myTheme 
+--   myPlot@ won't give a committed theme entry (so theme from axis will 
+--   override). Use commitTheme to make sure theme is committed.
+commitTheme :: HasGenericPlot a b v => ThemeEntry b -> a -> a
+commitTheme = set (plotThemeEntry . _Commit)
+
+-- | Make the current theme a committed theme. See @commitTheme@.
+commitCurrentTheme :: HasGenericPlot a b v => a -> a
+commitCurrentTheme = over plotThemeEntry makeCommitted
+  where
+    makeCommitted (Recommend a) = Commit a
+    makeCommitted c             = c
+    
 
 type instance V (GenericPlot b v) = v
 
 instance Renderable (Path R2) b => Default (GenericPlot b R2) where
   def = GenericPlot
-          { _plotTransform     = mempty
-          , _plotBounds        = pure def
-          , _clipPlot          = True
-          , _genericThemeEntry = def
-          , _legendEntries     = []
-          , _plotName          = mempty
-          , _plotBoundingBox   = emptyBox
+          { _plotTransform   = mempty
+          , _plotBounds      = pure def
+          , _clipPlot        = True
+          , _plotThemeEntry  = Recommend def
+          , _legendEntries   = []
+          , _plotName        = mempty
+          , _plotBoundingBox = emptyBox
           }
 
 instance Renderable (Path R2) b => Default (GenericPlot b R3) where
   def = GenericPlot
-          { _plotTransform     = mempty
-          , _plotBounds        = pure def
-          , _clipPlot          = True
-          , _genericThemeEntry = def
-          , _legendEntries     = []
-          , _plotName          = mempty
-          , _plotBoundingBox   = emptyBox
+          { _plotTransform   = mempty
+          , _plotBounds      = pure def
+          , _clipPlot        = True
+          , _plotThemeEntry  = Recommend def
+          , _legendEntries   = []
+          , _plotName        = mempty
+          , _plotBoundingBox = emptyBox
           }
 
--- | The style is applied to all theme styles.
-instance HasStyle (GenericPlot b R2) where
-  applyStyle sty = over themeLineStyle (applyStyle sty)
-                 . over themeMarkerStyle (applyStyle sty)
-                 . over themeFillStyle (applyStyle sty)
-
-instance HasLinearMap v => Transformable (GenericPlot b v) where
-  transform = over plotTransform . transform
-
-instance HasBounds (GenericPlot b v) v where
-  bounds = plotBounds
-
--- | Move origin by applying to @plotTransform@.
-instance HasLinearMap v => HasOrigin (GenericPlot b v) where
-  moveOriginTo = over plotTransform . moveOriginTo
-
-instance Qualifiable (GenericPlot b v) where
-  n |> p = over plotName (n |>) p
+-- -- | The style is applied to all theme styles. Only works for R2 due to 
+-- --   HasStyle limitations.
+-- instance HasStyle (GenericPlot b R2) where
+--   applyStyle sty = over themeEntry
+--                  $ over themeLineStyle (applyStyle sty)
+--                  . over themeMarkerStyle (applyStyle sty)
+--                  . over themeFillStyle (applyStyle sty)
+-- 
+-- instance HasLinearMap v => Transformable (GenericPlot b v) where
+--   transform = over plotTransform . transform
+-- 
+-- instance HasBounds (GenericPlot b v) v where
+--   bounds = plotBounds
+-- 
+-- -- | Move origin by applying to @plotTransform@.
+-- instance HasLinearMap v => HasOrigin (GenericPlot b v) where
+--   moveOriginTo = over plotTransform . moveOriginTo
+-- 
+-- instance Qualifiable (GenericPlot b v) where
+--   n |> p = over plotName (n |>) p
    
 
 -- Plot data type
@@ -445,20 +492,20 @@ instance HasGenericPlot (Plot b v) b v where
 instance (Typeable b, Typeable v) => Plotable (Plot b v) b v where
   plot b l t (Plot p) = plot b l t p
 
-instance HasStyle (Plot b R2) where
-  applyStyle sty = over genericPlot (applyStyle sty)
-
-instance HasLinearMap v => Transformable (Plot b v) where
-  transform = over genericPlot . transform
-
-instance HasLinearMap v => HasOrigin (Plot b v) where
-  moveOriginTo = over genericPlot . moveOriginTo
-
-instance Qualifiable (Plot b v) where
-  n |> p = over genericPlot (n |>) p
-
-instance HasBounds (Plot b v) v where
-  bounds = genericPlot . bounds
+-- instance HasStyle (Plot b R2) where
+--   applyStyle sty = over genericPlot (applyStyle sty)
+-- 
+-- instance HasLinearMap v => Transformable (Plot b v) where
+--   transform = over genericPlot . transform
+-- 
+-- instance HasLinearMap v => HasOrigin (Plot b v) where
+--   moveOriginTo = over genericPlot . moveOriginTo
+-- 
+-- instance Qualifiable (Plot b v) where
+--   n |> p = over genericPlot (n |>) p
+-- 
+-- instance HasBounds (Plot b v) v where
+--   bounds = genericPlot . bounds
 
 -- | Prism onto the unwrapped plotable type. All standard plots export a 
 --   specialised version of this which is normally more usefull (i.e. 
@@ -466,13 +513,13 @@ instance HasBounds (Plot b v) v where
 _Plot :: Plotable a b v => Prism' (Plot b v) a
 _Plot = prism' Plot (\(Plot a) -> cast a)
 
--- needed to prevent overlapping instances
-plotLineStyle :: HasGenericPlot a b v => Lens' a (Style R2)
-plotLineStyle = genericPlot . themeLineStyle
-
-plotFillStyle :: HasGenericPlot a b v => Lens' a (Style R2)
-plotFillStyle = genericPlot . themeFillStyle
-
-plotMarkerStyle :: HasGenericPlot a b v => Lens' a (Style R2)
-plotMarkerStyle = genericPlot . themeFillStyle
-
+-- -- needed to prevent overlapping instances
+-- plotLineStyle :: HasGenericPlot a b v => Traversal' a (Style R2)
+-- plotLineStyle = genericPlot . themeEntry . _Commit . themeLineStyle
+-- 
+-- plotFillStyle :: HasGenericPlot a b v => Traversal' a (Style R2)
+-- plotFillStyle = genericPlot . themeEntry . _Commit . themeFillStyle
+-- 
+-- plotMarkerStyle :: HasGenericPlot a b v => Traversal' a (Style R2)
+-- plotMarkerStyle = genericPlot . themeEntry . _Commit . themeFillStyle
+-- 

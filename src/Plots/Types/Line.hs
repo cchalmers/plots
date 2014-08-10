@@ -44,11 +44,6 @@ type instance V (LinePlot b v) = R2
 instance HasGenericPlot (LinePlot b v) b v where
   genericPlot = linePlotGeneric
 
-instance HasStyle (LinePlot b v) where
-  applyStyle sty = over (genericPlot . themeLineStyle)   (applyStyle sty)
-                 . over (genericPlot . themeMarkerStyle) (applyStyle sty)
-                 . over (genericPlot . themeFillStyle)   (applyStyle sty)
-
 
 -- | Empty path.
 instance Renderable (Path R2) b => Default (LinePlot b R2) where
@@ -65,7 +60,7 @@ instance (Typeable b, Typeable v, Scalar v ~ Double, Renderable (Path R2) b,
                    & lmap l
                    & transform t
                    & stroke
-                   & applyStyle (lp^.plotLineStyle)
+                   & applyStyle (lp ^. themeLineStyle)
 
 -- | Prism onto the @Plot@ wrapper. Wrap a line plot in a plot by
 --

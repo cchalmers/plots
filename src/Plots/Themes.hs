@@ -15,6 +15,7 @@ import Data.List
 import Data.Typeable
 import Data.Default
 import Diagrams.Prelude
+import Data.Monoid.Recommend
 
 -- * An entry can be applied to a 'Plot' to change it's style.
 data ThemeEntry b = ThemeEntry
@@ -26,6 +27,9 @@ data ThemeEntry b = ThemeEntry
   } deriving Typeable
 
 makeClassy ''ThemeEntry
+
+-- class HasThemeEntry a b | a -> b where
+--   themeEntry :: Lens' a (Recommend (ThemeEntry b))
 
 type instance V (ThemeEntry b) = R2
 
@@ -57,10 +61,10 @@ makeLenses ''ThemeContructor
 constructTheme :: Renderable (Path R2) b => ThemeContructor -> Theme b
 constructTheme tc = zipWith5 ThemeEntry
   colours
-  (tc^.constructLineStyle <$> colours)
+  (tc^.constructLineStyle   <$> colours)
   (tc^.constructMarkerStyle <$> colours)
-  (tc^.constructFillStyle <$> colours)
-  (stroke <$> tc^.markerPaths)
+  (tc^.constructFillStyle   <$> colours)
+  (stroke                   <$> tc^.markerPaths)
   where colours = tc ^. constructorColours
 
 coolThemeConstructor :: ThemeContructor
