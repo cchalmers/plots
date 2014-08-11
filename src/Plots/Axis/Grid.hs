@@ -15,10 +15,10 @@ import Diagrams.Coordinates.Traversals
 type GridLinesFunction = [Double] -> (Double, Double) -> [Double]
 
 data GridLines = GridLines
-  { _majorGridLineFun   :: GridLinesFunction
-  , _minorGridLineFun   :: GridLinesFunction
-  , _majorGridLineStyle :: Style R2
-  , _minorGridLineStyle :: Style R2
+  { _majorGridF     :: GridLinesFunction
+  , _minorGridF     :: GridLinesFunction
+  , _majorGridStyle :: Style R2
+  , _minorGridStyle :: Style R2
   } deriving Typeable
 
 makeLenses ''GridLines
@@ -27,12 +27,32 @@ type AxisGridLines v = T v GridLines
 
 instance Default GridLines where
   def = GridLines
-          { _majorGridLineFun  = const
-          , _minorGridLineFun  = const
-          , _majorGridLineStyle = mempty # lwO 0.4
-          , _minorGridLineStyle = mempty # lwO 0.1
+          { _majorGridF    = tickGridF
+          , _minorGridF    = noGridF
+          , _majorGridStyle = mempty # lwO 0.4
+          , _minorGridStyle = mempty # lwO 0.1
           }
 
-tickGridLinesFunction :: GridLinesFunction
-tickGridLinesFunction = const
+tickGridF :: GridLinesFunction
+tickGridF = const
 
+noGridF :: GridLinesFunction
+noGridF _ = const []
+
+-- varients for the grid lines data type (don't like these names)
+
+-- defaultMajorGridLinesD :: GridLines -> GridLines
+-- defaultMajorGridLinesD = set majorGridLineFun tickGridLinesFunction
+-- 
+-- defaultMinorGridLinesD :: GridLines -> GridLines
+-- defaultMinorGridLinesD = set minorGridLineFun tickGridLinesFunction
+-- 
+-- noMajorGridLinesD :: GridLines -> GridLines
+-- noMajorGridLinesD = set majorGridLineFun noTickGridLinesFunction
+-- 
+-- noMinorGridLinesD :: GridLines -> GridLines
+-- noMinorGridLinesD = set minorGridLineFun noTickGridLinesFunction
+-- 
+-- noGridLinesD :: GridLines -> GridLines
+-- noGridLinesD = noMinorGridLinesD . noMajorGridLinesD
+-- 

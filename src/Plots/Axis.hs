@@ -292,13 +292,13 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
       where
         majorLines = foldMap mkGridLine majorGridXs
                        # tStroke
-                       # applyStyle (gridD ^. majorGridLineStyle)
-        majorGridXs = (gridD ^. majorGridLineFun) majorTickXs b
+                       # applyStyle (gridD ^. majorGridStyle)
+        majorGridXs = (gridD ^. majorGridF) majorTickXs b
         --
         minorLines = foldMap mkGridLine minorGridXs
                        # tStroke
-                       # applyStyle (gridD ^. minorGridLineStyle)
-        minorGridXs = (gridD ^. minorGridLineFun) minorTickXs b
+                       # applyStyle (gridD ^. minorGridStyle)
+        minorGridXs = (gridD ^. minorGridF) minorTickXs b
         -- --
         mkGridLine x = pathFromVertices [f y0, f y1]
           where f y = over traversablePoint ((el e .~ x) . (el eO .~ y)) p

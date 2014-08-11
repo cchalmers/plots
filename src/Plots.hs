@@ -114,7 +114,10 @@ module Plots
   , lc
   , fc
 
-    -- Everything beyond this point is an optic?
+    -- ** Basis elements
+    -- | These basis elements can be used to select a specific coordinate axis. 
+    --   These can be used henever a function has a @E (T v)@ argument.
+  , E (..), ex, ey, ez
 
     -- * Axis adjustments
   -- , xMin , xMax
@@ -137,10 +140,12 @@ module Plots
     -- * Axis Tick Labels
   , module Plots.Axis.Labels
 
-    -- * Axis Grid
-  -- , noGridLines
-  -- , majorGridLines
-  -- , minorGridLines
+    -- ** Axis Grid
+  , noGridLines
+  , addMajorGridLines, addMajorGridLine
+  , noMajorGridLines, noMajorGridLine
+  , addMinorGridLines, addMinorGridLine
+  , noMinorGridLines, noMinorGridLine
   , module Plots.Axis.Grid
 
   ) where
@@ -203,3 +208,50 @@ r3Axis = def
 
 setTheme :: Theme b -> Axis b v -> Axis b v
 setTheme = set axisTheme
+
+-- Grid lines
+
+-- | Set no major or minor grid lines for all axes.
+noGridLines :: Traversable (T v) => Axis b v -> Axis b v
+noGridLines = noMajorGridLines . noMinorGridLines
+
+-- Majors
+
+-- | Add major grid lines for all axes.
+addMajorGridLines :: Traversable (T v) => Axis b v -> Axis b v
+addMajorGridLines = set (axisGridLines . traversed . majorGridF) tickGridF
+
+-- | Add major grid lines for given axis.
+addMajorGridLine :: E (T v) -> Axis b v -> Axis b v
+addMajorGridLine (E e) = set (axisGridLines . e . majorGridF) tickGridF
+
+-- | Set no major grid lines for all axes.
+noMajorGridLines :: Traversable (T v) => Axis b v -> Axis b v
+noMajorGridLines = set (axisGridLines . traversed . majorGridF) noGridF
+
+-- | Set no major grid lines for given axis.
+noMajorGridLine :: E (T v) -> Axis b v -> Axis b v
+noMajorGridLine (E e) = set (axisGridLines . e . majorGridF) noGridF
+
+-- Minors
+
+-- | Add minor grid lines for all axes.
+addMinorGridLines :: Traversable (T v) => Axis b v -> Axis b v
+addMinorGridLines = set (axisGridLines . traversed . minorGridF) tickGridF
+
+-- | Add minor grid lines for given axis.
+addMinorGridLine :: E (T v) -> Axis b v -> Axis b v
+addMinorGridLine (E e) = set (axisGridLines . e . minorGridF) tickGridF
+
+-- | Set no minor grid lines for all axes.
+noMinorGridLines :: Traversable (T v) => Axis b v -> Axis b v
+noMinorGridLines = set (axisGridLines . traversed . minorGridF) noGridF
+
+-- | Set no minor grid lines for given axis.
+noMinorGridLine :: E (T v) -> Axis b v -> Axis b v
+noMinorGridLine (E e) = set (axisGridLines . e . minorGridF) noGridF
+
+
+
+{-# ANN module "HLint: ignore Use import/export shortcut" #-}
+
