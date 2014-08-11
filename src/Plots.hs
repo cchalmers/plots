@@ -120,9 +120,24 @@ module Plots
   , E (..), ex, ey, ez
 
     -- * Axis adjustments
+    -- ** Axis size
   -- , xMin , xMax
   -- , yMin , yMax
   -- , zMin , zMax
+
+   -- ** Axis labels
+   -- *** Label text
+  , labelAxis
+  , cartesianLabels
+
+    -- *** Label position
+  , AxisLabelPosition (..)
+  , setAxesLabelPositions
+  , setAxisLabelPosition
+
+    -- *** Label gaps
+  , setAxisLabelGap
+  , setAxesLabelGaps
 
     -- ** Axis line type
   , AxisLineType (..)
@@ -177,6 +192,34 @@ r2Axis = def
 r3Axis :: (Renderable (Path R2) b, Renderable Text b) => Axis b R3
 r3Axis = def
 
+-- Axis labels
+
+-- | Label coördinate axes with x, y or x, y, z.
+cartesianLabels :: Traversable (T v) => Axis b v -> Axis b v
+cartesianLabels = partsOf (axisLabels . traversed . axisLabelText)
+               .~ ["x", "y", "z"]
+
+-- | Set the label for the given axis.
+labelAxis :: E (T v) -> String -> Axis b v -> Axis b v
+labelAxis (E e) = set (axisLabels . e . axisLabelText)
+
+-- | Set the position of the given axis label.
+setAxisLabelPosition :: E (T v) -> AxisLabelPosition -> Axis b v -> Axis b v
+setAxisLabelPosition (E e) = set (axisLabels . e . axisLabelPosition)
+
+-- | Set the position of all axes labels.
+setAxesLabelPositions :: Traversable (T v) => AxisLabelPosition -> Axis b v -> Axis b v
+setAxesLabelPositions = set (axisLabels . traversed . axisLabelPosition)
+
+-- | Set the gap between the axis and the axis label.
+setAxisLabelGap :: E (T v) -> Double -> Axis b v -> Axis b v
+setAxisLabelGap (E e) = set (axisLabels . e . axisLabelGap)
+
+-- | Set the gaps between all axes and the axis labels.
+setAxesLabelGaps :: Traversable (T v) => Double -> Axis b v -> Axis b v
+setAxesLabelGaps = set (axisLabels . traversed . axisLabelGap)
+
+
 -- -- | Traversal over all axis line types.
 -- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType
 -- axisLineTypes = axisLines . traversed . axisLine
@@ -204,10 +247,12 @@ r3Axis = def
 -- 
 --
 
+
 -- Themes
 
 setTheme :: Theme b -> Axis b v -> Axis b v
 setTheme = set axisTheme
+
 
 -- Grid lines
 
