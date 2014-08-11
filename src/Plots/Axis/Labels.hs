@@ -17,6 +17,8 @@ import Diagrams.TwoD.Text
 
 import Diagrams.Coordinates.Traversals
 
+-- data 
+
 -- Axis labels
 
 data AxisLabelPosition
@@ -35,7 +37,7 @@ data AxisLabel b = AxisLabel
   , _axisLabelText      :: String
   , _axisLabelStyle     :: Style R2
   , _axisLabelGap       :: Double
-  , _axisLabelPosition  :: AxisLabelPosition
+  , _axisLabelPos       :: AxisLabelPosition
   , _axisLabelPlacement :: AxisLabelPlacement
   }
 
@@ -47,7 +49,7 @@ instance Renderable Text b => Default (AxisLabel b) where
           , _axisLabelText      = ""
           , _axisLabelStyle     = mempty # fontSizeL 11
           , _axisLabelGap       = 12
-          , _axisLabelPosition  = MiddleAxisLabel
+          , _axisLabelPos       = MiddleAxisLabel
           , _axisLabelPlacement = OutsideAxisLabel
           }
                      

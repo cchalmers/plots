@@ -267,7 +267,7 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
                # lmap l
         labelGap = axLabelD ^. axisLabelGap
         txt      = axLabelD ^. axisLabelText
-        x = case axLabelD ^. axisLabelPosition of
+        x = case axLabelD ^. axisLabelPos of
               MiddleAxisLabel -> (x0 + x1) / 2
               LowerAxisLabel  -> x0
               UpperAxisLabel  -> x1

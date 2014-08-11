@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots
@@ -114,10 +115,20 @@ module Plots
   , lc
   , fc
 
+    -- * Optics
     -- ** Basis elements
     -- | These basis elements can be used to select a specific coordinate axis. 
     --   These can be used henever a function has a @E (T v)@ argument.
   , E (..), ex, ey, ez
+
+    -- ** Common functions
+    -- | These lens functions can be used to change some of the more advanced 
+    --   aspects of the axis.
+  , (&)
+  , set, (.~)
+  , over, (%~)
+
+
 
     -- * Axis adjustments
     -- ** Axis size
@@ -127,13 +138,13 @@ module Plots
 
    -- ** Axis labels
    -- *** Label text
-  , labelAxis
+  , axisLabel
   , cartesianLabels
 
     -- *** Label position
   , AxisLabelPosition (..)
-  , setAxesLabelPositions
-  , setAxisLabelPosition
+  , axesLabelPositions
+  , axisLabelPosition
 
     -- *** Label gaps
   , setAxisLabelGap
@@ -161,8 +172,19 @@ module Plots
   , noMajorGridLines, noMajorGridLine
   , addMinorGridLines, addMinorGridLine
   , noMinorGridLines, noMinorGridLine
-  , module Plots.Axis.Grid
 
+    -- * do notation
+    -- | If you prefer you can use do notation with the @(&~)@ operator.
+    -- ** State operators
+    -- ```
+    -- myaxis = r2axis &~ do
+    --   axisLabel ex .= "x-axis"
+    --   assign axesLabelPositions LowerAxisLabel
+    --   modify noGridLines
+    -- ```
+  , (&~)
+  , (.=), assign
+  , (%=), modify
   ) where
 
 import Diagrams.Prelude2
@@ -179,6 +201,8 @@ import Plots.Types.Scatter
 import Plots.Types.Function
 import Plots.Types.Line
 import Plots.Themes
+
+import Control.Monad.State.Lazy
 
 
 
@@ -200,24 +224,30 @@ cartesianLabels = partsOf (axisLabels . traversed . axisLabelText)
                .~ ["x", "y", "z"]
 
 -- | Set the label for the given axis.
-labelAxis :: E (T v) -> String -> Axis b v -> Axis b v
-labelAxis (E e) = set (axisLabels . e . axisLabelText)
+-- @
+-- myaxis = 'r2Axis' # 'set' ('axisLabel' 'ex') "x-axis"
+--        = 'r2Axis' & 'axisLabel' 'ex' .~ "x-axis"
+--        = 'r2Axis' &~ 'axisLabel' 'ex' .= "x-axis"
+-- @
+axisLabel :: E (T v) -> Lens' (Axis b v) String
+axisLabel (E e) = axisLabels . e . axisLabelText
 
 -- | Set the position of the given axis label.
-setAxisLabelPosition :: E (T v) -> AxisLabelPosition -> Axis b v -> Axis b v
-setAxisLabelPosition (E e) = set (axisLabels . e . axisLabelPosition)
+axisLabelPosition :: E (T v) -> Lens' (Axis b v) AxisLabelPosition
+axisLabelPosition (E e) = axisLabels . e . axisLabelPos
 
 -- | Set the position of all axes labels.
-setAxesLabelPositions :: Traversable (T v) => AxisLabelPosition -> Axis b v -> Axis b v
-setAxesLabelPositions = set (axisLabels . traversed . axisLabelPosition)
+axesLabelPositions :: Traversable (T v) =>
+  Traversal' (Axis b v) AxisLabelPosition
+axesLabelPositions = axisLabels . traversed . axisLabelPos
 
 -- | Set the gap between the axis and the axis label.
-setAxisLabelGap :: E (T v) -> Double -> Axis b v -> Axis b v
-setAxisLabelGap (E e) = set (axisLabels . e . axisLabelGap)
+setAxisLabelGap :: E (T v) -> Lens' (Axis b v) Double
+setAxisLabelGap (E e) = axisLabels . e . axisLabelGap
 
 -- | Set the gaps between all axes and the axis labels.
-setAxesLabelGaps :: Traversable (T v) => Double -> Axis b v -> Axis b v
-setAxesLabelGaps = set (axisLabels . traversed . axisLabelGap)
+setAxesLabelGaps :: Traversable (T v) => Traversal' (Axis b v) Double
+setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 
 
 -- -- | Traversal over all axis line types.
