@@ -5,10 +5,12 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 
 module Plots.Types.Scatter
   ( ScatterPlot
+  , mkScatterPlot
     -- * Prism
   , _ScatterPlot
     -- * Lenses
@@ -22,11 +24,17 @@ import Data.Typeable
 import Diagrams.Prelude
 import Diagrams.BoundingBox
 import Diagrams.Extra
+import Diagrams.ThreeD.Types
+import Data.Foldable
+import Diagrams.Coordinates.Isomorphic
+import Diagrams.Coordinates.Traversals
 -- import Diagrams.TwoD.Text
 
+import Data.Basis
 import Plots.Types
 import Plots.Themes
 
+-- | Data type for holding scatter plot information. 
 data ScatterPlot b v = ScatterPlot
   { _scatterPlotPoints  :: [Point v]
   , _scatterPlotLines   :: Bool
@@ -40,7 +48,7 @@ type instance V (ScatterPlot b v) = v
 -- instance HasStyle (ScatterPlot b R2) where
 --   applyStyle sty = over (themeEntry . themeMarker . recommend) (applyStyle sty)
 
-instance Renderable (Path R2) b => Default (ScatterPlot b R2) where
+instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v)) => Default (ScatterPlot b v) where
   def = ScatterPlot
           { _scatterPlotPoints  = []
           , _scatterPlotLines   = False
@@ -49,9 +57,6 @@ instance Renderable (Path R2) b => Default (ScatterPlot b R2) where
 
 instance HasGenericPlot (ScatterPlot b v) b v where
   genericPlot = scatterGenericPlot
-
--- instance HasLinearMap v => Transformable (ScatterPlot b v) where
---   transform t = over scatterPlotPoints (transform t)
 
 _ScatterPlot :: Plotable (ScatterPlot b v) b v => Prism' (Plot b v) (ScatterPlot b v)
 _ScatterPlot = _Plot
@@ -62,12 +67,46 @@ instance (Typeable b, Renderable (Path R2) b) => Plotable (ScatterPlot b R2) b R
 drawScatterPlot :: Renderable (Path R2) b => ScatterPlot b R2 -> Diagram b R2
 drawScatterPlot sp = position (zip (sp^.scatterPlotPoints) (repeat mark))
                   <> if sp ^. scatterPlotLines
-                       then fromVertices (sp^.scatterPlotPoints)
+                       then fromVertices (sp ^. scatterPlotPoints)
                               # applyStyle (sp ^. themeLineStyle)
                        else mempty
   where
     mark = (sp ^. themeMarker)
              # applyStyle (sp ^. themeMarkerStyle)
+
+-- | Standard way to make a scatter plot. 
+mkScatterPlot
+  :: (CoordinateLike a v,
+      Foldable f,
+      Default (ScatterPlot b v),
+      HasLinearMap v,
+      -- needed for bounding box
+      AdditiveGroup (Scalar v),
+      Ord (Scalar v),
+      Ord (Basis v)
+     ) => f a -> ScatterPlot b v
+mkScatterPlot a =
+    def & scatterPlotPoints .~ points
+        & plotBoundingBox   .~ fromPoints points
+      where
+        points = a ^.. folded . diaCoord . _Unwrapped
+
+
+-- class ScatterPlotable a b v | a -> v where
+--   mkScatterPlot :: a -> ScatterPlot b v
+-- 
+-- instance (CoordinateLike v a, Foldable f, Default (ScatterPlot b v)) => ScatterPlotable (f a) b v where
+--   mkScatterPlot a =
+--     def & scatterPlotPoints .~ points
+--         & plotBoundingBox   .~ fromPoints points
+--       where
+--         points = a ^.. folded . diaCoord . _Unwrapped
+
+-- instance (Renderable (Path R3) b, R3Like a, Foldable f) => ScatterPlotable (f a) b R3 where
+--   mkScatterPlot a =
+--     def & scatterPlotPoints .~ a ^.. folded . from r3Like . _Unwrapped
+
+
 
 -- mkScatterPlot :: (Renderable (Path R2) b, Renderable Text b) => [P2] -> Bool -> String -> Plot b
 -- mkScatterPlot points line legendName = review _ScatterPlot $

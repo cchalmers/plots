@@ -328,5 +328,5 @@ noMinorGridLine (E e) = set (axisGridLines . e . minorGridF) noGridF
 
 
 
-{-# ANN module "HLint: ignore Use import/export shortcut" #-}
+{-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}
 

@@ -35,6 +35,7 @@ Library
                        Plots.CmdLine
                        Diagrams.Extra
                        Diagrams.Coordinates.Traversals
+                       Diagrams.Coordinates.Isomorphic
                        Diagrams.LinearMap
                        Diagrams.Projections
                        Diagrams.Prelude2

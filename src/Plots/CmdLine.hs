@@ -14,7 +14,7 @@ import Options.Applicative hiding ((&))
 
 -- import Diagrams.Prelude hiding ((<>), option)
 import Diagrams.Backend.CmdLine
-import Diagrams.Prelude         (Backend, Diagram, Path, R2, Renderable, (&), (.~))
+import Diagrams.Prelude hiding (option, (<>))
 import Diagrams.TwoD.Text       (Text)
 import Plots.Axis
 import Plots

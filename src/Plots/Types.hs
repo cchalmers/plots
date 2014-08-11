@@ -322,6 +322,7 @@ data GenericPlot b v = GenericPlot
 -- I don't know how to give documenation for classes using TH, so I just wrote 
 -- it by hand.
 
+-- NOTE: I think I can get rid of the @v@ if I replace it with @V a@.
 
 -- | Class that gives a lens onto a 'genericPlot'. All 'Plot's must impliment 
 --   this class.
@@ -428,7 +429,7 @@ commitCurrentTheme = over plotThemeEntry makeCommitted
 
 type instance V (GenericPlot b v) = v
 
-instance Renderable (Path R2) b => Default (GenericPlot b R2) where
+instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v)) => Default (GenericPlot b v) where
   def = GenericPlot
           { _plotTransform   = mempty
           , _plotBounds      = pure def
