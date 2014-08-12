@@ -18,7 +18,8 @@ module Plots.Types.Scatter
   , scatterPlotLines
   ) where
 
-import Control.Lens     hiding (transform, ( # ))
+import Control.Lens     hiding (transform, ( # ), lmap)
+import Diagrams.LinearMap
 import Data.Default
 import Data.Typeable
 import Diagrams.Prelude
@@ -40,7 +41,7 @@ data ScatterPlot b v = ScatterPlot
 
 makeLenses ''ScatterPlot
 
-type instance V (ScatterPlot b v) = v
+-- type instance V (ScatterPlot b v) = v
 
 -- instance HasStyle (ScatterPlot b R2) where
 --   applyStyle sty = over (themeEntry . themeMarker . recommend) (applyStyle sty)
@@ -56,22 +57,35 @@ instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v))
 instance HasGenericPlot (ScatterPlot b v) b v where
   genericPlot = scatterGenericPlot
 
+instance (Typeable b, Typeable v, Renderable (Path R2) b, Scalar v ~ Double, HasLinearMap v)
+    => Plotable (ScatterPlot b v) b v where
+  plot _ l t sp = position (zip points (repeat mark))
+               <> line
+    where
+      mark   = applyStyle (sp ^. themeMarkerStyle) (sp ^. themeMarker)
+      points = transform t . lmap l $ sp ^. scatterPlotPoints
+      line | sp ^. scatterPlotLines
+                       = fromVertices points
+                           # applyStyle (sp ^. themeLineStyle)
+           | otherwise = mempty
+
+-- instance (Typeable b, Typeable v, Renderable (Path R2) b)
+--     => Plotable (ScatterPlot b v) b v where
+--   plot _ l t = drawScatterPlot . over scatterPlotPoints (transform t . lmap l)
+
+-- drawScatterPlot :: Renderable (Path R2) b => ScatterPlot b R2 -> Diagram b R2
+-- drawScatterPlot sp = position (zip (sp^.scatterPlotPoints) (repeat mark))
+--                   <> if sp ^. scatterPlotLines
+--                        then fromVertices (sp ^. scatterPlotPoints)
+--                               # applyStyle (sp ^. themeLineStyle)
+--                        else mempty
+--   where
+--     mark = (sp ^. themeMarker)
+--              # applyStyle (sp ^. themeMarkerStyle)
+
 _ScatterPlot :: Plotable (ScatterPlot b v) b v => Prism' (Plot b v) (ScatterPlot b v)
 _ScatterPlot = _Plot
 
-instance (Typeable b, Renderable (Path R2) b)
-    => Plotable (ScatterPlot b R2) b R2 where
-  plot _ _ t = drawScatterPlot . over scatterPlotPoints (transform t)
-
-drawScatterPlot :: Renderable (Path R2) b => ScatterPlot b R2 -> Diagram b R2
-drawScatterPlot sp = position (zip (sp^.scatterPlotPoints) (repeat mark))
-                  <> if sp ^. scatterPlotLines
-                       then fromVertices (sp ^. scatterPlotPoints)
-                              # applyStyle (sp ^. themeLineStyle)
-                       else mempty
-  where
-    mark = (sp ^. themeMarker)
-             # applyStyle (sp ^. themeMarkerStyle)
 
 -- | Standard way to make a scatter plot. 
 mkScatterPlot

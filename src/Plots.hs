@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE TypeFamilies #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots
@@ -279,18 +280,27 @@ addPlotable p = axisPlots <>~ [review _Plot p]
 -- Scatter plot
 
 -- | Add a scatter plot from a foldable container of something 
---   'CoordinateLike'. For an 'R2' 'Axis' this includes:
+--   'PointLike' (i.e. (P2, (Double, Double))). So for PointLike a R2 we could 
+--   have
 --   @@
---   [(Double, Double)]
---   Vector (V2 Double)
+--   f a :: [(Double, Double)]
+--   f a :: Vector (V2 Double)
 --   @@
 addScatterPlotable
   :: (PointLike a v,
       Foldable f,
       Default (ScatterPlot b v),
-      Plotable (ScatterPlot b v) b v
-     ) => f a -> Axis b v -> Axis b v
+
+      -- HasGenericPlot a b v,
+      Scalar v ~ Double,
+      Renderable (Path R2) b,
+      Typeable b)
+      -- Plotable (ScatterPlot b v) b v)
+  => f a -> Axis b v -> Axis b v
 addScatterPlotable = addPlotable . mkScatterPlot
+
+-- class (HasGenericPlot a b v, Typeable a, Typeable b) => Plotable a b v where
+--   plot :: T v (Double, Double) -> (v :-* R2) -> T2 -> a -> Diagram b R2
 
 -- -- | Traversal over all axis line types.
 -- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType

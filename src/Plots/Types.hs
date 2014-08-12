@@ -422,7 +422,7 @@ instance HasGenericPlot a b v => Qualifiable a where
 --   myPlot@ won't give a committed theme entry (so theme from axis will 
 --   override). Use commitTheme to make sure theme is committed.
 commitTheme :: HasGenericPlot a b v => ThemeEntry b -> a -> a
-commitTheme = set (plotThemeEntry . _Commit)
+commitTheme = set plotThemeEntry . Commit
 
 -- | Make the current theme a committed theme. See @commitTheme@.
 commitCurrentTheme :: HasGenericPlot a b v => a -> a
@@ -434,7 +434,8 @@ commitCurrentTheme = over plotThemeEntry makeCommitted
 
 type instance V (GenericPlot b v) = v
 
-instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v)) => Default (GenericPlot b v) where
+instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v))
+    => Default (GenericPlot b v) where
   def = GenericPlot
           { _plotTransform   = mempty
           , _plotBounds      = pure def

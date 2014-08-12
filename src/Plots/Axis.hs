@@ -218,22 +218,48 @@ getAxisLinePos (a,b) aType = case aType of
   RightAxisLine  -> [b]
   NoAxisLine     -> []
 
--- try to merge with renderR2Axis
-renderR3Axis :: (Renderable (Path R2) b, Plotable (Plot b R3) b R2)
+renderR3Axis :: (Renderable (Path R2) b, Renderable Text b, Plotable (Plot b R3) b R3)
   => Axis b R3 -> Diagram b R2
-renderR3Axis a = foldMap (plot xs (a ^. axisLinearMap) t) (a ^. axisPlots)
-            <> drawAxis ex ey
-            <> drawAxis ey ex
-            <> drawAxis ez ey
+renderR3Axis a = P2.frame 15
+               $ legend
+              <> plots
+              <> drawAxis ex ey
+              <> drawAxis ey ex
+              <> drawAxis ez ey
   where
-    drawAxis = axisOnBasis origin xs a mempty (a ^. axisLinearMap)
+    plots = foldMap (plot xs (a ^. axisLinearMap) t) (a ^. axisPlots . to applyTheme)
+    drawAxis = axisOnBasis minPoint xs a t (a ^. axisLinearMap)
+    minPoint = view (from traversablePoint) $ fmap fst xs
     --
     (xs, t) = workOutScale
-                (a ^. axisLinearMap)
-                (a ^. axisSize)
-                (a ^. axisScaling)
-                (a ^. axisPlots . traversed . plotBoundingBox)
-                (a ^. bounds)
+                 (a ^. axisLinearMap)
+                 (a ^. axisSize)
+                 (a ^. axisScaling)
+                 (a ^. axisPlots . traversed . plotBoundingBox)
+                 (a ^. bounds)
+    --
+    legend = drawLegend (a ^. axisLegend)
+                        (a ^.. axisPlots . traversed . genericPlot)
+    --
+    -- TODO: fix this
+    applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
+
+-- -- try to merge with renderR2Axis
+-- renderR3Axis :: (Renderable (Path R2) b, Plotable (Plot b R3) b R3)
+--   => Axis b R3 -> Diagram b R2
+-- renderR3Axis a = foldMap (plot xs (a ^. axisLinearMap) t) (a ^. axisPlots)
+--             <> drawAxis ex ey
+--             <> drawAxis ey ex
+--             <> drawAxis ez ey
+--   where
+--     drawAxis = axisOnBasis origin xs a mempty (a ^. axisLinearMap)
+--     --
+--     (xs, t) = workOutScale
+--                 (a ^. axisLinearMap)
+--                 (a ^. axisSize)
+--                 (a ^. axisScaling)
+--                 (a ^. axisPlots . traversed . plotBoundingBox)
+--                 (a ^. bounds)
 
 axisOnBasis
   :: forall v t b. (t ~ T v,
@@ -245,14 +271,14 @@ axisOnBasis
   => Point v          -- start of axis
   -> T v (Double, Double) -- calculated bounds
   -> Axis b v         -- axis data
-  -> Transformation v -- transformation to apply to positions of things
+  -> Transformation R2 -- transformation to apply to positions of things
   -> (v :-* R2)       -- linear map onto R2
   -> E t              -- direction of axis
   -> E t              -- direction normal to axis
   -> Diagram b R2     -- resulting axis
 axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
   where
-    tStroke = stroke . lmap l . transform t
+    tStroke = stroke . transform t . lmap l
 
     -- axis labels (x,y etc.)
     axLabels = if null txt
@@ -263,8 +289,9 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
 
       where
         p' = p # over traversablePoint ((el e .~ x) . (el eO .~ y0))
-               # transform (translationE eO (- labelGap) <> t)
+               # transform (translationE eO (- labelGap / avgScale t))
                # lmap l
+               # transform t
         labelGap = axLabelD ^. axisLabelGap
         txt      = axLabelD ^. axisLabelText
         x = case axLabelD ^. axisLabelPos of
@@ -284,8 +311,9 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
             f (x, dia) = place dia p'
               where
                 p' = over traversablePoint ((el e .~ x) . (el eO .~ y)) p
-                       # transform (translationE eO (-8) <> t)
+                       # transform (translationE eO (-8 / avgScale t))
                        # lmap l
+                       # transform t
 
     -- grid
     grid = majorLines <> minorLines
@@ -329,13 +357,13 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
         positionTick tick x = place tick p'
           where
             p' = over traversablePoint ((el e .~ x) . (el eO .~ y)) p
-                   # transform t
                    # lmap l
+                   # transform t
 
     -- axis lines
     line = foldMap mkline ys -- merge with ticks?
-             # transform t
              # lmap l
+             # transform t
              # stroke
              # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
       where
