@@ -78,10 +78,28 @@ module Plots
   -- , module Plots.Axis
 
     -- * Plots
-  , Plot
+  , Plot (..)
+
+    -- ** Adding plots
+    -- | Most plotting functions are highly polymorphic to allow a wide range 
+    --   of inputs. One downside of this is the type system cannot always infer 
+    --   what type the input should be. It is therefore a good idea to give 
+    --   type signatures to input data.
+    -- 
+    -- @
+    -- mydata :: [(Double,Double)]
+    -- mydata = [(2,3), (2.3, 4.5), (3.1, 2.5), (3.8, 3.2)]
+    -- @
+
+    -- | Most of the time you can use functions like 'addScatterPlot' which add 
+    --   directly a plot directly to an axis. However, for more advanced use 
+    --   you may wish to work with the specific data types.
+  , addPlotable
+
     -- ** Scatter plot
     -- | Put markers at points. For more options see 'Plots.Types.Scatter'
   -- , addScatterPlot
+  , addScatterPlotable
   -- , connectedScattered
   , module Plots.Types.Scatter
 
@@ -204,6 +222,7 @@ import Plots.Themes
 
 import Control.Monad.State.Lazy
 
+import Diagrams.Coordinates.Isomorphic
 
 
 
@@ -215,6 +234,7 @@ r2Axis = def
 -- | Standard 2D axis.
 r3Axis :: (Renderable (Path R2) b, Renderable Text b) => Axis b R3
 r3Axis = def
+
 
 -- Axis labels
 
@@ -249,6 +269,28 @@ setAxisLabelGap (E e) = axisLabels . e . axisLabelGap
 setAxesLabelGaps :: Traversable (T v) => Traversal' (Axis b v) Double
 setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 
+-- | Add something 'Plotable' to an 'Axis'.
+-- @
+-- myaxis = r2Axis # addPlotable (mkScatterPlot mydata)
+-- @
+addPlotable :: Plotable a b v => a -> Axis b v -> Axis b v
+addPlotable p = axisPlots <>~ [review _Plot p]
+
+-- Scatter plot
+
+-- | Add a scatter plot from a foldable container of something 
+--   'CoordinateLike'. For an 'R2' 'Axis' this includes:
+--   @@
+--   [(Double, Double)]
+--   Vector (V2 Double)
+--   @@
+addScatterPlotable
+  :: (PointLike a v,
+      Foldable f,
+      Default (ScatterPlot b v),
+      Plotable (ScatterPlot b v) b v
+     ) => f a -> Axis b v -> Axis b v
+addScatterPlotable = addPlotable . mkScatterPlot
 
 -- -- | Traversal over all axis line types.
 -- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType

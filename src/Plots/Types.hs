@@ -50,7 +50,7 @@ module Plots.Types
 
   -- * Plot / Plotable
   , Plotable (..)
-  , Plot
+  , Plot (..)
   , _Plot
   -- , plotLineStyle
   -- , plotMarkerStyle
@@ -96,13 +96,18 @@ instance Default Bound where
 
 class HasBounds a v | a -> v where
   bounds :: Lens' a (T v Bound)
-#ifdef HLINT
-  default bounds :: (a ~ T v Bound) => Lens' a a
-  bounds = id
-#endif
+-- #ifdef HLINT
+--   default bounds :: (a ~ T v Bound) => Lens' a a
+--   bounds = id
+-- #endif
 
-instance HasBounds (L.V2 Bound) R2
-instance HasBounds (L.V3 Bound) R3
+instance HasBounds (L.V2 Bound) R2 where
+  bounds = id
+  {-# INLINE bounds #-}
+
+instance HasBounds (L.V3 Bound) R3 where
+  bounds = id
+  {-# INLINE bounds #-}
 
 getBounds :: Bound -> (Double,Double)
 getBounds (Bound l u) = (getRecommend l, getRecommend u)

@@ -23,14 +23,11 @@ import Data.Default
 import Data.Typeable
 import Diagrams.Prelude
 import Diagrams.BoundingBox
-import Diagrams.Extra
-import Diagrams.ThreeD.Types
 import Data.Foldable
 import Diagrams.Coordinates.Isomorphic
 import Diagrams.Coordinates.Traversals
 -- import Diagrams.TwoD.Text
 
-import Data.Basis
 import Plots.Types
 import Plots.Themes
 
@@ -48,7 +45,8 @@ type instance V (ScatterPlot b v) = v
 -- instance HasStyle (ScatterPlot b R2) where
 --   applyStyle sty = over (themeEntry . themeMarker . recommend) (applyStyle sty)
 
-instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v)) => Default (ScatterPlot b v) where
+instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v))
+    => Default (ScatterPlot b v) where
   def = ScatterPlot
           { _scatterPlotPoints  = []
           , _scatterPlotLines   = False
@@ -61,7 +59,8 @@ instance HasGenericPlot (ScatterPlot b v) b v where
 _ScatterPlot :: Plotable (ScatterPlot b v) b v => Prism' (Plot b v) (ScatterPlot b v)
 _ScatterPlot = _Plot
 
-instance (Typeable b, Renderable (Path R2) b) => Plotable (ScatterPlot b R2) b R2 where
+instance (Typeable b, Renderable (Path R2) b)
+    => Plotable (ScatterPlot b R2) b R2 where
   plot _ _ t = drawScatterPlot . over scatterPlotPoints (transform t)
 
 drawScatterPlot :: Renderable (Path R2) b => ScatterPlot b R2 -> Diagram b R2
@@ -76,20 +75,13 @@ drawScatterPlot sp = position (zip (sp^.scatterPlotPoints) (repeat mark))
 
 -- | Standard way to make a scatter plot. 
 mkScatterPlot
-  :: (CoordinateLike a v,
-      Foldable f,
-      Default (ScatterPlot b v),
-      HasLinearMap v,
-      -- needed for bounding box
-      AdditiveGroup (Scalar v),
-      Ord (Scalar v),
-      Ord (Basis v)
-     ) => f a -> ScatterPlot b v
+  :: (PointLike a v, Foldable f, Default (ScatterPlot b v))
+  => f a -> ScatterPlot b v
 mkScatterPlot a =
     def & scatterPlotPoints .~ points
         & plotBoundingBox   .~ fromPoints points
       where
-        points = a ^.. folded . diaCoord . _Unwrapped
+        points = a ^.. folded . diaPoint
 
 
 -- class ScatterPlotable a b v | a -> v where

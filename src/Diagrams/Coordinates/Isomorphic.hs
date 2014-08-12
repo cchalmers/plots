@@ -1,63 +1,142 @@
-{-# LANGUAGE DefaultSignatures      #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE ViewPatterns           #-}
-{-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
+{-# LANGUAGE ConstraintKinds         #-}
+{-# LANGUAGE DefaultSignatures       #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
+{-# LANGUAGE FunctionalDependencies  #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
+{-# LANGUAGE TypeFamilies            #-}
+{-# LANGUAGE ViewPatterns            #-}
 
 module Diagrams.Coordinates.Isomorphic where
 
 import Control.Lens
 
-import Diagrams.Prelude2
-import Data.Complex
+import           Data.Complex
+import           Diagrams.Prelude2
+import qualified Linear.Affine     as L
 
--- Isomorphic to R2
+import Data.Basis
 
--- | Some @a@ which is isomorphic to coordinate @v@.
-class CoordinateLike a v | a -> v where
-  coordLike :: Iso' v a
-  -- default diaCoord Iso' v v
-  -- coordLike = id
+type DiagramsScalar s =
+  (RealFloat s,
+   VectorSpace s,
+   Transformable s,
+   HasBasis s,
+   -- for bounding box
+   Ord s,
+   AdditiveGroup s,
+   Typeable s)
 
-  diaCoord :: Iso' a v
-  diaCoord = from coordLike
+type DiagramsCoordinate v =
+  (HasBasis v,
+   Ord (Basis v),
+   -- my ghc-mod doesn't like these in types
+   -- V v ~ v,
+   Transformable v,
+   InnerSpace v,
+   Coordinates v,
+   DiagramsScalar (Scalar v),
+   HasLinearMap v,
+   Typeable v)
 
-instance CoordinateLike R2 R2 where
-  coordLike = id
+-- Isomorphic to a vector
 
-instance CoordinateLike R3 R3 where
-  coordLike = id
+-- | Some @a@ which is isomorphic to vector @v@.
+class DiagramsCoordinate v => VectorLike a v | a -> v where
+  vectorLike :: Iso' v a
+  -- default diaVector Iso' v v
+  -- vectorLike = id
 
-type R2Like a = CoordinateLike a R2
+  diaVector :: Iso' a v
+  diaVector = from vectorLike
+
+instance VectorLike R2 R2 where
+  vectorLike = id
+
+instance VectorLike R3 R3 where
+  vectorLike = id
+
+type R2Like a = VectorLike a R2
 
 r2Like :: R2Like a => Iso' R2 a
-r2Like = coordLike
+r2Like = vectorLike
 
 r2Iso :: R2Like a => Iso' a R2
-r2Iso = diaCoord
+r2Iso = diaVector
 
-instance CoordinateLike (V2 Double) R2 where
-  coordLike = iso (\(unr2 -> (x,y)) -> V2 x y)
+instance VectorLike (V2 Double) R2 where
+  vectorLike = iso (\(unr2 -> (x,y)) -> V2 x y)
                   (\(V2 x y)        -> x ^& y)
 
-instance CoordinateLike (Double, Double) R2 where
-  coordLike = iso unr2 r2
+instance VectorLike (Double, Double) R2 where
+  vectorLike = iso unr2 r2
 
-instance CoordinateLike (Complex Double) R2 where
-  coordLike = iso (\(unr2 -> (x,y)) -> x :+ y)
+instance VectorLike (Complex Double) R2 where
+  vectorLike = iso (\(unr2 -> (x,y)) -> x :+ y)
                   (\(i :+ j)        -> r2 (i,j))
 
-type R3Like a = CoordinateLike a R3
+type R3Like a = VectorLike a R3
 
 r3Like :: R3Like a => Iso' R3 a
-r3Like = coordLike
+r3Like = vectorLike
 
-instance CoordinateLike (Double, Double, Double) R3 where
-  coordLike = iso unr3 r3
+instance VectorLike (Double, Double, Double) R3 where
+  vectorLike = iso unr3 r3
 
-instance CoordinateLike (V3 Double) R3 where
-  coordLike = iso (\(unr3 -> (x,y,z)) -> V3 x y z)
+instance VectorLike (V3 Double) R3 where
+  vectorLike = iso (\(unr3 -> (x,y,z)) -> V3 x y z)
+                  (\(V3 x y z)        -> x ^& y ^& z)
+
+-- Isomorphic to a Point
+
+-- | Some @a@ which is isomorphic to coordinate @v@.
+class DiagramsCoordinate v => PointLike a v | a -> v where
+  pointLike :: Iso' (Point v) a
+
+  diaPoint :: Iso' a (Point v)
+  diaPoint = from pointLike
+
+instance PointLike P2 R2 where
+  pointLike = id
+
+instance PointLike P3 R3 where
+  pointLike = id
+
+type P2Like a = PointLike a R2
+
+p2Like :: P2Like a => Iso' P2 a
+p2Like = pointLike
+
+p2Iso :: P2Like a => Iso' a P2
+p2Iso = diaPoint
+
+-- | @linear@ appears to be more relaxed in its distinction between points and
+--   vectors.
+instance PointLike (V2 Double) R2 where
+  pointLike = iso (\(unp2 -> (x,y)) -> V2 x y)
+                  (\(V2 x y)        -> x ^& y)
+
+instance PointLike (L.Point V2 Double) R2 where
+  pointLike = iso (\(unp2 -> (x,y)) -> L.P (V2 x y))
+                  (\(L.P (V2 x y))  -> x ^& y)
+
+instance PointLike (Double, Double) R2 where
+  pointLike = iso unp2 p2
+
+instance PointLike (Complex Double) R2 where
+  pointLike = iso (\(unp2 -> (x,y)) -> x :+ y)
+                  (\(i :+ j)        -> p2 (i,j))
+
+type P3Like a = PointLike a R3
+
+p3Like :: P3Like a => Iso' P3 a
+p3Like = pointLike
+
+instance PointLike (Double, Double, Double) R3 where
+  pointLike = iso unp3 p3
+
+instance PointLike (V3 Double) R3 where
+  pointLike = iso (\(unp3 -> (x,y,z)) -> V3 x y z)
                   (\(V3 x y z)        -> x ^& y ^& z)
 
