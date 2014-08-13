@@ -246,22 +246,6 @@ renderR3Axis a = P2.frame 15
     -- TODO: fix this
     applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
 
--- -- try to merge with renderR2Axis
--- renderR3Axis :: (Renderable (Path R2) b, Plotable (Plot b R3) b R3)
---   => Axis b R3 -> Diagram b R2
--- renderR3Axis a = foldMap (plot xs (a ^. axisLinearMap) t) (a ^. axisPlots)
---             <> drawAxis ex ey
---             <> drawAxis ey ex
---             <> drawAxis ez ey
---   where
---     drawAxis = axisOnBasis origin xs a mempty (a ^. axisLinearMap)
---     --
---     (xs, t) = workOutScale
---                 (a ^. axisLinearMap)
---                 (a ^. axisSize)
---                 (a ^. axisScaling)
---                 (a ^. axisPlots . traversed . plotBoundingBox)
---                 (a ^. bounds)
 
 axisOnBasis
   :: forall v t b. (t ~ T v,
@@ -510,4 +494,3 @@ workOutUsedBound aScale mBox (Bound rL rU) = enlarged
       -- recommended bounds are used when no infered bounds exist
       Nothing    -> (getRecommend rL, getRecommend rU)
 
-    -- aspect = aScale ^. aspectRatio

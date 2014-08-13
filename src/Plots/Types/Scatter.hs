@@ -41,10 +41,7 @@ data ScatterPlot b v = ScatterPlot
 
 makeLenses ''ScatterPlot
 
--- type instance V (ScatterPlot b v) = v
-
--- instance HasStyle (ScatterPlot b R2) where
---   applyStyle sty = over (themeEntry . themeMarker . recommend) (applyStyle sty)
+type instance V (ScatterPlot b v) = v
 
 instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v))
     => Default (ScatterPlot b v) where
@@ -69,20 +66,7 @@ instance (Typeable b, Typeable v, Renderable (Path R2) b, Scalar v ~ Double, Has
                                         # applyStyle (sp ^. themeLineStyle)
            | otherwise              = mempty
 
--- instance (Typeable b, Typeable v, Renderable (Path R2) b)
---     => Plotable (ScatterPlot b v) b v where
---   plot _ l t = drawScatterPlot . over scatterPlotPoints (transform t . lmap l)
-
--- drawScatterPlot :: Renderable (Path R2) b => ScatterPlot b R2 -> Diagram b R2
--- drawScatterPlot sp = position (zip (sp^.scatterPlotPoints) (repeat mark))
---                   <> if sp ^. scatterPlotLines
---                        then fromVertices (sp ^. scatterPlotPoints)
---                               # applyStyle (sp ^. themeLineStyle)
---                        else mempty
---   where
---     mark = (sp ^. themeMarker)
---              # applyStyle (sp ^. themeMarkerStyle)
-
+-- | Prism specific to a 'ScatterPlot'.
 _ScatterPlot :: Plotable (ScatterPlot b v) b v => Prism' (Plot b v) (ScatterPlot b v)
 _ScatterPlot = _Plot
 
@@ -97,36 +81,3 @@ mkScatterPlot a =
       where
         points = a ^.. folded . diaPoint
 
-
--- class ScatterPlotable a b v | a -> v where
---   mkScatterPlot :: a -> ScatterPlot b v
--- 
--- instance (CoordinateLike v a, Foldable f, Default (ScatterPlot b v)) => ScatterPlotable (f a) b v where
---   mkScatterPlot a =
---     def & scatterPlotPoints .~ points
---         & plotBoundingBox   .~ fromPoints points
---       where
---         points = a ^.. folded . diaCoord . _Unwrapped
-
--- instance (Renderable (Path R3) b, R3Like a, Foldable f) => ScatterPlotable (f a) b R3 where
---   mkScatterPlot a =
---     def & scatterPlotPoints .~ a ^.. folded . from r3Like . _Unwrapped
-
-
-
--- mkScatterPlot :: (Renderable (Path R2) b, Renderable Text b) => [P2] -> Bool -> String -> Plot b
--- mkScatterPlot points line legendName = review _ScatterPlot $
---   def & scatterPlotPoints .~ points
---       & scatterPlotLines  .~ line
---       & legendEntries .~ [scatterLegendEntry legendName]
---       & plotBoundingBox .~ fromPoints path
--- 
--- scatterLegendEntry :: (Renderable (Path R2) b, Renderable Text b) => String -> LegendEntry b
--- scatterLegendEntry txt = def & legendText .~ txt
---                              & legendPic  .~ scatterLegendPic
--- 
--- scatterLegendPic :: Renderable (Path R2) b => Bool -> ThemeEntry b -> Diagram b R2
--- scatterLegendPic line theme = (theme^.themeMarker._Just) # applyStyle (theme^.themeMarkerStyle)
---                            <> if line
---                                 then ((-1) ^& 0) ~~ (1 ^& 0) # applyStyle (theme^.themeLineStyle)
---                                 else mempty

@@ -115,176 +115,12 @@ getBounds (Bound l u) = (getRecommend l, getRecommend u)
 getBound :: HasBounds a v => E (T v) -> a -> (Double, Double)
 getBound e a = getBounds $ a ^. bounds . el e
 
-
-
---   bounds = id
-
--- type Domain v = B v Bound
--- class HasDomain a t where
---   domain :: Lens' a (t Bounds)
--- 
--- instance HasDomain (t Bounds) t where
---   domain = id
-
--- seems over engineered, only way I can get it to work
--- class HasDomain a where
---   type DomainType a :: * -> *
---   domain :: Lens' a (DomainType a Bound)
-
--- instance HasDomain (t Bound) where
---   type DomainType (t Bound) = t
---   domain = id
-
-
--- instance HasDomain (L.V2 Bounds) L.V2 where
---   domain = id
-
-
 boundsMin :: (T v ~ t, Representable t, HasBounds a v) => Lens' a (t (Recommend Double))
 boundsMin = bounds . L.column lowerBound
 
 boundsMax :: (T v ~ t, TraversableCoordinate v, HasBounds a v) => Lens' a (Point v)
 boundsMax = bounds . L.column (upperBound . recommend) . diagramsCoord . _Unwrapped
-
--- xMin :: (T v ~ t, L.R1 t, HasBounds a v) => Lens' a (Recommend Double)
--- xMin = bounds . L._x . lowerBound
--- 
--- xMax :: (T v ~ t, L.R1 t, HasBounds a v) => Lens' a Double
--- xMax = bounds . L._x . upperBound
--- 
--- yMin :: (T v ~ t, L.R2 t, HasBounds a v) => Lens' a Double
--- yMin = bounds . L._y . lowerBound
--- 
--- yMax :: (T v ~ t, L.R2 t, HasBounds a v) => Lens' a Double
--- yMax = bounds . L._y . upperBound
--- 
--- zMin :: (T v ~ t, L.R3 t, HasBounds a v) => Lens' a Double
--- zMin = bounds . L._z . lowerBound
--- 
--- zMax :: (T v ~ t, L.R3 t, HasBounds a v) => Lens' a Double
--- zMax = bounds . L._z . upperBound
-
-
--- data Limit = Limit
---   { _lowerLimit :: Double
---   , _upperLimit :: Double
---   } deriving (Typeable, Show)
--- 
--- makeLenses ''Limit
--- 
--- type Limits v = T v (Maybe Limit)
--- 
--- instance Semigroup Limit where
---   Limit l1 u1 <> Limit l2 u2 = Limit (min l1 l2) (max u1 u2)
--- 
--- class HasLimits a v | a -> v where
---   limits :: Lens' a (Limits v)
--- #ifdef HLINT
---   default limits :: (a ~ Limits v) => Lens' a a
---   limits = id
--- #endif
--- 
--- instance HasLimits (L.V2 (Maybe Limit)) R2
--- instance HasLimits (L.V3 (Maybe Limit)) R3
--- 
--- getLimits :: Limit -> (Double,Double)
--- getLimits (Limit l u) = (l, u)
--- 
--- getLimit :: HasLimits a v => E (T v) -> a -> Maybe (Double, Double)
--- getLimit e a = getLimits <$> a ^. limits . el e
-
-
-
--- data AxisBounds v = AxisBounds
---   { _minPoint :: Point v
---   , _maxPoint :: Point v
---   } deriving (Typeable, Show)
--- 
--- makeClassy ''AxisBounds
--- 
--- instance Default (AxisBounds R2) where
---   def = AxisBounds
---           { _minPoint = origin
---           , _maxPoint = 5 ^& 5
---           }
-
-
--- make a Plots.Simple module with lots of functions like this? Right now it's 
--- cluttering the important stuff
-
--- xMin :: (HasAxisBounds a v, HasX (Point v)) => Lens' a Double
--- xMin = minPoint . _x
--- 
--- xMax :: (HasAxisBounds a v, HasX (Point v)) => Lens' a Double
--- xMax = maxPoint . _x
--- 
--- yMin :: (HasAxisBounds a v, HasY (Point v)) => Lens' a Double
--- yMin = minPoint . _y
--- 
--- yMax :: (HasAxisBounds a v, HasY (Point v)) => Lens' a Double
--- yMax = maxPoint . _y
--- 
--- zMin :: (HasAxisBounds a v, HasZ (Point v)) => Lens' a Double
--- zMin = minPoint . _z
--- 
--- zMax :: (HasAxisBounds a v, HasZ (Point v)) => Lens' a Double
--- zMax = maxPoint . _z
-
--- messy definition, I can't think of a cleaner way.
--- instance (Each (Point v) (Point v) a a, Ord a) => Semigroup (AxisBounds v) where
---   AxisBounds minA maxA <> AxisBounds minB maxB
---     = AxisBounds (minA & partsOf each %~ zipWith min (minB ^.. each))
---                  (maxA & partsOf each %~ zipWith max (maxB ^.. each))
-
-
--- -- I don't like this
--- data AxisBounds = AxisBounds
---   { _xMin :: Double
---   , _xMax :: Double
---   , _yMin :: Double
---   , _yMax :: Double
---   } deriving Show
--- 
--- makeClassy ''AxisBounds
--- 
--- instance Default AxisBounds where
---   def = AxisBounds 0 5 0 5
--- 
--- instance Semigroup AxisBounds where
---   (AxisBounds xM1 xm1 yM1 ym1) <> (AxisBounds xM2 xm2 yM2 ym2)
---     = AxisBounds (max xM1 xM2) (min xm1 xm2) (max yM1 yM2) (min ym1 ym2)
-
--- -- | Lens onto x bounds tuple.
--- -- xAxisBounds :: HasAxisBounds a => Lens' a (Double, Double)
--- xAxisBounds :: (HasAxisBounds a v, HasX (Point v)) => Lens' a (Double, Double)
--- xAxisBounds = tupleLens xMin xMax
--- {-# INLINE xAxisBounds #-}
--- 
--- -- | Lens onto y bounds tuple.
--- -- yAxisBounds :: HasAxisBounds a => Lens' a (Double, Double)
--- yAxisBounds :: (HasAxisBounds a v, HasY (Point v)) => Lens' a (Double, Double)
--- yAxisBounds = tupleLens yMin yMax
--- {-# INLINE yAxisBounds #-}
--- 
--- -- | Lens onto y bounds tuple.
--- -- yAxisBounds :: HasAxisBounds a => Lens' a (Double, Double)
--- zAxisBounds :: (HasAxisBounds a v, HasZ (Point v)) => Lens' a (Double, Double)
--- zAxisBounds = tupleLens zMin zMax
--- {-# INLINE zAxisBounds #-}
-
--- Bounding box stuff
-
--- -- | Only a valid isomorphism if point set is valid (otherwise it returns something).
--- boundingBoxL :: (HasLinearMap v, OrderedField (Scalar v), Ord (Basis v))
---   => Iso' (BoundingBox v) (Maybe (Point v, Point v))
--- boundingBoxL = iso getCorners setCorners
---   where
---     setCorners (Just (l, u)) = fromCorners u l
---     setCorners Nothing       = emptyBox
-
--- getBoundingBasis :: TraversableCoordinate v => E (T v) -> BoundingBox v -> Maybe (Double, Double)
--- getBoundingBasis e b = over both (^. traversablePoint . el e) <$> getCorners b
-                   
+     
 
 -- Orientation
 
@@ -457,27 +293,6 @@ instance Renderable (Path R2) b => Default (GenericPlot b R3) where
           , _plotBoundingBox = emptyBox
           }
 
--- -- | The style is applied to all theme styles. Only works for R2 due to 
--- --   HasStyle limitations.
--- instance HasStyle (GenericPlot b R2) where
---   applyStyle sty = over themeEntry
---                  $ over themeLineStyle (applyStyle sty)
---                  . over themeMarkerStyle (applyStyle sty)
---                  . over themeFillStyle (applyStyle sty)
--- 
--- instance HasLinearMap v => Transformable (GenericPlot b v) where
---   transform = over plotTransform . transform
--- 
--- instance HasBounds (GenericPlot b v) v where
---   bounds = plotBounds
--- 
--- -- | Move origin by applying to @plotTransform@.
--- instance HasLinearMap v => HasOrigin (GenericPlot b v) where
---   moveOriginTo = over plotTransform . moveOriginTo
--- 
--- instance Qualifiable (GenericPlot b v) where
---   n |> p = over plotName (n |>) p
-   
 
 -- Plot data type
 
@@ -499,20 +314,6 @@ instance HasGenericPlot (Plot b v) b v where
   genericPlot = lens (\(Plot a)    -> view genericPlot a)
                      (\(Plot a) gp -> Plot (set genericPlot gp a))
 
--- instance HasStyle (Plot b R2) where
---   applyStyle sty = over genericPlot (applyStyle sty)
--- 
--- instance HasLinearMap v => Transformable (Plot b v) where
---   transform = over genericPlot . transform
--- 
--- instance HasLinearMap v => HasOrigin (Plot b v) where
---   moveOriginTo = over genericPlot . moveOriginTo
--- 
--- instance Qualifiable (Plot b v) where
---   n |> p = over genericPlot (n |>) p
--- 
--- instance HasBounds (Plot b v) v where
---   bounds = genericPlot . bounds
 
 -- | Prism onto the unwrapped plotable type. All standard plots export a 
 --   specialised version of this which is normally more usefull (i.e. 
@@ -520,13 +321,3 @@ instance HasGenericPlot (Plot b v) b v where
 _Plot :: Plotable a b v => Prism' (Plot b v) a
 _Plot = prism' Plot (\(Plot a) -> cast a)
 
--- -- needed to prevent overlapping instances
--- plotLineStyle :: HasGenericPlot a b v => Traversal' a (Style R2)
--- plotLineStyle = genericPlot . themeEntry . _Commit . themeLineStyle
--- 
--- plotFillStyle :: HasGenericPlot a b v => Traversal' a (Style R2)
--- plotFillStyle = genericPlot . themeEntry . _Commit . themeFillStyle
--- 
--- plotMarkerStyle :: HasGenericPlot a b v => Traversal' a (Style R2)
--- plotMarkerStyle = genericPlot . themeEntry . _Commit . themeFillStyle
--- 

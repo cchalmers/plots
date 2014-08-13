@@ -39,20 +39,3 @@ tickGridF = const
 noGridF :: GridLinesFunction
 noGridF _ = const []
 
--- varients for the grid lines data type (don't like these names)
-
--- defaultMajorGridLinesD :: GridLines -> GridLines
--- defaultMajorGridLinesD = set majorGridLineFun tickGridLinesFunction
--- 
--- defaultMinorGridLinesD :: GridLines -> GridLines
--- defaultMinorGridLinesD = set minorGridLineFun tickGridLinesFunction
--- 
--- noMajorGridLinesD :: GridLines -> GridLines
--- noMajorGridLinesD = set majorGridLineFun noTickGridLinesFunction
--- 
--- noMinorGridLinesD :: GridLines -> GridLines
--- noMinorGridLinesD = set minorGridLineFun noTickGridLinesFunction
--- 
--- noGridLinesD :: GridLines -> GridLines
--- noGridLinesD = noMinorGridLinesD . noMajorGridLinesD
--- 

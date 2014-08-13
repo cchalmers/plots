@@ -15,28 +15,23 @@
 module Diagrams.Coordinates.Traversals where
 
 import           Control.Lens
--- import           Data.Default
 import           Data.Typeable
 import           Diagrams.Angle
 import qualified Diagrams.Prelude        as D
 import qualified Diagrams.Prelude.ThreeD as D
--- import qualified Diagrams.TwoD           as D
--- import           Diagrams.TwoD.Arrow
-import qualified Diagrams.TwoD.Polar     as P
 import qualified Linear                  as L
 import Linear (E)
 
 import Control.Applicative
 import Control.Monad.Fix
 import Control.Monad.Zip
--- import Data.Distributive   (Distributive)
 import Data.Foldable
 import Data.Functor.Bind
--- import Data.Functor.Rep
 import GHC.Generics (Generic1)
 import Data.Semigroup
 import Data.Functor.Rep
 import Data.Distributive
+import Diagrams.Extra ()
 
 -- | A class that provides a corresponding traversable containers for a 
 --   diagarms coordinate.
