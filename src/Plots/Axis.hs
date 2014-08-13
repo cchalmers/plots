@@ -44,6 +44,8 @@ import Diagrams.Projections
 import Diagrams.ThreeD.Types
 import Linear                          (E, el, ex, ey, ez)
 
+import Control.Lens.Extras (is)
+
 import Data.LinearMap
 
 -- Lines types
@@ -171,10 +173,10 @@ renderR2Axis a = P2.frame 15
               <> drawAxis ex ey
               <> drawAxis ey ex
   where
-    plots = foldMap (plot xs (a ^. axisLinearMap) t) (a ^. axisPlots . to applyTheme)
-    drawAxis = axisOnBasis origin xs a t (a ^. axisLinearMap)
+    plots = foldMap (plot xs tv (a ^. axisLinearMap) t2) (a ^. axisPlots . to applyTheme)
+    drawAxis = axisOnBasis origin xs a tv (a ^. axisLinearMap) t2
     --
-    (xs, t) = workOutScale
+    (xs, tv, t2) = workOutScale
                  (a ^. axisLinearMap)
                  (a ^. axisSize)
                  (a ^. axisScaling)
@@ -227,11 +229,11 @@ renderR3Axis a = P2.frame 15
               <> drawAxis ey ex
               <> drawAxis ez ey
   where
-    plots = foldMap (plot xs (a ^. axisLinearMap) t) (a ^. axisPlots . to applyTheme)
-    drawAxis = axisOnBasis minPoint xs a t (a ^. axisLinearMap)
+    plots = foldMap (plot xs tv (a ^. axisLinearMap) t2) (a ^. axisPlots . to applyTheme)
+    drawAxis = axisOnBasis minPoint xs a tv (a ^. axisLinearMap) t2
     minPoint = view (from traversablePoint) $ fmap fst xs
     --
-    (xs, t) = workOutScale
+    (xs, tv, t2) = workOutScale
                  (a ^. axisLinearMap)
                  (a ^. axisSize)
                  (a ^. axisScaling)
@@ -271,14 +273,15 @@ axisOnBasis
   => Point v          -- start of axis
   -> T v (Double, Double) -- calculated bounds
   -> Axis b v         -- axis data
-  -> Transformation R2 -- transformation to apply to positions of things
+  -> Transformation v -- transformation to apply to positions of things
   -> (v :-* R2)       -- linear map onto R2
+  -> Transformation R2 -- transformation to apply to positions of things
   -> E t              -- direction of axis
   -> E t              -- direction normal to axis
   -> Diagram b R2     -- resulting axis
-axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
+axisOnBasis p bs a tv l t2 e eO = tickLabels <> axLabels <> grid <> ticks <> line
   where
-    tStroke = stroke . transform t . lmap l
+    tStroke = stroke . transform t2 . lmap l . transform tv
 
     -- axis labels (x,y etc.)
     axLabels = if null txt
@@ -289,9 +292,10 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
 
       where
         p' = p # over traversablePoint ((el e .~ x) . (el eO .~ y0))
-               # transform (translationE eO (- labelGap / avgScale t))
+               # transform (translationE eO (- labelGap / avgScale t2))
+               # transform tv
                # lmap l
-               # transform t
+               # transform t2
         labelGap = axLabelD ^. axisLabelGap
         txt      = axLabelD ^. axisLabelText
         x = case axLabelD ^. axisLabelPos of
@@ -311,9 +315,10 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
             f (x, dia) = place dia p'
               where
                 p' = over traversablePoint ((el e .~ x) . (el eO .~ y)) p
-                       # transform (translationE eO (-8 / avgScale t))
+                       # transform tv
+                       # transform (translationE eO (-8 / avgScale t2))
                        # lmap l
-                       # transform t
+                       # transform t2
 
     -- grid
     grid = majorLines <> minorLines
@@ -357,13 +362,15 @@ axisOnBasis p bs a t l e eO = tickLabels <> axLabels <> grid <> ticks <> line
         positionTick tick x = place tick p'
           where
             p' = over traversablePoint ((el e .~ x) . (el eO .~ y)) p
+                   # transform tv
                    # lmap l
-                   # transform t
+                   # transform t2
 
     -- axis lines
     line = foldMap mkline ys -- merge with ticks?
+             # transform tv
              # lmap l
-             # transform t
+             # transform t2
              # stroke
              # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
       where
@@ -390,25 +397,38 @@ translationE :: (HasLinearMap v, TraversableCoordinate v)
   => E (T v) -> Double -> Transformation v
 translationE e x = translation (view diagramsCoord $ pure 0 & el e .~ x)
 
+scaleE :: (HasLinearMap v, TraversableCoordinate v)
+  => E (T v) -> Double -> Transformation v
+scaleE e s = fromLinear f f
+  where
+    f = over traversableCoord (el e *~ s) <-> over traversableCoord (el e //~ s)
+
+-- Rules for choosing scales:
+--   - The default is to have each axis the same length:
+--       - for Width and Height specs, this is easy:
+--           - adjust each of the bounds so they're the same length
+--             (via inverseScale to bound diffs)
+--           - work out the uniform scale needed to make it w or h
+--           - return inverseScale <> uniform scale
+--           - if aspect ratios are set, use this instead of inverse of diffs
+--
+--  - if width and height are from spec:
+--      - do same with bounds
+--      - scale w and h independently
+--          - this means aspect ratios are not kept
+--          - to do this we need to adjust the bounds (hard for 3d?)
+--
 
 workOutScale
-  :: (Scalar v ~ Double, TraversableCoordinate v, HasLinearMap v)
+  :: (Scalar v ~ Double, TraversableCoordinate v, HasLinearMap v, V v ~ v)
   => v :-* R2      -- linear map
   -> SizeSpec2D    -- size spec axis should fit in
   -> AxisScaling v -- scaling options
   -> BoundingBox v -- bounding box of plots
   -> Bounds v      -- axis bounds
-  -> (T v (Double, Double), T2)
-workOutScale l spec2d aScaling mBB bnd = case spec2d of
-  Absolute -> (enlargedBounds, mempty)
-  Width w  -> let s = w / x
-              in  (enlargedBounds, scaling s)
-  Height h -> let s = h / y
-              in  (enlargedBounds, scaling s)
-  Dims w h -> let sX = w / x
-                  sY = h / y
-              in  (enlargedBounds, scalingX sX <> scalingY sY)
-              -- TODO: enlarge bounds to keep aspect ratios
+  -> (T v (Double, Double), Transformation v, T2)
+workOutScale l spec2d aScaling mBB bnd
+    = (enlargedBounds, aspectScaling, specScaling)
   where
     enlargedBounds = workOutUsedBounds
                        aScaling
@@ -418,8 +438,36 @@ workOutScale l spec2d aScaling mBB bnd = case spec2d of
                                   (view traversablePoint)
                                   (getCorners mBB))
                        bnd
-    (x,y) = unr2 $ lapply l
-              (view diagramsCoord (uncurry (flip (-)) <$> enlargedBounds))
+    (x,y) = unr2 . lapply l . apply aspectScaling $ view diagramsCoord v
+              -- (view diagramsCoord $ uncurry (flip (-)) <$> enlargedBounds)
+
+    -- the vector that points from the lower bound to the upper bound of the 
+    -- axis
+    v = uncurry (flip (-)) <$> enlargedBounds
+
+    aspectScaling
+      -- if any of the aspect ratios are committed we use the aspect ratio from 
+      -- aScaling
+      | anyOf (traversed . aspectRatio) (is _Commit) aScaling
+          = vectorScaling (view (aspectRatio . recommend) <$> aScaling)
+      -- otherwise all ratios are just recommend, ignore them and scale such 
+      -- that each axis is the same length
+      | otherwise
+          = inv $ vectorScaling v
+
+    specScaling   = case spec2d of
+      Absolute -> mempty
+      Width w  -> scaling (w / x)
+      Height h -> scaling (h / y)
+      Dims w h -> scalingX (w / x) <> scalingY (h / y)
+
+type instance V (Plot b v) = v
+
+
+
+vectorScaling :: (HasLinearMap v, TraversableCoordinate v)
+  => T v Double -> Transformation v
+vectorScaling = ifoldMap scaleE
 
 
 
@@ -456,9 +504,10 @@ workOutUsedBound aScale mBox (Bound rL rU) = enlarged
      -- mBox is the concatination of bounding boxes of all axis plots
     (l', u') = case mBox of
 
-      -- infered bounds only apply to non-committed bounds
+      -- infered bounds (from bounding box) only used for non-committed bounds
       Just (l,u) -> (fromCommit l rL, fromCommit u rU)
 
       -- recommended bounds are used when no infered bounds exist
       Nothing    -> (getRecommend rL, getRecommend rU)
 
+    -- aspect = aScale ^. aspectRatio

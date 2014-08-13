@@ -56,9 +56,10 @@ instance Renderable (Path R2) b => Default (LinePlot b R3) where
 instance (Typeable b, Typeable v, Scalar v ~ Double, Renderable (Path R2) b,
           HasLinearMap v, InnerSpace v)
        => Plotable (LinePlot b v) b v where
-  plot _ l t lp = lp ^.linePlotPath
+  plot _ tv l t2 lp = lp ^.linePlotPath
+                   & transform tv
                    & lmap l
-                   & transform t
+                   & transform t2
                    & stroke
                    & applyStyle (lp ^. themeLineStyle)
 

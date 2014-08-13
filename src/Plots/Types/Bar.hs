@@ -54,29 +54,29 @@ instance Renderable (Path R2) b => Default (BarPlot b) where
           , _barPlotGeneric  = def
           }
 
-drawBarPlot :: Renderable (Path R2) b => BarPlot b -> Diagram b R2
-drawBarPlot bp = ifoldMap makeBar (bp^.barPlotBars)
-  where
-    bW = bp^.barPlotWidth
-    makeBar i [h] = rect bW h
-                      -- # applyStyle sty
-                      # centerX
-                      # alignB
-                      # translateX (fromIntegral i + 1)
+-- drawBarPlot :: Renderable (Path R2) b => BarPlot b -> Diagram b R2
+-- drawBarPlot bp = ifoldMap makeBar (bp^.barPlotBars)
+--   where
+--     bW = bp^.barPlotWidth
+--     makeBar i [h] = rect bW h
+--                       -- # applyStyle sty
+--                       # centerX
+--                       # alignB
+--                       # translateX (fromIntegral i + 1)
+-- 
+--     makeBar i [h1,h2] = rect (bW / 2) h1
+--                           # centerX
+--                           # alignB
+--                           # translateX (fromIntegral i + 1 - 0.15)
+--                      <> rect (bW / 2) h2
+--                           # fc orange
+--                           # centerX
+--                           # alignB
+--                           # translateX (fromIntegral i + 1 + 0.15)
+--     makeBar _ _ = mempty
 
-    makeBar i [h1,h2] = rect (bW / 2) h1
-                          # centerX
-                          # alignB
-                          # translateX (fromIntegral i + 1 - 0.15)
-                     <> rect (bW / 2) h2
-                          # fc orange
-                          # centerX
-                          # alignB
-                          # translateX (fromIntegral i + 1 + 0.15)
-    makeBar _ _ = mempty
-
-instance (Typeable b, Renderable (Path R2) b) => Plotable (BarPlot b) b R2 where
-  plot _r _ t = transform t . drawBarPlot
+-- instance (Typeable b, Renderable (Path R2) b) => Plotable (BarPlot b) b R2 where
+--   plot _r _ t = transform t . drawBarPlot
 
 _BarPlot :: Plotable (BarPlot b) b R2 => Prism' (Plot b R2) (BarPlot b)
 _BarPlot = _Plot

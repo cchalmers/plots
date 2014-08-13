@@ -70,7 +70,7 @@ drawFunctionPlot t fp = fromVertices functionPath
     b            = fp ^. plotBounds . el ex . upperBound . recommend
 
 instance (Typeable b, Renderable (Path R2) b) => Plotable (FunctionPlot b R2) b R2 where
-  plot _ _ = drawFunctionPlot
+  plot _ _ _ = drawFunctionPlot
 
 _FunctionPlot :: Plotable (FunctionPlot b R2) b R2 => Prism' (Plot b R2) (FunctionPlot b R2)
 _FunctionPlot = _Plot

@@ -121,6 +121,7 @@ module Plots
   -- , barPlotAxis
   , module Plots.Types.Bar
 
+
     -- * Themes
   , setTheme
   , coolTheme
@@ -168,6 +169,10 @@ module Plots
     -- *** Label gaps
   , setAxisLabelGap
   , setAxesLabelGaps
+
+    -- * Axis scaling
+  , setAxisRatio
+  , equalAxis
 
     -- ** Axis line type
   , AxisLineType (..)
@@ -220,6 +225,8 @@ import Plots.Types.Scatter
 import Plots.Types.Function
 import Plots.Types.Line
 import Plots.Themes
+
+import Data.Monoid.Recommend
 
 import Control.Monad.State.Lazy
 
@@ -328,6 +335,14 @@ addScatterPlotable = addPlotable . mkScatterPlot
 -- zAxisArrowOpts = axisLines ez . axisArrowOpts
 -- 
 --
+
+-- | Set the aspect ratio of given axis.
+setAxisRatio :: E (T v) -> Double -> Axis b v -> Axis b v
+setAxisRatio e = set (axisScaling . el e . aspectRatio) . Commit
+
+-- | Make each axis have the same unit length.
+equalAxis :: Traversable (T v) => Axis b v -> Axis b v
+equalAxis = axisScaling . traversed . aspectRatio .~ Commit 1
 
 
 -- Themes

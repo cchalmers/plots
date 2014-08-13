@@ -484,7 +484,7 @@ instance Renderable (Path R2) b => Default (GenericPlot b R3) where
 -- | General class for something that can be wrapped in 'Plot'. The 'plot' 
 --   function is rarely used by the end user.
 class (HasGenericPlot a b v, Typeable a, Typeable b) => Plotable a b v where
-  plot :: T v (Double, Double) -> (v :-* R2) -> T2 -> a -> Diagram b R2
+  plot :: T v (Double, Double) -> Transformation v -> (v :-* R2) -> T2 -> a -> Diagram b R2
 
 -- | Existential wrapper for something plotable.
 data Plot b v = forall a. Plotable a b v => Plot a
@@ -492,12 +492,12 @@ data Plot b v = forall a. Plotable a b v => Plot a
 
 type instance V (Plot b v) = v
 
+instance (Typeable b, Typeable v) => Plotable (Plot b v) b v where
+  plot bs tv l t2 (Plot p) = plot bs tv l t2 p
+
 instance HasGenericPlot (Plot b v) b v where
   genericPlot = lens (\(Plot a)    -> view genericPlot a)
                      (\(Plot a) gp -> Plot (set genericPlot gp a))
-
-instance (Typeable b, Typeable v) => Plotable (Plot b v) b v where
-  plot b l t (Plot p) = plot b l t p
 
 -- instance HasStyle (Plot b R2) where
 --   applyStyle sty = over genericPlot (applyStyle sty)

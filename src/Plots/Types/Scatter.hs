@@ -59,15 +59,15 @@ instance HasGenericPlot (ScatterPlot b v) b v where
 
 instance (Typeable b, Typeable v, Renderable (Path R2) b, Scalar v ~ Double, HasLinearMap v)
     => Plotable (ScatterPlot b v) b v where
-  plot _ l t sp = position (zip points (repeat mark))
+  plot _ tv l t2 sp = position (zip points (repeat mark))
                <> line
     where
       mark   = applyStyle (sp ^. themeMarkerStyle) (sp ^. themeMarker)
-      points = transform t . lmap l $ sp ^. scatterPlotPoints
-      line | sp ^. scatterPlotLines
-                       = fromVertices points
-                           # applyStyle (sp ^. themeLineStyle)
-           | otherwise = mempty
+      points = transform t2 . lmap l . transform tv $ sp ^. scatterPlotPoints
+      --
+      line | sp ^. scatterPlotLines = fromVertices points
+                                        # applyStyle (sp ^. themeLineStyle)
+           | otherwise              = mempty
 
 -- instance (Typeable b, Typeable v, Renderable (Path R2) b)
 --     => Plotable (ScatterPlot b v) b v where
