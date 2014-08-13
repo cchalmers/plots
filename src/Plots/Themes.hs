@@ -15,7 +15,7 @@ import Data.List
 import Data.Typeable
 import Data.Default
 import Diagrams.Prelude
-import Data.Monoid.Recommend
+-- import Data.Monoid.Recommend
 
 -- * An entry can be applied to a 'Plot' to change it's style.
 data ThemeEntry b = ThemeEntry
@@ -47,7 +47,7 @@ type Theme b = [ThemeEntry b]
 
 -- * Theme construction
 
--- | Convienient way to construct themes.
+-- | Convenient way to construct themes.
 data ThemeContructor = ThemeContructor
   { _constructorColours   :: [Colour Double]
   , _constructLineStyle   :: Colour Double -> Style R2

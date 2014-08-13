@@ -22,7 +22,7 @@ import Data.Default
 import Data.Typeable
 import Diagrams.Prelude
 
-import Plots.Themes
+-- import Plots.Themes
 import Plots.Types
 
 data BarPlot b = BarPlot

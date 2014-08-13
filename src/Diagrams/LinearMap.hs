@@ -43,18 +43,18 @@ module Diagrams.LinearMap
   ) where
 
 import Control.Lens     hiding (at, transform, lmap)
-import Data.AffineSpace
-import Data.Basis
-import Data.MemoTrie
-import Data.Monoid      hiding ((<>))
-import Data.Semigroup
+-- import Data.AffineSpace
+-- import Data.Basis
+-- import Data.MemoTrie
+-- import Data.Monoid      hiding ((<>))
+-- import Data.Semigroup
 import Data.VectorSpace
-import Data.Typeable
+-- import Data.Typeable
 
 import Diagrams.Core
 import Diagrams.Core.Transform
 import Diagrams.Located
-import Diagrams.Parametric
+-- import Diagrams.Parametric
 import Diagrams.Path
 import Diagrams.Segment
 import Diagrams.Trail
@@ -77,11 +77,11 @@ class LinearMappable u v where
 
   -- | Apply a linear map to something @LinearMappable@.
   lmap  :: (V u :-* V v) -> u -> v
-#ifdef HLINT
-  default lmap :: (Scalar u ~ Scalar v, HasLinearMap u, HasLinearMap v)
-               => (u :-* v) -> u -> v
-  lmap = lapply
-#endif
+-- #ifdef HLINT
+--   default lmap :: (Scalar u ~ Scalar v, HasLinearMap u, HasLinearMap v)
+--                => (u :-* v) -> u -> v
+--   lmap = lapply
+-- #endif
 
 -- | @asLinearMap@ converts a 'Transformation' to a linear map by
 -- discarding the inverse transform.  This allows reusing
@@ -94,10 +94,10 @@ asLinearMap = linear . apply
 
 -- stuff
 
-instance LinearMappable R2 R2
-instance LinearMappable R2 R3
-instance LinearMappable R3 R2
-instance LinearMappable R3 R3
+instance LinearMappable R2 R2 where lmap = lapply
+instance LinearMappable R2 R3 where lmap = lapply
+instance LinearMappable R3 R2 where lmap = lapply
+instance LinearMappable R3 R3 where lmap = lapply
 
 -- containers
 

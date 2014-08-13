@@ -13,6 +13,7 @@
 {-# LANGUAGE OverlappingInstances             #-}
 
 {-# LANGUAGE CPP             #-}
+{-# OPTIONS_GHC -fno-warn-orphans       #-}
 
 module Plots.Types
   (
@@ -66,7 +67,6 @@ import Data.Functor.Rep
 import Diagrams.ThreeD
 import Data.Monoid.Recommend
 import Diagrams.BoundingBox
-import Data.Basis
 
 import Plots.Themes
 
@@ -274,16 +274,16 @@ boundsMax = bounds . L.column (upperBound . recommend) . diagramsCoord . _Unwrap
 
 -- Bounding box stuff
 
--- | Only a valid isomorphism if point set is valid (otherwise it returns something).
-boundingBoxL :: (HasLinearMap v, OrderedField (Scalar v), Ord (Basis v))
-  => Iso' (BoundingBox v) (Maybe (Point v, Point v))
-boundingBoxL = iso getCorners setCorners
-  where
-    setCorners (Just (l, u)) = fromCorners u l
-    setCorners Nothing       = emptyBox
+-- -- | Only a valid isomorphism if point set is valid (otherwise it returns something).
+-- boundingBoxL :: (HasLinearMap v, OrderedField (Scalar v), Ord (Basis v))
+--   => Iso' (BoundingBox v) (Maybe (Point v, Point v))
+-- boundingBoxL = iso getCorners setCorners
+--   where
+--     setCorners (Just (l, u)) = fromCorners u l
+--     setCorners Nothing       = emptyBox
 
-getBoundingBasis :: TraversableCoordinate v => E (T v) -> BoundingBox v -> Maybe (Double, Double)
-getBoundingBasis e b = over both (^. traversablePoint . el e) <$> getCorners b
+-- getBoundingBasis :: TraversableCoordinate v => E (T v) -> BoundingBox v -> Maybe (Double, Double)
+-- getBoundingBasis e b = over both (^. traversablePoint . el e) <$> getCorners b
                    
 
 -- Orientation
