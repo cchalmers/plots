@@ -41,14 +41,8 @@ type instance V (FunctionPlot b v) = v
 
 makeLenses ''FunctionPlot
 
-instance HasGenericPlot (FunctionPlot b v) b v where
+instance HasGenericPlot (FunctionPlot b v) b where
   genericPlot = functionPlotGeneric
-
--- instance HasStyle (FunctionPlot b R2) where
---   applyStyle sty = over plotLineStyle   (applyStyle sty)
---                  . over plotMarkerStyle (applyStyle sty)
---                  . over plotFillStyle   (applyStyle sty)
-
 
 instance Renderable (Path R2) b => Default (FunctionPlot b R2) where
   def = FunctionPlot
@@ -69,10 +63,10 @@ drawFunctionPlot t fp = fromVertices functionPath
     a            = fp ^. plotBounds . el ex . lowerBound . recommend
     b            = fp ^. plotBounds . el ex . upperBound . recommend
 
-instance (Typeable b, Renderable (Path R2) b) => Plotable (FunctionPlot b R2) b R2 where
+instance (Typeable b, Renderable (Path R2) b) => Plotable (FunctionPlot b R2) b where
   plot _ _ _ = drawFunctionPlot
 
-_FunctionPlot :: Plotable (FunctionPlot b R2) b R2 => Prism' (Plot b R2) (FunctionPlot b R2)
+_FunctionPlot :: Plotable (FunctionPlot b R2) b => Prism' (Plot b R2) (FunctionPlot b R2)
 _FunctionPlot = _Plot
 
 mkFunctionPlot :: (Typeable b, Renderable (Path R2) b) => (Double -> Double) -> Plot b R2

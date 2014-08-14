@@ -281,7 +281,7 @@ setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 -- @
 -- myaxis = r2Axis # addPlotable (mkScatterPlot mydata)
 -- @
-addPlotable :: Plotable a b v => a -> Axis b v -> Axis b v
+addPlotable :: Plotable a b => a -> Axis b (V a) -> Axis b (V a)
 addPlotable p = axisPlots <>~ [review _Plot p]
 
 -- Scatter plot
@@ -306,35 +306,6 @@ addScatterPlotable
   => f a -> Axis b v -> Axis b v
 addScatterPlotable = addPlotable . mkScatterPlot
 
--- class (HasGenericPlot a b v, Typeable a, Typeable b) => Plotable a b v where
---   plot :: T v (Double, Double) -> (v :-* R2) -> T2 -> a -> Diagram b R2
-
--- -- | Traversal over all axis line types.
--- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType
--- axisLineTypes = axisLines . traversed . axisLine
--- 
--- -- | Lens onto x axis line type.
--- xAxisLineType :: (L.R1 (T v), HasAxisLines a v) => Lens' a AxisLineType
--- xAxisLineType = axisLine ex . axisLineType
--- 
--- -- | Lens onto y axis line type.
--- yAxisLineType :: (L.R2 (T v), HasAxisLines a v) => Lens' a AxisLineType
--- yAxisLineType = axisLine ey . axisLineType
--- 
--- -- | Lens onto z axis line type.
--- zAxisLineType :: (L.R3 (T v), HasAxisLines a v) => Lens' a AxisLineType
--- zAxisLineType = axisLine ez . axisLineType
--- 
--- xAxisArrowOpts :: (L.R1 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
--- xAxisArrowOpts = axisLine ex . axisArrowOpts
--- 
--- yAxisArrowOpts :: (L.R2 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
--- yAxisArrowOpts = axisLine ey . axisArrowOpts
--- 
--- zAxisArrowOpts :: (L.R3 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
--- zAxisArrowOpts = axisLines ez . axisArrowOpts
--- 
---
 
 -- | Set the aspect ratio of given axis.
 setAxisRatio :: E (T v) -> Double -> Axis b v -> Axis b v
@@ -397,3 +368,29 @@ noMinorGridLine (E e) = set (axisGridLines . e . minorGridF) noGridF
 
 {-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}
 
+-- -- | Traversal over all axis line types.
+-- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType
+-- axisLineTypes = axisLines . traversed . axisLine
+-- 
+-- -- | Lens onto x axis line type.
+-- xAxisLineType :: (L.R1 (T v), HasAxisLines a v) => Lens' a AxisLineType
+-- xAxisLineType = axisLine ex . axisLineType
+-- 
+-- -- | Lens onto y axis line type.
+-- yAxisLineType :: (L.R2 (T v), HasAxisLines a v) => Lens' a AxisLineType
+-- yAxisLineType = axisLine ey . axisLineType
+-- 
+-- -- | Lens onto z axis line type.
+-- zAxisLineType :: (L.R3 (T v), HasAxisLines a v) => Lens' a AxisLineType
+-- zAxisLineType = axisLine ez . axisLineType
+-- 
+-- xAxisArrowOpts :: (L.R1 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
+-- xAxisArrowOpts = axisLine ex . axisArrowOpts
+-- 
+-- yAxisArrowOpts :: (L.R2 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
+-- yAxisArrowOpts = axisLine ey . axisArrowOpts
+-- 
+-- zAxisArrowOpts :: (L.R3 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
+-- zAxisArrowOpts = axisLines ez . axisArrowOpts
+-- 
+--

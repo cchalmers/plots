@@ -51,11 +51,11 @@ instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v))
           , _scatterGenericPlot = def
           }
 
-instance HasGenericPlot (ScatterPlot b v) b v where
+instance HasGenericPlot (ScatterPlot b v) b where
   genericPlot = scatterGenericPlot
 
 instance (Typeable b, Typeable v, Renderable (Path R2) b, Scalar v ~ Double, HasLinearMap v)
-    => Plotable (ScatterPlot b v) b v where
+    => Plotable (ScatterPlot b v) b where
   plot _ tv l t2 sp = position (zip points (repeat mark))
                <> line
     where
@@ -67,7 +67,7 @@ instance (Typeable b, Typeable v, Renderable (Path R2) b, Scalar v ~ Double, Has
            | otherwise              = mempty
 
 -- | Prism specific to a 'ScatterPlot'.
-_ScatterPlot :: Plotable (ScatterPlot b v) b v => Prism' (Plot b v) (ScatterPlot b v)
+_ScatterPlot :: Plotable (ScatterPlot b v) b => Prism' (Plot b v) (ScatterPlot b v)
 _ScatterPlot = _Plot
 
 

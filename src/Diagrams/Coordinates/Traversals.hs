@@ -31,10 +31,25 @@ import GHC.Generics (Generic1)
 import Data.Semigroup
 import Data.Functor.Rep
 import Data.Distributive
+-- import Diagrams.Core.V
 import Diagrams.Extra ()
 
 -- | A class that provides a corresponding traversable containers for a 
 --   diagarms coordinate.
+-- class (Functor (T (V a)),
+--        Applicative (T (V a)),
+--        Traversable (T (V a)),
+--        Foldable (T (V a)),
+--        FunctorWithIndex (E (T (V a))) (T (V a)),
+--        FoldableWithIndex (E (T (V a))) (T (V a)),
+--        TraversableWithIndex (E (T (V a))) (T (V a)),
+--        Each (T (V a) Double) (T (V a) Double) Double Double,
+--        Distributive (T (V a)),
+--        Representable (T (V a))
+--        ) -- this is real ugly, but it saves uglyness later
+--     => TraversableCoordinate a where
+--   type T a :: * -> *
+--   traversableCoord :: Iso' (V a) (T (V a) Double)
 class (Functor (T v),
        Applicative (T v),
        Traversable (T v),
@@ -49,6 +64,22 @@ class (Functor (T v),
     => TraversableCoordinate v where
   type T v :: * -> *
   traversableCoord :: Iso' v (T v Double)
+-- class (Functor (LinearV v),
+--        Applicative (LinearV v),
+--        Traversable (LinearV v),
+--        Foldable (LinearV v),
+--        FunctorWithIndex (E (LinearV v)) (LinearV v),
+--        FoldableWithIndex (E (LinearV v)) (LinearV v),
+--        TraversableWithIndex (E (LinearV v)) (LinearV v),
+--        Each (LinearV v Double) (LinearV v Double) Double Double,
+--        Distributive (LinearV v),
+--        Representable (LinearV v)
+--        )
+--     => TraversableCoordinate v where
+--   type LinearV v :: * -> *
+--   traversableCoord :: Iso' v (T v Double)
+-- 
+-- type T a = LinearV (V a)
 
 diagramsCoord :: TraversableCoordinate v => Iso' (T v Double) v
 diagramsCoord = from traversableCoord
@@ -62,6 +93,7 @@ instance TraversableCoordinate D.R3 where
   type T D.R3 = L.V3
   traversableCoord = iso (\(D.unr3 -> (x,y,z)) -> L.V3 x y z)
                          (\(L.V3 x y z)        -> x D.^& y D.^& z)
+
 
 type Mat v = T v (T v Double)
 

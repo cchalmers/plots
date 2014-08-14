@@ -139,10 +139,12 @@ data Axis b v = Axis
 
 makeLenses ''Axis
 
+type instance V (Axis b v) = v
+
 axisLine :: E (T v) -> Lens' (Axis b v) AxisLine
 axisLine e = axisLines . el e
 
-instance HasBounds (Axis b v) v where
+instance HasBounds (Axis b v) where
   bounds = axisAxisBounds
 
 -- R2 axis
@@ -165,7 +167,7 @@ instance (Renderable Text b, Renderable (Path R2) b) => Default (Axis b R2) wher
           }
 
 
-renderR2Axis :: (Renderable (Path R2) b, Renderable Text b, Plotable (Plot b R2) b R2)
+renderR2Axis :: (Renderable (Path R2) b, Renderable Text b, Plotable (Plot b R2) b)
   => Axis b R2 -> Diagram b R2
 renderR2Axis a = P2.frame 15
                $ legend
@@ -220,7 +222,7 @@ getAxisLinePos (a,b) aType = case aType of
   RightAxisLine  -> [b]
   NoAxisLine     -> []
 
-renderR3Axis :: (Renderable (Path R2) b, Renderable Text b, Plotable (Plot b R3) b R3)
+renderR3Axis :: (Renderable (Path R2) b, Renderable Text b, Plotable (Plot b R3) b)
   => Axis b R3 -> Diagram b R2
 renderR3Axis a = P2.frame 15
                $ legend

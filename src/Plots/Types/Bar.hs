@@ -37,7 +37,7 @@ type instance V (BarPlot b) = R2
 
 makeLenses ''BarPlot
 
-instance HasGenericPlot (BarPlot b) b R2 where
+instance HasGenericPlot (BarPlot b) b where
   genericPlot = barPlotGeneric
 
 -- instance HasStyle (BarPlot b) where
@@ -78,7 +78,7 @@ instance Renderable (Path R2) b => Default (BarPlot b) where
 -- instance (Typeable b, Renderable (Path R2) b) => Plotable (BarPlot b) b R2 where
 --   plot _r _ t = transform t . drawBarPlot
 
-_BarPlot :: Plotable (BarPlot b) b R2 => Prism' (Plot b R2) (BarPlot b)
+_BarPlot :: Plotable (BarPlot b) b => Prism' (Plot b R2) (BarPlot b)
 _BarPlot = _Plot
 
 
