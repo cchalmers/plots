@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE ConstraintKinds #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots
@@ -100,14 +101,16 @@ module Plots
     -- ** Scatter plot
     -- | Put markers at points. For more options see 'Plots.Types.Scatter'
   -- , addScatterPlot
-  , addScatterPlotable
+  , scatterPlot
   -- , connectedScattered
   , module Plots.Types.Scatter
 
     -- ** Line plot
     -- | Plot simple lines.
   -- , addLinePlot
-  -- , addMultiLinePlot
+  , linePlot
+  , multiLinePlot
+  , linePlotFromPath
   , module Plots.Types.Line
 
     -- ** Function plot
@@ -293,7 +296,7 @@ addPlotable p = axisPlots <>~ [review _Plot p]
 --   f a :: [(Double, Double)]
 --   f a :: Vector (V2 Double)
 --   @@
-addScatterPlotable
+scatterPlot
   :: (PointLike a v,
       Foldable f,
       Default (ScatterPlot b v),
@@ -304,7 +307,34 @@ addScatterPlotable
       Typeable b)
       -- Plotable (ScatterPlot b v) b v)
   => f a -> Axis b v -> Axis b v
-addScatterPlotable = addPlotable . mkScatterPlot
+scatterPlot = addPlotable . mkScatterPlot
+
+-- Line plot
+
+-- Add a line plot from a foldable container of something 'PointLike'. For an R2 Axis this could be
+-- @@
+-- f a :: Vector (Double,Double)
+-- f a :: [P2]
+-- @@
+linePlot
+  :: (PointLike a v, Foldable f, R2Backend b, TraversableCoordinate v, Scalar v ~ Double)
+    => f a -> Axis b v -> Axis b v
+linePlot = addPlotable . mkLinePlotFromVerticies
+
+-- Add a multi-line plot from a foldable container of a foldable container of 
+-- something 'PointLike'. For an R2 Axis this could be
+-- @@
+-- g (f a) :: [Vector (Double,Double)]
+-- g (f a) :: V4 [P2]
+-- @@
+multiLinePlot
+  :: (PointLike a v, Foldable f, Foldable g, R2Backend b, TraversableCoordinate v, Scalar v ~ Double)
+    => g (f a) -> Axis b v -> Axis b v
+multiLinePlot = addPlotable . mkMultiLinePlotFromVerticies
+
+linePlotFromPath :: (Scalar v ~ Double, Plotable (LinePlot b v) b, DiagramsCoordinate v, R2Backend b, TraversableCoordinate v)
+    => Path v -> Axis b v -> Axis b v
+linePlotFromPath = addPlotable . mkLinePlotFromPath
 
 
 -- | Set the aspect ratio of given axis.

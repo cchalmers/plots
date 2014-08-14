@@ -10,8 +10,9 @@
 module Plots.Types.Line
   ( LinePlot
     -- * Constucting Line Plots
-  , linePlotFromVerticies
-  , linePlotFromPath
+  , mkLinePlotFromVerticies
+  , mkLinePlotFromPath
+  , mkMultiLinePlotFromVerticies
 
     -- * Prism
   , _LinePlot
@@ -26,9 +27,10 @@ import Data.Foldable    as F
 import Data.Typeable
 import Diagrams.Prelude
 import Diagrams.LinearMap
-import Diagrams.ThreeD.Types
+-- import Diagrams.ThreeD.Types
 import Diagrams.BoundingBox
 import Diagrams.Coordinates.Isomorphic
+import Diagrams.Coordinates.Traversals
 
 import Plots.Themes
 import Plots.Types
@@ -48,11 +50,11 @@ instance HasGenericPlot (LinePlot b v) b where
 
 
 -- | Empty path.
-instance Renderable (Path R2) b => Default (LinePlot b R2) where
+instance (HasLinearMap v, Applicative (T v), Renderable (Path R2) b) => Default (LinePlot b v) where
   def = LinePlot mempty def
 
-instance Renderable (Path R2) b => Default (LinePlot b R3) where
-  def = LinePlot mempty def
+-- instance Renderable (Path R2) b => Default (LinePlot b R3) where
+--   def = LinePlot mempty def
 
 
 instance (Typeable b, Typeable v, Scalar v ~ Double, Renderable (Path R2) b,
@@ -81,23 +83,23 @@ linePlotGeneric :: Lens' (LinePlot b v) (GenericPlot b v)
 
 -- LinePlotable
 
-linePlotFromVerticies :: (PointLike a v, Foldable f, Default (LinePlot b v))
+mkLinePlotFromVerticies :: (PointLike a v, Foldable f, Default (LinePlot b v))
     => f a -> LinePlot b v
-linePlotFromVerticies a =
+mkLinePlotFromVerticies a =
   def & linePlotPath    .~ fromVertices points
       & plotBoundingBox .~ fromPoints points
     where
       points = a ^.. folded . diaPoint
 
-multiLinePlotFromVerticies :: (PointLike a v, Foldable f, Foldable g, Default (LinePlot b v))
+mkMultiLinePlotFromVerticies :: (PointLike a v, Foldable f, Foldable g, Default (LinePlot b v))
     => f (g a) -> LinePlot b v
-multiLinePlotFromVerticies a = linePlotFromPath p
+mkMultiLinePlotFromVerticies a = mkLinePlotFromPath p
   where p       = foldMap mkPath a
         mkPath as = fromVertices $ as ^.. folded . diaPoint
 
-linePlotFromPath :: (DiagramsCoordinate v, Default (LinePlot b v))
+mkLinePlotFromPath :: (DiagramsCoordinate v, Default (LinePlot b v))
     => Path v -> LinePlot b v
-linePlotFromPath p =
+mkLinePlotFromPath p =
   def & linePlotPath    .~ p
       & plotBoundingBox .~ boundingBox p
 

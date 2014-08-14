@@ -64,22 +64,23 @@ class (Functor (T v),
     => TraversableCoordinate v where
   type T v :: * -> *
   traversableCoord :: Iso' v (T v Double)
--- class (Functor (LinearV v),
---        Applicative (LinearV v),
---        Traversable (LinearV v),
---        Foldable (LinearV v),
---        FunctorWithIndex (E (LinearV v)) (LinearV v),
---        FoldableWithIndex (E (LinearV v)) (LinearV v),
---        TraversableWithIndex (E (LinearV v)) (LinearV v),
---        Each (LinearV v Double) (LinearV v Double) Double Double,
---        Distributive (LinearV v),
---        Representable (LinearV v)
+-- class (Functor (L v),
+--        Applicative (L v),
+--        Traversable (L v),
+--        Foldable (L v),
+--        FunctorWithIndex (E (L v)) (L v),
+--        FoldableWithIndex (E (L v)) (L v),
+--        TraversableWithIndex (E (L v)) (L v),
+--        Each (L v Double) (L v Double) Double Double,
+--        Distributive (L v),
+--        Representable (L v),
+--        v ~ V v
 --        )
 --     => TraversableCoordinate v where
---   type LinearV v :: * -> *
+--   type L v :: * -> *
 --   traversableCoord :: Iso' v (T v Double)
 -- 
--- type T a = LinearV (V a)
+-- type T a = L (V a)
 
 diagramsCoord :: TraversableCoordinate v => Iso' (T v Double) v
 diagramsCoord = from traversableCoord
