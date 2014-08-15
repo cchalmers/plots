@@ -376,18 +376,11 @@ axisOnBasis p bs a tv l t2 e eO = tickLabels <> axLabels <> grid <> ticks <> lin
     ys       = getAxisLinePos (bs ^. el eO) lineType
     lineType = a ^. axisLines . el e . axisLineType
     --
-    pathFromVertices :: (InnerSpace v, OrderedField (Scalar v)) => [Point v] -> Path v
-    pathFromVertices = fromVertices
 
 translationE :: (HasLinearMap v, TraversableCoordinate v)
   => E (T v) -> Double -> Transformation v
 translationE e x = translation (view diagramsCoord $ pure 0 & el e .~ x)
 
-scaleE :: (HasLinearMap v, TraversableCoordinate v)
-  => E (T v) -> Double -> Transformation v
-scaleE e s = fromLinear f f
-  where
-    f = over traversableCoord (el e *~ s) <-> over traversableCoord (el e //~ s)
 
 -- Rules for choosing scales:
 --   - The default is to have each axis the same length:
@@ -456,6 +449,11 @@ vectorScaling :: (HasLinearMap v, TraversableCoordinate v)
 vectorScaling = ifoldMap scaleE
 
 
+scaleE :: (HasLinearMap v, TraversableCoordinate v)
+  => E (T v) -> Double -> Transformation v
+scaleE e s = fromLinear f f
+  where
+    f = (traversableCoord . el e *~ s) <-> (traversableCoord . el e //~ s)
 
 -- messy tempory fix while stuff is getting worked out
 workOutUsedBounds :: (Applicative t, Distributive t)

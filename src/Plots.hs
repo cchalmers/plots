@@ -113,6 +113,12 @@ module Plots
   , linePlotFromPath
   , module Plots.Types.Line
 
+  -- ** Parametric plot
+  , parametricPlot
+
+  -- ** Mesh plot
+  , meshPlot
+
     -- ** Function plot
     -- | Plot a given function.
   -- , addFunctionPlot
@@ -133,7 +139,7 @@ module Plots
 
     -- * Diagrams essentials
   , (#)
-  , Diagram , R2, R3
+  , Diagram, R2, R3
   , SizeSpec2D (..)
   , lc
   , fc
@@ -336,6 +342,20 @@ linePlotFromPath :: (Scalar v ~ Double, Plotable (LinePlot b v) b, DiagramsCoord
     => Path v -> Axis b v -> Axis b v
 linePlotFromPath = addPlotable . mkLinePlotFromPath
 
+-- Parametric plots
+
+parametricPlot
+  :: (PointLike a v, Scalar v ~ Double, Renderable (Path R2) b,
+      Applicative (T v), Typeable b)
+    => (Double -> a) -> Axis b v -> Axis b v
+parametricPlot = addPlotable . mkParametricPlot
+
+-- Mesh plots
+
+meshPlot
+  :: (Renderable (Path R2) b, Typeable b)
+    => (Double -> Double -> Double) -> Axis b R3 -> Axis b R3
+meshPlot = addPlotable . mkMeshPlot
 
 -- | Set the aspect ratio of given axis.
 setAxisRatio :: E (T v) -> Double -> Axis b v -> Axis b v

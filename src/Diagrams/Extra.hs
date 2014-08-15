@@ -264,4 +264,5 @@ equating :: Eq b => (a -> b) -> a -> a -> Bool
 equating = on (==)
 
 
-
+pathFromVertices :: (InnerSpace v, OrderedField (Scalar v)) => [Point v] -> Path v
+pathFromVertices = fromVertices
