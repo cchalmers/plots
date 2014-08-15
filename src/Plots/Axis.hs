@@ -42,7 +42,7 @@ import Plots.Types
 import Diagrams.Coordinates.Traversals
 import Diagrams.Projections
 import Diagrams.ThreeD.Types
-import Linear                          (E, el, ex, ey, ez)
+import Linear                          (E, el, ex, ey, ez, V3 (..))
 
 import Control.Lens.Extras (is)
 
@@ -172,8 +172,8 @@ renderR2Axis :: (Renderable (Path R2) b, Renderable Text b, Plotable (Plot b R2)
 renderR2Axis a = P2.frame 15
                $ legend
               <> plots
-              <> drawAxis ex ey
-              <> drawAxis ey ex
+              <> drawAxis ex ey LowerLabels
+              <> drawAxis ey ex LowerLabels
   where
     plots = foldMap (plot xs tv (a ^. axisLinearMap) t2) (a ^. axisPlots . to applyTheme)
     drawAxis = axisOnBasis origin xs a tv (a ^. axisLinearMap) t2
@@ -227,13 +227,19 @@ renderR3Axis :: (Renderable (Path R2) b, Renderable Text b, Plotable (Plot b R3)
 renderR3Axis a = P2.frame 15
                $ legend
               <> plots
-              <> drawAxis ex ey
-              <> drawAxis ey ex
-              <> drawAxis ez ey
+              <> drawAxis ex ey LowerLabels
+              <> drawAxis ey ex UpperLabels
+              <> drawAxis ez ey LowerLabels
+              <> drawAxis ey ez NoLabels
+              <> drawBackAxis ez ex NoLabels
+              <> drawBackAxis ex ez NoLabels 
   where
     plots = foldMap (plot xs tv (a ^. axisLinearMap) t2) (a ^. axisPlots . to applyTheme)
     drawAxis = axisOnBasis minPoint xs a tv (a ^. axisLinearMap) t2
+    drawBackAxis = axisOnBasis backPoint xs a tv (a ^. axisLinearMap) t2
+
     minPoint = view (from traversablePoint) $ fmap fst xs
+    backPoint = view (from traversablePoint) $ view <$> V3 _1 _2 _1 <*> xs
     --
     (xs, tv, t2) = workOutScale
                  (a ^. axisLinearMap)
@@ -248,6 +254,10 @@ renderR3Axis a = P2.frame 15
     -- TODO: fix this
     applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
 
+data LabelPosition = NoLabels
+                   | LowerLabels
+                   | UpperLabels
+  deriving (Show, Eq, Typeable)
 
 axisOnBasis
   :: forall v t b. (t ~ T v,
@@ -264,13 +274,14 @@ axisOnBasis
   -> Transformation R2 -- transformation to apply to positions of things
   -> E t              -- direction of axis
   -> E t              -- direction normal to axis
+  -> LabelPosition    -- where (if at all) should labels be placed?
   -> Diagram b R2     -- resulting axis
-axisOnBasis p bs a tv l t2 e eO = tickLabels <> axLabels <> grid <> ticks <> line
+axisOnBasis p bs a tv l t2 e eO lp = tickLabels <> axLabels <> grid <> ticks <> line
   where
     tStroke = stroke . transform t2 . lmap l . transform tv
 
     -- axis labels (x,y etc.)
-    axLabels = if null txt
+    axLabels = if null txt || lp == NoLabels
                  then mempty
                  else (axLabelD ^. axisLabelFunction) txt
                          # moveTo p'
@@ -278,7 +289,7 @@ axisOnBasis p bs a tv l t2 e eO = tickLabels <> axLabels <> grid <> ticks <> lin
 
       where
         p' = p # over traversablePoint ((el e .~ x) . (el eO .~ y0))
-               # transform (translationE eO (- labelGap / avgScale t2))
+               # transform (translationE eO (negate' labelGap / avgScale t2))
                # transform tv
                # lmap l
                # transform t2
@@ -291,8 +302,10 @@ axisOnBasis p bs a tv l t2 e eO = tickLabels <> axLabels <> grid <> ticks <> lin
         axLabelD = a ^. axisLabels . el e
 
     -- tick labels
-    tickLabels = foldMap drawLabels (take 1 ys)
-                   # applyStyle (tickLabelsD ^. tickLabelStyle)
+    tickLabels
+      | lp == NoLabels = mempty
+      | otherwise = foldMap drawLabels (take 1 ys)
+                      # applyStyle (tickLabelsD ^. tickLabelStyle)
       where
         tickLabelsD  = a ^. axisTickLabels . el e
         labelFun     = tickLabelsD ^. tickLabelFunction
@@ -302,7 +315,7 @@ axisOnBasis p bs a tv l t2 e eO = tickLabels <> axLabels <> grid <> ticks <> lin
               where
                 p' = over traversablePoint ((el e .~ x) . (el eO .~ y)) p
                        # transform tv
-                       # transform (translationE eO (-8 / avgScale t2))
+                       # transform (translationE eO (negate' 15 / avgScale t2))
                        # lmap l
                        # transform t2
 
@@ -367,15 +380,20 @@ axisOnBasis p bs a tv l t2 e eO = tickLabels <> axLabels <> grid <> ticks <> lin
 
     -- measurements
     b@(x0,x1) = bs ^. el e
-    (y0,y1) = bs ^. el eO
+    yb@(y0,y1) = bs ^. el eO . if lp == UpperLabels
+                              then swapped
+                              else id
     --
     ticksD      = a ^. axisTicks . el e
     majorTickXs = (ticksD ^. majorTicksFun) b
     minorTickXs = (ticksD ^. minorTicksFun) majorTickXs b
     --
-    ys       = getAxisLinePos (bs ^. el eO) lineType
+    ys       = getAxisLinePos yb lineType
     lineType = a ^. axisLines . el e . axisLineType
     --
+    negate' = if lp == UpperLabels
+                then id
+                else negate
 
 translationE :: (HasLinearMap v, TraversableCoordinate v)
   => E (T v) -> Double -> Transformation v

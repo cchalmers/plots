@@ -96,6 +96,7 @@ drawSquare t3 l t2 (view _z -> z, sq)
 
 instance (Typeable b, Renderable (Path R2) b) => Plotable (SurfacePlot b) b where
   plot _ t3 l t2 sp = foldMap (drawSquare t3 l t2) sqs
+                        # lineJoin LineJoinBevel
     where sqs = mkSquares $ calcPoints f 20 bs
           f   = sp ^. surfaceFunction
           bs  = V2 (0,5) (0,5)
