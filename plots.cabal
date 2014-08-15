@@ -26,6 +26,7 @@ Library
                        Plots.Types.Scatter
                        Plots.Types.Function
                        Plots.Types.Bar
+                       Plots.Types.Surface
                        Plots.Axis
                        Plots.Axis.Ticks
                        Plots.Axis.Labels
@@ -70,6 +71,7 @@ Library
                      , distributive
                      , adjunctions
                      , fingertree
+                     , vector
 
   Ghc-options:         -Wall
 

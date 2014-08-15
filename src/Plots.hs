@@ -118,6 +118,7 @@ module Plots
 
   -- ** Mesh plot
   , meshPlot
+  , surfacePlot
 
     -- ** Function plot
     -- | Plot a given function.
@@ -233,6 +234,7 @@ import Plots.Types.Bar
 import Plots.Types.Scatter
 import Plots.Types.Function
 import Plots.Types.Line
+import Plots.Types.Surface
 import Plots.Themes
 
 import Data.Monoid.Recommend
@@ -334,11 +336,14 @@ linePlot = addPlotable . mkLinePlotFromVerticies
 -- g (f a) :: V4 [P2]
 -- @@
 multiLinePlot
-  :: (PointLike a v, Foldable f, Foldable g, R2Backend b, TraversableCoordinate v, Scalar v ~ Double)
+  :: (PointLike a v, Foldable f, Foldable g,
+      R2Backend b, TraversableCoordinate v, Scalar v ~ Double)
     => g (f a) -> Axis b v -> Axis b v
 multiLinePlot = addPlotable . mkMultiLinePlotFromVerticies
 
-linePlotFromPath :: (Scalar v ~ Double, Plotable (LinePlot b v) b, DiagramsCoordinate v, R2Backend b, TraversableCoordinate v)
+linePlotFromPath
+  :: (Scalar v ~ Double, Plotable (LinePlot b v) b, 
+      DiagramsCoordinate v, R2Backend b, TraversableCoordinate v)
     => Path v -> Axis b v -> Axis b v
 linePlotFromPath = addPlotable . mkLinePlotFromPath
 
@@ -357,6 +362,16 @@ meshPlot
     => (Double -> Double -> Double) -> Axis b R3 -> Axis b R3
 meshPlot = addPlotable . mkMeshPlot
 
+
+-- Surface plot
+
+surfacePlot :: (Renderable (Path R2) b, Typeable b)
+    => (Double -> Double -> Double) -> Axis b R3 -> Axis b R3
+surfacePlot = addPlotable . mkSurfacePlot
+
+
+
+
 -- | Set the aspect ratio of given axis.
 setAxisRatio :: E (T v) -> Double -> Axis b v -> Axis b v
 setAxisRatio e = set (axisScaling . el e . aspectRatio) . Commit
@@ -364,7 +379,6 @@ setAxisRatio e = set (axisScaling . el e . aspectRatio) . Commit
 -- | Make each axis have the same unit length.
 equalAxis :: Traversable (T v) => Axis b v -> Axis b v
 equalAxis = axisScaling . traversed . aspectRatio .~ Commit 1
-
 
 -- Themes
 
