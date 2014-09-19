@@ -9,13 +9,12 @@ module Plots.Axis.Labels where
 
 import Control.Lens  hiding (( # ))
 import Data.Default
-import Data.Typeable
-import Text.Printf
+import Data.Data
+
+import Numeric
 
 import Diagrams.Prelude   hiding (view)
 import Diagrams.TwoD.Text
-
-import Diagrams.Coordinates.Traversals
 
 -- data 
 
@@ -30,20 +29,20 @@ data AxisLabelPlacement
    = InsideAxisLabel
    | OutsideAxisLabel
 
-type AxisLabelFunction b = String -> Diagram b R2
+type AxisLabelFunction b n = String -> Diagram b V2 n
 
-data AxisLabel b = AxisLabel
-  { _axisLabelFunction  :: AxisLabelFunction b
+data AxisLabel b n = AxisLabel
+  { _axisLabelFunction  :: AxisLabelFunction b n
   , _axisLabelText      :: String
-  , _axisLabelStyle     :: Style R2
-  , _axisLabelGap       :: Double
+  , _axisLabelStyle     :: Style V2 n
+  , _axisLabelGap       :: n
   , _axisLabelPos       :: AxisLabelPosition
   , _axisLabelPlacement :: AxisLabelPlacement
   }
 
 makeLenses ''AxisLabel
 
-instance Renderable Text b => Default (AxisLabel b) where
+instance (Data n, Floating n, Ord n, Renderable (Text n) b) => Default (AxisLabel b n) where
   def = AxisLabel
           { _axisLabelFunction  = text
           , _axisLabelText      = ""
@@ -53,30 +52,30 @@ instance Renderable Text b => Default (AxisLabel b) where
           , _axisLabelPlacement = OutsideAxisLabel
           }
                      
-type AxisLabels b v = T v (AxisLabel b)
+type AxisLabels b v n = v (AxisLabel b n)
 
 -- Tick labels
 
 -- | Tick labels functions are used to draw the tick labels. They has access to
 --   the major ticks and the current bounds.
-type TickLabelFunction b = [Double] -> (Double,Double) -> [(Double, Diagram b R2)]
+type TickLabelFunction b n = [n] -> (n,n) -> [(n, Diagram b V2 n)]
 
-data TickLabels b = TickLabels
-  { _tickLabelFunction :: TickLabelFunction b
-  , _tickLabelStyle    :: Style R2
+data TickLabels b n = TickLabels
+  { _tickLabelFunction :: TickLabelFunction b n
+  , _tickLabelStyle    :: Style V2 n
   } deriving Typeable
 
 makeLenses ''TickLabels
 
-type AxisTickLabels b v = T v (TickLabels b)
+type AxisTickLabels b v n = v (TickLabels b n)
 
-instance Renderable Text b => Default (TickLabels b) where
+instance (DataFloat n, Renderable (Text n) b) => Default (TickLabels b n) where
   def = TickLabels
           { _tickLabelFunction = atMajorTicks label
           , _tickLabelStyle    = mempty # fontSizeL 9
           }
 
-atMajorTicks :: (Double -> Diagram b R2) -> TickLabelFunction b
+atMajorTicks :: (n -> Diagram b V2 n) -> TickLabelFunction b n
 atMajorTicks f ticks _ = map ((,) <*> f) ticks
 
 -- instance Renderable Text b => Default (TickLabels b) where
@@ -93,11 +92,11 @@ atMajorTicks f ticks _ = map ((,) <*> f) ticks
 --   fx = labelFunctionFromTickFunction (\n -> alignedText 0.5 1 (printf "%.1f" n) # translateY (-7))
 --   fy = labelFunctionFromTickFunction (\n -> alignedText 1 0.5 (printf "%.1f" n) # translateX (-7))
 --
-label :: (Renderable Text b) => Double -> Diagram b R2
-label n = text (printf "%.1f" n)
+label :: (TypeableFloat n, Renderable (Text n) b) => n -> Diagram b V2 n
+label n = text $ showFFloat (Just 2) n ""
 
-leftLabel :: (Renderable Text b) => Double -> Diagram b R2
-leftLabel n = alignedText 1 0.5 (printf "%.1f" n) # translateX (-7)
+leftLabel :: (TypeableFloat n, Renderable (Text n) b) => n -> Diagram b V2 n
+leftLabel n = alignedText 1 0.5 (showFFloat (Just 2) n "") # translateX (-7)
 --
 -- rightLabel :: (Renderable Text b) => Double -> Diagram b R2
 -- rightLabel n = alignedText 0 0.5 (printf "%.1f" n) # translateX 7

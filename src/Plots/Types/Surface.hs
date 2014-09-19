@@ -26,7 +26,6 @@ import Diagrams.Prelude hiding (view)
 import Diagrams.Extra
 import Data.Foldable
 import Diagrams.ThreeD.Types
-import Linear (V2 (..))
 -- import Diagrams.Coordinates.Traversals
 -- import Diagrams.Coordinates.Isomorphic
 
@@ -36,30 +35,33 @@ import Plots.Types
 import qualified Data.Vector as V
 import Data.Vector (Vector, (!))
 
+type T3 = Transformation V3
+
 data SurfaceType = Mesh
                  | Faceted
                  | Flat
 
-data SurfacePlot b = SurfacePlot
-  { _surfaceFunction :: Double -> Double -> Double
-  , _surfaceGenericPlot :: GenericPlot b R3
+data SurfacePlot b n = SurfacePlot
+  { _surfaceFunction :: n -> n -> n
+  , _surfaceGenericPlot :: GenericPlot b V3 n
   } deriving Typeable
 
 makeLenses ''SurfacePlot
 
-type instance V (SurfacePlot b) = R3
+type instance V (SurfacePlot b n) = V3
+type instance N (SurfacePlot b n) = n
 
-instance (Renderable (Path R2) b) => Default (SurfacePlot b) where
+instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (SurfacePlot b n) where
   def = SurfacePlot
           { _surfaceFunction    = \_ _ -> 0
           , _surfaceGenericPlot = def
           }
 
-instance HasGenericPlot (SurfacePlot b) b where
+instance HasGenericPlot (SurfacePlot b n) b where
   genericPlot = surfaceGenericPlot
 
--- could probably do somehting fancy with zippers but keep it simple for now.
-mkSquares :: Vector (Vector P3) -> [(P3, Path R3)]
+-- could probably do something fancy with zippers but keep it simple for now.
+mkSquares :: OrderedField n => Vector (Vector (P3 n)) -> [(P3 n, Path V3 n)]
 mkSquares v = do
   let i = V.length v
       j = V.length $ V.head v
@@ -74,10 +76,10 @@ mkSquares v = do
 
   pure (centroid ps, closePath $ pathFromVertices ps)
 
-closePath :: Path v -> Path v
+closePath :: Path v n -> Path v n
 closePath = over (_Wrapped' . mapped . located) closeTrail
 
-calcPoints :: (Double -> Double -> Double) -> Int -> V2 (Double, Double) -> Vector (Vector P3)
+calcPoints :: (Fractional n, Enum n) => (n -> n -> n) -> Int -> V2 (n, n) -> Vector (Vector (P3 n))
 calcPoints f n (V2 (xa,xb) (ya,yb)) = V.fromList $ map ylines ys
   where
     ylines y = V.fromList [ mkP3 x y (f x y) | x <- xs ]
@@ -85,23 +87,23 @@ calcPoints f n (V2 (xa,xb) (ya,yb)) = V.fromList $ map ylines ys
     xs = [xa, xa + (xb - xa) / fromIntegral n .. xb]
     ys = [ya, ya + (xb - xa) / fromIntegral n .. yb]
 
-drawSquare :: Renderable (Path R2) b
-    => T3 -> (R3 :-* R2) -> T2 -> (P3, Path R3) -> Diagram b R2
-drawSquare t3 l t2 (view _z -> z, sq)
+drawSquare :: (TypeableFloat n, Renderable (Path V2 n) b)
+    => T3 n -> (V3 n -> V2 n) -> T2 n -> (P3 n, Path V3 n) -> Diagram b V2 n
+drawSquare t3 l t2 (fromRational . toRational . view _z -> z, sq)
   = sq # transform t3
        # lmap l
        # transform t2
        # stroke
        # fc (blend z grey red)
 
-instance (Typeable b, Renderable (Path R2) b) => Plotable (SurfacePlot b) b where
+instance (TypeableFloat n, Enum n, Typeable b, Renderable (Path V2 n) b) => Plotable (SurfacePlot b n) b where
   plot _ t3 l t2 sp = foldMap (drawSquare t3 l t2) sqs
                         # lineJoin LineJoinBevel
     where sqs = mkSquares $ calcPoints f 20 bs
           f   = sp ^. surfaceFunction
           bs  = V2 (0,5) (0,5)
 
-mkSurfacePlot :: Renderable (Path R2) b
-  => (Double -> Double -> Double) -> SurfacePlot b
+mkSurfacePlot :: (TypeableFloat n, Renderable (Path V2 n) b)
+  => (n -> n -> n) -> SurfacePlot b n
 mkSurfacePlot f = def & surfaceFunction .~ f
 

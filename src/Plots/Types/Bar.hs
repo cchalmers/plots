@@ -25,19 +25,20 @@ import Diagrams.Prelude
 -- import Plots.Themes
 import Plots.Types
 
-data BarPlot b = BarPlot
-  { _barPlotBars     :: [[Double]]
-  , _barPlotWidth    :: Double
-  , _barPlotSpacing  :: Double
-  -- , _barPlotInterval :: Double
-  , _barPlotGeneric  :: GenericPlot b R2
+data BarPlot b n = BarPlot
+  { _barPlotBars     :: [[n]]
+  , _barPlotWidth    :: n
+  , _barPlotSpacing  :: n
+  -- , _barPlotInterval :: n
+  , _barPlotGeneric  :: GenericPlot b V2 n
   } deriving Typeable
 
-type instance V (BarPlot b) = R2
+type instance V (BarPlot b n) = V2
+type instance N (BarPlot b n) = n
 
 makeLenses ''BarPlot
 
-instance HasGenericPlot (BarPlot b) b where
+instance HasGenericPlot (BarPlot b n) b where
   genericPlot = barPlotGeneric
 
 -- instance HasStyle (BarPlot b) where
@@ -45,7 +46,7 @@ instance HasGenericPlot (BarPlot b) b where
 --                  . over (genericPlot . themeMarkerStyle) (applyStyle sty)
 --                  . over (genericPlot . themeFillStyle)   (applyStyle sty)
 
-instance Renderable (Path R2) b => Default (BarPlot b) where
+instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (BarPlot b n) where
   def = BarPlot
           { _barPlotBars     = []
           , _barPlotWidth    = 0.9
@@ -78,7 +79,7 @@ instance Renderable (Path R2) b => Default (BarPlot b) where
 -- instance (Typeable b, Renderable (Path R2) b) => Plotable (BarPlot b) b R2 where
 --   plot _r _ t = transform t . drawBarPlot
 
-_BarPlot :: Plotable (BarPlot b) b => Prism' (Plot b R2) (BarPlot b)
+_BarPlot :: Plotable (BarPlot b n) b => Prism' (Plot b V2 n) (BarPlot b n)
 _BarPlot = _Plot
 
 

@@ -1,4 +1,3 @@
-{-# LANGUAGE ViewPatterns #-}
 
 module Diagrams.Projections where
 
@@ -17,9 +16,8 @@ module Diagrams.Projections where
 -----------------------------------------------------------------------------
 
 import Diagrams.Prelude hiding (view)
-import qualified Diagrams.Prelude.ThreeD as ThreeD
-import Diagrams.ThreeD.Types
 import Control.Lens hiding (transform)
+import Diagrams.ThreeD
 
 -- * Parallel projections
 
@@ -31,19 +29,22 @@ import Control.Lens hiding (transform)
 -- these are supplied as lenses.
 
 -- | Orthographic projection onto the x-plane.
-yz_ :: Lens' R3 R2
-yz_ = lens (\(unr3 -> (_,y,z)) -> r2 (y,z))
-           (\(unr3 -> (x,_,_)) (unr2 -> (y,z)) -> r3 (x,y,z))
+yz_ :: Lens' (V3 n) (V2 n)
+yz_ = lens (\(V3 _ y z)          -> V2 y z)
+           (\(V3 x _ _) (V2 y z) -> V3 x y z)
+{-# INLINE yz_ #-}
 
 -- | Orthographic projection onto the z-plane.
-xy_ :: Lens' R3 R2
-xy_ = lens (\(unr3 -> (x,y,_)) -> r2 (x,y))
-           (\(unr3 -> (_,_,z)) (unr2 -> (x,y)) -> r3 (x,y,z))
+xy_ :: Lens' (V3 n) (V2 n)
+xy_ = lens (\(V3 x y _)          -> V2 x y)
+           (\(V3 _ _ z) (V2 x y) -> V3 x y z)
+{-# INLINE xy_ #-}
 
 -- | Orthographic projection onto the y-plane.
-xz_ :: Lens' R3 R2
-xz_ = lens (\(unr3 -> (x,_,z)) -> r2 (x,z))
-           (\(unr3 -> (_,y,_)) (unr2 -> (x,z)) -> r3 (x,y,z))
+xz_ :: Lens' (V3 n) (V2 n)
+xz_ = lens (\(V3 x _ z)          -> V2 x z)
+           (\(V3 _ y _) (V2 x z) -> V3 x y z)
+{-# INLINE xz_ #-}
 
 -- ** Axonometric projection
 -- Axonometric projections are a type of orthographic projection where the 
@@ -52,9 +53,9 @@ xz_ = lens (\(unr3 -> (x,_,z)) -> r2 (x,z))
 
 -- *** Common axonometric projections
    
-isometricProjection :: R3 -> R2
+isometricProjection :: Floating n => V3 n -> V2 n
 isometricProjection v = view yz_ v'
   where
     v' = transform t v
-    t  = ThreeD.aboutY (45@@deg) <> ThreeD.aboutZ (asinA (tan (pi/6)))
+    t  = aboutY (45@@deg) <> aboutZ (asinA (tan (pi/6)))
 

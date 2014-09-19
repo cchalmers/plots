@@ -32,13 +32,13 @@
 
 module Diagrams.LinearMap
   ( -- * Linear map
-    (:-*)
-  , linear
-  , lapply
+  --   (:-*)
+  -- , linear
+  -- , lapply
 
     -- * LinearMap-able class
-  , LinearMappable (..)
-  , asLinearMap
+    LinearMappable (..)
+  -- , asLinearMap
   -- , extractYZ
   ) where
 
@@ -48,27 +48,25 @@ import Control.Lens     hiding (at, transform, lmap)
 -- import Data.MemoTrie
 -- import Data.Monoid      hiding ((<>))
 -- import Data.Semigroup
-import Data.VectorSpace
 -- import Data.Typeable
 
 import Diagrams.Core
-import Diagrams.Core.Transform
 import Diagrams.Located
 -- import Diagrams.Parametric
 import Diagrams.Path
 import Diagrams.Segment
 import Diagrams.Trail
 import Diagrams.TwoD
-import Diagrams.Coordinates
 import Diagrams.ThreeD.Types
-
-import qualified Diagrams.Prelude as D
-import qualified Diagrams.Prelude.ThreeD as T
-import Data.LinearMap
-import Diagrams.Extra ()
 
 import qualified Data.FingerTree     as FT
 
+import Linear.Affine
+import Diagrams.Prelude
+
+offsetVector :: Traversal (Offset c v n) (Offset c v' n') (v n) (v' n')
+offsetVector f (OffsetClosed v) = OffsetClosed <$> f v
+offsetVector _ OffsetOpen       = pure OffsetOpen
 
 ------------------------------------------------------------
 -- Deformations
@@ -76,7 +74,7 @@ import qualified Data.FingerTree     as FT
 class LinearMappable u v where
 
   -- | Apply a linear map to something @LinearMappable@.
-  lmap  :: (V u :-* V v) -> u -> v
+  lmap  :: (N u ~ n, N v ~ n) => (Vn u -> Vn v) -> u -> v
 -- #ifdef HLINT
 --   default lmap :: (Scalar u ~ Scalar v, HasLinearMap u, HasLinearMap v)
 --                => (u :-* v) -> u -> v
@@ -86,18 +84,18 @@ class LinearMappable u v where
 -- | @asLinearMap@ converts a 'Transformation' to a linear map by
 -- discarding the inverse transform.  This allows reusing
 -- @Transformation@s in the construction of @Transfiguration@s.
-asLinearMap :: HasLinearMap v => Transformation v -> v :-* v
-asLinearMap = linear . apply
+-- asLinearMap :: HasLinearMap v => Transformation v -> v :-* v
+-- asLinearMap = apply
 
 ------------------------------------------------------------
 -- Instances
 
 -- stuff
 
-instance LinearMappable R2 R2 where lmap = lapply
-instance LinearMappable R2 R3 where lmap = lapply
-instance LinearMappable R3 R2 where lmap = lapply
-instance LinearMappable R3 R3 where lmap = lapply
+instance LinearMappable (V2 n) (V2 n) where lmap = id
+instance LinearMappable (V2 n) (V3 n) where lmap = id
+instance LinearMappable (V3 n) (V2 n) where lmap = id
+instance LinearMappable (V3 n) (V3 n) where lmap = id
 
 -- containers
 
@@ -106,60 +104,54 @@ instance LinearMappable u v => LinearMappable [u] [v] where
 
 -- Points
 
-instance (Scalar u ~ Scalar v, HasLinearMap u, HasLinearMap v)
-  => LinearMappable (Point u) (Point v) where
-  lmap l = over _Wrapped (lapply l)
+instance (HasLinearMap u, HasLinearMap v)
+  => LinearMappable (Point u n) (Point v n) where
+  lmap f (P v) = P $ f v
 
 -- paths and path-like things
 
-instance (Scalar u ~ Scalar v, HasLinearMap u, HasLinearMap v)
-  => LinearMappable (FixedSegment u) (FixedSegment v) where
+instance (HasLinearMap u, HasLinearMap v)
+  => LinearMappable (FixedSegment u n) (FixedSegment v n) where
   lmap l s = case s of
     FLinear p0 p1      -> FLinear (f p0) (f p1)
     FCubic p0 c1 c2 p1 -> FCubic (f p0) (f c1) (f c2) (f p1)
     where f = lmap l
 
-instance (LinearMappable u v, V v ~ v, V u ~ u, Scalar u ~ Scalar v, 
-          HasLinearMap u, HasLinearMap v)
-  => LinearMappable (Offset c u) (Offset c v) where
-  lmap = fmap . lmap
+instance (LinearMappable (u n) (v n), HasLinearMap u, HasLinearMap v)
+  => LinearMappable (Offset c u n) (Offset c v n) where
+  lmap = over offsetVector
 
-instance (Scalar v ~ Scalar u, HasLinearMap v, HasLinearMap u)
-  => LinearMappable (Segment c v) (Segment c u) where
-  lmap = fmap . lapply
+instance (HasLinearMap v, HasLinearMap u)
+  => LinearMappable (Segment c v n) (Segment c u n) where
+  lmap = mapSegmentVectors
 
-instance (HasLinearMap (V a), InnerSpace (V a), OrderedField (Scalar (V a)),
-          FT.Measured m a, LinearMappable a b, FT.Measured m b)
+instance (HasLinearMap (V a), Metric (V a), OrderedField (N a), FT.Measured m a, LinearMappable a b, FT.Measured m b)
   => LinearMappable (FT.FingerTree m a) (FT.FingerTree m b) where
   lmap = FT.fmap' . lmap
 
-instance (Scalar a ~ Scalar b, OrderedField (Scalar a),
-          HasLinearMap a, InnerSpace a,
-          HasLinearMap b, InnerSpace b)
-  => LinearMappable (SegTree a) (SegTree b) where
+instance (OrderedField n, HasLinearMap a, Metric a, HasLinearMap b, Metric b)
+  => LinearMappable (SegTree a n) (SegTree b n) where
   lmap l = over _Wrapped (FT.fmap' . lmap $ l)
 
-instance (HasLinearMap v, InnerSpace v, OrderedField (Scalar v),
-          HasLinearMap u, InnerSpace u, Scalar v ~ Scalar u)
-    => LinearMappable (Trail' l v) (Trail' l u) where
+instance (OrderedField n, HasLinearMap v, Metric v, HasLinearMap u, Metric u)
+    => LinearMappable (Trail' l v n) (Trail' l u n) where
   lmap l (Line t  ) = Line (lmap l t)
   lmap l (Loop t s) = Loop (lmap l t) (lmap l s)
 
-instance (Scalar (V a) ~ Scalar (V b), LinearMappable a b, HasLinearMap (V a),
-          HasLinearMap (V b))
+instance (N a ~ N b, LinearMappable a b, HasLinearMap (V a), HasLinearMap (V b))
   => LinearMappable (Located a) (Located b) where
   lmap l (viewLoc -> (p, a)) = lmap l a `at` lmap l p
 
-instance (HasLinearMap v, InnerSpace v, OrderedField (Scalar v),
-          HasLinearMap u, InnerSpace u, Scalar v ~ Scalar u)
-    => LinearMappable (Trail v) (Trail u) where
+instance (HasLinearMap v, Metric v, OrderedField n,
+          HasLinearMap u, Metric u)
+    => LinearMappable (Trail v n) (Trail u n) where
   lmap l = onTrail' (lmap l) (lmap l)
     where
       onTrail' o c = withTrail (wrapLine . o) (wrapLoop . c)
 
-instance (HasLinearMap v, InnerSpace v, OrderedField (Scalar v),
-          HasLinearMap u, InnerSpace u, Scalar v ~ Scalar u)
-    => LinearMappable (Path v) (Path u) where
+instance (HasLinearMap v, Metric v, OrderedField n,
+          HasLinearMap u, Metric u)
+    => LinearMappable (Path v n) (Path u n) where
   lmap l = over _Wrapped (lmap l)
     
 
@@ -171,37 +163,37 @@ instance (HasLinearMap v, InnerSpace v, OrderedField (Scalar v),
 
 -- linear mappings on linear maps
 
-type instance V (u :-: u) = u
-type instance V (u :-* u) = u
+-- type instance V (u :-: u) = u
+-- type instance V (u :-* u) = u
 
-instance LinearMappable (T.R3 :-* T.R3) (R2 :-* R2) where
-  lmap l l3 = linear f
-    where
-      f (D.unr2 -> (y,z)) = lapply l $ lapply l3 (T.r3 (0, y, z))
-
-  
--- I'm not sure if it makes sense to apply a linear map to an automorphism.
-instance (Scalar u ~ Double, HasLinearMap u, LinearMappable (u :-* u) (R2 :-* R2))
-  => LinearMappable (u :-: u) (R2 :-: R2) where
-  lmap l (a :-: _) = withInvertedR2 (lmap l a)
-
-withInvertedR2 :: (R2 :-* R2) -> R2 :-: R2
-withInvertedR2 l = l :-: l'
-  where
-    l' = if det < 1e-8
-           then error "non-invertible transform"
-           else recip det *^ linear lInv
-    det = a*d - b*c
-    lInv (unr2 -> (x,y)) = (d*x - b*y) ^& (-c*x + a*y)
-    (a,b) = unr2 $ lapply l unitX
-    (c,d) = unr2 $ lapply l unitY
-
-
-instance (u ~ V u, Scalar u ~ Double, HasLinearMap u,
-          LinearMappable (u :-: u) (R2 :-: R2))
-  => LinearMappable (Transformation u) T2 where
-  lmap l (Transformation a aT v) =
-    Transformation (lmap l a) (lmap l aT) (lapply l v)
+-- instance LinearMappable (T.R3 :-* T.R3) (R2 :-* R2) where
+--   lmap l l3 = linear f
+--     where
+--       f (D.unr2 -> (y,z)) = lapply l $ lapply l3 (T.r3 (0, y, z))
+-- 
+--   
+-- -- I'm not sure if it makes sense to apply a linear map to an automorphism.
+-- instance (Scalar u ~ Double, HasLinearMap u, LinearMappable (u :-* u) (R2 :-* R2))
+--   => LinearMappable (u :-: u) (R2 :-: R2) where
+--   lmap l (a :-: _) = withInvertedR2 (lmap l a)
+-- 
+-- withInvertedR2 :: (R2 :-* R2) -> R2 :-: R2
+-- withInvertedR2 l = l :-: l'
+--   where
+--     l' = if det < 1e-8
+--            then error "non-invertible transform"
+--            else recip det *^ linear lInv
+--     det = a*d - b*c
+--     lInv (unr2 -> (x,y)) = (d*x - b*y) ^& (-c*x + a*y)
+--     (a,b) = unr2 $ lapply l unitX
+--     (c,d) = unr2 $ lapply l unitY
+-- 
+-- 
+-- instance (u ~ V u, Scalar u ~ Double, HasLinearMap u,
+--           LinearMappable (u :-: u) (R2 :-: R2))
+--   => LinearMappable (Transformation u) T2 where
+--   lmap l (Transformation a aT v) =
+--     Transformation (lmap l a) (lmap l aT) (lapply l v)
 
 
 

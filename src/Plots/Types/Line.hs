@@ -29,37 +29,40 @@ import Diagrams.Prelude
 import Diagrams.LinearMap
 -- import Diagrams.ThreeD.Types
 import Diagrams.BoundingBox
+
 import Diagrams.Coordinates.Isomorphic
-import Diagrams.Coordinates.Traversals
 
 import Plots.Themes
 import Plots.Types
 
+import Diagrams.Core.Transform
+
 -- | Plottable data describing how to draw a line plot.
-data LinePlot b v = LinePlot
-  { _linePlotPath    :: Path v
-  , _linePlotGeneric :: GenericPlot b v
+data LinePlot b v n = LinePlot
+  { _linePlotPath    :: Path v n
+  , _linePlotGeneric :: GenericPlot b v n
   } deriving Typeable
 
 makeLensesWith (lensRules & generateSignatures .~ False) ''LinePlot
 
-type instance V (LinePlot b v) = v
+type instance V (LinePlot b v n) = v
+type instance N (LinePlot b v n) = n
 
-instance HasGenericPlot (LinePlot b v) b where
+instance HasGenericPlot (LinePlot b v n) b where
   genericPlot = linePlotGeneric
 
 
 -- | Empty path.
-instance (HasLinearMap v, Applicative (T v), Renderable (Path R2) b) => Default (LinePlot b v) where
+instance (HasLinearMap v, TypeableFloat n, Renderable (Path V2 n) b) => Default (LinePlot b v n) where
   def = LinePlot mempty def
 
 -- instance Renderable (Path R2) b => Default (LinePlot b R3) where
 --   def = LinePlot mempty def
 
 
-instance (Typeable b, Typeable v, Scalar v ~ Double, Renderable (Path R2) b,
-          HasLinearMap v, InnerSpace v)
-       => Plotable (LinePlot b v) b where
+instance (OrderedField n, TypeableFloat n, Typeable b, Typeable v, Renderable (Path V2 n) b,
+          HasLinearMap v, Metric v)
+       => Plotable (LinePlot b v n) b where
   plot _ tv l t2 lp = lp ^.linePlotPath
                    & transform tv
                    & lmap l
@@ -67,38 +70,40 @@ instance (Typeable b, Typeable v, Scalar v ~ Double, Renderable (Path R2) b,
                    & stroke
                    & applyStyle (lp ^. themeLineStyle)
 
+  defLegendPic a = (p2 (-10,0) ~~ p2 (10,0)) # applyStyle (a ^. themeLineStyle)
+
+
 -- | Prism onto the @Plot@ wrapper. Wrap a line plot in a plot by
 --
 -- @@
 -- review _LinePlot myLinePlot
 -- @@
-_LinePlot :: Plotable (LinePlot b v) b => Prism' (Plot b v) (LinePlot b v)
+_LinePlot :: Plotable (LinePlot b v n) b => Prism' (Plot b v n) (LinePlot b v n)
 _LinePlot = _Plot
 
 -- | Lens onto the path the line plot will draw. In most cases it's best to use
 --   mkLinePlot.
-linePlotPath :: Lens' (LinePlot b v) (Path v)
+linePlotPath :: Lens' (LinePlot b v n) (Path v n)
 
-linePlotGeneric :: Lens' (LinePlot b v) (GenericPlot b v)
+linePlotGeneric :: Lens' (LinePlot b v n) (GenericPlot b v n)
 
 -- LinePlotable
 
-mkLinePlotFromVerticies :: (PointLike a v, Foldable f, Default (LinePlot b v))
-    => f a -> LinePlot b v
+mkLinePlotFromVerticies :: (PointLike v n a, OrderedField n, Metric v, Foldable f, Default (LinePlot b v n))
+    => f a -> LinePlot b v n
 mkLinePlotFromVerticies a =
   def & linePlotPath    .~ fromVertices points
       & plotBoundingBox .~ fromPoints points
     where
-      points = a ^.. folded . diaPoint
+      points = a ^.. folded . re pointLike
 
-mkMultiLinePlotFromVerticies :: (PointLike a v, Foldable f, Foldable g, Default (LinePlot b v))
-    => f (g a) -> LinePlot b v
+mkMultiLinePlotFromVerticies :: (PointLike v n a, TypeableFloat n, HasLinearMap v, Metric v, Foldable f, Foldable g, Renderable (Path V2 n) b)
+    => f (g a) -> LinePlot b v n
 mkMultiLinePlotFromVerticies a = mkLinePlotFromPath p
-  where p       = foldMap mkPath a
-        mkPath as = fromVertices $ as ^.. folded . diaPoint
+  where p         = foldMap mkPath a
+        mkPath as = fromVertices $ as ^.. folded . re pointLike
 
-mkLinePlotFromPath :: (DiagramsCoordinate v, Default (LinePlot b v))
-    => Path v -> LinePlot b v
+mkLinePlotFromPath :: (HasBasis v, Metric v, HasLinearMap v, OrderedField n, Default (LinePlot b v n)) => Path v n -> LinePlot b v n
 mkLinePlotFromPath p =
   def & linePlotPath    .~ p
       & plotBoundingBox .~ boundingBox p

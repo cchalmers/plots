@@ -1,31 +1,28 @@
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE TypeFamilies       #-}
 module Plots.Axis.Grid where
 
 import Control.Lens hiding ((#))
-import Data.Typeable
+import Data.Data
 import Data.Default
 
 import Diagrams.Prelude
 
-import Diagrams.Coordinates.Traversals
 
+type GridLinesFunction n = [n] -> (n, n) -> [n]
 
-type GridLinesFunction = [Double] -> (Double, Double) -> [Double]
-
-data GridLines = GridLines
-  { _majorGridF     :: GridLinesFunction
-  , _minorGridF     :: GridLinesFunction
-  , _majorGridStyle :: Style R2
-  , _minorGridStyle :: Style R2
+data GridLines n = GridLines
+  { _majorGridF     :: GridLinesFunction n
+  , _minorGridF     :: GridLinesFunction n
+  , _majorGridStyle :: Style V2 n
+  , _minorGridStyle :: Style V2 n
   } deriving Typeable
 
 makeLenses ''GridLines
 
-type AxisGridLines v = T v GridLines
+type AxisGridLines v n = v (GridLines n)
 
-instance Default GridLines where
+instance (Data n, Floating n) => Default (GridLines n) where
   def = GridLines
           { _majorGridF    = tickGridF
           , _minorGridF    = noGridF
@@ -33,9 +30,9 @@ instance Default GridLines where
           , _minorGridStyle = mempty # lwO 0.1
           }
 
-tickGridF :: GridLinesFunction
+tickGridF :: GridLinesFunction n
 tickGridF = const
 
-noGridF :: GridLinesFunction
+noGridF :: GridLinesFunction n
 noGridF _ = const []
 

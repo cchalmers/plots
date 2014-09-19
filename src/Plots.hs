@@ -72,10 +72,9 @@
 module Plots
   ( -- * Axis
     Axis
+  , renderAxis
   , r2Axis
-  , renderR2Axis
   , r3Axis
-  , renderR3Axis
   -- , logAxis
   -- , module Plots.Axis
 
@@ -89,7 +88,7 @@ module Plots
     --   type signatures to input data.
     -- 
     -- @
-    -- mydata :: [(Double,Double)]
+    -- mydata :: [(n,n)]
     -- mydata = [(2,3), (2.3, 4.5), (3.1, 2.5), (3.8, 3.2)]
     -- @
 
@@ -131,6 +130,8 @@ module Plots
   -- , barPlotAxis
   , module Plots.Types.Bar
 
+    -- * Legend
+  , addLegend
 
     -- * Themes
   , setTheme
@@ -140,7 +141,7 @@ module Plots
 
     -- * Diagrams essentials
   , (#)
-  , Diagram, R2, R3
+  , Diagram, V2, V3
   , SizeSpec2D (..)
   , lc
   , fc
@@ -148,7 +149,7 @@ module Plots
     -- * Optics
     -- ** Basis elements
     -- | These basis elements can be used to select a specific coordinate axis. 
-    --   These can be used henever a function has a @E (T v)@ argument.
+    --   These can be used henever a function has a @E v@ argument.
   , E (..), ex, ey, ez
 
     -- ** Common functions
@@ -221,13 +222,18 @@ module Plots
   , (%=), modify
   ) where
 
-import Diagrams.Prelude2
+import Control.Lens hiding (( # ))
+import Diagrams.Prelude hiding (view)
+import Diagrams.TwoD.Text
+import Data.Typeable
+import Data.Default
 
 import Plots.Types
 
 import Plots.Axis.Labels
 import Plots.Axis.Ticks
 import Plots.Axis.Grid
+import Plots.Axis.Render
 import Plots.Axis
 
 import Plots.Types.Bar
@@ -237,30 +243,34 @@ import Plots.Types.Line
 import Plots.Types.Surface
 import Plots.Themes
 
+import Linear.V3
+
 import Data.Monoid.Recommend
 
 import Control.Monad.State.Lazy
+import Data.Foldable
 
 import Diagrams.Coordinates.Isomorphic
 
+type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, DataFloat n, Enum n)
 
 
 
 -- | Standard 2D axis.
-r2Axis :: (Renderable (Path R2) b, Renderable Text b) => Axis b R2
+r2Axis :: R2Backend b n => Axis b V2 n
 r2Axis = def
 
 -- | Standard 2D axis.
-r3Axis :: (Renderable (Path R2) b, Renderable Text b) => Axis b R3
+r3Axis :: R2Backend b n => Axis b V3 n
 r3Axis = def
 
 
 -- Axis labels
 
 -- | Label coördinate axes with x, y or x, y, z.
-cartesianLabels :: Traversable (T v) => Axis b v -> Axis b v
+cartesianLabels :: Traversable v => Axis b v n -> Axis b v n
 cartesianLabels = partsOf (axisLabels . traversed . axisLabelText)
-               .~ ["x", "y", "z"]
+                    .~ ["x", "y", "z"]
 
 -- | Set the label for the given axis.
 -- @
@@ -268,164 +278,160 @@ cartesianLabels = partsOf (axisLabels . traversed . axisLabelText)
 --        = 'r2Axis' & 'axisLabel' 'ex' .~ "x-axis"
 --        = 'r2Axis' &~ 'axisLabel' 'ex' .= "x-axis"
 -- @
-axisLabel :: E (T v) -> Lens' (Axis b v) String
+axisLabel :: E v -> Lens' (Axis b v n) String
 axisLabel (E e) = axisLabels . e . axisLabelText
 
 -- | Set the position of the given axis label.
-axisLabelPosition :: E (T v) -> Lens' (Axis b v) AxisLabelPosition
+axisLabelPosition :: E v -> Lens' (Axis b v n) AxisLabelPosition
 axisLabelPosition (E e) = axisLabels . e . axisLabelPos
 
 -- | Set the position of all axes labels.
-axesLabelPositions :: Traversable (T v) =>
-  Traversal' (Axis b v) AxisLabelPosition
+axesLabelPositions :: Traversable v =>
+  Traversal' (Axis b v n) AxisLabelPosition
 axesLabelPositions = axisLabels . traversed . axisLabelPos
 
 -- | Set the gap between the axis and the axis label.
-setAxisLabelGap :: E (T v) -> Lens' (Axis b v) Double
+setAxisLabelGap :: E v -> Lens' (Axis b v n) n
 setAxisLabelGap (E e) = axisLabels . e . axisLabelGap
 
 -- | Set the gaps between all axes and the axis labels.
-setAxesLabelGaps :: Traversable (T v) => Traversal' (Axis b v) Double
+setAxesLabelGaps :: Traversable v => Traversal' (Axis b v n) n
 setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 
 -- | Add something 'Plotable' to an 'Axis'.
 -- @
 -- myaxis = r2Axis # addPlotable (mkScatterPlot mydata)
 -- @
-addPlotable :: Plotable a b => a -> Axis b (V a) -> Axis b (V a)
+addPlotable :: Plotable a b => a -> Axis b (V a) (N a) -> Axis b (V a) (N a)
 addPlotable p = axisPlots <>~ [review _Plot p]
 
 -- Scatter plot
 
 -- | Add a scatter plot from a foldable container of something 
---   'PointLike' (i.e. (P2, (Double, Double))). So for PointLike a R2 we could 
+--   'PointLike' (i.e. (P2, (n, n))). So for PointLike a V2 n we could 
 --   have
 --   @@
---   f a :: [(Double, Double)]
---   f a :: Vector (V2 Double)
+--   f a :: [(n, n)]
+--   f a :: Vector (V2 n)
 --   @@
 scatterPlot
-  :: (PointLike a v,
+  :: (PointLike v n a,
       Foldable f,
-      Default (ScatterPlot b v),
-
-      -- HasGenericPlot a b v,
-      Scalar v ~ Double,
-      Renderable (Path R2) b,
-      Typeable b)
-      -- Plotable (ScatterPlot b v) b v)
-  => f a -> Axis b v -> Axis b v
+      Default (ScatterPlot b v n),
+      R2Backend b n)
+      
+      -- Plotable (ScatterPlot b v n) b v n)
+  => f a -> Axis b v n -> Axis b v n
 scatterPlot = addPlotable . mkScatterPlot
 
 -- Line plot
 
--- Add a line plot from a foldable container of something 'PointLike'. For an R2 Axis this could be
+-- Add a line plot from a foldable container of something 'PointLike'. For an V2 n Axis this could be
 -- @@
--- f a :: Vector (Double,Double)
+-- f a :: Vector (n,n)
 -- f a :: [P2]
 -- @@
 linePlot
-  :: (PointLike a v, Foldable f, R2Backend b, TraversableCoordinate v, Scalar v ~ Double)
-    => f a -> Axis b v -> Axis b v
+  :: (PointLike v n a, R2Backend b n, Foldable f)
+    => f a -> Axis b v n -> Axis b v n
 linePlot = addPlotable . mkLinePlotFromVerticies
 
 -- Add a multi-line plot from a foldable container of a foldable container of 
--- something 'PointLike'. For an R2 Axis this could be
+-- something 'PointLike'. For an V2 n Axis this could be
 -- @@
--- g (f a) :: [Vector (Double,Double)]
+-- g (f a) :: [Vector (n,n)]
 -- g (f a) :: V4 [P2]
 -- @@
 multiLinePlot
-  :: (PointLike a v, Foldable f, Foldable g,
-      R2Backend b, TraversableCoordinate v, Scalar v ~ Double)
-    => g (f a) -> Axis b v -> Axis b v
+  :: (PointLike v n a, R2Backend b n, Foldable f, Foldable g)
+    => g (f a) -> Axis b v n -> Axis b v n
 multiLinePlot = addPlotable . mkMultiLinePlotFromVerticies
 
 linePlotFromPath
-  :: (Scalar v ~ Double, Plotable (LinePlot b v) b, 
-      DiagramsCoordinate v, R2Backend b, TraversableCoordinate v)
-    => Path v -> Axis b v -> Axis b v
+  :: (Plotable (LinePlot b v n) b, R2Backend b n, Euclidean v)
+    => Path v n -> Axis b v n -> Axis b v n
 linePlotFromPath = addPlotable . mkLinePlotFromPath
 
 -- Parametric plots
 
 parametricPlot
-  :: (PointLike a v, Scalar v ~ Double, Renderable (Path R2) b,
-      Applicative (T v), Typeable b)
-    => (Double -> a) -> Axis b v -> Axis b v
+  :: (PointLike v n a, R2Backend b n, Applicative v, Metric v, Typeable v)
+    => (n -> a) -> Axis b v n -> Axis b v n
 parametricPlot = addPlotable . mkParametricPlot
 
 -- Mesh plots
 
-meshPlot
-  :: (Renderable (Path R2) b, Typeable b)
-    => (Double -> Double -> Double) -> Axis b R3 -> Axis b R3
+meshPlot :: R2Backend b n => (n -> n -> n) -> Axis b V3 n -> Axis b V3 n
 meshPlot = addPlotable . mkMeshPlot
 
 
 -- Surface plot
 
-surfacePlot :: (Renderable (Path R2) b, Typeable b)
-    => (Double -> Double -> Double) -> Axis b R3 -> Axis b R3
+surfacePlot :: R2Backend b n => (n -> n -> n) -> Axis b V3 n -> Axis b V3 n
 surfacePlot = addPlotable . mkSurfacePlot
 
+
+-- Legend
+
+addLegend :: (Plotable a b, Num (N a)) => String -> a -> a
+addLegend txt = legendEntries <>~ pure (mkLegendEntry txt)
 
 
 
 -- | Set the aspect ratio of given axis.
-setAxisRatio :: E (T v) -> Double -> Axis b v -> Axis b v
+setAxisRatio :: E v -> n -> Axis b v n -> Axis b v n
 setAxisRatio e = set (axisScaling . el e . aspectRatio) . Commit
 
 -- | Make each axis have the same unit length.
-equalAxis :: Traversable (T v) => Axis b v -> Axis b v
+equalAxis :: (Traversable v, Num n) => Axis b v n -> Axis b v n
 equalAxis = axisScaling . traversed . aspectRatio .~ Commit 1
 
 -- Themes
 
-setTheme :: Theme b -> Axis b v -> Axis b v
+setTheme :: Theme b n -> Axis b v n -> Axis b v n
 setTheme = set axisTheme
 
 
 -- Grid lines
 
 -- | Set no major or minor grid lines for all axes.
-noGridLines :: Traversable (T v) => Axis b v -> Axis b v
+noGridLines :: Traversable v => Axis b v n -> Axis b v n
 noGridLines = noMajorGridLines . noMinorGridLines
 
 -- Majors
 
 -- | Add major grid lines for all axes.
-addMajorGridLines :: Traversable (T v) => Axis b v -> Axis b v
+addMajorGridLines :: Traversable v => Axis b v n -> Axis b v n
 addMajorGridLines = set (axisGridLines . traversed . majorGridF) tickGridF
 
 -- | Add major grid lines for given axis.
-addMajorGridLine :: E (T v) -> Axis b v -> Axis b v
+addMajorGridLine :: E v -> Axis b v n -> Axis b v n
 addMajorGridLine (E e) = set (axisGridLines . e . majorGridF) tickGridF
 
 -- | Set no major grid lines for all axes.
-noMajorGridLines :: Traversable (T v) => Axis b v -> Axis b v
+noMajorGridLines :: Traversable v => Axis b v n -> Axis b v n
 noMajorGridLines = set (axisGridLines . traversed . majorGridF) noGridF
 
 -- | Set no major grid lines for given axis.
-noMajorGridLine :: E (T v) -> Axis b v -> Axis b v
+noMajorGridLine :: E v -> Axis b v n -> Axis b v n
 noMajorGridLine (E e) = set (axisGridLines . e . majorGridF) noGridF
 
 -- Minors
 
 -- | Add minor grid lines for all axes.
-addMinorGridLines :: Traversable (T v) => Axis b v -> Axis b v
+addMinorGridLines :: Traversable v => Axis b v n -> Axis b v n
 addMinorGridLines = set (axisGridLines . traversed . minorGridF) tickGridF
 
 -- | Add minor grid lines for given axis.
-addMinorGridLine :: E (T v) -> Axis b v -> Axis b v
+addMinorGridLine :: E v -> Axis b v n -> Axis b v n
 addMinorGridLine (E e) = set (axisGridLines . e . minorGridF) tickGridF
 
 -- | Set no minor grid lines for all axes.
-noMinorGridLines :: Traversable (T v) => Axis b v -> Axis b v
+noMinorGridLines :: Traversable v => Axis b v n -> Axis b v n
 noMinorGridLines = set (axisGridLines . traversed . minorGridF) noGridF
 
 -- | Set no minor grid lines for given axis.
-noMinorGridLine :: E (T v) -> Axis b v -> Axis b v
+noMinorGridLine :: E v -> Axis b v n -> Axis b v n
 noMinorGridLine (E e) = set (axisGridLines . e . minorGridF) noGridF
 
 
@@ -437,24 +443,24 @@ noMinorGridLine (E e) = set (axisGridLines . e . minorGridF) noGridF
 -- axisLineTypes = axisLines . traversed . axisLine
 -- 
 -- -- | Lens onto x axis line type.
--- xAxisLineType :: (L.R1 (T v), HasAxisLines a v) => Lens' a AxisLineType
+-- xAxisLineType :: (L.R1 v, HasAxisLines a v) => Lens' a AxisLineType
 -- xAxisLineType = axisLine ex . axisLineType
 -- 
 -- -- | Lens onto y axis line type.
--- yAxisLineType :: (L.R2 (T v), HasAxisLines a v) => Lens' a AxisLineType
+-- yAxisLineType :: (L.V2 n v, HasAxisLines a v) => Lens' a AxisLineType
 -- yAxisLineType = axisLine ey . axisLineType
 -- 
 -- -- | Lens onto z axis line type.
--- zAxisLineType :: (L.R3 (T v), HasAxisLines a v) => Lens' a AxisLineType
+-- zAxisLineType :: (L.V3 n v, HasAxisLines a v) => Lens' a AxisLineType
 -- zAxisLineType = axisLine ez . axisLineType
 -- 
--- xAxisArrowOpts :: (L.R1 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
+-- xAxisArrowOpts :: (L.R1 v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- xAxisArrowOpts = axisLine ex . axisArrowOpts
 -- 
--- yAxisArrowOpts :: (L.R2 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
+-- yAxisArrowOpts :: (L.V2 n v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- yAxisArrowOpts = axisLine ey . axisArrowOpts
 -- 
--- zAxisArrowOpts :: (L.R3 (T v), HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
+-- zAxisArrowOpts :: (L.V3 n v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- zAxisArrowOpts = axisLines ez . axisArrowOpts
 -- 
 --

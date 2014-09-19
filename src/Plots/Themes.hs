@@ -18,22 +18,23 @@ import Diagrams.Prelude
 -- import Data.Monoid.Recommend
 
 -- * An entry can be applied to a 'Plot' to change it's style.
-data ThemeEntry b = ThemeEntry
+data ThemeEntry b n = ThemeEntry
   { _themeEntryColor  :: Colour Double
-  , _themeLineStyle   :: Style R2
-  , _themeMarkerStyle :: Style R2
-  , _themeFillStyle   :: Style R2
-  , _themeMarker      :: Diagram b R2
+  , _themeLineStyle   :: Style V2 n
+  , _themeMarkerStyle :: Style V2 n
+  , _themeFillStyle   :: Style V2 n
+  , _themeMarker      :: Diagram b V2 n
   } deriving Typeable
 
 makeClassy ''ThemeEntry
 
 -- class HasThemeEntry a b | a -> b where
---   themeEntry :: Lens' a (Recommend (ThemeEntry b))
+--   themeEntry :: Lens' a (Recommend (ThemeEntry b (N a)))
 
-type instance V (ThemeEntry b) = R2
+type instance V (ThemeEntry b n) = V2
+type instance N (ThemeEntry b n) = n
 
-instance Renderable (Path R2) b => Default (ThemeEntry b) where
+instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (ThemeEntry b n) where
   def = ThemeEntry
           { _themeEntryColor  = black
           , _themeLineStyle   = mempty
@@ -43,22 +44,22 @@ instance Renderable (Path R2) b => Default (ThemeEntry b) where
           }
 
 -- * A theme can be applied to multiple plots in an axis.
-type Theme b = [ThemeEntry b]
+type Theme b n = [ThemeEntry b n]
 
 -- * Theme construction
 
 -- | Convenient way to construct themes.
-data ThemeContructor = ThemeContructor
+data ThemeContructor n = ThemeContructor
   { _constructorColours   :: [Colour Double]
-  , _constructLineStyle   :: Colour Double -> Style R2
-  , _constructMarkerStyle :: Colour Double -> Style R2
-  , _constructFillStyle   :: Colour Double -> Style R2
-  , _markerPaths          :: [Path R2]
+  , _constructLineStyle   :: Colour Double -> Style V2 n
+  , _constructMarkerStyle :: Colour Double -> Style V2 n
+  , _constructFillStyle   :: Colour Double -> Style V2 n
+  , _markerPaths          :: [Path V2 n]
   }
 
 makeLenses ''ThemeContructor
 
-constructTheme :: Renderable (Path R2) b => ThemeContructor -> Theme b
+constructTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => ThemeContructor n -> Theme b n
 constructTheme tc = zipWith5 ThemeEntry
   colours
   (tc^.constructLineStyle   <$> colours)
@@ -67,7 +68,7 @@ constructTheme tc = zipWith5 ThemeEntry
   (stroke                   <$> tc^.markerPaths)
   where colours = tc ^. constructorColours
 
-coolThemeConstructor :: ThemeContructor
+coolThemeConstructor :: (TypeableFloat n) => ThemeContructor n
 coolThemeConstructor = ThemeContructor
   { _constructorColours   = corperateColours
   , _constructLineStyle   = \c -> mempty
@@ -82,16 +83,16 @@ coolThemeConstructor = ThemeContructor
   }
 
 
-coolTheme :: Renderable (Path R2) b => Theme b
+coolTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => Theme b n
 coolTheme = constructTheme coolThemeConstructor
 
-corperateTheme :: Renderable (Path R2) b => Theme b
+corperateTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => Theme b n
 corperateTheme = constructTheme $
   coolThemeConstructor
     & constructorColours .~ corperateColours
 
 
-colourfullColours :: [Colour Double]
+colourfullColours :: OrderedField n => [Colour n]
 colourfullColours = cycle
   [ sRGB24 228 26  28
   , sRGB24 55  126 184
@@ -103,7 +104,7 @@ colourfullColours = cycle
   , sRGB24 153 153 153
   ]
 
-corperateColours :: [Colour Double]
+corperateColours :: OrderedField n => [Colour n]
 corperateColours = cycle
   [ sRGB24 27  158 119
   , sRGB24 217 95  2
@@ -115,7 +116,7 @@ corperateColours = cycle
   , sRGB24 102 102 102
   ]
 
-filledMarkers :: [Path R2]
+filledMarkers :: RealFloat n => [Path V2 n]
 filledMarkers = map (centerXY . pathFromTrail) $ cycle
   [ circle 0.5
   , square 1
@@ -127,7 +128,7 @@ filledMarkers = map (centerXY . pathFromTrail) $ cycle
   , star' 0.8
   ]
 
-lineMarkers :: [Path R2]
+lineMarkers :: OrderedField n => [Path V2 n]
 lineMarkers = cycle
   [ prong 4 1 # rotateBy (1/8)
   , prong 6 1
@@ -139,33 +140,33 @@ lineMarkers = cycle
   , prong 3 1 # rotateBy (1/2)
   ]
 
-prong :: Int -> Double -> Path R2
+prong :: OrderedField n => Int -> n -> Path V2 n
 prong n x = mconcat . take n
           . iterate (rotateBy (1/fromIntegral n))
           $ spoke
   where
     spoke = (0 ^& 0) ~~ (0 ^& x)
 
-diamond :: (TrailLike v, Transformable v, V v ~ R2)
-        => Double -> v
+diamond :: (TrailLike t, Transformable t, V t ~ V2, N t ~ n, RealFloat n)
+        => n -> t
 diamond = rotateBy (1/8) . square
 
-cross :: Double -> Trail R2
+cross :: RealFloat n => n -> Trail V2 n
 cross = rotateBy (1/8) . plus
 
-plus :: Double -> Trail R2
+plus :: RealFloat n => n -> Trail V2 n
 plus x = wrapTrail . glueLine . mconcat . take 4
        . iterate (rotateBy (1/4)) . onLineSegments init
        $ square (x/3)
 
 
-star' :: Double -> Trail R2
+star' :: OrderedField n => n -> Trail V2 n
 star' x = wrapTrail . glueLine . mconcat . take 5
         . iterate (rotateBy (-1/5)) $ spoke
   where
     spoke = fromOffsets . map r2 $ [(x/6,x/2), (x/6,-x/2)]
 
--- showcase :: Renderable (Path R2) b => Theme -> Diagram b R2
+-- showcase :: Renderable (Path V2 n) b => Theme -> Diagram b V2 n
 -- showcase theme
 --   = vcat' (with & sep .~ 0.4) . take 8
 --   $ zipWith (\c m -> styleF c m <> lineBehind c) cs ms

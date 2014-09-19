@@ -8,11 +8,9 @@ import Data.Default
 import Data.Foldable
 import Data.List     ((\\))
 import Data.Ord
-import Data.Typeable
+import Data.Data
 
 import Diagrams.Prelude
-
-import Diagrams.Coordinates.Traversals
 
 data TickType = AutoTick
               | CentreTick
@@ -20,29 +18,29 @@ data TickType = AutoTick
               | OutsideTick
 
 -- | Function with access to the bounds of a coordinate.
-type MajorTickFunction = (Double, Double) -> [Double]
+type MajorTickFunction n = (n, n) -> [n]
 
 -- | Function with access to the major ticks and bounds of a coordinate.
-type MinorTickFunction = [Double]-> (Double, Double) -> [Double]
+type MinorTickFunction n = [n] -> (n, n) -> [n]
 
 -- | Information for drawing ticks for a single coordinate.
-data Ticks = Ticks
-  { _majorTicksFun   :: MajorTickFunction
-  , _minorTicksFun   :: MinorTickFunction
+data Ticks n = Ticks
+  { _majorTicksFun   :: MajorTickFunction n
+  , _minorTicksFun   :: MinorTickFunction n
   , _majorTickType   :: TickType
   , _minorTickType   :: TickType
-  , _majorTickLength :: Double
-  , _minorTickLength :: Double
-  , _majorTickStyle  :: Style R2
-  , _minorTickStyle  :: Style R2
+  , _majorTickLength :: n
+  , _minorTickLength :: n
+  , _majorTickStyle  :: Style V2 n
+  , _minorTickStyle  :: Style V2 n
   } deriving Typeable
 
 makeLenses ''Ticks
 
 -- | Information for drawing ticks for a coordinate system.
-type AxisTicks v = T v Ticks
+type AxisTicks v n = v (Ticks n)
 
-instance Default Ticks where
+instance (DataFloat n, Enum n) => Default (Ticks n) where
   def = Ticks
           { _majorTicksFun   = niceTicks 7
           , _minorTicksFun   = minors 4
@@ -56,10 +54,10 @@ instance Default Ticks where
 
 -- functions for common ticks
 
-noMajorTicksFunction :: MajorTickFunction
+noMajorTicksFunction :: MajorTickFunction n
 noMajorTicksFunction = const []
 
-noMinorTicksFunction :: MinorTickFunction
+noMinorTicksFunction :: MinorTickFunction n
 noMinorTicksFunction _ = const []
 
 -- if T = i * 10^j then log t = log i + j
@@ -67,10 +65,11 @@ noMinorTicksFunction _ = const []
 
 -- pgfplotsticks.code.tex lines: 1762, 1923, 2161
 
-minors :: Double -> [Double] -> (Double, Double) -> [Double]
+
+minors :: (Enum n, Fractional n, Ord n) => n -> [n] -> (n, n) -> [n]
 minors p xs@(x1:x2:_) (a,b) =
   filter (\n -> n > a + ε && n < b - ε)
-         [x1 - 3*h, x1 - 2*h .. b]
+         [x1 - 3*h, x1 - 2*h .. b] -- could get rid of Enum by doing this manually
    \\ xs
   where
     h = (x2 - x1) / p
@@ -78,7 +77,7 @@ minors p xs@(x1:x2:_) (a,b) =
 minors _ _ _ = []
 
 -- | Ticks whose value ends in 1, 0.5, 0.25, 0.2 (*10^n).
-niceTicks :: Double -> (Double, Double) -> [Double]
+niceTicks :: (Enum n, RealFrac n, Floating n) => n -> (n, n) -> [n]
 -- niceTicks desiredTicks (a,b) = [i*h, (i + signum (b - a) ) * h .. b]
 niceTicks desiredTicks (a,b) =
   filter (\n -> n > a + ε && n < b - ε)

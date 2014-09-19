@@ -38,24 +38,23 @@ import Diagrams.Prelude hiding (view)
 import Diagrams.Extra
 import Data.Foldable
 import Diagrams.ThreeD.Types
-import Linear (V2 (..), el, ex, ey)
-import Diagrams.Coordinates.Traversals
 import Diagrams.Coordinates.Isomorphic
 
 import Plots.Themes
 import Plots.Types
+import Linear.V3
 
 -- Options
 
-data FunctionPlotOptions = FunctionPlot
+data FunctionPlotOptions n = FunctionPlot
   { _functionPlotNumPoints     :: Int
   , _functionPlotSmooth        :: Bool
-  , _functionPlotDiscontinuous :: Maybe Double
+  , _functionPlotDiscontinuous :: Maybe n
   } deriving Typeable
 
 makeClassy ''FunctionPlotOptions
 
-instance Default FunctionPlotOptions where
+instance Default (FunctionPlotOptions n) where
   def = FunctionPlot
           { _functionPlotNumPoints     = 100
           , _functionPlotSmooth        = False
@@ -64,25 +63,26 @@ instance Default FunctionPlotOptions where
 
 -- Parametric plots
 
-data ParametricPlot b v = ParametricPlot
-  { _parametricFunction    :: Double -> Point v
-  , _parametricDomain      :: (Double, Double)
-  , _parametricPlotOptions :: FunctionPlotOptions
-  , _parametricGenericPlot :: GenericPlot b v
+data ParametricPlot b v n = ParametricPlot
+  { _parametricFunction    :: n -> Point v n
+  , _parametricDomain      :: (n, n)
+  , _parametricPlotOptions :: FunctionPlotOptions n
+  , _parametricGenericPlot :: GenericPlot b v n
   } deriving Typeable
 
 makeLenses ''ParametricPlot
 
-type instance V (ParametricPlot b v) = v
+type instance V (ParametricPlot b v n) = v
+type instance N (ParametricPlot b v n) = n
 
-instance HasFunctionPlotOptions (ParametricPlot b v) where
+instance HasFunctionPlotOptions (ParametricPlot b v n) n where
   functionPlotOptions = parametricPlotOptions
 
-instance HasGenericPlot (ParametricPlot b v) b where
+instance HasGenericPlot (ParametricPlot b v n) b where
   genericPlot = parametricGenericPlot
 
-instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v), AdditiveGroup v)
-    => Default (ParametricPlot b v) where
+instance (TypeableFloat n, Renderable (Path V2 n) b, HasLinearMap v)
+    => Default (ParametricPlot b v n) where
   def = ParametricPlot
           { _parametricFunction    = const origin
           , _parametricDomain      = (0,5)
@@ -90,9 +90,9 @@ instance (Renderable (Path R2) b, HasLinearMap v, Applicative (T v), AdditiveGro
           , _parametricGenericPlot = def
           }
 
-instance (Typeable b, Typeable v, Scalar v ~ Double, Renderable (Path R2) b,
-          HasLinearMap v, InnerSpace v)
-    => Plotable (ParametricPlot b v) b where
+instance (Typeable b, Typeable v, TypeableFloat n, Enum n, Renderable (Path V2 n) b,
+          HasLinearMap v, Metric v)
+    => Plotable (ParametricPlot b v n) b where
   plot _ tv l t2 fp = pathFromVertices p
                             # transform tv
                             # lmap l
@@ -105,24 +105,25 @@ instance (Typeable b, Typeable v, Scalar v ~ Double, Renderable (Path R2) b,
       a = fp ^. parametricDomain  . _1
       b = fp ^. parametricDomain  . _2
 
-mkParametricPlot :: (PointLike a v, Renderable (Path R2) b, Applicative (T v)) => (Double -> a) -> ParametricPlot b v
+mkParametricPlot :: (PointLike v n a, Renderable (Path V2 n) b, TypeableFloat n) => (n -> a) -> ParametricPlot b v n
 mkParametricPlot f =
-  def & parametricFunction .~ fmap (view diaPoint) f
+  def & parametricFunction .~ fmap (review pointLike) f
 
 -- Mesh plot
 
-data MeshPlot b = MeshPlot
-  { _meshFunction    :: Double -> Double -> Double
-  , _meshDomain      :: V2 (Double, Double)
+data MeshPlot b n = MeshPlot
+  { _meshFunction    :: n -> n -> n -- ^ $\x y -> z$
+  , _meshDomain      :: V2 (n, n)
   -- , _meshPlotOptions :: FunctionPlotOptions b R3
-  , _meshPlotGeneric :: GenericPlot b R3
+  , _meshPlotGeneric :: GenericPlot b V3 n
   } deriving Typeable
 
-type instance V (MeshPlot b) = R3
+type instance V (MeshPlot b n) = V3
+type instance N (MeshPlot b n) = n
 
 makeLenses ''MeshPlot
 
-instance Renderable (Path R2) b => Default (MeshPlot b) where
+instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (MeshPlot b n) where
   def = MeshPlot
           { _meshFunction    = \_ _ -> 0
           , _meshDomain      = V2 (0,5) (0,5)
@@ -130,14 +131,14 @@ instance Renderable (Path R2) b => Default (MeshPlot b) where
           , _meshPlotGeneric = def
           }
 
-instance HasGenericPlot (MeshPlot b) b where
+instance HasGenericPlot (MeshPlot b n) b where
   genericPlot = meshPlotGeneric
 
 -- instance HasFunctionPlotOptions (MeshPlot b) b R3 where
 --   functionPlotOptions = meshPlotOptions
 
-instance (Typeable b, Renderable (Path R2) b)
-    => Plotable (MeshPlot b) b where
+instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
+    => Plotable (MeshPlot b n) b where
   plot _ tv l t2 mp =
     path # transform tv
          # lmap l
@@ -158,7 +159,7 @@ instance (Typeable b, Renderable (Path R2) b)
       -- n = mp ^. functionPlotNumPoints . to fromIntegral
       n = 15
 
-mkMeshPlot :: Renderable (Path R2) b => (Double -> Double -> Double) -> MeshPlot b
+mkMeshPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => (n -> n -> n) -> MeshPlot b n
 mkMeshPlot f = 
   def & meshFunction .~ f
 
