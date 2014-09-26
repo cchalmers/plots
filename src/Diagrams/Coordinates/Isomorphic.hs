@@ -31,18 +31,13 @@ import           Diagrams.Prelude
 import           Diagrams.ThreeD.Types
 import           Diagrams.Core.Transform
 
-type HasIndexedBasis v =
-  ( HasBasis v
-  , FunctorWithIndex (E v) v
-  , FoldableWithIndex (E v) v
-  , TraversableWithIndex (E v) v
-  )
+type HasIndexedBasis v = (HasBasis v, TraversableWithIndex (E v) v)
 
 type Euclidean v = (HasLinearMap v, HasIndexedBasis v, Metric v)
 
 
--- | An isomorphism between a (possiblly monomorphic) type @a@ which is 
---   isomorphic to vector @v@ under numerical field n.
+-- | An isomorphism between a (possiblly monomorphic) type @a@ and euclidean 
+--   vector @v@ under numerical field n.
 class (Euclidean v, Typeable v) => VectorLike v n a | a -> v n where
   vectorLike :: Iso' (v n) a
 

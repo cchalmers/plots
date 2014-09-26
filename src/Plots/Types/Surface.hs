@@ -25,17 +25,11 @@ import Data.Typeable
 import Diagrams.Prelude hiding (view)
 import Diagrams.Extra
 import Data.Foldable
-import Diagrams.ThreeD.Types
--- import Diagrams.Coordinates.Traversals
--- import Diagrams.Coordinates.Isomorphic
 
--- import Plots.Themes
 import Plots.Types
 
 import qualified Data.Vector as V
 import Data.Vector (Vector, (!))
-
-type T3 = Transformation V3
 
 data SurfaceType = Mesh
                  | Faceted

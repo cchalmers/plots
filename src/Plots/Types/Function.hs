@@ -12,9 +12,13 @@
 
 module Plots.Types.Function
   ( FunctionPlotOptions
+  , functionPlotSmooth
+  , functionPlotNumPoints
+  , functionPlotDiscontinuous
   -- , mkFunctionPlot
     -- * Prism
-  -- , _FunctionPlot
+  , _FunctionPlot
+  , mkFunctionPlot
 
   
     -- * Lenses
@@ -34,10 +38,10 @@ import Control.Lens     hiding (transform, ( # ), lmap)
 import Diagrams.LinearMap
 import Data.Default
 import Data.Typeable
+import Diagrams.BoundingBox
 import Diagrams.Prelude hiding (view)
 import Diagrams.Extra
 import Data.Foldable
-import Diagrams.ThreeD.Types
 import Diagrams.Coordinates.Isomorphic
 
 import Plots.Themes
@@ -46,7 +50,7 @@ import Linear.V3
 
 -- Options
 
-data FunctionPlotOptions n = FunctionPlot
+data FunctionPlotOptions n = FunctionPlotOpts
   { _functionPlotNumPoints     :: Int
   , _functionPlotSmooth        :: Bool
   , _functionPlotDiscontinuous :: Maybe n
@@ -55,7 +59,7 @@ data FunctionPlotOptions n = FunctionPlot
 makeClassy ''FunctionPlotOptions
 
 instance Default (FunctionPlotOptions n) where
-  def = FunctionPlot
+  def = FunctionPlotOpts
           { _functionPlotNumPoints     = 100
           , _functionPlotSmooth        = False
           , _functionPlotDiscontinuous = Nothing
@@ -163,10 +167,39 @@ mkMeshPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => (n -> n -> n) -> Me
 mkMeshPlot f = 
   def & meshFunction .~ f
 
+data FunctionPlot b n = FunctionPlot
+  { _functionPlotFunction :: n -> n
+  , _functionPlotGeneric  :: GenericPlot b V2 n
+  , _functionPlotOpts     :: FunctionPlotOptions n
+  , _functionDomain       :: (n,n)
+  } deriving Typeable
+
+makeLenses ''FunctionPlot
+
+instance HasFunctionPlotOptions (FunctionPlot b n) n where
+  functionPlotOptions = functionPlotOpts
+
+
+type instance V (FunctionPlot b n) = V2
+type instance N (FunctionPlot b n) = n
+
+instance HasGenericPlot (FunctionPlot b n) b where
+  genericPlot = functionPlotGeneric
+
+-- do I really need a default instance for this?
+instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (FunctionPlot b n) where
+  def = FunctionPlot { _functionPlotFunction = const 0
+                     , _functionDomain       = (0,5)
+                     , _functionPlotGeneric  = def
+                     , _functionPlotOpts     = def
+                     }
+
+-- pathFromVertices :: [Point v n] -> Path v n
+-- pathFromVertices = fromVertices
 
 
 
--- drawFunctionPlot :: Renderable (Path R2) b => T2 -> FunctionPlot b R2 -> Diagram b R2
+-- drawFunctionPlot :: Renderable (Path V2 n) b => T2 n -> FunctionPlot b V2 n -> Diagram b V2 n
 -- drawFunctionPlot t fp = fromVertices functionPath
 --                           # transform t
 --                           # applyStyle (fp ^. themeLineStyle)
@@ -175,17 +208,27 @@ mkMeshPlot f =
 --     f            = fp ^. functionPlotFunction
 --     a            = fp ^. plotBounds . el ex . lowerBound . recommend
 --     b            = fp ^. plotBounds . el ex . upperBound . recommend
--- 
--- instance (Typeable b, Renderable (Path R2) b) => Plotable (FunctionPlot b R2) b where
---   plot _ _ _ = drawFunctionPlot
--- 
--- _FunctionPlot :: Plotable (FunctionPlot b R2) b => Prism' (Plot b R2) (FunctionPlot b R2)
--- _FunctionPlot = _Plot
--- 
--- mkFunctionPlot :: (Typeable b, Renderable (Path R2) b) => (Double -> Double) -> Plot b R2
--- mkFunctionPlot f = review _FunctionPlot $
---   def & functionPlotFunction .~ f'
---   where
---     f' x = x ^& f x
--- 
--- 
+
+instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b) => Plotable (FunctionPlot b n) b where
+  plot _ tv l t2 fp =
+    path # transform tv
+         # lmap l
+         # transform t2
+         # stroke
+         # applyStyle (fp ^. themeLineStyle) 
+    where
+      path = pathFromVertices $ map (mkP2 <*> f) [a, a + 1 / (fp ^. functionPlotNumPoints . to fromIntegral) .. b]
+      --
+      f = fp ^. functionPlotFunction
+      (a,b) = fp ^. functionDomain -- getBound ex fp
+
+
+_FunctionPlot :: Plotable (FunctionPlot b n) b => Prism' (Plot b V2 n) (FunctionPlot b n)
+_FunctionPlot = _Plot
+
+mkFunctionPlot :: (Typeable b, Enum n, TypeableFloat n, Renderable (Path V2 n) b) => (n,n) -> (n -> n) -> FunctionPlot b n
+mkFunctionPlot d@(a,b) f = def & functionPlotFunction .~ f
+                         & functionDomain       .~ d
+                         & plotBoundingBox      .~ fromPoints (map (mkP2 <*> f) [a, a + (b - a) / 20 .. b])
+
+

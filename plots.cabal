@@ -66,6 +66,7 @@ Library
                      , split         >= 0.1.2 && < 0.5
                      , time
                      , vector
+                     , diagrams-pgf
 
   Ghc-options:         -Wall
 

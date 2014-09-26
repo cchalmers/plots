@@ -43,16 +43,9 @@ module Diagrams.LinearMap
   ) where
 
 import Control.Lens     hiding (at, transform, lmap)
--- import Data.AffineSpace
--- import Data.Basis
--- import Data.MemoTrie
--- import Data.Monoid      hiding ((<>))
--- import Data.Semigroup
--- import Data.Typeable
 
 import Diagrams.Core
 import Diagrams.Located
--- import Diagrams.Parametric
 import Diagrams.Path
 import Diagrams.Segment
 import Diagrams.Trail

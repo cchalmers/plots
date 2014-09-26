@@ -132,6 +132,7 @@ module Plots
 
     -- * Legend
   , addLegend
+  , legendEntry
 
     -- * Themes
   , setTheme
@@ -141,7 +142,7 @@ module Plots
 
     -- * Diagrams essentials
   , (#)
-  , Diagram, V2, V3
+  , Diagram, V2 (..), V3 (..)
   , SizeSpec2D (..)
   , lc
   , fc
@@ -163,9 +164,9 @@ module Plots
 
     -- * Axis adjustments
     -- ** Axis size
-  -- , xMin , xMax
-  -- , yMin , yMax
-  -- , zMin , zMax
+  , xMin , xMax
+  , yMin , yMax
+  , zMin , zMax
 
    -- ** Axis labels
    -- *** Label text
@@ -376,6 +377,9 @@ surfacePlot = addPlotable . mkSurfacePlot
 addLegend :: (Plotable a b, Num (N a)) => String -> a -> a
 addLegend txt = legendEntries <>~ pure (mkLegendEntry txt)
 
+legendEntry :: (Plotable a b, Num (N a)) => String -> a -> a
+legendEntry txt = legendEntries <>~ pure (mkLegendEntry txt)
+
 
 
 -- | Set the aspect ratio of given axis.
@@ -434,6 +438,23 @@ noMinorGridLines = set (axisGridLines . traversed . minorGridF) noGridF
 noMinorGridLine :: E v -> Axis b v n -> Axis b v n
 noMinorGridLine (E e) = set (axisGridLines . e . minorGridF) noGridF
 
+xMax :: (HasBounds a, R1 (V a)) => Lens' a (Recommend (N a))
+xMax = bounds . _Wrapped . _x . upperBound
+
+xMin :: (HasBounds a, R1 (V a)) => Lens' a (Recommend (N a))
+xMin = bounds . _Wrapped . _x . lowerBound
+
+yMax :: (HasBounds a, R2 (V a)) => Lens' a (Recommend (N a))
+yMax = bounds . _Wrapped . _y . upperBound
+
+yMin :: (HasBounds a, R2 (V a)) => Lens' a (Recommend (N a))
+yMin = bounds . _Wrapped . _y . lowerBound
+
+zMax :: (HasBounds a, R3 (V a)) => Lens' a (Recommend (N a))
+zMax = bounds . _Wrapped . _z . upperBound
+
+zMin :: (HasBounds a, R3 (V a)) => Lens' a (Recommend (N a))
+zMin = bounds . _Wrapped . _z . lowerBound
 
 
 {-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}

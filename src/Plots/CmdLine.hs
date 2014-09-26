@@ -10,7 +10,7 @@ module Plots.CmdLine
 	) where
 
 import Data.Typeable
-import Options.Applicative hiding ((&))
+import Options.Applicative
 
 -- import Diagrams.Prelude hiding ((<>), option)
 import Diagrams.Backend.CmdLine
@@ -25,19 +25,23 @@ data PlotOptions = PlotOptions
 
 instance Parseable PlotOptions where
   parser = PlotOptions
-    <$> (optional . option)
+    <$> (optional . strOption)
         (long "title" <> short 't' <> help "Plot title")
 
 
 instance (Typeable b,
-          Renderable Text b,
-          Renderable (Path R2) b,
-          Backend b R2,
-          Mainable (Diagram b R2))
-       => Mainable (Axis b R2) where
-  type MainOpts (Axis b R2) = (MainOpts (Diagram b R2), PlotOptions)
+          DataFloat n,
+          Renderable (Text n) b,
+          Renderable (Path V2 n) b,
+          Backend b V2 n,
+          Mainable (Diagram b V2 n))
+       => Mainable (Axis b V2 n) where
+  type MainOpts (Axis b V2 n) = (MainOpts (Diagram b V2 n), PlotOptions)
 
-  mainRender (opts, pOpts) a = mainRender opts . renderR2Axis $ a & axisTitle .~ plotTitle pOpts
+  mainRender (opts, pOpts) a
+    = mainRender opts . renderAxis
+    $ a & axisTitle .~ plotTitle pOpts
 
-r2AxisMain :: (Parseable (MainOpts (Diagram b R2)), Mainable (Axis b R2)) => Axis b R2 -> IO ()
+-- 
+r2AxisMain :: (Parseable (MainOpts (Diagram b V2 Double)), Mainable (Axis b V2 Double)) => Axis b V2 Double -> IO ()
 r2AxisMain = mainWith

@@ -66,7 +66,6 @@ import Data.Typeable
 import Diagrams.Prelude as D hiding (view)
 import Diagrams.Extra
 import Data.Functor.Rep
-import Diagrams.ThreeD
 import Data.Monoid.Recommend
 import Diagrams.BoundingBox
 
@@ -75,13 +74,18 @@ import Linear
 
 import Diagrams.Core.Transform
 
+class (V a ~ v, N a ~ n, Additive v, Num n) => Space v n a
+instance (V a ~ v, N a ~ n, Additive v, Num n) => Space v n a
+
 -- Bounds
 
--- type Bounds = (Double, Double)
+-- | A 'Bound' allows you to 'Commit' a an upper or lower bound while having a 
+--   fallback 'Reccommend' value.
 data Bound n = Bound
   { _lowerBound :: Recommend n
   , _upperBound :: Recommend n
   }
+  deriving Show
 
 makeLenses ''Bound
 
@@ -95,8 +99,14 @@ type instance N (Bounds v n) = n
 instance Num n => Default (Bound n) where
   def = Bound (Recommend 0) (Recommend 5)
 
--- instance Semigroup Bound where
---   Bound l1 u1 <> Bound l2 u2 = Bound (min l1 l2) (max u1 u2)
+liftRecommend :: (a -> a -> a) -> Recommend a -> Recommend a -> Recommend a
+liftRecommend _ (Commit a) (Recommend _)    = Commit a
+liftRecommend _ (Recommend _) (Commit b)    = Commit b
+liftRecommend f (Recommend a) (Recommend b) = Recommend (f a b)
+liftRecommend f (Commit a) (Commit b)       = Commit (f a b)
+
+instance Ord n => Semigroup (Bound n) where
+  Bound l1 u1 <> Bound l2 u2 = Bound (liftRecommend min l1 l2) (liftRecommend max u1 u2)
 
 class HasBounds a where
   bounds :: Lens' a (Bounds (V a) (N a))
@@ -119,10 +129,15 @@ getBounds (Bound l u) = (getRecommend l, getRecommend u)
 getBound :: HasBounds a => E (V a) -> a -> (N a, N a)
 getBound e a = getBounds $ a ^. bounds . _Wrapped' . el e
 
-boundsMin :: (V a ~ v, N a ~ n, Representable v, HasBounds a) => Lens' a (v (Recommend n))
-boundsMin = bounds . _Wrapped' . column lowerBound
+-- boundsMin :: (V a ~ v, N a ~ n, Representable v, HasBounds a) => Lens' a (v (Recommend n))
+-- boundsMin = bounds . _Wrapped' . column lowerBound
 
-boundsMax :: (V a ~ v, N a ~ n, HasBasis v, HasBounds a) => Lens' a (Point v n)
+-- | Lens to the minimum point of a 'Bounds'.
+boundsMin :: (Space v n a, Representable v, HasBounds a) => Lens' a (Point v n)
+boundsMin = bounds . _Wrapped' . column (lowerBound . recommend) . iso P (\(P a) -> a)
+
+-- | Lens to the maximum point of a 'Bounds'.
+boundsMax :: (Space v n a, HasBasis v, HasBounds a) => Lens' a (Point v n)
 boundsMax = bounds . _Wrapped' . column (upperBound . recommend) . iso P (\(P a) -> a)
 
 -- Orientation
@@ -152,8 +167,8 @@ makeLenses ''LegendEntry
 
 instance Num n => Default (LegendEntry b n) where
   def = LegendEntry
-          { _legendPic = def
-          , _legendText = ""
+          { _legendPic        = def
+          , _legendText       = ""
           , _legendPrecidence = 0
           }
 
@@ -178,8 +193,6 @@ type instance N (GenericPlot b v n) = n
 
 -- I don't know how to give documenation for classes using TH, so I just wrote 
 -- it by hand.
-
--- NOTE: I think I can get rid of the @v@ if I replace it with @V a@.
 
 -- | Class that gives a lens onto a 'genericPlot'. All 'Plot's must impliment 
 --   this class.

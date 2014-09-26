@@ -1,5 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
@@ -16,8 +19,9 @@ module Plots.Legend
 
    -- * Positioning
  , Position (..)
- , Anchor (..)
  , getPosition
+ , Anchor (..)
+ , anchor
 
  , legendOrientation
  , Legend
@@ -35,6 +39,12 @@ import           Diagrams.Prelude
 import           Plots.Themes
 import           Plots.Types
 
+class (V a ~ v, N a ~ n, Additive v, Num n) => Space v n a
+instance (V a ~ v, N a ~ n, Additive v, Num n) => Space v n a
+
+class (V a ~ V b, N a ~ N b) => a ~:~ b
+instance (V a ~ V b, N a ~ N b) => a ~:~ b
+
 data Position
   = North
   | NorthEast
@@ -44,6 +54,9 @@ data Position
   | SouthWest
   | West
   | NorthWest
+  | Position Rational Rational -- ^ @Position 0 0 = SouthWest@, @Position 1 1 = NorthWest@
+  deriving (Show, Read, Eq, Ord)
+
 
 data Anchor
   = AnchorTop
@@ -54,35 +67,62 @@ data Anchor
   | AnchorBottomLeft
   | AnchorLeft
   | AnchorTopLeft
+  | Anchor Rational Rational -- ^ @Anchor 0 0 = AnchorBottomLeft@, @mkP2 1 1 = AnchorTopRight@
+  deriving (Show, Read, Eq, Ord)
 
--- anchor :: (Alignable a, HasOrigin a, V a ~ R2) => Position -> a -> a
--- anchor a = case a of
---   Top         -> alignT . centerX
---   TopRight    -> alignTR
---   Right       -> alignL . centerY
---   BottomRight -> alignBR
---   Bottom      -> alignB . centerX
---   BottomLeft  -> alignBL
---   Left        -> alignL . centerY
---   TopLeft     -> alignTL
 
--- | Get the point from the 'Position' on the bounding box of the enveloped object.
-getPosition :: (Enveloped a, HasOrigin a, V a ~ V2, N a ~ n, Fractional n) => Position -> a -> P2 n
-getPosition p a = case p of
-  North     -> (tl ^+^ tr) ^/ 2
-  -- North     -> lerp 0.5 tl tr
-  NorthEast -> tr
-  East      -> (br ^+^ tr) ^/ 2
-  -- East      -> lerp 0.5 br tr
-  SouthEast -> br
-  South     -> (br ^+^ bl) ^/ 2
-  -- South     -> lerp 0.5 br bl
-  SouthWest -> bl
-  West      -> (bl ^+^ tl) ^/ 2
-  -- West      -> lerp 0.5 bl tl
-  NorthWest -> tl
-  where
-    [bl, br, tl, tr] = getAllCorners $ boundingBox a
+-- | Align an object using a given anchor.
+anchor :: (Space V2 n a, Alignable a, HasOrigin a, Floating n) => Anchor -> a -> a
+anchor a = case a of
+  AnchorTop         -> alignT . centerX
+  AnchorTopRight    -> alignTR
+  AnchorRight       -> alignL . centerY
+  AnchorBottomRight -> alignBR
+  AnchorBottom      -> alignB . centerX
+  AnchorBottomLeft  -> alignBL
+  AnchorLeft        -> alignL . centerY
+  AnchorTopLeft     -> alignTL
+  Anchor x y        -> alignBy unitX (fromRational x) . alignBy unitY (fromRational y)
+
+-- | Get the point from the 'Position' on the bounding box of the enveloped 
+--   object. Returns the origin if @a@ has an empty envelope.
+getPosition :: (Space V2 n a, Enveloped a, HasOrigin a, Fractional n) => Position -> a -> P2 n
+getPosition p a = flip (maybe origin) (getCorners $ boundingBox a)
+  $ \(P (V2 xl yl), P (V2 xu yu)) ->
+    P $ case p of
+          North     -> V2 (mid xl xu) yu
+          NorthEast -> V2 xu yu
+          East      -> V2 xu (mid yl yu)
+          SouthEast -> V2 xu yl
+          South     -> V2 (mid xl xu) yl
+          SouthWest -> V2 xl yl
+          West      -> V2 xl (mid yl yu)
+          NorthWest -> V2 xl yu
+          Position x y -> V2 (lerp' x xu xl) (lerp' y xu xl)
+  where mid l u = (l + u) / 2
+        lerp' alpha u v = fromRational alpha * u + (1 - fromRational alpha) * v
+
+-- XXX write more
+
+-- | A tool for aligned one object to another.
+alignTo :: (Space V2 n a, a ~:~ b, Enveloped a, HasOrigin a, Alignable b, HasOrigin b, Floating n)
+  => Position -> a -> Anchor -> V2 n -> b -> b
+alignTo p a an v b
+  = b # anchor an
+      # moveTo (getPosition p a .-^ v)
+
+-- getPosition :: (Enveloped a, HasOrigin a, V a ~ V2, N a ~ n, Fractional n) => Position -> a -> P2 n
+-- getPosition p a = case p of
+--   North     -> lerp 0.5 tl tr
+--   NorthEast -> tr
+--   East      -> lerp 0.5 br tr
+--   SouthEast -> br
+--   South     -> lerp 0.5 br bl
+--   SouthWest -> bl
+--   West      -> lerp 0.5 bl tl
+--   NorthWest -> tl
+--   where
+--     [bl, br, tl, tr] = getAllCorners $ boundingBox a
 
 -- anchorAlign :: (Alignable a, Alignable b, V a ~ V b) => a -> Anchor -> Position -> V a ->
 
@@ -104,7 +144,7 @@ makeLenses ''Legend
 instance (DataFloat n, Renderable (Text n) b) => Default (Legend b n) where
   def = Legend
           { _legendPosition    = NorthEast
-          , _legendAnchor      = AnchorTopLeft
+          , _legendAnchor      = AnchorTopRight
           , _legendGap         = mkR2 20 20
           , _legendStyle       = mempty
           , _legendTextF       = text
@@ -116,10 +156,11 @@ instance TypeableFloat n => HasStyle (Legend b n) where
   applyStyle sty = over legendStyle (applyStyle sty)
 
 drawLegend :: (DataFloat n, Typeable v, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
-           => Legend b n -> [Plot b v n] -> Diagram b V2 n
-drawLegend l ps = orient (l ^. legendOrientation) hcat vcat
-                $ concatMap mkLabels ps
+           => BoundingBox V2 n -> Legend b n -> [Plot b v n] -> Diagram b V2 n
+drawLegend bb l ps = alignTo (l ^. legendPosition) bb (l ^. legendAnchor) zero ledge
   where
+    ledge      = orient (l ^. legendOrientation) hcat vcat
+               $ concatMap mkLabels ps
     mkLabels p = map mkLabel (p ^. legendEntries)
       where
         mkLabel entry = txt ||| pic
