@@ -77,6 +77,8 @@ import Linear
 
 type family B a :: *
 
+type instance B (QDiagram b v n m) = b
+
 -- Bounds
 
 -- | A 'Bound' allows you to 'Commit' a an upper or lower bound while having a 
@@ -296,8 +298,7 @@ commitCurrentTheme = over plotThemeEntry makeCommitted
 zeroInt :: Additive v => v Int
 zeroInt = zero
 
-instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v)
-    => Default (GenericPlot b v n) where
+instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v) => Default (GenericPlot b v n) where
   def = GenericPlot
           { _plotTransform   = mempty
           , _plotBounds      = Bounds $ def <$ zeroInt
@@ -308,16 +309,16 @@ instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v)
           , _plotBoundingBox = emptyBox
           }
 
-instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (GenericPlot b V3 n) where
-  def = GenericPlot
-          { _plotTransform   = mempty
-          , _plotBounds      = Bounds $ pure def
-          , _clipPlot        = True
-          , _plotThemeEntry  = Recommend def
-          , _legendEntries   = []
-          , _plotName        = mempty
-          , _plotBoundingBox = emptyBox
-          }
+-- instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (GenericPlot b V3 n) where
+--   def = GenericPlot
+--           { _plotTransform   = mempty
+--           , _plotBounds      = Bounds $ pure def
+--           , _clipPlot        = True
+--           , _plotThemeEntry  = Recommend def
+--           , _legendEntries   = []
+--           , _plotName        = mempty
+--           , _plotBoundingBox = emptyBox
+--           }
 
 -- Plot data type
 

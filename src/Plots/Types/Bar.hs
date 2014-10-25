@@ -38,22 +38,26 @@ data BarPlot b n = BarPlot
   , _barPlotGeneric  :: GenericPlot b V2 n
   } deriving Typeable
 
+type instance B (BarPlot b n) = b
 type instance V (BarPlot b n) = V2
 type instance N (BarPlot b n) = n
-type instance B (BarPlot b n) = b
 
 makeLenses ''BarPlot
 
 instance HasGenericPlot (BarPlot b n) where
   genericPlot = barPlotGeneric
 
+instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+    => Plotable (BarPlot b n) where
+  plot _ tv l t2 = drawBarPlot
+
 instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (BarPlot b n) where
   def = BarPlot
-          { _barPlotBars     = []
-          , _barPlotWidth    = 0.5
-          , _barPlotSpacing  = 0.1
+          { _barPlotBars       = []
+          , _barPlotWidth      = 0.5
+          , _barPlotSpacing    = 0.1
           , _barPlotIsVerticle = True
-          , _barPlotGeneric  = def
+          , _barPlotGeneric    = def
           }
 
 -- TODO: work out a nice way to get different colours for multi-bar plots.
@@ -94,6 +98,4 @@ simpleBarPlot (toList -> xs) = def & barPlotBars .~ imap f xs
 
 _BarPlot :: Plotable (BarPlot b n) => Prism' (Plot b V2 n) (BarPlot b n)
 _BarPlot = _Plot
-
-
 

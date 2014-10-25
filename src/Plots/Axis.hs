@@ -131,6 +131,7 @@ makeLenses ''Axis
 
 type instance V (Axis b v n) = v
 type instance N (Axis b v n) = n
+type instance B (Axis b v n) = b
 
 axisLine :: E v -> Lens' (Axis b v n) (AxisLine n)
 axisLine (E l) = axisLines . l
