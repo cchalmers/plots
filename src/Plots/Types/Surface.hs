@@ -44,6 +44,7 @@ makeLenses ''SurfacePlot
 
 type instance V (SurfacePlot b n) = V3
 type instance N (SurfacePlot b n) = n
+type instance B (SurfacePlot b n) = b
 
 instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (SurfacePlot b n) where
   def = SurfacePlot
@@ -51,7 +52,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (SurfacePlot b n
           , _surfaceGenericPlot = def
           }
 
-instance HasGenericPlot (SurfacePlot b n) b where
+instance HasGenericPlot (SurfacePlot b n) where
   genericPlot = surfaceGenericPlot
 
 -- could probably do something fancy with zippers but keep it simple for now.
@@ -82,7 +83,7 @@ calcPoints f n (V2 (xa,xb) (ya,yb)) = V.fromList $ map ylines ys
     ys = [ya, ya + (xb - xa) / fromIntegral n .. yb]
 
 drawSquare :: (TypeableFloat n, Renderable (Path V2 n) b)
-    => T3 n -> (V3 n -> V2 n) -> T2 n -> (P3 n, Path V3 n) -> Diagram b V2 n
+    => T3 n -> (V3 n -> V2 n) -> T2 n -> (P3 n, Path V3 n) -> QDiagram b V2 n Any
 drawSquare t3 l t2 (fromRational . toRational . view _z -> z, sq)
   = sq # transform t3
        # lmap l
@@ -90,7 +91,7 @@ drawSquare t3 l t2 (fromRational . toRational . view _z -> z, sq)
        # stroke
        # fc (blend z grey red)
 
-instance (TypeableFloat n, Enum n, Typeable b, Renderable (Path V2 n) b) => Plotable (SurfacePlot b n) b where
+instance (TypeableFloat n, Enum n, Typeable b, Renderable (Path V2 n) b) => Plotable (SurfacePlot b n) where
   plot _ t3 l t2 sp = foldMap (drawSquare t3 l t2) sqs
                         # lineJoin LineJoinBevel
     where sqs = mkSquares $ calcPoints f 20 bs

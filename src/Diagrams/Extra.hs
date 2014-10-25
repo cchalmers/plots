@@ -17,6 +17,30 @@
 
 -- | Bunch of random functions, some more usefull than others.
 
+-- data Situated' a v n where
+--   Situated  :: (V a ~ v, N a ~ n) => Point v n -> a v n -> Situated' a v n
+-- 
+-- newtype Canonical a (v :: * -> *) n = Canonical {uncanonical :: a}
+-- 
+-- mkCanonical :: a -> Canonical a (V a) (N a)
+-- mkCanonical = Canonical
+-- 
+-- data Situated' a v n = Situated
+--   { _loc      :: Point v n
+--   , _situated :: a
+--   } deriving Typeable
+
+-- mkSituated :: (V a ~ v, N a ~ n) => Point v n -> a -> Situated' a v n
+-- mkSituated = Situated
+
+-- type Situated a v n = Situated' (a v n) v n
+
+-- instance HasVectors (Canonical a) => HasVectors (Situated' a) where
+--   type Restrict (Situated' a) v n = (V a ~ v, N a ~ n, Restrict (Canonical a) v n)
+-- 
+--   vectors f (Situated p a) = Situated <$> vectors f p <*> fmap uncanonical (vectors f (Canonical a))
+--   {-# INLINE vectors #-}
+
 
 module Diagrams.Extra where
 
@@ -25,6 +49,25 @@ import Data.Function         (on)
 import Data.Monoid.Recommend
 import Diagrams.Prelude      as D
 
+
+-- atTypeOf :: AttributeClass a => a -> Lens' (Style v n) (Maybe a)
+-- atTypeOf (typeOf -> k) = _Wrapped' . atHash
+--   where
+--     atHash f m = f mv <&> \r -> case r of
+--       Just v' -> HM.insert k (mkAttr v') m
+--       Nothing -> maybe m (const (HM.delete k m)) mv
+--       where mv = HM.lookup k m >>= unwrapAttr
+-- {-# INLINE atTypeOf #-}
+-- 
+-- 
+-- atTypeOf :: AttributeClass a => a -> Lens' (Style v n) (Maybe a)
+-- atTypeOf (typeOf -> k) = _Wrapped' . atHash
+--   where
+--     atHash f m = f mv <&> \r -> case r of
+--       Just v' -> HM.insert k (mkAttr v') m
+--       Nothing -> maybe m (const (HM.delete k m)) mv
+--       where mv = HM.lookup k m >>= unwrapAttr
+-- {-# INLINE atTypeOf #-}
 
 -- diagrams misc
 
@@ -51,32 +94,32 @@ locate (viewLoc -> (p,a)) = moveTo p a
 
 -- SizeSpec ------------------------------------------------------------
 
--- | Isomorphism from 'SizeSpec2D' to @(Maybe width, Maybe height)@.
-spec2D :: Iso' (SizeSpec2D n) (Maybe n, Maybe n)
-spec2D = iso getter (uncurry mkSizeSpec)
-  where getter (Width w)  = (Just w, Nothing)
-        getter (Height h) = (Nothing, Just h)
-        getter (Dims w h) = (Just w, Just h)
-        getter Absolute   = (Nothing, Nothing)
-
--- | Lens onto the possible width of a 'SizeSpec2D'.
-specWidth :: Lens' (SizeSpec2D n) (Maybe n)
-specWidth = spec2D . _1
-
--- | Lens onto the possible height of a 'SizeSpec2D'.
-specHeight :: Lens' (SizeSpec2D n) (Maybe n)
-specHeight = spec2D . _2
-
-required2DScaling :: (Floating n, Eq n) => SizeSpec2D n -> (n, n) -> T2 n
-required2DScaling spec b
- | anyOf (L.beside each (traversed._Just)) (==0) (b, spec^.spec2D) = mempty
-required2DScaling spec (w,h) = case spec of
-  Absolute         -> mempty
-  Width specW      -> scaling (specW / w)
-  Height specH     -> scaling (specH / w)
-  Dims specW specH -> scalingX (specW / w)
-                   <> scalingY (specH / h)
-
+-- -- | Isomorphism from 'SizeSpec2D' to @(Maybe width, Maybe height)@.
+-- spec2D :: Iso' (SizeSpec2D n) (Maybe n, Maybe n)
+-- spec2D = iso getter (uncurry mkSizeSpec)
+--   where getter (Width w)  = (Just w, Nothing)
+--         getter (Height h) = (Nothing, Just h)
+--         getter (Dims w h) = (Just w, Just h)
+--         getter Absolute   = (Nothing, Nothing)
+-- 
+-- -- | Lens onto the possible width of a 'SizeSpec2D'.
+-- specWidth :: Lens' (SizeSpec2D n) (Maybe n)
+-- specWidth = spec2D . _1
+-- 
+-- -- | Lens onto the possible height of a 'SizeSpec2D'.
+-- specHeight :: Lens' (SizeSpec2D n) (Maybe n)
+-- specHeight = spec2D . _2
+-- 
+-- required2DScaling :: (Floating n, Eq n) => SizeSpec2D n -> (n, n) -> T2 n
+-- required2DScaling spec b
+--  | anyOf (L.beside each (traversed._Just)) (==0) (b, spec^.spec2D) = mempty
+-- required2DScaling spec (w,h) = case spec of
+--   Absolute         -> mempty
+--   Width specW      -> scaling (specW / w)
+--   Height specH     -> scaling (specH / w)
+--   Dims specW specH -> scalingX (specW / w)
+--                    <> scalingY (specH / h)
+-- 
 -- Transforms ----------------------------------------------------------
 
 -- | Construct a transformation which reflects along x=y.

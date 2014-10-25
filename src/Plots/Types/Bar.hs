@@ -40,10 +40,11 @@ data BarPlot b n = BarPlot
 
 type instance V (BarPlot b n) = V2
 type instance N (BarPlot b n) = n
+type instance B (BarPlot b n) = b
 
 makeLenses ''BarPlot
 
-instance HasGenericPlot (BarPlot b n) b where
+instance HasGenericPlot (BarPlot b n) where
   genericPlot = barPlotGeneric
 
 instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (BarPlot b n) where
@@ -57,7 +58,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (BarPlot b n) wh
 
 -- TODO: work out a nice way to get different colours for multi-bar plots.
 
-drawBarPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => BarPlot b n -> Diagram b V2 n
+drawBarPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => BarPlot b n -> QDiagram b V2 n Any
 drawBarPlot bp = foldMap makeBar (bp^.barPlotBars)
   where
     tW = bp^.barPlotWidth
@@ -91,7 +92,7 @@ simpleBarPlot (toList -> xs) = def & barPlotBars .~ imap f xs
   where
     f i h = (fromIntegral i + 1, [h])
 
-_BarPlot :: Plotable (BarPlot b n) b => Prism' (Plot b V2 n) (BarPlot b n)
+_BarPlot :: Plotable (BarPlot b n) => Prism' (Plot b V2 n) (BarPlot b n)
 _BarPlot = _Plot
 
 

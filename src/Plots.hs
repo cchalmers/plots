@@ -143,7 +143,7 @@ module Plots
     -- * Diagrams essentials
   , (#)
   , Diagram, V2 (..), V3 (..)
-  , SizeSpec2D (..)
+  , SizeSpec
   , lc
   , fc
 
@@ -253,7 +253,7 @@ import Data.Foldable
 
 import Diagrams.Coordinates.Isomorphic
 
-type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, DataFloat n, Enum n)
+type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, TypeableFloat n, Enum n)
 
 
 
@@ -303,7 +303,7 @@ setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 -- @
 -- myaxis = r2Axis # addPlotable (mkScatterPlot mydata)
 -- @
-addPlotable :: Plotable a b => a -> Axis b (V a) (N a) -> Axis b (V a) (N a)
+addPlotable :: Plotable a => a -> Axis (B a) (V a) (N a) -> Axis (B a) (V a) (N a)
 addPlotable p = axisPlots <>~ [review _Plot p]
 
 -- Scatter plot
@@ -349,7 +349,7 @@ multiLinePlot
 multiLinePlot = addPlotable . mkMultiLinePlotFromVerticies
 
 linePlotFromPath
-  :: (Plotable (LinePlot b v n) b, R2Backend b n, Euclidean v)
+  :: (Plotable (LinePlot b v n), R2Backend b n, Euclidean v)
     => Path v n -> Axis b v n -> Axis b v n
 linePlotFromPath = addPlotable . mkLinePlotFromPath
 
@@ -374,10 +374,10 @@ surfacePlot = addPlotable . mkSurfacePlot
 
 -- Legend
 
-addLegend :: (Plotable a b, Num (N a)) => String -> a -> a
+addLegend :: (Plotable a, Num (N a)) => String -> a -> a
 addLegend txt = legendEntries <>~ pure (mkLegendEntry txt)
 
-legendEntry :: (Plotable a b, Num (N a)) => String -> a -> a
+legendEntry :: (Plotable a, Num (N a)) => String -> a -> a
 legendEntry txt = legendEntries <>~ pure (mkLegendEntry txt)
 
 

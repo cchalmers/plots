@@ -35,8 +35,6 @@ import Diagrams.Coordinates.Isomorphic
 import Plots.Themes
 import Plots.Types
 
-import Diagrams.Core.Transform
-
 -- | Plottable data describing how to draw a line plot.
 data LinePlot b v n = LinePlot
   { _linePlotPath    :: Path v n
@@ -47,8 +45,9 @@ makeLensesWith (lensRules & generateSignatures .~ False) ''LinePlot
 
 type instance V (LinePlot b v n) = v
 type instance N (LinePlot b v n) = n
+type instance B (LinePlot b v n) = b
 
-instance HasGenericPlot (LinePlot b v n) b where
+instance HasGenericPlot (LinePlot b v n) where
   genericPlot = linePlotGeneric
 
 
@@ -62,7 +61,7 @@ instance (HasLinearMap v, TypeableFloat n, Renderable (Path V2 n) b) => Default 
 
 instance (OrderedField n, TypeableFloat n, Typeable b, Typeable v, Renderable (Path V2 n) b,
           HasLinearMap v, Metric v)
-       => Plotable (LinePlot b v n) b where
+       => Plotable (LinePlot b v n) where
   plot _ tv l t2 lp = lp ^.linePlotPath
                    & transform tv
                    & lmap l
@@ -78,7 +77,7 @@ instance (OrderedField n, TypeableFloat n, Typeable b, Typeable v, Renderable (P
 -- @@
 -- review _LinePlot myLinePlot
 -- @@
-_LinePlot :: Plotable (LinePlot b v n) b => Prism' (Plot b v n) (LinePlot b v n)
+_LinePlot :: Plotable (LinePlot b v n) => Prism' (Plot b v n) (LinePlot b v n)
 _LinePlot = _Plot
 
 -- | Lens onto the path the line plot will draw. In most cases it's best to use

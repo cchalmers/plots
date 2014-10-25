@@ -6,6 +6,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE ViewPatterns          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 module Plots.Legend
  ( -- * Legend entries
@@ -39,12 +40,6 @@ import           Diagrams.Prelude
 import           Plots.Themes
 import           Plots.Types
 
-class (V a ~ v, N a ~ n, Additive v, Num n) => Space v n a
-instance (V a ~ v, N a ~ n, Additive v, Num n) => Space v n a
-
-class (V a ~ V b, N a ~ N b) => a ~:~ b
-instance (V a ~ V b, N a ~ N b) => a ~:~ b
-
 data Position
   = North
   | NorthEast
@@ -72,7 +67,7 @@ data Anchor
 
 
 -- | Align an object using a given anchor.
-anchor :: (Space V2 n a, Alignable a, HasOrigin a, Floating n) => Anchor -> a -> a
+anchor :: (InSpace V2 n a, Alignable a, HasOrigin a, Floating n) => Anchor -> a -> a
 anchor a = case a of
   AnchorTop         -> alignT . centerX
   AnchorTopRight    -> alignTR
@@ -86,7 +81,7 @@ anchor a = case a of
 
 -- | Get the point from the 'Position' on the bounding box of the enveloped 
 --   object. Returns the origin if @a@ has an empty envelope.
-getPosition :: (Space V2 n a, Enveloped a, HasOrigin a, Fractional n) => Position -> a -> P2 n
+getPosition :: (InSpace V2 n a, Enveloped a, HasOrigin a, Fractional n) => Position -> a -> P2 n
 getPosition p a = flip (maybe origin) (getCorners $ boundingBox a)
   $ \(P (V2 xl yl), P (V2 xu yu)) ->
     P $ case p of
@@ -105,7 +100,7 @@ getPosition p a = flip (maybe origin) (getCorners $ boundingBox a)
 -- XXX write more
 
 -- | A tool for aligned one object to another.
-alignTo :: (Space V2 n a, a ~:~ b, Enveloped a, HasOrigin a, Alignable b, HasOrigin b, Floating n)
+alignTo :: (InSpace V2 n a, SameSpace a b, Enveloped a, HasOrigin a, Alignable b, HasOrigin b, Floating n)
   => Position -> a -> Anchor -> V2 n -> b -> b
 alignTo p a an v b
   = b # anchor an
@@ -131,7 +126,9 @@ data Legend b n = Legend
   , _legendAnchor      :: Anchor
   , _legendGap         :: V2 n
   , _legendStyle       :: Style V2 n
-  , _legendTextF       :: String -> Diagram b V2 n
+  , _legendSpacing     :: n
+  , _legendTextWidth   :: n
+  , _legendTextF       :: String -> QDiagram b V2 n Any
   , _legendTextStyle   :: Style V2 n
   , _legendOrientation :: Orientation
   } deriving Typeable
@@ -141,11 +138,13 @@ type instance N (Legend b n) = n
 
 makeLenses ''Legend
 
-instance (DataFloat n, Renderable (Text n) b) => Default (Legend b n) where
+instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
   def = Legend
           { _legendPosition    = NorthEast
           , _legendAnchor      = AnchorTopRight
-          , _legendGap         = mkR2 20 20
+          , _legendGap         = V2 20 20
+          , _legendSpacing     = 20
+          , _legendTextWidth   = 60
           , _legendStyle       = mempty
           , _legendTextF       = text
           , _legendTextStyle   = mempty # fontSizeG 12
@@ -155,10 +154,13 @@ instance (DataFloat n, Renderable (Text n) b) => Default (Legend b n) where
 instance TypeableFloat n => HasStyle (Legend b n) where
   applyStyle sty = over legendStyle (applyStyle sty)
 
-drawLegend :: (DataFloat n, Typeable v, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
-           => BoundingBox V2 n -> Legend b n -> [Plot b v n] -> Diagram b V2 n
+drawLegend :: (TypeableFloat n, Typeable v, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
+           => BoundingBox V2 n -> Legend b n -> [Plot b v n] -> QDiagram b V2 n Any
 drawLegend bb l ps = alignTo (l ^. legendPosition) bb (l ^. legendAnchor) zero ledge
   where
+    w = l ^. legendTextWidth
+    h = l ^. legendSpacing
+    --
     ledge      = orient (l ^. legendOrientation) hcat vcat
                $ concatMap mkLabels ps
     mkLabels p = map mkLabel (p ^. legendEntries)
@@ -167,9 +169,12 @@ drawLegend bb l ps = alignTo (l ^. legendPosition) bb (l ^. legendAnchor) zero l
           where
             txt = (l ^. legendTextF) (entry ^. legendText)
                     # applyStyle (l ^. legendTextStyle)
-               <> rect 60 10 # lw none -- find a better way to do this
-            pic = case entry ^. legendPic of
+                    # withEnvelope (fromCorners origin (mkP2 w h)) 
+            pic = wrapPic (V2 h h) $ case entry ^. legendPic of
                     DefaultLegendPic  -> defLegendPic p
                     CustomLegendPic f -> f $ p ^. themeEntry
 
+wrapPic :: RealFloat n => V2 n -> QDiagram b V2 n Any -> QDiagram b V2 n Any
+wrapPic ((^/ 2) -> v) d
+  = d # sizedAs (fromCorners (origin .-^ v) (origin .+^ v))
 

@@ -78,11 +78,12 @@ makeLenses ''ParametricPlot
 
 type instance V (ParametricPlot b v n) = v
 type instance N (ParametricPlot b v n) = n
+type instance B (ParametricPlot b v n) = b
 
 instance HasFunctionPlotOptions (ParametricPlot b v n) n where
   functionPlotOptions = parametricPlotOptions
 
-instance HasGenericPlot (ParametricPlot b v n) b where
+instance HasGenericPlot (ParametricPlot b v n) where
   genericPlot = parametricGenericPlot
 
 instance (TypeableFloat n, Renderable (Path V2 n) b, HasLinearMap v)
@@ -96,7 +97,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b, HasLinearMap v)
 
 instance (Typeable b, Typeable v, TypeableFloat n, Enum n, Renderable (Path V2 n) b,
           HasLinearMap v, Metric v)
-    => Plotable (ParametricPlot b v n) b where
+    => Plotable (ParametricPlot b v n) where
   plot _ tv l t2 fp = pathFromVertices p
                             # transform tv
                             # lmap l
@@ -124,6 +125,7 @@ data MeshPlot b n = MeshPlot
 
 type instance V (MeshPlot b n) = V3
 type instance N (MeshPlot b n) = n
+type instance B (MeshPlot b n) = b
 
 makeLenses ''MeshPlot
 
@@ -135,14 +137,14 @@ instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (MeshPlot b n) w
           , _meshPlotGeneric = def
           }
 
-instance HasGenericPlot (MeshPlot b n) b where
+instance HasGenericPlot (MeshPlot b n) where
   genericPlot = meshPlotGeneric
 
 -- instance HasFunctionPlotOptions (MeshPlot b) b R3 where
 --   functionPlotOptions = meshPlotOptions
 
 instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
-    => Plotable (MeshPlot b n) b where
+    => Plotable (MeshPlot b n) where
   plot _ tv l t2 mp =
     path # transform tv
          # lmap l
@@ -182,8 +184,9 @@ instance HasFunctionPlotOptions (FunctionPlot b n) n where
 
 type instance V (FunctionPlot b n) = V2
 type instance N (FunctionPlot b n) = n
+type instance B (FunctionPlot b n) = b
 
-instance HasGenericPlot (FunctionPlot b n) b where
+instance HasGenericPlot (FunctionPlot b n) where
   genericPlot = functionPlotGeneric
 
 -- do I really need a default instance for this?
@@ -209,7 +212,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (FunctionPlot b 
 --     a            = fp ^. plotBounds . el ex . lowerBound . recommend
 --     b            = fp ^. plotBounds . el ex . upperBound . recommend
 
-instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b) => Plotable (FunctionPlot b n) b where
+instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b) => Plotable (FunctionPlot b n) where
   plot _ tv l t2 fp =
     path # transform tv
          # lmap l
@@ -223,7 +226,7 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b) => Plot
       (a,b) = fp ^. functionDomain -- getBound ex fp
 
 
-_FunctionPlot :: Plotable (FunctionPlot b n) b => Prism' (Plot b V2 n) (FunctionPlot b n)
+_FunctionPlot :: Plotable (FunctionPlot b n) => Prism' (Plot b V2 n) (FunctionPlot b n)
 _FunctionPlot = _Plot
 
 mkFunctionPlot :: (Typeable b, Enum n, TypeableFloat n, Renderable (Path V2 n) b) => (n,n) -> (n -> n) -> FunctionPlot b n

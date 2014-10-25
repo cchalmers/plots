@@ -11,6 +11,8 @@
 {-# LANGUAGE DefaultSignatures         #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE OverlappingInstances      #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE GADTs      #-}
 
 {-# LANGUAGE CPP                        #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
@@ -55,6 +57,7 @@ module Plots.Types
   , Plotable (..)
   , Plot (..)
   , _Plot
+  , B
   -- , plotLineStyle
   -- , plotMarkerStyle
   -- , plotFillStyle
@@ -72,10 +75,7 @@ import Diagrams.BoundingBox
 import Plots.Themes
 import Linear
 
-import Diagrams.Core.Transform
-
-class (V a ~ v, N a ~ n, Additive v, Num n) => Space v n a
-instance (V a ~ v, N a ~ n, Additive v, Num n) => Space v n a
+type family B a :: *
 
 -- Bounds
 
@@ -110,10 +110,6 @@ instance Ord n => Semigroup (Bound n) where
 
 class HasBounds a where
   bounds :: Lens' a (Bounds (V a) (N a))
--- #ifdef HLINT
---   default bounds :: (a ~ T v Bound) => Lens' a a
---   bounds = id
--- #endif
 
 instance HasBounds (Bounds V2 n) where
   bounds = id
@@ -133,11 +129,11 @@ getBound e a = getBounds $ a ^. bounds . _Wrapped' . el e
 -- boundsMin = bounds . _Wrapped' . column lowerBound
 
 -- | Lens to the minimum point of a 'Bounds'.
-boundsMin :: (Space v n a, Representable v, HasBounds a) => Lens' a (Point v n)
+boundsMin :: (InSpace v n a, Representable v, HasBounds a) => Lens' a (Point v n)
 boundsMin = bounds . _Wrapped' . column (lowerBound . recommend) . iso P (\(P a) -> a)
 
 -- | Lens to the maximum point of a 'Bounds'.
-boundsMax :: (Space v n a, HasBasis v, HasBounds a) => Lens' a (Point v n)
+boundsMax :: (InSpace v n a, HasBasis v, HasBounds a) => Lens' a (Point v n)
 boundsMax = bounds . _Wrapped' . column (upperBound . recommend) . iso P (\(P a) -> a)
 
 -- Orientation
@@ -152,7 +148,7 @@ orient Verticle   _ v = v
 -- Legends
 
 data LegendPic b n = DefaultLegendPic
-                   | CustomLegendPic (ThemeEntry b n -> Diagram b V2 n)
+                   | CustomLegendPic (ThemeEntry b n -> QDiagram b V2 n Any)
 
 instance Default (LegendPic b n) where
   def = DefaultLegendPic
@@ -185,6 +181,7 @@ data GenericPlot b v n = GenericPlot
   , _plotBoundingBox :: BoundingBox v n
   } deriving Typeable
 
+type instance B (GenericPlot b v n) = b
 type instance V (GenericPlot b v n) = v
 type instance N (GenericPlot b v n) = n
 
@@ -196,10 +193,10 @@ type instance N (GenericPlot b v n) = n
 
 -- | Class that gives a lens onto a 'genericPlot'. All 'Plot's must impliment 
 --   this class.
-class HasGenericPlot t b | t -> b where
+class HasGenericPlot t where
 
   {-# MINIMAL genericPlot #-}
-  genericPlot :: Lens' t (GenericPlot b (V t) (N t))
+  genericPlot :: Lens' t (GenericPlot (B t) (V t) (N t))
 
   -- | Clip anything outside the current axis bounds.
   clipPlot :: Lens' t Bool
@@ -209,14 +206,14 @@ class HasGenericPlot t b | t -> b where
   {-# INLINE clipPlot #-}
 
   -- | The theme entry to be used for the current plot.
-  plotThemeEntry :: Lens' t (Recommend (ThemeEntry b (N t)))
+  plotThemeEntry :: Lens' t (Recommend (ThemeEntry (B t) (N t)))
   plotThemeEntry = genericPlot . lens
     (\GenericPlot { _plotThemeEntry = a } -> a)
     (\g a -> g { _plotThemeEntry = a})
   {-# INLINE plotThemeEntry #-}
 
   -- | The legend entries to be used for the current plot.
-  legendEntries :: Lens' t [LegendEntry b (N t)]
+  legendEntries :: Lens' t [LegendEntry (B t) (N t)]
   legendEntries = genericPlot . lens
     (\GenericPlot { _legendEntries = a } -> a)
     (\g a -> g { _legendEntries = a})
@@ -250,7 +247,7 @@ class HasGenericPlot t b | t -> b where
     (\g a -> g { _plotBoundingBox = a})
   {-# INLINE plotBoundingBox #-}
 
-instance HasGenericPlot (GenericPlot b v n) b where
+instance HasGenericPlot (GenericPlot b v n) where
   genericPlot = id
   {-# INLINE genericPlot #-}
 
@@ -259,49 +256,51 @@ instance HasGenericPlot (GenericPlot b v n) b where
 -- alternative is to have this all these instances defined for each plot or 
 -- rewrite lenses specific to HasGenericPlot.
 
-instance (HasGenericPlot a b, N a ~ n) => HasThemeEntry a b n where
+instance (HasGenericPlot a, N a ~ n, B a ~ b) => HasThemeEntry a b n where
   themeEntry = plotThemeEntry . recommend
 
 -- | The style is applied to all theme styles. Only works for R2 due to 
 --   HasStyle limitations.
-instance (HasGenericPlot a b, V a ~ V2) => HasStyle a where
+instance (HasGenericPlot a, V a ~ V2, Typeable (N a)) => HasStyle a where
   applyStyle sty = over themeEntry
                  $ over themeLineStyle (applyStyle sty)
                  . over themeMarkerStyle (applyStyle sty)
                  . over themeFillStyle (applyStyle sty)
 
-instance (Num (N a), HasGenericPlot a b , HasLinearMap (V a)) => Transformable a where
+instance (Num (N a), HasGenericPlot a , HasLinearMap (V a)) => Transformable a where
   transform = over plotTransform . transform
 
-instance HasGenericPlot a b => HasBounds a where
+instance HasGenericPlot a => HasBounds a where
   bounds = plotBounds
 
 -- | Move origin by applying to @plotTransform@.
-instance (Num (N a), HasGenericPlot a b, HasLinearMap (V a)) => HasOrigin a where
+instance (Num (N a), HasGenericPlot a, HasLinearMap (V a)) => HasOrigin a where
   moveOriginTo = over plotTransform . moveOriginTo
 
-instance HasGenericPlot a b => Qualifiable a where
+instance HasGenericPlot a => Qualifiable a where
   n |> p = over plotName (n |>) p
 
 -- | The @themeEntry@ lens goes though recommend, so @set themeEntry myTheme 
 --   myPlot@ won't give a committed theme entry (so theme from axis will 
 --   override). Use commitTheme to make sure theme is committed.
-commitTheme :: HasGenericPlot a b => ThemeEntry b (N a) -> a -> a
+commitTheme :: HasGenericPlot a => ThemeEntry (B a) (N a) -> a -> a
 commitTheme = set plotThemeEntry . Commit
 
 -- | Make the current theme a committed theme. See @commitTheme@.
-commitCurrentTheme :: HasGenericPlot a b => a -> a
+commitCurrentTheme :: HasGenericPlot a => a -> a
 commitCurrentTheme = over plotThemeEntry makeCommitted
   where
     makeCommitted (Recommend a) = Commit a
     makeCommitted c             = c
     
+zeroInt :: Additive v => v Int
+zeroInt = zero
 
-instance (TypeableFloat n, Renderable (Path V2 n) b, HasLinearMap v)
+instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v)
     => Default (GenericPlot b v n) where
   def = GenericPlot
           { _plotTransform   = mempty
-          , _plotBounds      = Bounds $ pure def
+          , _plotBounds      = Bounds $ def <$ zeroInt
           , _clipPlot        = True
           , _plotThemeEntry  = Recommend def
           , _legendEntries   = []
@@ -320,21 +319,20 @@ instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (GenericPlot b V
           , _plotBoundingBox = emptyBox
           }
 
-
 -- Plot data type
 
 -- | General class for something that can be wrapped in 'Plot'. The 'plot' 
 --   function is rarely used by the end user.
-class (HasGenericPlot a b, Typeable a, Typeable b) => Plotable a b where
-  plot :: (V a ~ v, N a ~ n)
+class (HasGenericPlot a, Typeable a) => Plotable a where
+  plot :: (V a ~ v, N a ~ n, B a ~ b)
        => v (n, n)
        -> Transformation v n
        -> (v n -> V2 n)
        -> T2 n
        -> a
-       -> Diagram b V2 n
+       -> QDiagram b V2 n Any
 
-  defLegendPic :: (N a ~ n, Ord n, Floating n) => a -> Diagram b V2 n
+  defLegendPic :: (N a ~ n, Ord n, Floating n) => a -> QDiagram (B a) V2 n Any
   defLegendPic = mempty
 
 -- | Make a legend entry with the given string and default picture.
@@ -342,18 +340,19 @@ mkLegendEntry :: Num n => String -> LegendEntry b n
 mkLegendEntry txt = def & legendText .~ txt
 
 -- | Existential wrapper for something plotable.
-data Plot b v n = forall a. (V a ~ v, N a ~ n, Plotable a b) => Plot a
+data Plot b v n = forall a. (V a ~ v, N a ~ n, B a ~ b, Plotable a) => Plot a
   deriving Typeable
 
+type instance B (Plot b v n) = b
 type instance V (Plot b v n) = v
 type instance N (Plot b v n) = n
 
-instance (Typeable b, Typeable v, Typeable n) => Plotable (Plot b v n) b where
+instance (Typeable b, Typeable v, Typeable n) => Plotable (Plot b v n) where
   plot bs tv l t2 (Plot p) = plot bs tv l t2 p
 
   defLegendPic (Plot a) = defLegendPic a
 
-instance HasGenericPlot (Plot b v n) b where
+instance HasGenericPlot (Plot b v n) where
   genericPlot = lens (\(Plot a)    -> view genericPlot a)
                      (\(Plot a) gp -> Plot (set genericPlot gp a))
 
@@ -361,6 +360,6 @@ instance HasGenericPlot (Plot b v n) b where
 -- | Prism onto the unwrapped plotable type. All standard plots export a 
 --   specialised version of this which is normally more usefull (i.e. 
 --   '_LinePlot').
-_Plot :: Plotable a b => Prism' (Plot b (V a) (N a)) a
+_Plot :: Plotable a => Prism' (Plot (B a) (V a) (N a)) a
 _Plot = prism' Plot (\(Plot a) -> cast a)
 

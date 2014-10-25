@@ -40,7 +40,7 @@ makeLenses ''Ticks
 -- | Information for drawing ticks for a coordinate system.
 type AxisTicks v n = v (Ticks n)
 
-instance (DataFloat n, Enum n) => Default (Ticks n) where
+instance (TypeableFloat n, Enum n) => Default (Ticks n) where
   def = Ticks
           { _majorTicksFun   = niceTicks 7
           , _minorTicksFun   = minors 4

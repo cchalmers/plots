@@ -120,7 +120,7 @@ data Axis b v n = Axis
   , _axisLines      :: AxisLines v n
   , _axisPlots      :: [Plot b v n]
   , _axisScaling    :: AxisScaling v n
-  , _axisSize       :: SizeSpec2D n
+  , _axisSize       :: SizeSpec V2 n
   , _axisTheme      :: Theme b n
   , _axisTickLabels :: AxisTickLabels b v n
   , _axisTicks      :: AxisTicks v n
@@ -140,10 +140,10 @@ instance HasBounds (Axis b v n) where
 
 -- R2 axis
 
-instance (DataFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) => Default (Axis b V2 n) where
+instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) => Default (Axis b V2 n) where
   def = Axis
           { _axisTitle      = Nothing
-          , _axisSize       = Width 300
+          , _axisSize       = mkWidth 300
           , _axisPlots      = []
           , _axisLegend     = def
           , _axisTheme      = coolTheme
@@ -159,10 +159,10 @@ instance (DataFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) 
 
 -- R3 Axis
 
-instance (DataFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) => Default (Axis b V3 n) where
+instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) => Default (Axis b V3 n) where
   def = Axis
           { _axisTitle      = Nothing
-          , _axisSize       = Width 300
+          , _axisSize       = mkWidth 300
           , _axisPlots      = []
           , _axisLegend     = def
           , _axisTheme      = coolTheme

@@ -29,7 +29,7 @@ data AxisLabelPlacement
    = InsideAxisLabel
    | OutsideAxisLabel
 
-type AxisLabelFunction b n = String -> Diagram b V2 n
+type AxisLabelFunction b n = String -> QDiagram b V2 n Any
 
 data AxisLabel b n = AxisLabel
   { _axisLabelFunction  :: AxisLabelFunction b n
@@ -42,7 +42,7 @@ data AxisLabel b n = AxisLabel
 
 makeLenses ''AxisLabel
 
-instance (Data n, Floating n, Ord n, Renderable (Text n) b) => Default (AxisLabel b n) where
+instance (TypeableFloat n, Renderable (Text n) b) => Default (AxisLabel b n) where
   def = AxisLabel
           { _axisLabelFunction  = text
           , _axisLabelText      = ""
@@ -58,7 +58,7 @@ type AxisLabels b v n = v (AxisLabel b n)
 
 -- | Tick labels functions are used to draw the tick labels. They has access to
 --   the major ticks and the current bounds.
-type TickLabelFunction b n = [n] -> (n,n) -> [(n, Diagram b V2 n)]
+type TickLabelFunction b n = [n] -> (n,n) -> [(n, QDiagram b V2 n Any)]
 
 data TickLabels b n = TickLabels
   { _tickLabelFunction :: TickLabelFunction b n
@@ -69,13 +69,13 @@ makeLenses ''TickLabels
 
 type AxisTickLabels b v n = v (TickLabels b n)
 
-instance (DataFloat n, Renderable (Text n) b) => Default (TickLabels b n) where
+instance (TypeableFloat n, Renderable (Text n) b) => Default (TickLabels b n) where
   def = TickLabels
           { _tickLabelFunction = atMajorTicks label
           , _tickLabelStyle    = mempty # fontSizeL 9
           }
 
-atMajorTicks :: (n -> Diagram b V2 n) -> TickLabelFunction b n
+atMajorTicks :: (n -> QDiagram b V2 n Any) -> TickLabelFunction b n
 atMajorTicks f ticks _ = map ((,) <*> f) ticks
 
 -- instance Renderable Text b => Default (TickLabels b) where
@@ -92,10 +92,10 @@ atMajorTicks f ticks _ = map ((,) <*> f) ticks
 --   fx = labelFunctionFromTickFunction (\n -> alignedText 0.5 1 (printf "%.1f" n) # translateY (-7))
 --   fy = labelFunctionFromTickFunction (\n -> alignedText 1 0.5 (printf "%.1f" n) # translateX (-7))
 --
-label :: (TypeableFloat n, Renderable (Text n) b) => n -> Diagram b V2 n
+label :: (TypeableFloat n, Renderable (Text n) b) => n -> QDiagram b V2 n Any
 label n = text $ showFFloat (Just 2) n ""
 
-leftLabel :: (TypeableFloat n, Renderable (Text n) b) => n -> Diagram b V2 n
+leftLabel :: (TypeableFloat n, Renderable (Text n) b) => n -> QDiagram b V2 n Any
 leftLabel n = alignedText 1 0.5 (showFFloat (Just 2) n "") # translateX (-7)
 --
 -- rightLabel :: (Renderable Text b) => Double -> Diagram b R2

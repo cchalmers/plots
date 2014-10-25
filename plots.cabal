@@ -35,11 +35,9 @@ Library
                        Plots.Legend
                        Plots.Name
                        Plots.CmdLine
-                       Diagrams.Extra
                        Diagrams.Coordinates.Isomorphic
                        Diagrams.LinearMap
                        Diagrams.Projections
-                       Diagrams.Prelude2
   Hs-source-dirs:      src
   Build-depends:       base          >= 4.3   && < 5.0
                      , adjunctions

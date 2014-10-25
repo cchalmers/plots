@@ -22,7 +22,7 @@ makeLenses ''GridLines
 
 type AxisGridLines v n = v (GridLines n)
 
-instance (Data n, Floating n) => Default (GridLines n) where
+instance (Typeable n, Floating n) => Default (GridLines n) where
   def = GridLines
           { _majorGridF    = tickGridF
           , _minorGridF    = noGridF

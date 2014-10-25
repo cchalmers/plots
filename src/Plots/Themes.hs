@@ -23,7 +23,7 @@ data ThemeEntry b n = ThemeEntry
   , _themeLineStyle   :: Style V2 n
   , _themeMarkerStyle :: Style V2 n
   , _themeFillStyle   :: Style V2 n
-  , _themeMarker      :: Diagram b V2 n
+  , _themeMarker      :: QDiagram b V2 n Any
   } deriving Typeable
 
 makeClassy ''ThemeEntry
