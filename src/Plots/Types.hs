@@ -1,20 +1,20 @@
+{-# LANGUAGE ConstraintKinds           #-}
+{-# LANGUAGE DefaultSignatures         #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE FunctionalDependencies    #-}
+{-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE OverlappingInstances      #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE UndecidableInstances      #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE DefaultSignatures         #-}
 {-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE OverlappingInstances      #-}
-{-# LANGUAGE ConstraintKinds      #-}
-{-# LANGUAGE GADTs      #-}
+{-# LANGUAGE UndecidableInstances      #-}
 
-{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE CPP                       #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
 
 module Plots.Types
@@ -43,37 +43,36 @@ module Plots.Types
   , legendPic
   , legendText
   , legendPrecidence
-  , mkLegendEntry
 
   -- * Generic plot
-  , GenericPlot
-  , HasGenericPlot (..)
-
-  -- ** Themes
-  , commitTheme
-  , commitCurrentTheme
+  , PlotProperties
+  , HasPlotProperties (..)
 
   -- * Plot / Plotable
   , Plotable (..)
   , Plot (..)
   , _Plot
+  , plotT
+  , renderPlot
+  , plotDefLegendPic
   , B
   -- , plotLineStyle
   -- , plotMarkerStyle
   -- , plotFillStyle
   ) where
 
-import Control.Lens     as L hiding (transform, ( # ), (|>))
-import Data.Default
-import Data.Typeable
-import Diagrams.Prelude as D hiding (view)
-import Diagrams.Extra
-import Data.Functor.Rep
-import Data.Monoid.Recommend
-import Diagrams.BoundingBox
+import           Control.Lens          as L hiding (transform, ( # ), (|>))
+import           Data.Default
+import           Data.Functor.Rep
+import           Data.Monoid.Recommend
+import           Data.Typeable
+import           Diagrams.BoundingBox
+import           Diagrams.Extra
+import           Diagrams.Prelude      as D hiding (view)
 
-import Plots.Themes
-import Linear
+import           Linear
+import           Plots.Themes
+import           Plots.Utils
 
 type family B a :: *
 
@@ -81,7 +80,7 @@ type instance B (QDiagram b v n m) = b
 
 -- Bounds
 
--- | A 'Bound' allows you to 'Commit' a an upper or lower bound while having a 
+-- | A 'Bound' allows you to 'Commit' a an upper or lower bound while having a
 --   fallback 'Reccommend' value.
 data Bound n = Bound
   { _lowerBound :: Recommend n
@@ -100,12 +99,6 @@ type instance N (Bounds v n) = n
 
 instance Num n => Default (Bound n) where
   def = Bound (Recommend 0) (Recommend 5)
-
-liftRecommend :: (a -> a -> a) -> Recommend a -> Recommend a -> Recommend a
-liftRecommend _ (Commit a) (Recommend _)    = Commit a
-liftRecommend _ (Recommend _) (Commit b)    = Commit b
-liftRecommend f (Recommend a) (Recommend b) = Recommend (f a b)
-liftRecommend f (Commit a) (Commit b)       = Commit (f a b)
 
 instance Ord n => Semigroup (Bound n) where
   Bound l1 u1 <> Bound l2 u2 = Bound (liftRecommend min l1 l2) (liftRecommend max u1 u2)
@@ -173,7 +166,7 @@ instance Num n => Default (LegendEntry b n) where
 -- Generic Plot info
 
 -- | Data type for holding information all plots must contain.
-data GenericPlot b v n = GenericPlot
+data PlotProperties b v n = PlotProperties
   { _plotTransform   :: Transformation v n
   , _plotBounds      :: Bounds v n
   , _clipPlot        :: Bool
@@ -183,123 +176,111 @@ data GenericPlot b v n = GenericPlot
   , _plotBoundingBox :: BoundingBox v n
   } deriving Typeable
 
-type instance B (GenericPlot b v n) = b
-type instance V (GenericPlot b v n) = v
-type instance N (GenericPlot b v n) = n
+type instance B (PlotProperties b v n) = b
+type instance V (PlotProperties b v n) = v
+type instance N (PlotProperties b v n) = n
 
--- makeLensesWith (classyRules & generateSignatures .~ False) ''GenericPlot
--- makeClassy ''GenericPlot
+-- makeLensesWith (classyRules & generateSignatures .~ False) ''PlotProperties
+-- makeClassy ''PlotProperties
 
--- I don't know how to give documenation for classes using TH, so I just wrote 
+-- I don't know how to give documenation for classes using TH, so I just wrote
 -- it by hand.
 
--- | Class that gives a lens onto a 'genericPlot'. All 'Plot's must impliment 
+-- | Class that gives a lens onto a 'plotProperties'. All 'Plot's must impliment
 --   this class.
-class HasGenericPlot t where
+class HasPlotProperties t where
 
-  {-# MINIMAL genericPlot #-}
-  genericPlot :: Lens' t (GenericPlot (B t) (V t) (N t))
+  {-# MINIMAL plotProperties #-}
+  plotProperties :: Lens' t (PlotProperties (B t) (V t) (N t))
 
   -- | Clip anything outside the current axis bounds.
   clipPlot :: Lens' t Bool
-  clipPlot = genericPlot . lens
-    (\GenericPlot { _clipPlot = a } -> a)
+  clipPlot = plotProperties . lens
+    (\PlotProperties { _clipPlot = a } -> a)
     (\g a -> g { _clipPlot = a})
   {-# INLINE clipPlot #-}
 
   -- | The theme entry to be used for the current plot.
   plotThemeEntry :: Lens' t (Recommend (ThemeEntry (B t) (N t)))
-  plotThemeEntry = genericPlot . lens
-    (\GenericPlot { _plotThemeEntry = a } -> a)
+  plotThemeEntry = plotProperties . lens
+    (\PlotProperties { _plotThemeEntry = a } -> a)
     (\g a -> g { _plotThemeEntry = a})
   {-# INLINE plotThemeEntry #-}
 
   -- | The legend entries to be used for the current plot.
   legendEntries :: Lens' t [LegendEntry (B t) (N t)]
-  legendEntries = genericPlot . lens
-    (\GenericPlot { _legendEntries = a } -> a)
+  legendEntries = plotProperties . lens
+    (\PlotProperties { _legendEntries = a } -> a)
     (\g a -> g { _legendEntries = a})
   {-# INLINE legendEntries #-}
 
   -- | The bounds the current plot requests.
   plotBounds :: Lens' t (Bounds (V t) (N t))
-  plotBounds = genericPlot . lens
-    (\GenericPlot { _plotBounds = a } -> a)
+  plotBounds = plotProperties . lens
+    (\PlotProperties { _plotBounds = a } -> a)
     (\g a -> g { _plotBounds = a})
   {-# INLINE plotBounds #-}
 
   -- | The name of the plot. This name is given to the rendered diagram.
   plotName :: Lens' t Name
-  plotName = genericPlot . lens
-    (\GenericPlot { _plotName = a } -> a)
+  plotName = plotProperties . lens
+    (\PlotProperties { _plotName = a } -> a)
     (\g a -> g { _plotName = a})
   {-# INLINE plotName #-}
 
   -- | The transformation to be applied to the plot.
   plotTransform :: Lens' t (Transformation (V t) (N t))
-  plotTransform = genericPlot . lens
-    (\GenericPlot { _plotTransform = a } -> a)
+  plotTransform = plotProperties . lens
+    (\PlotProperties { _plotTransform = a } -> a)
     (\g a -> g { _plotTransform = a})
   {-# INLINE plotTransform #-}
 
   -- | The transformation to be applied to the plot.
   plotBoundingBox :: Lens' t (BoundingBox (V t) (N t))
-  plotBoundingBox = genericPlot . lens
-    (\GenericPlot { _plotBoundingBox = a } -> a)
+  plotBoundingBox = plotProperties . lens
+    (\PlotProperties { _plotBoundingBox = a } -> a)
     (\g a -> g { _plotBoundingBox = a})
   {-# INLINE plotBoundingBox #-}
 
-instance HasGenericPlot (GenericPlot b v n) where
-  genericPlot = id
-  {-# INLINE genericPlot #-}
+instance HasPlotProperties (PlotProperties b v n) where
+  plotProperties = id
+  {-# INLINE plotProperties #-}
 
--- Some orphan overlapping instances. Should be alright as long as these 
--- instances arn't defined for anything with HasGenericPlot elsewhere. The 
--- alternative is to have this all these instances defined for each plot or 
--- rewrite lenses specific to HasGenericPlot.
+-- Some orphan overlapping instances. Should be alright as long as these
+-- instances arn't defined for anything with HasPlotProperties elsewhere. The
+-- alternative is to have this all these instances defined for each plot or
+-- rewrite lenses specific to HasPlotProperties.
 
-instance (HasGenericPlot a, N a ~ n, B a ~ b) => HasThemeEntry a b n where
+instance (HasPlotProperties a, N a ~ n, B a ~ b) => HasThemeEntry a b n where
   themeEntry = plotThemeEntry . recommend
 
--- | The style is applied to all theme styles. Only works for R2 due to 
+-- | The style is applied to all theme styles. Only works for R2 due to
 --   HasStyle limitations.
-instance (HasGenericPlot a, V a ~ V2, Typeable (N a)) => HasStyle a where
+instance (HasPlotProperties a, V a ~ V2, Typeable (N a)) => HasStyle a where
   applyStyle sty = over themeEntry
                  $ over themeLineStyle (applyStyle sty)
                  . over themeMarkerStyle (applyStyle sty)
                  . over themeFillStyle (applyStyle sty)
 
-instance (Num (N a), HasGenericPlot a , HasLinearMap (V a)) => Transformable a where
+instance (Num (N a), HasPlotProperties a , HasLinearMap (V a)) => Transformable a where
   transform = over plotTransform . transform
 
-instance HasGenericPlot a => HasBounds a where
+instance HasPlotProperties a => HasBounds a where
   bounds = plotBounds
 
 -- | Move origin by applying to @plotTransform@.
-instance (Num (N a), HasGenericPlot a, HasLinearMap (V a)) => HasOrigin a where
+instance (Num (N a), HasPlotProperties a, HasLinearMap (V a)) => HasOrigin a where
   moveOriginTo = over plotTransform . moveOriginTo
 
-instance HasGenericPlot a => Qualifiable a where
+instance HasPlotProperties a => Qualifiable a where
   n |> p = over plotName (n |>) p
 
--- | The @themeEntry@ lens goes though recommend, so @set themeEntry myTheme 
---   myPlot@ won't give a committed theme entry (so theme from axis will 
---   override). Use commitTheme to make sure theme is committed.
-commitTheme :: HasGenericPlot a => ThemeEntry (B a) (N a) -> a -> a
-commitTheme = set plotThemeEntry . Commit
-
--- | Make the current theme a committed theme. See @commitTheme@.
-commitCurrentTheme :: HasGenericPlot a => a -> a
-commitCurrentTheme = over plotThemeEntry makeCommitted
-  where
-    makeCommitted (Recommend a) = Commit a
-    makeCommitted c             = c
-    
 zeroInt :: Additive v => v Int
 zeroInt = zero
 
-instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v) => Default (GenericPlot b v n) where
-  def = GenericPlot
+instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v)
+    => Default (PlotProperties b v n) where
+  def = PlotProperties
           { _plotTransform   = mempty
           , _plotBounds      = Bounds $ def <$ zeroInt
           , _clipPlot        = True
@@ -309,58 +290,68 @@ instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v) => Default (Gen
           , _plotBoundingBox = emptyBox
           }
 
--- instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (GenericPlot b V3 n) where
---   def = GenericPlot
---           { _plotTransform   = mempty
---           , _plotBounds      = Bounds $ pure def
---           , _clipPlot        = True
---           , _plotThemeEntry  = Recommend def
---           , _legendEntries   = []
---           , _plotName        = mempty
---           , _plotBoundingBox = emptyBox
---           }
+------------------------------------------------------------------------
+-- Plotable
+------------------------------------------------------------------------
 
--- Plot data type
-
--- | General class for something that can be wrapped in 'Plot'. The 'plot' 
+-- | General class for something that can be wrapped in 'Plot'. The 'plot'
 --   function is rarely used by the end user.
-class (HasGenericPlot a, Typeable a) => Plotable a where
-  plot :: (V a ~ v, N a ~ n, B a ~ b)
-       => v (n, n)
+class Typeable a => Plotable a b where
+  renderPlotable :: InSpace v n a
+       => PlotProperties b v n
+       -> v (n, n)
        -> Transformation v n
        -> (v n -> V2 n)
        -> T2 n
        -> a
        -> QDiagram b V2 n Any
 
-  defLegendPic :: (N a ~ n, Ord n, Floating n) => a -> QDiagram (B a) V2 n Any
+  defLegendPic :: (InSpace v n a, OrderedField n)
+    => PlotProperties b v n -> a -> QDiagram b V2 n Any
   defLegendPic = mempty
 
--- | Make a legend entry with the given string and default picture.
-mkLegendEntry :: Num n => String -> LegendEntry b n
-mkLegendEntry txt = def & legendText .~ txt
+
+renderPlot
+       :: (Additive v, Num n)
+       => v (n, n)
+       -> Transformation v n
+       -> (v n -> V2 n)
+       -> T2 n
+       -> Plot b v n
+       -> QDiagram b V2 n Any
+renderPlot bs tv l t2 (Plot a pp) = renderPlotable pp bs tv l t2 a
+
+------------------------------------------------------------------------
+-- Plot wrapper
+------------------------------------------------------------------------
 
 -- | Existential wrapper for something plotable.
-data Plot b v n = forall a. (V a ~ v, N a ~ n, B a ~ b, Plotable a) => Plot a
+data Plot b v n = forall a. (V a ~ v, N a ~ n, Plotable a b) => Plot a (PlotProperties b v n)
   deriving Typeable
 
 type instance B (Plot b v n) = b
 type instance V (Plot b v n) = v
 type instance N (Plot b v n) = n
 
-instance (Typeable b, Typeable v, Typeable n) => Plotable (Plot b v n) where
-  plot bs tv l t2 (Plot p) = plot bs tv l t2 p
+plotDefLegendPic :: (Additive v, OrderedField n) => Plot b v n -> QDiagram b V2 n Any
+plotDefLegendPic (Plot a gp) = defLegendPic gp a
 
-  defLegendPic (Plot a) = defLegendPic a
+-- instance (Typeable b, Typeable v, Typeable n) => Plotable (Plot b v n) b where
+--   plot bs tv l t2 (Plot p) = plot bs tv l t2 p
+--
+--   defLegendPic (Plot a) = defLegendPic a
 
-instance HasGenericPlot (Plot b v n) where
-  genericPlot = lens (\(Plot a)    -> view genericPlot a)
-                     (\(Plot a) gp -> Plot (set genericPlot gp a))
+instance HasPlotProperties (Plot b v n) where
+  plotProperties = lens (\(Plot _ pp)   -> pp)
+                        (\(Plot a _) pp -> Plot a pp)
 
 
--- | Prism onto the unwrapped plotable type. All standard plots export a 
---   specialised version of this which is normally more usefull (i.e. 
+-- | Prism onto the unwrapped plotable type. All standard plots export a
+--   specialised version of this which is normally more usefull (i.e.
 --   '_LinePlot').
-_Plot :: Plotable a => Prism' (Plot (B a) (V a) (N a)) a
-_Plot = prism' Plot (\(Plot a) -> cast a)
+_Plot :: (Typeable (N a), Typeable (V a), Typeable b, Plotable a b) => Prism' (Plot b (V a) (N a)) (a, PlotProperties b (V a) (N a))
+_Plot = prism' (uncurry Plot) (\(Plot a b) -> cast (a,b))
+
+plotT :: (Typeable (N a), Typeable (V a), Typeable b, Plotable a b) => Traversal' (Plot b (V a) (N a)) a
+plotT = _Plot . _1
 

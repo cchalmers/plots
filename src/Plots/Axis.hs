@@ -179,13 +179,3 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
 
 -- Drawing the axis
 
-getAxisLinePos :: (Num n, Ord n) => (n, n) -> AxisLineType -> [n]
-getAxisLinePos (a,b) aType = case aType of
-  BoxAxisLine    -> [a, b]
-  LeftAxisLine   -> [a]
-  MiddleAxisLine -> [if | a > 0     -> a
-                        | b < 0     -> b
-                        | otherwise -> 0]
-  RightAxisLine  -> [b]
-  NoAxisLine     -> []
-

@@ -11,7 +11,7 @@ module Plots.Types.Bar
   ( BarPlot
   , simpleBarPlot
     -- * Prism
-  , _BarPlot
+  -- , _BarPlot
 
 
     -- * Lenses
@@ -30,39 +30,33 @@ import Diagrams.Prelude
 -- import Plots.Themes
 import Plots.Types
 
-data BarPlot b n = BarPlot
+data BarPlot n = BarPlot
   { _barPlotBars     :: [(n,[n])] -- data for bars
   , _barPlotWidth    :: n         -- total width of bars for one 'bit'
   , _barPlotSpacing  :: n         -- gap between multibars in same value
   , _barPlotIsVerticle :: Bool    -- whether the bars are verticle
-  , _barPlotGeneric  :: GenericPlot b V2 n
   } deriving Typeable
 
-type instance B (BarPlot b n) = b
-type instance V (BarPlot b n) = V2
-type instance N (BarPlot b n) = n
+type instance V (BarPlot n) = V2
+type instance N (BarPlot n) = n
 
 makeLenses ''BarPlot
 
-instance HasGenericPlot (BarPlot b n) where
-  genericPlot = barPlotGeneric
-
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (BarPlot b n) where
-  plot _ tv l t2 = drawBarPlot
+    => Plotable (BarPlot n) b where
+  plot gp _ tv l t2 = drawBarPlot
 
-instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (BarPlot b n) where
+instance Fractional n => Default (BarPlot n) where
   def = BarPlot
           { _barPlotBars       = []
           , _barPlotWidth      = 0.5
           , _barPlotSpacing    = 0.1
           , _barPlotIsVerticle = True
-          , _barPlotGeneric    = def
           }
 
 -- TODO: work out a nice way to get different colours for multi-bar plots.
 
-drawBarPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => BarPlot b n -> QDiagram b V2 n Any
+drawBarPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => BarPlot n -> QDiagram b V2 n Any
 drawBarPlot bp = foldMap makeBar (bp^.barPlotBars)
   where
     tW = bp^.barPlotWidth
@@ -91,11 +85,35 @@ drawBarPlot bp = foldMap makeBar (bp^.barPlotBars)
 -- instance (Typeable b, Renderable (Path R2) b) => Plotable (BarPlot b) b R2 where
 --   plot _r _ t = transform t . drawBarPlot
 
-simpleBarPlot :: (Renderable (Path V2 n) b, TypeableFloat n, Foldable f) => f n -> BarPlot b n
+simpleBarPlot :: (TypeableFloat n, Foldable f) => f n -> BarPlot n
 simpleBarPlot (toList -> xs) = def & barPlotBars .~ imap f xs 
   where
     f i h = (fromIntegral i + 1, [h])
 
-_BarPlot :: Plotable (BarPlot b n) => Prism' (Plot b V2 n) (BarPlot b n)
-_BarPlot = _Plot
+
+-- _BarPlot :: Plotable (BarPlot n) => Prism' (Plot b V2 n) (BarPlot n)
+-- _BarPlot = _Plot
+
+------------------------------------------------------------------------
+-- Histogram
+------------------------------------------------------------------------
+
+
+-- data Histogram n a = forall s. Histogram
+--   { histogramData  :: s
+--   , histogramFold  :: Fold s a
+--   , histogramLowerLimit :: Maybe n
+--   , histogramUpperLimit :: Maybe n
+--   }
+-- 
+-- mkHistogramOf :: Fold s n -> s -> BarPlot n
+-- mkHistogramOf f as = 
+
+
+
+------------------------------------------------------------------------
+-- Histogram
+------------------------------------------------------------------------
+
+
 

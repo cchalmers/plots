@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE MultiWayIf            #-}
 
 module Plots.Axis.Render where
 
@@ -51,7 +52,7 @@ renderR3Axis a = frame 15
               <> drawBackAxis ez ex NoLabels
               <> drawBackAxis ex ez NoLabels
   where
-    plots        = foldMap (plot xs tv l t2) plots'
+    plots        = foldMap (plotPlot xs tv l t2) plots'
     drawAxis     = axisOnBasis minPoint xs a tv l t2
     drawBackAxis = axisOnBasis backPoint xs a tv l t2
 
@@ -70,11 +71,11 @@ renderR3Axis a = frame 15
     --
     l = a ^. axisLinearMap
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Plotable (Plot b V2 n))
+instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Plotable (Plot b V2 n) b)
     => RenderAxis b V2 n where
   renderAxis = renderR2Axis
 
-renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Plotable (Plot b V2 n))
+renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Plotable (Plot b V2 n) b)
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 15
                $ legend
@@ -382,5 +383,15 @@ scaleE e s = fromLinear f f
 --       Height h -> scaling (h / y)
 --       Dims w h -> scalingX (w / x) <> scalingY (h / y)
 
+
+getAxisLinePos :: (Num n, Ord n) => (n, n) -> AxisLineType -> [n]
+getAxisLinePos (a,b) aType = case aType of
+  BoxAxisLine    -> [a, b]
+  LeftAxisLine   -> [a]
+  MiddleAxisLine -> [if | a > 0     -> a
+                        | b < 0     -> b
+                        | otherwise -> 0]
+  RightAxisLine  -> [b]
+  NoAxisLine     -> []
 
 

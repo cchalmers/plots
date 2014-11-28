@@ -11,15 +11,14 @@
 module Diagrams.Coordinates.Isomorphic
   ( -- * Type constraints
     HasIndexedBasis, Euclidean
+
     -- * Vector like
   , VectorLike (..)
-  , R2Like, r2Like, r2Iso
-  , R3Like, r3Like, r3Iso
+  , V2Like, V3Like
 
     -- * Point like
   , PointLike (..)
-  , P2Like, p2Like, p2Iso
-  , P3Like, p3Like, p3Iso
+  , P2Like, P3Like
   )
   where
 
@@ -28,86 +27,101 @@ import           Data.Complex
 import           Data.Typeable
 
 import           Diagrams.Prelude
-import           Diagrams.ThreeD.Types
-import           Diagrams.Core.Transform
 
 type HasIndexedBasis v = (HasBasis v, TraversableWithIndex (E v) v)
 
+-- | Umbrella class giving everything needed for working in the space. This is 
+--   basically a @V*@ from "linear".
 type Euclidean v = (HasLinearMap v, HasIndexedBasis v, Metric v)
 
-
--- | An isomorphism between a (possiblly monomorphic) type @a@ and euclidean 
---   vector @v@ under numerical field n.
+-- | Provides an 'Iso\'' between @a@ and @v n@. This is normally used to 
+--   convert between the data type you're already using, @a@, and diagram's 
+--   native form, @v n@.
 class (Euclidean v, Typeable v) => VectorLike v n a | a -> v n where
+  -- | Isomorphism from @Point v n@ to something 'PointLike' @a@.
+  -- 
+  -- >>> V2 3 5 ^. vectorLike :: (Int, Int)
+  -- (3,5)
   vectorLike :: Iso' (v n) a
 
+  -- | Isomorphism from something 'PointLike' @a@ to @Point v n@.
+  -- 
+  -- >>> ((3, 5) :: (Int, Int)) ^. vectorLike
+  -- V2 3 5
   unvectorLike :: Iso' a (v n)
   unvectorLike = from vectorLike
+  {-# INLINE unvectorLike #-}
 
-instance VectorLike V2 n (V2 n) where vectorLike = id
+instance VectorLike V2 n (V2 n) where
+  vectorLike = id
+  {-# INLINE vectorLike #-}
 
-type R2Like = VectorLike V2
-
-r2Like :: R2Like n a => Iso' (V2 n) a
-r2Like = vectorLike
-
-r2Iso :: R2Like n a => Iso' a (V2 n)
-r2Iso = unvectorLike
+type V2Like = VectorLike V2
 
 instance VectorLike V2 n (n, n) where
   vectorLike = iso unr2 r2
+  {-# INLINE vectorLike #-}
 
 instance VectorLike V2 n (Complex n) where
-  vectorLike = iso (\(unr2 -> (x,y)) -> x :+ y)
-                   (\(i :+ j)        -> r2 (i,j))
+  vectorLike = iso (\(V2 x y) -> x :+ y)
+                   (\(i :+ j) -> V2 i j)
+  {-# INLINE vectorLike #-}
 
-type R3Like = VectorLike V3
+type V3Like = VectorLike V3
 
-instance VectorLike V3 n (V3 n) where vectorLike = id
-
-r3Like :: R3Like n a => Iso' (V3 n) a
-r3Like = vectorLike
+instance VectorLike V3 n (V3 n) where
+  vectorLike = id
+  {-# INLINE vectorLike #-}
 
 instance VectorLike V3 n (n, n, n) where
   vectorLike = iso unr3 r3
+  {-# INLINE vectorLike #-}
 
--- | Some @a@ which is isomorphic to a point in vector space @v@.
+-- | Provides an 'Iso\'' between @a@ and @Point v n@. This is normally used to 
+--   convert between the data type you're already using, @a@, and diagram's 
+--   native form, @Point v n@.
 class (Euclidean v, Typeable v) => PointLike v n a | a -> v n where
+  -- | Isomorphism from @Point v n@ to something 'PointLike' @a@.
+  -- 
+  -- >>> mkP2 3 5 ^. pointLike :: (Int, Int)
+  -- (3,5)
   pointLike :: Iso' (Point v n) a
 
+  -- | Isomorphism from something 'PointLike' @a@ to @Point v n@.
+  -- 
+  -- >>> ((3, 5) :: (Int, Int)) ^. unpointLike
+  -- P (V2 3 5)
   unpointLike :: Iso' a (Point v n)
   unpointLike = from pointLike
+  {-# INLINE unpointLike #-}
 
 -- | Things that are isomorphic to points in R2.
 type P2Like = PointLike V2
 
 instance PointLike V2 n (P2 n) where pointLike = id
 
-p2Like :: P2Like n a => Iso' (P2 n) a
-p2Like = pointLike
-
-p2Iso :: P2Like n a => Iso' a (P2 n)
-p2Iso = unpointLike
-
 instance PointLike V2 n (V2 n) where
   pointLike = iso (\(unp2 -> (x,y)) -> V2 x y)
                   (\(V2 x y)        -> x ^& y)
+  {-# INLINE pointLike #-}
 
 instance PointLike V2 n (n, n) where
   pointLike = iso unp2 p2
+  {-# INLINE pointLike #-}
 
 instance PointLike V2 n (Complex n) where
   pointLike = iso (\(unp2 -> (x,y)) -> x :+ y)
                   (\(i :+ j)        -> p2 (i,j))
+  {-# INLINE pointLike #-}
 
 
 type P3Like = PointLike V3
 
--- instance PointLike V3 n (P3 n) where pointLike = id
-
-p3Like :: P3Like n a => Iso' (P3 n) a
-p3Like = pointLike
+instance PointLike V3 n (P3 n) where
+  pointLike = id
+  {-# INLINE pointLike #-}
 
 instance PointLike V3 n (n, n, n) where
   pointLike = iso unp3 p3
+  {-# INLINE pointLike #-}
 

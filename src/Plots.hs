@@ -255,8 +255,6 @@ import Diagrams.Coordinates.Isomorphic
 
 type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, TypeableFloat n, Enum n)
 
-
-
 -- | Standard 2D axis.
 r2Axis :: R2Backend b n => Axis b V2 n
 r2Axis = def
@@ -309,7 +307,7 @@ addPlotable p = axisPlots <>~ [review _Plot p]
 -- Scatter plot
 
 -- | Add a scatter plot from a foldable container of something 
---   'PointLike' (i.e. (P2, (n, n))). So for PointLike a V2 n we could 
+--   'PointLike' (i.e. (P2, (n, n))). So for PointLike V2 n a we could 
 --   have
 --   @@
 --   f a :: [(n, n)]

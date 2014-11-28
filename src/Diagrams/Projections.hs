@@ -17,7 +17,6 @@ module Diagrams.Projections where
 
 import Diagrams.Prelude hiding (view)
 import Control.Lens hiding (transform)
-import Diagrams.ThreeD
 
 -- * Parallel projections
 

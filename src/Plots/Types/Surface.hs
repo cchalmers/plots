@@ -35,25 +35,19 @@ data SurfaceType = Mesh
                  | Faceted
                  | Flat
 
-data SurfacePlot b n = SurfacePlot
+data SurfacePlot n = SurfacePlot
   { _surfaceFunction :: n -> n -> n
-  , _surfaceGenericPlot :: GenericPlot b V3 n
   } deriving Typeable
 
 makeLenses ''SurfacePlot
 
-type instance V (SurfacePlot b n) = V3
-type instance N (SurfacePlot b n) = n
-type instance B (SurfacePlot b n) = b
+type instance V (SurfacePlot n) = V3
+type instance N (SurfacePlot n) = n
 
-instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (SurfacePlot b n) where
+instance TypeableFloat n => Default (SurfacePlot n) where
   def = SurfacePlot
           { _surfaceFunction    = \_ _ -> 0
-          , _surfaceGenericPlot = def
           }
-
-instance HasGenericPlot (SurfacePlot b n) where
-  genericPlot = surfaceGenericPlot
 
 -- could probably do something fancy with zippers but keep it simple for now.
 mkSquares :: OrderedField n => Vector (Vector (P3 n)) -> [(P3 n, Path V3 n)]
@@ -91,14 +85,14 @@ drawSquare t3 l t2 (fromRational . toRational . view _z -> z, sq)
        # stroke
        # fc (blend z grey red)
 
-instance (TypeableFloat n, Enum n, Typeable b, Renderable (Path V2 n) b) => Plotable (SurfacePlot b n) where
-  plot _ t3 l t2 sp = foldMap (drawSquare t3 l t2) sqs
+instance (TypeableFloat n, Enum n, Typeable b, Renderable (Path V2 n) b) => Plotable (SurfacePlot n) b where
+  renderPlotable _ _ t3 l t2 sp = foldMap (drawSquare t3 l t2) sqs
                         # lineJoin LineJoinBevel
     where sqs = mkSquares $ calcPoints f 20 bs
           f   = sp ^. surfaceFunction
           bs  = V2 (0,5) (0,5)
 
-mkSurfacePlot :: (TypeableFloat n, Renderable (Path V2 n) b)
-  => (n -> n -> n) -> SurfacePlot b n
+mkSurfacePlot :: (TypeableFloat n)
+  => (n -> n -> n) -> SurfacePlot n
 mkSurfacePlot f = def & surfaceFunction .~ f
 
