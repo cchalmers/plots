@@ -19,12 +19,12 @@
 
 -- data Situated' a v n where
 --   Situated  :: (V a ~ v, N a ~ n) => Point v n -> a v n -> Situated' a v n
--- 
+--
 -- newtype Canonical a (v :: * -> *) n = Canonical {uncanonical :: a}
--- 
+--
 -- mkCanonical :: a -> Canonical a (V a) (N a)
 -- mkCanonical = Canonical
--- 
+--
 -- data Situated' a v n = Situated
 --   { _loc      :: Point v n
 --   , _situated :: a
@@ -37,7 +37,7 @@
 
 -- instance HasVectors (Canonical a) => HasVectors (Situated' a) where
 --   type Restrict (Situated' a) v n = (V a ~ v, N a ~ n, Restrict (Canonical a) v n)
--- 
+--
 --   vectors f (Situated p a) = Situated <$> vectors f p <*> fmap uncanonical (vectors f (Canonical a))
 --   {-# INLINE vectors #-}
 
@@ -58,8 +58,8 @@ import Diagrams.Prelude      as D
 --       Nothing -> maybe m (const (HM.delete k m)) mv
 --       where mv = HM.lookup k m >>= unwrapAttr
 -- {-# INLINE atTypeOf #-}
--- 
--- 
+--
+--
 -- atTypeOf :: AttributeClass a => a -> Lens' (Style v n) (Maybe a)
 -- atTypeOf (typeOf -> k) = _Wrapped' . atHash
 --   where
@@ -71,7 +71,7 @@ import Diagrams.Prelude      as D
 
 -- diagrams misc
 
-(##) :: AReview s t a b -> b -> t
+(##) :: AReview t b -> b -> t
 (##) = review
 
 infixr 8 ##
@@ -101,15 +101,15 @@ locate (viewLoc -> (p,a)) = moveTo p a
 --         getter (Height h) = (Nothing, Just h)
 --         getter (Dims w h) = (Just w, Just h)
 --         getter Absolute   = (Nothing, Nothing)
--- 
+--
 -- -- | Lens onto the possible width of a 'SizeSpec2D'.
 -- specWidth :: Lens' (SizeSpec2D n) (Maybe n)
 -- specWidth = spec2D . _1
--- 
+--
 -- -- | Lens onto the possible height of a 'SizeSpec2D'.
 -- specHeight :: Lens' (SizeSpec2D n) (Maybe n)
 -- specHeight = spec2D . _2
--- 
+--
 -- required2DScaling :: (Floating n, Eq n) => SizeSpec2D n -> (n, n) -> T2 n
 -- required2DScaling spec b
 --  | anyOf (L.beside each (traversed._Just)) (==0) (b, spec^.spec2D) = mempty
@@ -119,7 +119,7 @@ locate (viewLoc -> (p,a)) = moveTo p a
 --   Height specH     -> scaling (specH / w)
 --   Dims specW specH -> scalingX (specW / w)
 --                    <> scalingY (specH / h)
--- 
+--
 -- Transforms ----------------------------------------------------------
 
 -- | Construct a transformation which reflects along x=y.
@@ -145,10 +145,10 @@ multipleOf n x = x `mod` n == 0
 --   where
 --     setAttr' sty (Just a) = setAttr a sty
 --     setAttr' sty Nothing  = over _Wrapped (Map.delete (show . typeOf $ (undefined :: a))) sty
--- 
+--
 -- _Attribute :: AttributeClass a => Prism' (Attribute v) a
 -- _Attribute = prism' mkAttr unwrapAttr
--- 
+--
 -- _TAttribute :: (AttributeClass a, Transformable a, V a ~ v)
 --             => Prism' (Attribute v) a
 -- _TAttribute = prism' mkTAttr unwrapAttr
@@ -156,23 +156,23 @@ multipleOf n x = x `mod` n == 0
 -- Situated ------------------------------------------------------------
 
 -- newtype Situated a = Situated (Located a)
--- 
+--
 -- instance (t ~ Situated a') => Rewrapped (Situated a) t
 -- instance Wrapped (Situated a) where
 --   type Unwrapped (Situated a) = Located a
 --   _Wrapped' = iso (\(Situated a) -> a) Situated
 --   {-# INLINE _Wrapped' #-}
--- 
--- 
+--
+--
 -- -- | Lens onto the object, unadjusted.
 -- inSitu :: Lens' (Situated a) a
 -- inSitu = _Wrapped . located
--- 
+--
 -- situate :: HasOrigin a => Situated a -> a
 -- situate (viewLoc . L.view _Wrapped -> (p,a)) = moveTo p a
--- 
+--
 -- type instance V (Situated a) = V a
--- 
+--
 -- deriving instance (Eq (V a), Eq a)     => Eq (Situated a)
 -- deriving instance (Ord (V a), Ord a)   => Ord (Situated a)
 -- deriving instance (Show (V a), Show a) => Show (Situated a)
@@ -181,12 +181,12 @@ multipleOf n x = x `mod` n == 0
 -- deriving instance Enveloped a          => Juxtaposable (Situated a)
 -- deriving instance Traced a             => Traced (Situated a)
 -- deriving instance Qualifiable a        => Qualifiable (Situated a)
--- 
+--
 -- -- | Only the location gets transformed.
 -- instance HasLinearMap (V a) => Transformable (Situated a) where
 --   -- transform t (Situated l) = Situated (transformLoc t l)
 --   transform t = over (_Wrapped . _loc) (papply t)
--- 
+--
 -- Traverals
 
 traverse2lens :: Lens' a b -> Lens' a b -> Traversal' a b

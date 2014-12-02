@@ -9,29 +9,29 @@
 -- License     :  BSD-style (see LICENSE)
 -- Maintainer  :  c.chalmers@me.com
 --
--- This module should contain everything you need to get started with @plots@. 
--- Other modules are exposed for advanced customisation, manly with the use of 
+-- This module should contain everything you need to get started with @plots@.
+-- Other modules are exposed for advanced customisation, manly with the use of
 -- lenses.
--- 
--- The aim of this library is to easily create good looking plots with the 
+--
+-- The aim of this library is to easily create good looking plots with the
 -- ability to customise almost every aspect when needed.
--- 
--- Plots is based on the "Diagrams" library and adopts many of its 
--- styles/convections. All plots are converted to diagrams and diagrams can be 
+--
+-- Plots is based on the "Diagrams" library and adopts many of its
+-- styles/convections. All plots are converted to diagrams and diagrams can be
 -- included in plots. See the Diagrams library for more info.
--- 
--- The @Axis b@ type holds all the information necessary to build a plot. The 
--- simplest way to draw a plot is to start with one of the default axis and add 
+--
+-- The @Axis b@ type holds all the information necessary to build a plot. The
+-- simplest way to draw a plot is to start with one of the default axis and add
 -- some plots to it.
--- 
+--
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 -- NOTE: This doesn't actually work yet!
 -- !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
--- 
+--
 -- @@
 -- import Plots
 -- import Diagrams.Backend.PGF -- insert favourite backend here
--- 
+--
 -- myPlot :: Axis B
 -- myPlot = defaultAxis
 --            & addFunctionPlot sin
@@ -54,19 +54,19 @@
 --     # addLegendEntry "sine wave"
 --   axisPlots <>= functionPlot cos
 --     # addLegendEntry "cosine wave"
--- 
--- 
+--
+--
 -- main = defaultMain myPlot
 -- @@
 --
 -- @@
 -- $ runHaskell myPlot.hs -o myPlot.pdf
 -- @@
--- 
--- 
--- Currently @plots@ supports line, scatter, function and bar plots. Hopefully 
+--
+--
+-- Currently @plots@ supports line, scatter, function and bar plots. Hopefully
 -- more will be added soon.
--- 
+--
 --
 -----------------------------------------------------------------------------
 module Plots
@@ -82,42 +82,42 @@ module Plots
   , Plot (..)
 
     -- ** Adding plots
-    -- | Most plotting functions are highly polymorphic to allow a wide range 
-    --   of inputs. One downside of this is the type system cannot always infer 
-    --   what type the input should be. It is therefore a good idea to give 
+    -- | Most plotting functions are highly polymorphic to allow a wide range
+    --   of inputs. One downside of this is the type system cannot always infer
+    --   what type the input should be. It is therefore a good idea to give
     --   type signatures to input data.
-    -- 
+    --
     -- @
     -- mydata :: [(n,n)]
     -- mydata = [(2,3), (2.3, 4.5), (3.1, 2.5), (3.8, 3.2)]
     -- @
 
-    -- | Most of the time you can use functions like 'addScatterPlot' which add 
-    --   directly a plot directly to an axis. However, for more advanced use 
+    -- | Most of the time you can use functions like 'addScatterPlot' which add
+    --   directly a plot directly to an axis. However, for more advanced use
     --   you may wish to work with the specific data types.
-  , addPlotable
+  -- , addPlotable
 
     -- ** Scatter plot
     -- | Put markers at points. For more options see 'Plots.Types.Scatter'
   -- , addScatterPlot
-  , scatterPlot
+  -- , scatterPlot
   -- , connectedScattered
-  , module Plots.Types.Scatter
+  -- , module Plots.Types.Scatter
 
     -- ** Line plot
     -- | Plot simple lines.
   -- , addLinePlot
-  , linePlot
-  , multiLinePlot
-  , linePlotFromPath
+  -- , linePlot
+  -- , multiLinePlot
+  -- , linePlotFromPath
   , module Plots.Types.Line
 
   -- ** Parametric plot
-  , parametricPlot
+  -- , parametricPlot
 
   -- ** Mesh plot
-  , meshPlot
-  , surfacePlot
+  -- , meshPlot
+  -- , surfacePlot
 
     -- ** Function plot
     -- | Plot a given function.
@@ -131,8 +131,8 @@ module Plots
   , module Plots.Types.Bar
 
     -- * Legend
-  , addLegend
-  , legendEntry
+  -- , addLegend
+  -- , legendEntry
 
     -- * Themes
   , setTheme
@@ -149,12 +149,12 @@ module Plots
 
     -- * Optics
     -- ** Basis elements
-    -- | These basis elements can be used to select a specific coordinate axis. 
+    -- | These basis elements can be used to select a specific coordinate axis.
     --   These can be used henever a function has a @E v@ argument.
   , E (..), ex, ey, ez
 
     -- ** Common functions
-    -- | These lens functions can be used to change some of the more advanced 
+    -- | These lens functions can be used to change some of the more advanced
     --   aspects of the axis.
   , (&)
   , set, (.~)
@@ -238,10 +238,10 @@ import Plots.Axis.Render
 import Plots.Axis
 
 import Plots.Types.Bar
-import Plots.Types.Scatter
+-- import Plots.Types.Scatter
 import Plots.Types.Function
 import Plots.Types.Line
-import Plots.Types.Surface
+-- import Plots.Types.Surface
 import Plots.Themes
 
 import Linear.V3
@@ -249,9 +249,9 @@ import Linear.V3
 import Data.Monoid.Recommend
 
 import Control.Monad.State.Lazy
-import Data.Foldable
+-- import Data.Foldable
 
-import Diagrams.Coordinates.Isomorphic
+-- import Diagrams.Coordinates.Isomorphic
 
 type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, TypeableFloat n, Enum n)
 
@@ -301,27 +301,27 @@ setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 -- @
 -- myaxis = r2Axis # addPlotable (mkScatterPlot mydata)
 -- @
-addPlotable :: Plotable a => a -> Axis (B a) (V a) (N a) -> Axis (B a) (V a) (N a)
-addPlotable p = axisPlots <>~ [review _Plot p]
+-- addPlotable :: Plotable a => a -> Axis (B a) (V a) (N a) -> Axis (B a) (V a) (N a)
+-- addPlotable p = axisPlots <>~ [review _Plot p]
 
 -- Scatter plot
 
--- | Add a scatter plot from a foldable container of something 
---   'PointLike' (i.e. (P2, (n, n))). So for PointLike V2 n a we could 
+-- | Add a scatter plot from a foldable container of something
+--   'PointLike' (i.e. (P2, (n, n))). So for PointLike V2 n a we could
 --   have
 --   @@
 --   f a :: [(n, n)]
 --   f a :: Vector (V2 n)
 --   @@
-scatterPlot
-  :: (PointLike v n a,
-      Foldable f,
-      Default (ScatterPlot b v n),
-      R2Backend b n)
-      
-      -- Plotable (ScatterPlot b v n) b v n)
-  => f a -> Axis b v n -> Axis b v n
-scatterPlot = addPlotable . mkScatterPlot
+-- scatterPlot
+--   :: (PointLike v n a,
+--       Foldable f,
+--       Default (ScatterPlot b v n),
+--       R2Backend b n)
+
+--       -- Plotable (ScatterPlot b v n) b v n)
+--   => f a -> Axis b v n -> Axis b v n
+-- scatterPlot = addPlotable . mkScatterPlot
 
 -- Line plot
 
@@ -330,53 +330,53 @@ scatterPlot = addPlotable . mkScatterPlot
 -- f a :: Vector (n,n)
 -- f a :: [P2]
 -- @@
-linePlot
-  :: (PointLike v n a, R2Backend b n, Foldable f)
-    => f a -> Axis b v n -> Axis b v n
-linePlot = addPlotable . mkLinePlotFromVerticies
+-- linePlot
+--   :: (PointLike v n a, R2Backend b n, Foldable f)
+--     => f a -> Axis b v n -> Axis b v n
+-- linePlot = addPlotable . mkLinePlotFromVerticies
 
--- Add a multi-line plot from a foldable container of a foldable container of 
+-- Add a multi-line plot from a foldable container of a foldable container of
 -- something 'PointLike'. For an V2 n Axis this could be
 -- @@
 -- g (f a) :: [Vector (n,n)]
 -- g (f a) :: V4 [P2]
 -- @@
-multiLinePlot
-  :: (PointLike v n a, R2Backend b n, Foldable f, Foldable g)
-    => g (f a) -> Axis b v n -> Axis b v n
-multiLinePlot = addPlotable . mkMultiLinePlotFromVerticies
+-- multiLinePlot
+--   :: (PointLike v n a, R2Backend b n, Foldable f, Foldable g)
+--     => g (f a) -> Axis b v n -> Axis b v n
+-- multiLinePlot = addPlotable . mkMultiLinePlotFromVerticies
 
-linePlotFromPath
-  :: (Plotable (LinePlot b v n), R2Backend b n, Euclidean v)
-    => Path v n -> Axis b v n -> Axis b v n
-linePlotFromPath = addPlotable . mkLinePlotFromPath
+-- linePlotFromPath
+--   :: (Plotable (LinePlot b v n), R2Backend b n, Euclidean v)
+--     => Path v n -> Axis b v n -> Axis b v n
+-- linePlotFromPath = addPlotable . mkLinePlotFromPath
 
 -- Parametric plots
 
-parametricPlot
-  :: (PointLike v n a, R2Backend b n, Applicative v, Metric v, Typeable v)
-    => (n -> a) -> Axis b v n -> Axis b v n
-parametricPlot = addPlotable . mkParametricPlot
+-- parametricPlot
+--   :: (PointLike v n a, R2Backend b n, Applicative v, Metric v, Typeable v)
+--     => (n -> a) -> Axis b v n -> Axis b v n
+-- parametricPlot = addPlotable . mkParametricPlot
 
 -- Mesh plots
 
-meshPlot :: R2Backend b n => (n -> n -> n) -> Axis b V3 n -> Axis b V3 n
-meshPlot = addPlotable . mkMeshPlot
+-- meshPlot :: R2Backend b n => (n -> n -> n) -> Axis b V3 n -> Axis b V3 n
+-- meshPlot = addPlotable . mkMeshPlot
 
 
 -- Surface plot
 
-surfacePlot :: R2Backend b n => (n -> n -> n) -> Axis b V3 n -> Axis b V3 n
-surfacePlot = addPlotable . mkSurfacePlot
+-- surfacePlot :: R2Backend b n => (n -> n -> n) -> Axis b V3 n -> Axis b V3 n
+-- surfacePlot = addPlotable . mkSurfacePlot
 
 
 -- Legend
 
-addLegend :: (Plotable a, Num (N a)) => String -> a -> a
-addLegend txt = legendEntries <>~ pure (mkLegendEntry txt)
+-- addLegend :: (Plotable a, Num (N a)) => String -> a -> a
+-- addLegend txt = legendEntries <>~ pure (mkLegendEntry txt)
 
-legendEntry :: (Plotable a, Num (N a)) => String -> a -> a
-legendEntry txt = legendEntries <>~ pure (mkLegendEntry txt)
+-- legendEntry :: (Plotable a, Num (N a)) => String -> a -> a
+-- legendEntry txt = legendEntries <>~ pure (mkLegendEntry txt)
 
 
 
@@ -460,26 +460,26 @@ zMin = bounds . _Wrapped . _z . lowerBound
 -- -- | Traversal over all axis line types.
 -- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType
 -- axisLineTypes = axisLines . traversed . axisLine
--- 
+--
 -- -- | Lens onto x axis line type.
 -- xAxisLineType :: (L.R1 v, HasAxisLines a v) => Lens' a AxisLineType
 -- xAxisLineType = axisLine ex . axisLineType
--- 
+--
 -- -- | Lens onto y axis line type.
 -- yAxisLineType :: (L.V2 n v, HasAxisLines a v) => Lens' a AxisLineType
 -- yAxisLineType = axisLine ey . axisLineType
--- 
+--
 -- -- | Lens onto z axis line type.
 -- zAxisLineType :: (L.V3 n v, HasAxisLines a v) => Lens' a AxisLineType
 -- zAxisLineType = axisLine ez . axisLineType
--- 
+--
 -- xAxisArrowOpts :: (L.R1 v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- xAxisArrowOpts = axisLine ex . axisArrowOpts
--- 
+--
 -- yAxisArrowOpts :: (L.V2 n v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- yAxisArrowOpts = axisLine ey . axisArrowOpts
--- 
+--
 -- zAxisArrowOpts :: (L.V3 n v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- zAxisArrowOpts = axisLines ez . axisArrowOpts
--- 
+--
 --

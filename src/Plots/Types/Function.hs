@@ -18,7 +18,7 @@ module Plots.Types.Function
   -- , mkFunctionPlot
     -- * Prism
   -- , _FunctionPlot
-  , mkFunctionPlot
+  -- , mkFunctionPlot
 
 
     -- * Lenses
@@ -30,29 +30,29 @@ module Plots.Types.Function
   , ParametricPlot (..)
   , mkParametricPlot
   -- mesh
-  , MeshPlot (..)
-  , mkMeshPlot
+  -- , MeshPlot (..)
+  -- , mkMeshPlot
 
    -- * Vector field
-  , VectorField
-  , mkVectorField
+  -- , VectorField
+  -- , mkVectorField
   ) where
 
 import           Control.Lens                    hiding (lmap, transform, ( # ))
 import           Data.Default
-import           Data.Foldable
+-- import           Data.Foldable
 import           Data.Typeable
-import           Diagrams.BoundingBox
+-- import           Diagrams.BoundingBox
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Extra
-import           Diagrams.LinearMap
+-- import           Diagrams.LinearMap
 import           Diagrams.Prelude                hiding (view)
 
-import           Linear.V3
+-- import           Linear.V3
 import           Plots.Themes
 import           Plots.Types
-import           Data.Traversable  as T
-import           Plots.Utils
+-- import           Data.Traversable  as T
+-- import           Plots.Utils
 
 -- Options
 
@@ -89,12 +89,10 @@ type instance N (ParametricPlot v n) = n
 instance HasFunctionPlotOptions (ParametricPlot v n) n where
   functionPlotOptions = parametricPlotOptions
 
-instance (Typeable b, Typeable v, TypeableFloat n, Enum n, Renderable (Path V2 n) b, HasLinearMap v, Metric v)
-    => Plotable (ParametricPlot v n) b where
-  renderPlotable pp _ tv l t2 fp = pathFromVertices p
-                            # transform tv
-                            # lmap l
-                            # transform t2
+instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
+    => Plotable (ParametricPlot V2 n) b where
+  renderPlotable pp _ t fp = pathFromVertices p
+                            # transform t
                             # stroke
                             # applyStyle (pp ^. themeLineStyle)
     where
@@ -124,7 +122,7 @@ data MeshPlot n = MeshPlot
 type instance V (MeshPlot n) = V3
 type instance N (MeshPlot n) = n
 
-makeLenses ''MeshPlot
+-- makeLenses ''MeshPlot
 
 instance (Num n) => Default (MeshPlot n) where
   def = MeshPlot
@@ -139,126 +137,124 @@ instance (Num n) => Default (MeshPlot n) where
 -- instance HasFunctionPlotOptions (MeshPlot b) b R3 where
 --   functionPlotOptions = meshPlotOptions
 
-instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
-    => Plotable (MeshPlot n) b where
-  renderPlotable pp _ tv l t2 mp =
-    path # transform tv
-         # lmap l
-         # transform t2
-         # stroke
-         # applyStyle (pp ^. themeLineStyle)
-    where
-      path = foldMap xlines xs <> foldMap ylines ys
-      --
-      f = mp ^. meshFunction
-      xlines x = pathFromVertices [ mkP3 x y (f x y) | y <- ys ]
-      ylines y = pathFromVertices [ mkP3 x y (f x y) | x <- xs ]
-      --
-      xs = [xa, xa + (xb - xa) / n .. xb]
-      ys = [ya, ya + (xb - xa) / n .. yb]
-      (xa,xb) = mp ^. meshDomain . el ex
-      (ya,yb) = mp ^. meshDomain . el ey
-      -- n = mp ^. functionPlotNumPoints . to fromIntegral
-      n = 15
+-- instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
+--     => Plotable (MeshPlot n) b where
+--   renderPlotable pp _ tv l t2 mp =
+--     path # transform t
+--          # stroke
+--          # applyStyle (pp ^. themeLineStyle)
+--     where
+--       path = foldMap xlines xs <> foldMap ylines ys
+--       --
+--       f = mp ^. meshFunction
+--       xlines x = pathFromVertices [ mkP3 x y (f x y) | y <- ys ]
+--       ylines y = pathFromVertices [ mkP3 x y (f x y) | x <- xs ]
+--       --
+--       xs = [xa, xa + (xb - xa) / n .. xb]
+--       ys = [ya, ya + (xb - xa) / n .. yb]
+--       (xa,xb) = mp ^. meshDomain . el ex
+--       (ya,yb) = mp ^. meshDomain . el ey
+--       -- n = mp ^. functionPlotNumPoints . to fromIntegral
+--       n = 15
 
-mkMeshPlot :: (TypeableFloat n) => (n -> n -> n) -> MeshPlot n
-mkMeshPlot f = def & meshFunction .~ f
+-- mkMeshPlot :: (TypeableFloat n) => (n -> n -> n) -> MeshPlot n
+-- mkMeshPlot f = def & meshFunction .~ f
 
-------------------------------------------------------------------------
--- Mesh plot
-------------------------------------------------------------------------
+-- ------------------------------------------------------------------------
+-- -- Mesh plot
+-- ------------------------------------------------------------------------
 
-data FunctionPlot n = FunctionPlot
-  { _functionPlotFunction :: n -> n
-  , _functionPlotOpts     :: FunctionPlotOptions n
-  , _functionDomain       :: (n,n)
-  } deriving Typeable
+-- data FunctionPlot n = FunctionPlot
+--   { _functionPlotFunction :: n -> n
+--   , _functionPlotOpts     :: FunctionPlotOptions n
+--   , _functionDomain       :: (n,n)
+--   } deriving Typeable
 
-makeLenses ''FunctionPlot
+-- makeLenses ''FunctionPlot
 
-instance HasFunctionPlotOptions (FunctionPlot n) n where
-  functionPlotOptions = functionPlotOpts
+-- instance HasFunctionPlotOptions (FunctionPlot n) n where
+--   functionPlotOptions = functionPlotOpts
 
-type instance V (FunctionPlot n) = V2
-type instance N (FunctionPlot n) = n
+-- type instance V (FunctionPlot n) = V2
+-- type instance N (FunctionPlot n) = n
 
--- do I really need a default instance for this?
-instance (TypeableFloat n) => Default (FunctionPlot n) where
-  def = FunctionPlot { _functionPlotFunction = const 0
-                     , _functionDomain       = (0,5)
-                     , _functionPlotOpts     = def
-                     }
+-- -- do I really need a default instance for this?
+-- instance (TypeableFloat n) => Default (FunctionPlot n) where
+--   def = FunctionPlot { _functionPlotFunction = const 0
+--                      , _functionDomain       = (0,5)
+--                      , _functionPlotOpts     = def
+--                      }
 
--- pathFromVertices :: [Point v n] -> Path v n
--- pathFromVertices = fromVertices
+-- -- pathFromVertices :: [Point v n] -> Path v n
+-- -- pathFromVertices = fromVertices
 
 
 
--- drawFunctionPlot :: Renderable (Path V2 n) b => T2 n -> FunctionPlot b V2 n -> Diagram b V2 n
--- drawFunctionPlot t fp = fromVertices functionPath
---                           # transform t
---                           # applyStyle (fp ^. themeLineStyle)
+-- -- drawFunctionPlot :: Renderable (Path V2 n) b => T2 n -> FunctionPlot b V2 n -> Diagram b V2 n
+-- -- drawFunctionPlot t fp = fromVertices functionPath
+-- --                           # transform t
+-- --                           # applyStyle (fp ^. themeLineStyle)
+-- --   where
+-- --     functionPath = map f [a, a + 1 / (fp ^. functionPlotNumPoints . to fromIntegral) .. b]
+-- --     f            = fp ^. functionPlotFunction
+-- --     a            = fp ^. plotBounds . el ex . lowerBound . recommend
+-- --     b            = fp ^. plotBounds . el ex . upperBound . recommend
+
+-- instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b) => Plotable (FunctionPlot n) b where
+--   renderPlotable pp _ tv l t2 fp =
+--     path # transform tv
+--          # lmap l
+--          # transform t2
+--          # stroke
+--          # applyStyle (pp ^. themeLineStyle)
+--     where
+--       path = pathFromVertices $ map (mkP2 <*> f) [a, a + 1 / (fp ^. functionPlotNumPoints . to fromIntegral) .. b]
+--       --
+--       f = fp ^. functionPlotFunction
+--       (a,b) = fp ^. functionDomain -- getBound ex fp
+
+
+-- -- _FunctionPlot :: Plotable (FunctionPlot n) b => Prism' (Plot b V2 n) (FunctionPlot n)
+-- -- _FunctionPlot = _Plot
+
+-- mkFunctionPlot :: (TypeableFloat n) => (n,n) -> (n -> n) -> FunctionPlot n
+-- mkFunctionPlot d f = def & functionPlotFunction .~ f
+--                          & functionDomain       .~ d
+
+
+-- ------------------------------------------------------------------------
+-- -- Vector field
+-- ------------------------------------------------------------------------
+
+-- data VectorField v n = VectorField
+--   { _fieldGrad         :: v n -> v n
+--   , _fieldPoints       :: BoundingBox v n -> [Point v n]
+--   , _vectorFieldArrows :: ArrowOpts n
+--   }
+
+-- -- makeLenses ''VectorField
+
+-- mkVectorField :: (VectorLike v n vn, TypeableFloat n) => (vn -> vn) -> VectorField v n
+-- mkVectorField f
+--   = VectorField
+--       { _fieldGrad   = over vectorLike f
+--       , _fieldPoints = splitBoundingBox (10 <$ (zero :: Additive v => v Int))
+--       , _vectorFieldArrows = def
+--       }
+
+-- splitBoundingBox :: (Additive v, Traversable v, Fractional n)
+--   => v Int -> BoundingBox v n -> [Point v n]
+-- splitBoundingBox xs = maybe [] mkPoints . getCorners
 --   where
---     functionPath = map f [a, a + 1 / (fp ^. functionPlotNumPoints . to fromIntegral) .. b]
---     f            = fp ^. functionPlotFunction
---     a            = fp ^. plotBounds . el ex . lowerBound . recommend
---     b            = fp ^. plotBounds . el ex . upperBound . recommend
+--     mkPoints (l,u) = T.sequence (liftI3 enumFromToN l u (P xs))
 
-instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b) => Plotable (FunctionPlot n) b where
-  renderPlotable pp _ tv l t2 fp =
-    path # transform tv
-         # lmap l
-         # transform t2
-         # stroke
-         # applyStyle (pp ^. themeLineStyle)
-    where
-      path = pathFromVertices $ map (mkP2 <*> f) [a, a + 1 / (fp ^. functionPlotNumPoints . to fromIntegral) .. b]
-      --
-      f = fp ^. functionPlotFunction
-      (a,b) = fp ^. functionDomain -- getBound ex fp
+-- (<~>) :: Additive v => v (a -> b) -> v a -> v b
+-- (<~>) = liftI2 ($)
+-- {-# INLINE (<~>) #-}
 
+-- infixl 4 <~>
 
--- _FunctionPlot :: Plotable (FunctionPlot n) b => Prism' (Plot b V2 n) (FunctionPlot n)
--- _FunctionPlot = _Plot
-
-mkFunctionPlot :: (TypeableFloat n) => (n,n) -> (n -> n) -> FunctionPlot n
-mkFunctionPlot d f = def & functionPlotFunction .~ f
-                         & functionDomain       .~ d
-
-
-------------------------------------------------------------------------
--- Vector field
-------------------------------------------------------------------------
-
-data VectorField v n = VectorField
-  { _fieldGrad         :: v n -> v n
-  , _fieldPoints       :: BoundingBox v n -> [Point v n]
-  , _vectorFieldArrows :: ArrowOpts n
-  }
-
--- makeLenses ''VectorField
-
-mkVectorField :: (VectorLike v n vn, TypeableFloat n) => (vn -> vn) -> VectorField v n
-mkVectorField f
-  = VectorField
-      { _fieldGrad   = over vectorLike f
-      , _fieldPoints = splitBoundingBox (10 <$ (zero :: Additive v => v Int))
-      , _vectorFieldArrows = def
-      }
-  
-splitBoundingBox :: (Additive v, Traversable v, Fractional n)
-  => v Int -> BoundingBox v n -> [Point v n]
-splitBoundingBox xs = maybe [] mkPoints . getCorners
-  where
-    mkPoints (l,u) = T.sequence (liftI3 enumFromToN l u (P xs)) 
-
-(<~>) :: Additive v => v (a -> b) -> v a -> v b
-(<~>) = liftI2 ($)
-{-# INLINE (<~>) #-}
-
-infixl 4 <~>
-
-liftI3 :: Additive f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
-liftI3 f a b c = liftI2 f a b <~> c
-{-# INLINE liftI3 #-}
+-- liftI3 :: Additive f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
+-- liftI3 f a b c = liftI2 f a b <~> c
+-- {-# INLINE liftI3 #-}
 

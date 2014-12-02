@@ -44,7 +44,7 @@ makeLenses ''BarPlot
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
-  plot gp _ tv l t2 = drawBarPlot
+  renderPlotable _gp _ _t = drawBarPlot
 
 instance Fractional n => Default (BarPlot n) where
   def = BarPlot
@@ -86,7 +86,7 @@ drawBarPlot bp = foldMap makeBar (bp^.barPlotBars)
 --   plot _r _ t = transform t . drawBarPlot
 
 simpleBarPlot :: (TypeableFloat n, Foldable f) => f n -> BarPlot n
-simpleBarPlot (toList -> xs) = def & barPlotBars .~ imap f xs 
+simpleBarPlot (toList -> xs) = def & barPlotBars .~ imap f xs
   where
     f i h = (fromIntegral i + 1, [h])
 
@@ -105,9 +105,9 @@ simpleBarPlot (toList -> xs) = def & barPlotBars .~ imap f xs
 --   , histogramLowerLimit :: Maybe n
 --   , histogramUpperLimit :: Maybe n
 --   }
--- 
+--
 -- mkHistogramOf :: Fold s n -> s -> BarPlot n
--- mkHistogramOf f as = 
+-- mkHistogramOf f as =
 
 
 

@@ -29,53 +29,55 @@ import           Plots.Types
 
 import           Diagrams.BoundingBox
 import           Diagrams.Extra
-import           Diagrams.LinearMap
+-- import           Diagrams.LinearMap
 
 import           Linear                hiding (translation)
 
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b V2 n Any
 
-instance (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
-    => RenderAxis b V3 n where
-  renderAxis = renderR3Axis
+-- instance (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
+--     => RenderAxis b V3 n where
+--   renderAxis = renderR3Axis
 
-renderR3Axis :: (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
-    => Axis b V3 n -> QDiagram b V2 n Any
-renderR3Axis a = frame 15
-               $ legend
-              <> plots
-              <> drawAxis ex ey LowerLabels
-              <> drawAxis ey ex UpperLabels
-              <> drawAxis ez ey LowerLabels
-              <> drawAxis ey ez NoLabels
-              <> drawBackAxis ez ex NoLabels
-              <> drawBackAxis ex ez NoLabels
-  where
-    plots        = foldMap (plotPlot xs tv l t2) plots'
-    drawAxis     = axisOnBasis minPoint xs a tv l t2
-    drawBackAxis = axisOnBasis backPoint xs a tv l t2
+-- renderR3Axis :: (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
+--     => Axis b V3 n -> QDiagram b V2 n Any
+-- renderR3Axis a = frame 15
+--                $ legend
+--               <> plots
+--               <> drawAxis ex ey LowerLabels
+--               <> drawAxis ey ex UpperLabels
+--               <> drawAxis ez ey LowerLabels
+--               <> drawAxis ey ez NoLabels
+--               <> drawBackAxis ez ex NoLabels
+--               <> drawBackAxis ex ez NoLabels
+--   where
+--     plots        = foldMap (renderPlot xs t) plots'
+--     drawAxis     = axisOnBasis minPoint xs a tv l t2
+--     drawBackAxis = axisOnBasis backPoint xs a tv l t2
 
-    minPoint  = P $ fmap fst xs
-    backPoint = P $ view <$> V3 _1 _2 _1 <*> xs
-    --
-    (xs, tv, t2) = workOutScale a
-    --
-    bb = fromCorners (P . l $ fmap fst xs) (P . l $ fmap snd xs)
-    legend = drawLegend bb (a ^. axisLegend) (plots' ^.. traversed)
-                        -- (a ^.. axisPlots . traversed . genericPlot)
-    --
-    plots' = a ^. axisPlots . to applyTheme
-    -- TODO: fix this
-    applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
-    --
-    l = a ^. axisLinearMap
+--     minPoint  = P $ fmap fst xs
+--     backPoint = P $ view <$> V3 _1 _2 _1 <*> xs
+--     --
+--     (xs, tv, t2) = workOutScale a
+--     --
+--     bb = fromCorners (P . l $ fmap fst xs) (P . l $ fmap snd xs)
+--     legend = drawLegend bb (a ^. axisLegend) (plots' ^.. traversed)
+--                         -- (a ^.. axisPlots . traversed . genericPlot)
+--     --
+--     plots' = a ^. axisPlots . to applyTheme
+--     -- TODO: fix this
+--     applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
+--     --
+--     l = a ^. axisLinearMap
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Plotable (Plot b V2 n) b)
+instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
+          Renderable (Text n) b, Plotable (Plot b V2 n) b)
     => RenderAxis b V2 n where
   renderAxis = renderR2Axis
 
-renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Plotable (Plot b V2 n) b)
+renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
+                 Renderable (Text n) b, Plotable (Plot b V2 n) b)
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 15
                $ legend
@@ -83,12 +85,13 @@ renderR2Axis a = frame 15
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LowerLabels
   where
-    plots = foldMap (plot xs tv (a ^. axisLinearMap) t2) plots'
-    drawAxis = axisOnBasis origin xs a tv (a ^. axisLinearMap) t2
+    plots = foldMap (renderPlot xs t) plots'
+    -- drawAxis = axisOnBasis origin xs a tv (a ^. axisLinearMap) t
+    drawAxis = axisOnBasis origin xs a t
     --
-    (xs, tv, t2) = workOutScale a
+    (xs, tv, t) = workOutScale a
     --
-    bb = fromCorners (P . apply t2 . apply tv $ fmap fst xs) (P . apply t2 . apply tv $ fmap snd xs)
+    bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t . apply tv $ fmap snd xs)
     legend = drawLegend bb (a ^. axisLegend) (toList plots')
     --
     -- TODO: fix this
@@ -101,20 +104,23 @@ data LabelPosition = NoLabels
   deriving (Show, Eq, Typeable)
 
 axisOnBasis
-  :: forall b v n. (TypeableFloat n, HasLinearMap v, Metric v, Renderable (Path V2 n) b, n ~ N (v n), v ~ V (v n))
+  :: forall b v n. (v ~ V2, TypeableFloat n, HasLinearMap v, Metric v,
+                    Renderable (Path V2 n) b, n ~ N (v n), v ~ V (v n), OrderedField n)
   => Point v n        -- start of axis
   -> v (n, n)         -- calculated bounds
   -> Axis b v n       -- axis data
-  -> Transformation v n -- transformation to apply to positions of things
-  -> (v n -> V2 n)    -- linear map onto R2
+  -- -> Transformation v n -- transformation to apply to positions of things
+  -- -> (v n -> V2 n)    -- linear map onto R2
   -> T2 n             -- transformation to apply to positions of things
   -> E v              -- direction of axis
   -> E v              -- orthogonal direction of axis
   -> LabelPosition    -- where (if at all) should labels be placed?
+  -- -> QDiagram b V2 n Any   -- resulting axis
   -> QDiagram b V2 n Any   -- resulting axis
-axisOnBasis p bs a tv l t2 e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
+-- axisOnBasis p bs a tv l t2 e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
+axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
   where
-    tStroke = stroke . transform t2 . lmap l . transform tv
+    tStroke = stroke . transform t
 
     -- axis labels (x,y etc.)
     axLabels = if null txt || lp == NoLabels
@@ -125,11 +131,12 @@ axisOnBasis p bs a tv l t2 e eO lp = tickLabels <> axLabels <> ticks <> line <> 
 
       where
         p' = p # over lensP ((el e .~ x) . (el eO .~ y0))
-               # papply (translationE eO (negate' labelGap / avgScale t2))
-               # papply tv
-               # lmap l
-               # papply t2
-        labelGap = axLabelD ^. axisLabelGap
+               -- # papply (translationE eO (negate' labelGap / avgScale t2))
+               # papply t
+               -- # papply tv
+               -- # lmap l
+               -- # papply t2
+        -- labelGap = axLabelD ^. axisLabelGap
         txt      = axLabelD ^. axisLabelText
         x = case axLabelD ^. axisLabelPos of
               MiddleAxisLabel -> (x0 + x1) / 2
@@ -150,10 +157,10 @@ axisOnBasis p bs a tv l t2 e eO lp = tickLabels <> axLabels <> ticks <> line <> 
             f (x, dia) = place dia p'
               where
                 p' = over lensP ((el e .~ x) . (el eO .~ y)) p
-                       # papply tv
-                       # papply (translationE eO (negate' 15 / avgScale t2))
-                       # lmap l
-                       # papply t2
+                       # papply t
+                       -- # papply (translationE eO (negate' 15 / avgScale t2))
+                       -- # lmap l
+                       -- # papply t2
 
     -- grid
     grid = majorLines <> minorLines
@@ -193,19 +200,19 @@ axisOnBasis p bs a tv l t2 e eO lp = tickLabels <> axLabels <> ticks <> line <> 
           pathFromVertices
             [ origin & ep eO -~ d
             , origin & ep eO +~ d ]
-              # lmap l -- Note: only works for linear maps
+              -- # lmap l -- Note: only works for linear maps
         positionTick tick x = place tick p'
           where
             p' = over lensP ((el e .~ x) . (el eO .~ y)) p
-                   # transform tv
-                   # lmap l
-                   # transform t2
+                   # transform t
+                   -- # lmap l
+                   -- # transform t2
 
     -- axis lines
     line = foldMap mkline ys -- merge with ticks?
-             # transform tv
-             # lmap l
-             # transform t2
+             # transform t
+             -- # lmap l
+             -- # transform t2
              # stroke
              # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
       where
@@ -226,9 +233,9 @@ axisOnBasis p bs a tv l t2 e eO lp = tickLabels <> axLabels <> ticks <> line <> 
     ys       = getAxisLinePos yb lineType
     lineType = a ^. axisLines . el e . axisLineType
     --
-    negate' = if lp == UpperLabels
-                then id
-                else negate
+    -- negate' = if lp == UpperLabels
+    --             then id
+    --             else negate
 
 
 -- Rules for choosing scales:
@@ -362,11 +369,11 @@ scaleE e s = fromLinear f f
 --                        (view lensP . uncurry (liftA2 (,)) <$> getCorners bb)
 --                        bnd
 --     V2 x y = l . apply aspectScaling $ v
--- 
+--
 --     -- the vector that points from the lower bound to the upper bound of the
 --     -- axis
 --     v = uncurry (flip (-)) <$> enlargedBounds
--- 
+--
 --     aspectScaling
 --       -- if any of the aspect ratios are committed we use the aspect ratio from
 --       -- aScaling
@@ -376,7 +383,7 @@ scaleE e s = fromLinear f f
 --       -- that each axis is the same length
 --       | otherwise
 --           = inv $ vectorScaling v
--- 
+--
 --     specScaling = case spec2d of
 --       Absolute -> mempty
 --       Width w  -> scaling (w / x)

@@ -55,6 +55,7 @@ module Plots.Types
   , plotT
   , renderPlot
   , plotDefLegendPic
+
   , B
   -- , plotLineStyle
   -- , plotMarkerStyle
@@ -155,6 +156,10 @@ data LegendEntry b n = LegendEntry
   } deriving Typeable
 
 makeLenses ''LegendEntry
+
+type instance V (LegendEntry b n) = V2
+type instance N (LegendEntry b n) = n
+type instance B (LegendEntry b n) = b
 
 instance Num n => Default (LegendEntry b n) where
   def = LegendEntry
@@ -301,10 +306,8 @@ class Typeable a => Plotable a b where
        => PlotProperties b v n
        -> v (n, n)
        -> Transformation v n
-       -> (v n -> V2 n)
-       -> T2 n
        -> a
-       -> QDiagram b V2 n Any
+       -> QDiagram b v n Any
 
   defLegendPic :: (InSpace v n a, OrderedField n)
     => PlotProperties b v n -> a -> QDiagram b V2 n Any
@@ -315,11 +318,9 @@ renderPlot
        :: (Additive v, Num n)
        => v (n, n)
        -> Transformation v n
-       -> (v n -> V2 n)
-       -> T2 n
        -> Plot b v n
-       -> QDiagram b V2 n Any
-renderPlot bs tv l t2 (Plot a pp) = renderPlotable pp bs tv l t2 a
+       -> QDiagram b v n Any
+renderPlot bs t (Plot a pp) = renderPlotable pp bs t a
 
 ------------------------------------------------------------------------
 -- Plot wrapper
@@ -333,6 +334,7 @@ type instance B (Plot b v n) = b
 type instance V (Plot b v n) = v
 type instance N (Plot b v n) = n
 
+
 plotDefLegendPic :: (Additive v, OrderedField n) => Plot b v n -> QDiagram b V2 n Any
 plotDefLegendPic (Plot a gp) = defLegendPic gp a
 
@@ -345,13 +347,14 @@ instance HasPlotProperties (Plot b v n) where
   plotProperties = lens (\(Plot _ pp)   -> pp)
                         (\(Plot a _) pp -> Plot a pp)
 
-
 -- | Prism onto the unwrapped plotable type. All standard plots export a
 --   specialised version of this which is normally more usefull (i.e.
 --   '_LinePlot').
-_Plot :: (Typeable (N a), Typeable (V a), Typeable b, Plotable a b) => Prism' (Plot b (V a) (N a)) (a, PlotProperties b (V a) (N a))
+_Plot :: (Typeable (N a), Typeable (V a), Typeable b, Plotable a b)
+      => Prism' (Plot b (V a) (N a)) (a, PlotProperties b (V a) (N a))
 _Plot = prism' (uncurry Plot) (\(Plot a b) -> cast (a,b))
 
-plotT :: (Typeable (N a), Typeable (V a), Typeable b, Plotable a b) => Traversal' (Plot b (V a) (N a)) a
+plotT :: (Typeable (N a), Typeable (V a), Typeable b, Plotable a b)
+      => Traversal' (Plot b (V a) (N a)) a
 plotT = _Plot . _1
 

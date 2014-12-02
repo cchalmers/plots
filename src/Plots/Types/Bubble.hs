@@ -34,7 +34,7 @@ import           Data.Typeable
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude                hiding (view)
 
-import           Diagrams.LinearMap
+-- import           Diagrams.LinearMap
 
 import           Plots.Themes
 import           Plots.Types
@@ -54,15 +54,15 @@ data GScatterPlot v n a = forall s. GScatterPlot
 type instance V (GScatterPlot v n a) = v
 type instance N (GScatterPlot v n a) = n
 
-instance (Typeable a, Typeable b, Typeable v, TypeableFloat n, Renderable (Path V2 n) b, HasLinearMap v)
-    => Plotable (GScatterPlot v n a) b where
-  plot gp _ tv l t2 GScatterPlot {..} = foldMapOf sFold mk sData # applyStyle gSty
+instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+    => Plotable (GScatterPlot V2 n a) b where
+  renderPlotable gp _ t GScatterPlot {..} = foldMapOf sFold mk sData # applyStyle gSty
       where
         mk a = marker # moveTo p
                       # maybe id (transform  . ($ a)) sTr
                       # maybe id (applyStyle . ($ a)) sSty
           where
-            p = transform t2 . lmap l . transform tv $ sPos a
+            p = transform t $ sPos a
         marker = gp ^. themeMarker
         gSty   = gp ^. themeMarkerStyle
 

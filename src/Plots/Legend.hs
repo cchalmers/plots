@@ -35,7 +35,7 @@ import           Data.Typeable
 import           Diagrams.TwoD.Text
 
 import           Diagrams.BoundingBox
-import           Diagrams.Prelude
+import           Diagrams.Prelude hiding (view)
 
 import           Plots.Themes
 import           Plots.Types
@@ -79,7 +79,7 @@ anchor a = case a of
   AnchorTopLeft     -> alignTL
   Anchor x y        -> alignBy unitX (fromRational x) . alignBy unitY (fromRational y)
 
--- | Get the point from the 'Position' on the bounding box of the enveloped 
+-- | Get the point from the 'Position' on the bounding box of the enveloped
 --   object. Returns the origin if @a@ has an empty envelope.
 getPosition :: (InSpace V2 n a, Enveloped a, HasOrigin a, Fractional n) => Position -> a -> P2 n
 getPosition p a = flip (maybe origin) (getCorners $ boundingBox a)
@@ -135,6 +135,7 @@ data Legend b n = Legend
 
 type instance V (Legend b n) = V2
 type instance N (Legend b n) = n
+type instance B (Legend b n) = b
 
 makeLenses ''Legend
 
@@ -154,8 +155,8 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
 instance TypeableFloat n => HasStyle (Legend b n) where
   applyStyle sty = over legendStyle (applyStyle sty)
 
-drawLegend :: (TypeableFloat n, Typeable v, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
-           => BoundingBox V2 n -> Legend b n -> [Plot b v n] -> QDiagram b V2 n Any
+drawLegend :: (TypeableFloat n, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
+           => BoundingBox V2 n -> Legend b n -> [Plot b V2 n] -> QDiagram b V2 n Any
 drawLegend bb l ps = alignTo (l ^. legendPosition) bb (l ^. legendAnchor) zero ledge
   where
     w = l ^. legendTextWidth
@@ -167,11 +168,12 @@ drawLegend bb l ps = alignTo (l ^. legendPosition) bb (l ^. legendAnchor) zero l
       where
         mkLabel entry = txt ||| pic
           where
+            -- pps = p ^. plotProperties
             txt = (l ^. legendTextF) (entry ^. legendText)
                     # applyStyle (l ^. legendTextStyle)
-                    # withEnvelope (fromCorners origin (mkP2 w h)) 
+                    # withEnvelope (fromCorners origin (mkP2 w h))
             pic = wrapPic (V2 h h) $ case entry ^. legendPic of
-                    DefaultLegendPic  -> defLegendPic p
+                    DefaultLegendPic  -> plotDefLegendPic p
                     CustomLegendPic f -> f $ p ^. themeEntry
 
 wrapPic :: RealFloat n => V2 n -> QDiagram b V2 n Any -> QDiagram b V2 n Any
