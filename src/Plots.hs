@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots
@@ -74,7 +75,7 @@ module Plots
     Axis
   , renderAxis
   , r2Axis
-  , r3Axis
+  -- , r3Axis
   -- , logAxis
   -- , module Plots.Axis
 
@@ -88,21 +89,21 @@ module Plots
     --   type signatures to input data.
     --
     -- @
-    -- mydata :: [(n,n)]
+    -- mydata :: [(Double, Double)]
     -- mydata = [(2,3), (2.3, 4.5), (3.1, 2.5), (3.8, 3.2)]
     -- @
 
     -- | Most of the time you can use functions like 'addScatterPlot' which add
     --   directly a plot directly to an axis. However, for more advanced use
     --   you may wish to work with the specific data types.
-  -- , addPlotable
+  , addPlotable
 
     -- ** Scatter plot
     -- | Put markers at points. For more options see 'Plots.Types.Scatter'
-  -- , addScatterPlot
-  -- , scatterPlot
+  , scatterPlot
+  , mkScatterPlot
   -- , connectedScattered
-  -- , module Plots.Types.Scatter
+  , module Plots.Types.Scatter
 
     -- ** Line plot
     -- | Plot simple lines.
@@ -131,7 +132,7 @@ module Plots
   , module Plots.Types.Bar
 
     -- * Legend
-  -- , addLegend
+  , addLegend
   -- , legendEntry
 
     -- * Themes
@@ -228,6 +229,8 @@ import Diagrams.Prelude hiding (view)
 import Diagrams.TwoD.Text
 import Data.Typeable
 import Data.Default
+import Data.Foldable
+import Diagrams.Coordinates.Isomorphic
 
 import Plots.Types
 
@@ -238,7 +241,7 @@ import Plots.Axis.Render
 import Plots.Axis
 
 import Plots.Types.Bar
--- import Plots.Types.Scatter
+import Plots.Types.Scatter
 import Plots.Types.Function
 import Plots.Types.Line
 -- import Plots.Types.Surface
@@ -249,9 +252,6 @@ import Linear.V3
 import Data.Monoid.Recommend
 
 import Control.Monad.State.Lazy
--- import Data.Foldable
-
--- import Diagrams.Coordinates.Isomorphic
 
 type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, TypeableFloat n, Enum n)
 
@@ -260,8 +260,8 @@ r2Axis :: R2Backend b n => Axis b V2 n
 r2Axis = def
 
 -- | Standard 2D axis.
-r3Axis :: R2Backend b n => Axis b V3 n
-r3Axis = def
+-- r3Axis :: R2Backend b n => Axis b V3 n
+-- r3Axis = def
 
 
 -- Axis labels
@@ -301,8 +301,9 @@ setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 -- @
 -- myaxis = r2Axis # addPlotable (mkScatterPlot mydata)
 -- @
--- addPlotable :: Plotable a => a -> Axis (B a) (V a) (N a) -> Axis (B a) (V a) (N a)
--- addPlotable p = axisPlots <>~ [review _Plot p]
+addPlotable :: (Plotable a b, Typeable (N a), Typeable b, Typeable (V a))
+            => PlotProperties b (V a) (N a) -> a -> Axis b (V a) (N a) -> Axis b (V a) (N a)
+addPlotable pp p = axisPlots <>~ [review _Plot (p, pp)]
 
 -- Scatter plot
 
@@ -313,15 +314,10 @@ setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 --   f a :: [(n, n)]
 --   f a :: Vector (V2 n)
 --   @@
--- scatterPlot
---   :: (PointLike v n a,
---       Foldable f,
---       Default (ScatterPlot b v n),
---       R2Backend b n)
-
---       -- Plotable (ScatterPlot b v n) b v n)
---   => f a -> Axis b v n -> Axis b v n
--- scatterPlot = addPlotable . mkScatterPlot
+scatterPlot
+  :: (Plotable (ScatterPlot v n) b, PointLike v n a, Foldable f, R2Backend b n)
+  => PlotProperties b v n -> f a -> Axis b v n -> Axis b v n
+scatterPlot pp = addPlotable pp . mkScatterPlot
 
 -- Line plot
 
@@ -372,8 +368,8 @@ setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 
 -- Legend
 
--- addLegend :: (Plotable a, Num (N a)) => String -> a -> a
--- addLegend txt = legendEntries <>~ pure (mkLegendEntry txt)
+addLegend :: (HasPlotProperties a, Num (N a)) => String -> a -> a
+addLegend txt = legendEntries <>~ pure (mkLegendEntry txt)
 
 -- legendEntry :: (Plotable a, Num (N a)) => String -> a -> a
 -- legendEntry txt = legendEntries <>~ pure (mkLegendEntry txt)

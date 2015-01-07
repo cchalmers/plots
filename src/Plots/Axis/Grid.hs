@@ -8,7 +8,6 @@ import Data.Default
 
 import Diagrams.Prelude
 
-
 type GridLinesFunction n = [n] -> (n, n) -> [n]
 
 data GridLines n = GridLines

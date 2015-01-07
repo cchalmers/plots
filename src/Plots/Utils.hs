@@ -14,7 +14,7 @@ import Control.Lens.Internal
 import Data.Profunctor.Unsafe
 import Data.Monoid.Recommend
 
--- | @enumFromToN a b n@ calculates a list from a to b in n steps.
+-- | @enumFromToN a b n@ calculates a list from @a@ to @b@ in @n@ steps.
 enumFromToN :: Fractional n => n -> n -> Int -> [n]
 enumFromToN a b n = step n a
   where
@@ -45,12 +45,12 @@ liftRecommend _ (Recommend _) (Commit b)    = Commit b
 liftRecommend f (Recommend a) (Recommend b) = Recommend (f a b)
 liftRecommend f (Commit a) (Commit b)       = Commit (f a b)
 
--- -- | The @themeEntry@ lens goes though recommend, so @set themeEntry myTheme 
--- --   myPlot@ won't give a committed theme entry (so theme from axis will 
+-- -- | The @themeEntry@ lens goes though recommend, so @set themeEntry myTheme
+-- --   myPlot@ won't give a committed theme entry (so theme from axis will
 -- --   override). Use commitTheme to make sure theme is committed.
 -- commitTheme :: HasPlotProperties a => ThemeEntry (B a) (N a) -> a -> a
 -- commitTheme = set plotThemeEntry . Commit
--- 
+--
 -- -- | Make the current theme a committed theme. See @commitTheme@.
 -- commitCurrentTheme :: HasPlotProperties a => a -> a
 -- commitCurrentTheme = over plotThemeEntry makeCommitted

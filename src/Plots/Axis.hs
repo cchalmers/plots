@@ -33,8 +33,6 @@ import Plots.Legend
 import Plots.Themes
 import Plots.Types
 
-import Diagrams.Projections
-
 -- Lines types
 
 -- | Where axis line for coordinate should be drawn.
@@ -108,7 +106,7 @@ instance Fractional n => Default (Scaling n) where
 --   a plot. The idea is to use one of the default axis, customise, add plots
 --   and render using @drawAxis@.
 data Axis b v n = Axis
-  
+
   { -- These lenses are not being exported, they're just here for instances.
     _axisAxisBounds :: Bounds v n
 
@@ -141,7 +139,8 @@ instance HasBounds (Axis b v n) where
 
 -- R2 axis
 
-instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) => Default (Axis b V2 n) where
+instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
+    => Default (Axis b V2 n) where
   def = Axis
           { _axisTitle      = Nothing
           , _axisSize       = mkWidth 300
@@ -160,22 +159,23 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
 
 -- R3 Axis
 
-instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) => Default (Axis b V3 n) where
-  def = Axis
-          { _axisTitle      = Nothing
-          , _axisSize       = mkWidth 300
-          , _axisPlots      = []
-          , _axisLegend     = def
-          , _axisTheme      = coolTheme
-          , _axisLinearMap  = isometricProjection
-          , _axisAxisBounds = Bounds $ pure def
-          , _axisGridLines  = pure def
-          , _axisLabels     = pure def
-          , _axisScaling    = pure def
-          , _axisTickLabels = pure def
-          , _axisTicks      = pure def
-          , _axisLines      = pure def
-          }
+-- instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
+--     => Default (Axis b V3 n) where
+--   def = Axis
+--           { _axisTitle      = Nothing
+--           , _axisSize       = mkWidth 300
+--           , _axisPlots      = []
+--           , _axisLegend     = def
+--           , _axisTheme      = coolTheme
+--           , _axisLinearMap  = isometricProjection
+--           , _axisAxisBounds = Bounds $ pure def
+--           , _axisGridLines  = pure def
+--           , _axisLabels     = pure def
+--           , _axisScaling    = pure def
+--           , _axisTickLabels = pure def
+--           , _axisTicks      = pure def
+--           , _axisLines      = pure def
+--           }
 
 -- Drawing the axis
 

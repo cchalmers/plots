@@ -28,10 +28,16 @@ import           Plots.Legend
 import           Plots.Types
 
 import           Diagrams.BoundingBox
-import           Diagrams.Extra
 -- import           Diagrams.LinearMap
 
 import           Linear                hiding (translation)
+
+fromCommit :: a -> Recommend a -> a
+fromCommit _ (Commit a) = a
+fromCommit a _          = a
+
+pathFromVertices :: (Metric v, OrderedField n) => [Point v n] -> Path v n
+pathFromVertices = fromVertices
 
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b V2 n Any
@@ -72,12 +78,12 @@ class RenderAxis b v n where
 --     l = a ^. axisLinearMap
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
-          Renderable (Text n) b, Plotable (Plot b V2 n) b)
+          Renderable (Text n) b)
     => RenderAxis b V2 n where
   renderAxis = renderR2Axis
 
 renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
-                 Renderable (Text n) b, Plotable (Plot b V2 n) b)
+                 Renderable (Text n) b)
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 15
                $ legend

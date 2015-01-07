@@ -13,6 +13,7 @@
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE StandaloneDeriving        #-}
 
 {-# LANGUAGE CPP                       #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
@@ -38,6 +39,7 @@ module Plots.Types
   , orient
 
   -- * Legend
+  , mkLegendEntry
   , LegendEntry
   , LegendPic (..)
   , legendPic
@@ -60,6 +62,9 @@ module Plots.Types
   -- , plotLineStyle
   -- , plotMarkerStyle
   -- , plotFillStyle
+  , recommend
+  , _Recommend
+  , _Commit
   ) where
 
 import           Control.Lens          as L hiding (transform, ( # ), (|>))
@@ -68,7 +73,6 @@ import           Data.Functor.Rep
 import           Data.Monoid.Recommend
 import           Data.Typeable
 import           Diagrams.BoundingBox
-import           Diagrams.Extra
 import           Diagrams.Prelude      as D hiding (view)
 
 import           Linear
@@ -78,6 +82,29 @@ import           Plots.Utils
 type family B a :: *
 
 type instance B (QDiagram b v n m) = b
+
+deriving instance (Show a) => Show (Recommend a)
+deriving instance (Read a) => Read (Recommend a)
+deriving instance (Eq a)   => Eq (Recommend a)
+deriving instance (Ord a)  => Ord (Recommend a)
+
+recommend :: Lens' (Recommend a) a
+recommend = lens getRecommend setRecommend
+  where
+    setRecommend (Recommend _) a = Recommend a
+    setRecommend (Commit _   ) a = Commit a
+
+_Recommend :: Prism' (Recommend a) a
+_Recommend = prism' Recommend getRec
+  where
+    getRec (Recommend a) = Just a
+    getRec _             = Nothing
+
+_Commit :: Prism' (Recommend a) a
+_Commit = prism' Commit getCommit
+  where
+    getCommit (Commit a) = Just a
+    getCommit _          = Nothing
 
 -- Bounds
 
@@ -167,6 +194,9 @@ instance Num n => Default (LegendEntry b n) where
           , _legendText       = ""
           , _legendPrecidence = 0
           }
+
+mkLegendEntry :: Num n => String -> LegendEntry b n
+mkLegendEntry x = LegendEntry DefaultLegendPic x 0
 
 -- Generic Plot info
 
@@ -314,13 +344,6 @@ class Typeable a => Plotable a b where
   defLegendPic = mempty
 
 
-renderPlot
-       :: (Additive v, Num n)
-       => v (n, n)
-       -> Transformation v n
-       -> Plot b v n
-       -> QDiagram b v n Any
-renderPlot bs t (Plot a pp) = renderPlotable pp bs t a
 
 ------------------------------------------------------------------------
 -- Plot wrapper
@@ -334,14 +357,16 @@ type instance B (Plot b v n) = b
 type instance V (Plot b v n) = v
 type instance N (Plot b v n) = n
 
+renderPlot
+       :: (Additive v, Num n)
+       => v (n, n)
+       -> Transformation v n
+       -> Plot b v n
+       -> QDiagram b v n Any
+renderPlot bs t (Plot a pp) = renderPlotable pp bs t a
 
 plotDefLegendPic :: (Additive v, OrderedField n) => Plot b v n -> QDiagram b V2 n Any
 plotDefLegendPic (Plot a gp) = defLegendPic gp a
-
--- instance (Typeable b, Typeable v, Typeable n) => Plotable (Plot b v n) b where
---   plot bs tv l t2 (Plot p) = plot bs tv l t2 p
---
---   defLegendPic (Plot a) = defLegendPic a
 
 instance HasPlotProperties (Plot b v n) where
   plotProperties = lens (\(Plot _ pp)   -> pp)

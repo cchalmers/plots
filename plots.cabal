@@ -35,6 +35,7 @@ Library
                        Plots.Legend
                        Plots.Name
                        Plots.CmdLine
+                       Plots.Utils
                        Diagrams.Coordinates.Isomorphic
   Hs-source-dirs:      src
   Build-depends:       base          >= 4.3   && < 5.0

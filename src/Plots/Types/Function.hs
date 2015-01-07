@@ -44,7 +44,6 @@ import           Data.Default
 import           Data.Typeable
 -- import           Diagrams.BoundingBox
 import           Diagrams.Coordinates.Isomorphic
-import           Diagrams.Extra
 -- import           Diagrams.LinearMap
 import           Diagrams.Prelude                hiding (view)
 
@@ -101,6 +100,9 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
       a = fp ^. parametricDomain . _1
       b = fp ^. parametricDomain . _2
 
+pathFromVertices :: (Metric v, OrderedField n) => [Point v n] -> Path v n
+pathFromVertices = fromVertices
+
 mkParametricPlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> ParametricPlot v n
 mkParametricPlot f
   = ParametricPlot
@@ -113,23 +115,17 @@ mkParametricPlot f
 -- Mesh plot
 ------------------------------------------------------------------------
 
-data MeshPlot n = MeshPlot
-  { _meshFunction    :: n -> n -> n -- ^ $\x y -> z$
-  , _meshDomain      :: V2 (n, n)
-  -- , _meshPlotOptions :: FunctionPlotOptions b R3
-  } deriving Typeable
+-- data MeshPlot n = MeshPlot
+--   { _meshFunction    :: n -> n -> n -- ^ $\x y -> z$
+--   , _meshDomain      :: V2 (n, n)
+--   -- , _meshPlotOptions :: FunctionPlotOptions b R3
+--   } deriving Typeable
 
-type instance V (MeshPlot n) = V3
-type instance N (MeshPlot n) = n
+-- type instance V (MeshPlot n) = V3
+-- type instance N (MeshPlot n) = n
 
 -- makeLenses ''MeshPlot
 
-instance (Num n) => Default (MeshPlot n) where
-  def = MeshPlot
-          { _meshFunction    = \_ _ -> 0
-          , _meshDomain      = V2 (0,5) (0,5)
-          -- , _meshPlotOptions = def & functionPlotNumPoints .~ 10
-          }
 
 -- instance HasGenericPlot (MeshPlot b n) where
 --   genericPlot = meshPlotGeneric

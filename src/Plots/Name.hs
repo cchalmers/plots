@@ -9,7 +9,6 @@ import Data.Ord            (comparing)
 import Data.Function
 import Data.Typeable
 import Diagrams.Core.Names
--- import Diagrams.Extra
 import Diagrams.Prelude    hiding (view)
 
 data PlotName n = PlotName

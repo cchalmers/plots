@@ -34,8 +34,6 @@ import           Data.Typeable
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude                hiding (view)
 
--- import           Diagrams.LinearMap
-
 import           Plots.Themes
 import           Plots.Types
 
@@ -56,15 +54,15 @@ type instance N (GScatterPlot v n a) = n
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GScatterPlot V2 n a) b where
-  renderPlotable gp _ t GScatterPlot {..} = foldMapOf sFold mk sData # applyStyle gSty
-      where
-        mk a = marker # moveTo p
-                      # maybe id (transform  . ($ a)) sTr
-                      # maybe id (applyStyle . ($ a)) sSty
-          where
-            p = transform t $ sPos a
-        marker = gp ^. themeMarker
-        gSty   = gp ^. themeMarkerStyle
+  renderPlotable pp _ t GScatterPlot {..} = foldMapOf sFold mk sData # applyStyle gSty
+    where
+      mk a = marker # moveTo p
+                    # maybe id (transform  . ($ a)) sTr
+                    # maybe id (applyStyle . ($ a)) sSty
+        where
+          p = transform t $ sPos a
+      marker = pp ^. themeMarker
+      gSty   = pp ^. themeMarkerStyle
 
 ------------------------------------------------------------------------
 -- Scatter plot
@@ -72,11 +70,14 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
 
 type ScatterPlot v n = GScatterPlot v n (Point v n)
 
-mkScatterPlot :: (PointLike v n p, Foldable f, Num n) => f p -> ScatterPlot v n
+-- | Make a scatter plot.
+mkScatterPlot :: (PointLike v n p, Foldable f, Num n)
+              => f p -> ScatterPlot v n
 mkScatterPlot = mkScatterPlotOf folded
 
 -- | Make a scatter plot using the given fold.
-mkScatterPlotOf :: (PointLike v n p, Num n) => Fold s p -> s -> ScatterPlot v n
+mkScatterPlotOf :: (PointLike v n p, Num n)
+                => Fold s p -> s -> ScatterPlot v n
 mkScatterPlotOf f a = GScatterPlot
   { sData = a
   , sFold = f . unpointLike
@@ -91,7 +92,8 @@ mkScatterPlotOf f a = GScatterPlot
 
 type BubblePlot v n = GScatterPlot v n (n, Point v n)
 
-mkBubblePlotOf :: (PointLike v n p, Fractional n) => Fold s (n,p) -> s -> BubblePlot v n
+mkBubblePlotOf :: (PointLike v n p, Fractional n)
+               => Fold s (n,p) -> s -> BubblePlot v n
 mkBubblePlotOf f a = GScatterPlot
   { sData = a
   , sFold = f . to (over _2 $ view unpointLike)
@@ -100,14 +102,16 @@ mkBubblePlotOf f a = GScatterPlot
   , sSty  = Nothing
   }
 
-mkBubblePlot :: (PointLike v n p, Foldable f, Fractional n) => f (n,p) -> BubblePlot v n
+mkBubblePlot :: (PointLike v n p, Foldable f, Fractional n)
+             => f (n,p) -> BubblePlot v n
 mkBubblePlot = mkBubblePlotOf folded
 
 ------------------------------------------------------------------------
 -- General scatter plot
 ------------------------------------------------------------------------
 
-mkGScatterPlotOf :: (PointLike v n p, Fractional n) => Fold s a -> s -> (a -> p) -> GScatterPlot v n a
+mkGScatterPlotOf :: (PointLike v n p, Fractional n)
+                 => Fold s a -> s -> (a -> p) -> GScatterPlot v n a
 mkGScatterPlotOf f a pf = GScatterPlot
   { sData = a
   , sFold = f
@@ -116,7 +120,8 @@ mkGScatterPlotOf f a pf = GScatterPlot
   , sSty  = Nothing
   }
 
-mkGScatterPlot :: (PointLike v n p, Foldable f, Fractional n) => f a -> (a -> p) -> GScatterPlot v n a
+mkGScatterPlot :: (PointLike v n p, Foldable f, Fractional n)
+               => f a -> (a -> p) -> GScatterPlot v n a
 mkGScatterPlot = mkGScatterPlotOf folded
 
 ------------------------------------------------------------------------
@@ -124,7 +129,8 @@ mkGScatterPlot = mkGScatterPlotOf folded
 ------------------------------------------------------------------------
 
 scatterTransform :: Lens' (GScatterPlot v n a) (Maybe (a -> T2 n))
-scatterTransform = lens (\GScatterPlot {sTr = t} -> t)  (\sp t -> sp {sTr = t})
+scatterTransform = lens (\GScatterPlot {sTr = t} -> t)
+                        (\sp t -> sp {sTr = t})
 
 -- | Change the style for a scatter plot, given the data entry.
 --
@@ -133,5 +139,6 @@ scatterTransform = lens (\GScatterPlot {sTr = t} -> t)  (\sp t -> sp {sTr = t})
 --              & scatterTransform .~ Nothing
 -- @@@
 scatterStyle :: Lens' (GScatterPlot v n a) (Maybe (a -> Style V2 n))
-scatterStyle = lens (\GScatterPlot {sSty = sty} -> sty)  (\sp sty -> sp {sSty = sty})
+scatterStyle = lens (\GScatterPlot {sSty = sty} -> sty)
+                    (\sp sty -> sp {sSty = sty})
 
