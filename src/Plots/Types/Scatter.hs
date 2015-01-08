@@ -64,6 +64,9 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       marker = pp ^. themeMarker
       gSty   = pp ^. themeMarkerStyle
 
+instance (Metric v, OrderedField n) => Enveloped (GScatterPlot v n a) where
+  getEnvelope GScatterPlot {..} = foldMapOf (sFold . to sPos) getEnvelope sData
+
 ------------------------------------------------------------------------
 -- Scatter plot
 ------------------------------------------------------------------------

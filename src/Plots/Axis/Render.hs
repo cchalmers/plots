@@ -13,12 +13,14 @@ module Plots.Axis.Render where
 import           Control.Lens          hiding (lmap, transform, ( # ))
 import           Control.Lens.Extras   (is)
 import           Data.Typeable
-import           Diagrams.Prelude      as D hiding (under, view)
-import           Diagrams.TwoD.Text
-
 import           Data.Distributive
 import           Data.Foldable
 import           Data.Monoid.Recommend
+
+import           Linear                hiding (translation)
+import           Diagrams.BoundingBox
+import           Diagrams.TwoD.Text
+import           Diagrams.Prelude      as D hiding (under, view)
 
 import           Plots.Axis
 import           Plots.Axis.Grid
@@ -26,18 +28,8 @@ import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Types
+import           Plots.Utils
 
-import           Diagrams.BoundingBox
--- import           Diagrams.LinearMap
-
-import           Linear                hiding (translation)
-
-fromCommit :: a -> Recommend a -> a
-fromCommit _ (Commit a) = a
-fromCommit a _          = a
-
-pathFromVertices :: (Metric v, OrderedField n) => [Point v n] -> Path v n
-pathFromVertices = fromVertices
 
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b V2 n Any
@@ -95,14 +87,15 @@ renderR2Axis a = frame 15
     -- drawAxis = axisOnBasis origin xs a tv (a ^. axisLinearMap) t
     drawAxis = axisOnBasis origin xs a t
     --
-    (xs, tv, t) = workOutScale a
+    (xs, tv, t') = workOutScale a
+    t = tv <> t'
     --
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t . apply tv $ fmap snd xs)
     legend = drawLegend bb (a ^. axisLegend) (toList plots')
     --
     -- TODO: fix this
     applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
-    plots' = a ^. axisPlots . to applyTheme
+    plots'     = a ^. axisPlots . to applyTheme
 
 data LabelPosition = NoLabels
                    | LowerLabels
@@ -164,8 +157,7 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
               where
                 p' = over lensP ((el e .~ x) . (el eO .~ y)) p
                        # papply t
-                       -- # papply (translationE eO (negate' 15 / avgScale t2))
-                       -- # lmap l
+                       # papply (translationE eO (negate' 25))
                        -- # papply t2
 
     -- grid
@@ -238,10 +230,11 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
     --
     ys       = getAxisLinePos yb lineType
     lineType = a ^. axisLines . el e . axisLineType
+    -- t2 = scaling 4
     --
-    -- negate' = if lp == UpperLabels
-    --             then id
-    --             else negate
+    negate' = if lp == UpperLabels
+                then id
+                else negate
 
 
 -- Rules for choosing scales:
@@ -260,9 +253,9 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
 --          - to do this we need to adjust the bounds (hard for 3d?)
 --
 
-workOutScale :: (HasLinearMap v, V (v n) ~ v, Distributive v, OrderedField n, Applicative v)
+workOutScale :: (HasLinearMap v, V (v n) ~ v, Distributive v, OrderedField n, Applicative v, Metric v)
   => Axis b v n
-  -> (v (n,n), Transformation v n, T2 n)
+  -> (v (n,n), Transformation v n, Transformation v n)
 workOutScale a = (enlargedBounds, aspectScaling, specScaling)
  where
     enlargedBounds = workOutUsedBounds
@@ -270,12 +263,12 @@ workOutScale a = (enlargedBounds, aspectScaling, specScaling)
                        -- disgusting
                        (view lensP . uncurry (liftA2 (,)) <$> getCorners bb)
                        bnd
-    V2 x y = l . apply aspectScaling $ v
 
     -- the vector that points from the lower bound to the upper bound of the
     -- axis
-    v = uncurry (flip (-)) <$> enlargedBounds
-
+    v  = uncurry (flip (-)) <$> enlargedBounds
+    v' = apply aspectScaling $ v
+    specScaling = requiredScaling spec v'
     aspectScaling
       -- if any of the aspect ratios are committed we use the aspect ratio from
       -- aScaling
@@ -283,22 +276,12 @@ workOutScale a = (enlargedBounds, aspectScaling, specScaling)
           = vectorScaling (view (aspectRatio . recommend) <$> aScaling)
       -- otherwise all ratios are just recommend, ignore them and scale such
       -- that each axis is the same length
-      | otherwise
-          = inv $ vectorScaling v
-
-    specScaling = requiredScaling spec2d (V2 x y)
-    -- specScaling = case spec2d of
-    --   Absolute -> mempty
-    --   Width w  -> scaling (w / x)
-    --   Height h -> scaling (h / y)
-    --   Dims w h -> scalingX (w / x) <> scalingY (h / y)
-
+      | otherwise = inv $ vectorScaling v
     --
-
-    l        = a ^. axisLinearMap
-    spec2d   = a ^. axisSize
+    spec     = a ^. axisSize
     aScaling = a ^. axisScaling
-    bb       = a ^. axisPlots . folded . plotBoundingBox
+    -- bb       = a ^. axisPlots . folded . plotBoundingBox
+    bb       = a ^. axisPlots . folded . to boundingBox
     bnd      = a ^. bounds
 
 -- messy tempory fix while stuff is getting worked out

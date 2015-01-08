@@ -123,13 +123,13 @@ module Plots
     -- ** Function plot
     -- | Plot a given function.
   -- , addFunctionPlot
-  , module Plots.Types.Function
+  -- , module Plots.Types.Function
 
     -- ** Bar plot
     -- | Bar plot
   -- , addBarPlot
   -- , barPlotAxis
-  , module Plots.Types.Bar
+  -- , module Plots.Types.Bar
 
     -- * Legend
   , addLegend
@@ -240,9 +240,9 @@ import Plots.Axis.Grid
 import Plots.Axis.Render
 import Plots.Axis
 
-import Plots.Types.Bar
+-- import Plots.Types.Bar
 import Plots.Types.Scatter
-import Plots.Types.Function
+-- import Plots.Types.Function
 import Plots.Types.Line
 -- import Plots.Types.Surface
 import Plots.Themes

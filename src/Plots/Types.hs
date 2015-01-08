@@ -28,9 +28,6 @@ module Plots.Types
   , getBound
   , upperBound
   , lowerBound
-  -- , xMax, xMin -- , xAxisBounds
-  -- , yMin, yMax -- , yAxisBounds
-  -- , zMin, zMax -- , zAxisBounds
   , boundsMin, boundsMax
   -- , zMin, zMax, zAxisBounds
 
@@ -87,24 +84,6 @@ deriving instance (Show a) => Show (Recommend a)
 deriving instance (Read a) => Read (Recommend a)
 deriving instance (Eq a)   => Eq (Recommend a)
 deriving instance (Ord a)  => Ord (Recommend a)
-
-recommend :: Lens' (Recommend a) a
-recommend = lens getRecommend setRecommend
-  where
-    setRecommend (Recommend _) a = Recommend a
-    setRecommend (Commit _   ) a = Commit a
-
-_Recommend :: Prism' (Recommend a) a
-_Recommend = prism' Recommend getRec
-  where
-    getRec (Recommend a) = Just a
-    getRec _             = Nothing
-
-_Commit :: Prism' (Recommend a) a
-_Commit = prism' Commit getCommit
-  where
-    getCommit (Commit a) = Just a
-    getCommit _          = Nothing
 
 -- Bounds
 
@@ -331,18 +310,17 @@ instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v)
 
 -- | General class for something that can be wrapped in 'Plot'. The 'plot'
 --   function is rarely used by the end user.
-class Typeable a => Plotable a b where
+class (Typeable a, Enveloped a) => Plotable a b where
   renderPlotable :: InSpace v n a
-       => PlotProperties b v n
-       -> v (n, n)
-       -> Transformation v n
-       -> a
-       -> QDiagram b v n Any
+    => PlotProperties b v n
+    -> v (n, n)
+    -> Transformation v n
+    -> a
+    -> QDiagram b v n Any
 
   defLegendPic :: (InSpace v n a, OrderedField n)
     => PlotProperties b v n -> a -> QDiagram b V2 n Any
   defLegendPic = mempty
-
 
 
 ------------------------------------------------------------------------
@@ -352,6 +330,9 @@ class Typeable a => Plotable a b where
 -- | Existential wrapper for something plotable.
 data Plot b v n = forall a. (V a ~ v, N a ~ n, Plotable a b) => Plot a (PlotProperties b v n)
   deriving Typeable
+
+instance (Metric v, OrderedField n) => Enveloped (Plot b v n) where
+  getEnvelope (Plot a _) = getEnvelope a
 
 type instance B (Plot b v n) = b
 type instance V (Plot b v n) = v

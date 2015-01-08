@@ -1,37 +1,28 @@
-{-# LANGUAGE CPP                    #-}
-{-# LANGUAGE DefaultSignatures      #-}
-{-# LANGUAGE DeriveDataTypeable     #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE ImpredicativeTypes     #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE MultiWayIf             #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TupleSections          #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeOperators          #-}
-{-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Plots.Axis where
 
-import Control.Lens       hiding (lmap, transform, ( # ))
-import Data.Default
-import Data.Typeable
-import Diagrams.Prelude   as D hiding (under, view)
-import Diagrams.TwoD.Text
+import           Control.Lens          hiding (lmap, transform, ( # ))
+import           Data.Default
+import           Data.Monoid.Recommend
+import           Data.Typeable
 
--- import Diagrams.Core.Transform
+import           Diagrams.Prelude      as D hiding (under, view)
+import           Diagrams.TwoD.Text
 
-import Data.Monoid.Recommend
-
-import Plots.Axis.Grid
-import Plots.Axis.Labels
-import Plots.Axis.Ticks
-import Plots.Legend
-import Plots.Themes
-import Plots.Types
+import           Plots.Axis.Grid
+import           Plots.Axis.Labels
+import           Plots.Axis.Ticks
+import           Plots.Legend
+import           Plots.Themes
+import           Plots.Types
 
 -- Lines types
 
@@ -80,10 +71,10 @@ data UniformScaleStrategy = AutoUniformScale
   deriving (Show, Read)
 
 data Scaling n = Scaling
-  { _aspectRatio        :: Recommend n
-  , _axisPostScale      :: Maybe n
-  , _axisScaleMode      :: ScaleMode
-  , _enlargeAxisLimits  :: Maybe (Recommend n)
+  { _aspectRatio       :: Recommend n
+  , _axisPostScale     :: Maybe n
+  , _axisScaleMode     :: ScaleMode
+  , _enlargeAxisLimits :: Maybe (Recommend n)
   }
   deriving Show
 
@@ -114,11 +105,10 @@ data Axis b v n = Axis
   , _axisGridLines  :: AxisGridLines v n
   , _axisLabels     :: AxisLabels b v n
   , _axisLegend     :: Legend b n
-  , _axisLinearMap  :: v n -> V2 n
   , _axisLines      :: AxisLines v n
   , _axisPlots      :: [Plot b v n]
   , _axisScaling    :: AxisScaling v n
-  , _axisSize       :: SizeSpec V2 n
+  , _axisSize       :: SizeSpec v n
   , _axisTheme      :: Theme b n
   , _axisTickLabels :: AxisTickLabels b v n
   , _axisTicks      :: AxisTicks v n
@@ -147,7 +137,6 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
           , _axisPlots      = []
           , _axisLegend     = def
           , _axisTheme      = coolTheme
-          , _axisLinearMap  = id
           , _axisAxisBounds = Bounds $ pure def
           , _axisGridLines  = pure def
           , _axisLabels     = pure def
