@@ -30,7 +30,6 @@ import           Plots.Legend
 import           Plots.Types
 import           Plots.Utils
 
-
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b V2 n Any
 
@@ -84,13 +83,12 @@ renderR2Axis a = frame 15
               <> drawAxis ey ex LowerLabels
   where
     plots = foldMap (renderPlot xs t) plots'
-    -- drawAxis = axisOnBasis origin xs a tv (a ^. axisLinearMap) t
     drawAxis = axisOnBasis origin xs a t
     --
     (xs, tv, t') = workOutScale a
     t = tv <> t'
     --
-    bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t . apply tv $ fmap snd xs)
+    bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     legend = drawLegend bb (a ^. axisLegend) (toList plots')
     --
     -- TODO: fix this

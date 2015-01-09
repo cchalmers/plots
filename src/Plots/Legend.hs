@@ -67,7 +67,8 @@ data Anchor
 
 
 -- | Align an object using a given anchor.
-anchor :: (InSpace V2 n a, Alignable a, HasOrigin a, Floating n) => Anchor -> a -> a
+anchor :: (InSpace V2 n a, Alignable a, HasOrigin a, Floating n)
+       => Anchor -> a -> a
 anchor a = case a of
   AnchorTop         -> alignT . centerX
   AnchorTopRight    -> alignTR
@@ -81,7 +82,8 @@ anchor a = case a of
 
 -- | Get the point from the 'Position' on the bounding box of the enveloped
 --   object. Returns the origin if @a@ has an empty envelope.
-getPosition :: (InSpace V2 n a, Enveloped a, HasOrigin a, Fractional n) => Position -> a -> P2 n
+getPosition :: (InSpace V2 n a, Enveloped a, HasOrigin a, Fractional n)
+            => Position -> a -> P2 n
 getPosition p a = flip (maybe origin) (getCorners $ boundingBox a)
   $ \(P (V2 xl yl), P (V2 xu yu)) ->
     P $ case p of
@@ -104,7 +106,7 @@ alignTo :: (InSpace V2 n a, SameSpace a b, Enveloped a, HasOrigin a, Alignable b
   => Position -> a -> Anchor -> V2 n -> b -> b
 alignTo p a an v b
   = b # anchor an
-      # moveTo (getPosition p a .-^ v)
+      # moveTo (getPosition p a .+^ v)
 
 -- getPosition :: (Enveloped a, HasOrigin a, V a ~ V2, N a ~ n, Fractional n) => Position -> a -> P2 n
 -- getPosition p a = case p of
@@ -142,12 +144,12 @@ makeLenses ''Legend
 instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
   def = Legend
           { _legendPosition    = NorthEast
-          , _legendAnchor      = AnchorTopRight
-          , _legendGap         = V2 20 20
+          , _legendAnchor      = AnchorTopLeft
+          , _legendGap         = V2 20 0
           , _legendSpacing     = 20
           , _legendTextWidth   = 60
           , _legendStyle       = mempty
-          , _legendTextF       = text
+          , _legendTextF       = baselineText
           , _legendTextStyle   = mempty # fontSizeG 12
           , _legendOrientation = Verticle
           }
@@ -157,7 +159,11 @@ instance TypeableFloat n => HasStyle (Legend b n) where
 
 drawLegend :: (TypeableFloat n, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
            => BoundingBox V2 n -> Legend b n -> [Plot b V2 n] -> QDiagram b V2 n Any
-drawLegend bb l ps = alignTo (l ^. legendPosition) bb (l ^. legendAnchor) zero ledge
+drawLegend bb l ps = alignTo (l ^. legendPosition)
+                             bb
+                             (l ^. legendAnchor)
+                             (l ^. legendGap)
+                             ledge
   where
     w = l ^. legendTextWidth
     h = l ^. legendSpacing
