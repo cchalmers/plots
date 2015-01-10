@@ -178,6 +178,7 @@ module Plots
   , AxisLabelPosition (..)
   , axesLabelPositions
   , axisLabelPosition
+  , axisPlotProperties
 
     -- *** Label gaps
   , setAxisLabelGap
@@ -383,6 +384,13 @@ setAxisRatio e = set (axisScaling . el e . aspectRatio) . Commit
 -- | Make each axis have the same unit length.
 equalAxis :: (Traversable v, Num n) => Axis b v n -> Axis b v n
 equalAxis = axisScaling . traversed . aspectRatio .~ Commit 1
+
+axisPlotProperties :: IndexedTraversal' Int (Axis b v n) (PlotProperties b v n)
+axisPlotProperties = axisPlots . traversed . ipp
+  where
+    ipp :: IndexPreservingLens' (Plot b v n) (PlotProperties b v n)
+    ipp = iplens (\(Plot _ pp)   -> pp)
+                 (\(Plot a _) pp -> Plot a pp)
 
 -- Themes
 

@@ -149,7 +149,7 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
           , _legendSpacing     = 20
           , _legendTextWidth   = 60
           , _legendStyle       = mempty
-          , _legendTextF       = baselineText
+          , _legendTextF       = alignedText 0 0.5
           , _legendTextStyle   = mempty # fontSizeG 12
           , _legendOrientation = Verticle
           }
@@ -178,7 +178,7 @@ drawLegend bb l ps = alignTo (l ^. legendPosition)
             txt = (l ^. legendTextF) (entry ^. legendText)
                     # applyStyle (l ^. legendTextStyle)
                     # withEnvelope (fromCorners origin (mkP2 w h))
-            pic = wrapPic (V2 h h) $ case entry ^. legendPic of
+            pic = case entry ^. legendPic of
                     DefaultLegendPic  -> plotDefLegendPic p
                     CustomLegendPic f -> f $ p ^. themeEntry
 

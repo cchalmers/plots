@@ -7,11 +7,14 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
 
+{-# LANGUAGE StandaloneDeriving        #-}
+
 module Plots.Types.Scatter
   ( -- * Scatter plot
     ScatterPlot
   , mkScatterPlot
   , mkScatterPlotOf
+  , _ScatterPlot
 
     -- * Bubble plot
   , BubblePlot
@@ -26,6 +29,7 @@ module Plots.Types.Scatter
     -- * Scatter plot lenses
   , scatterTransform
   , scatterStyle
+  , connectingLine
   ) where
 
 import           Control.Lens                    hiding (lmap, transform, ( # ))
@@ -47,25 +51,44 @@ data GScatterPlot v n a = forall s. GScatterPlot
   , sPos  :: a -> Point v n
   , sTr   :: Maybe (a -> T2 n)
   , sSty  :: Maybe (a -> Style V2 n)
+  , cLine :: Bool
   } deriving Typeable
 
 type instance V (GScatterPlot v n a) = v
 type instance N (GScatterPlot v n a) = n
 
-instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (GScatterPlot V2 n a) b where
-  renderPlotable pp _ t GScatterPlot {..} = foldMapOf sFold mk sData # applyStyle gSty
-    where
-      mk a = marker # moveTo p
-                    # maybe id (transform  . ($ a)) sTr
-                    # maybe id (applyStyle . ($ a)) sSty
-        where
-          p = transform t $ sPos a
-      marker = pp ^. themeMarker
-      gSty   = pp ^. themeMarkerStyle
-
 instance (Metric v, OrderedField n) => Enveloped (GScatterPlot v n a) where
   getEnvelope GScatterPlot {..} = foldMapOf (sFold . to sPos) getEnvelope sData
+
+instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+    => Plotable (GScatterPlot V2 n a) b where
+  renderPlotable pp _ t GScatterPlot {..} =
+      foldMapOf sFold mk sData # applyStyle gSty
+   <> if cLine
+        then fromVertices (toListOf (sFold . to sPos) sData)
+               # transform t
+               # applyStyle lSty
+        else mempty
+    where
+      mk a = marker # moveTo (papply t $ sPos a)
+                    # maybe id (transform  . ($ a)) sTr
+                    # maybe id (applyStyle . ($ a)) sSty
+      marker = pp ^. themeMarker
+      gSty   = pp ^. themeMarkerStyle
+      lSty   = pp ^. themeLineStyle
+
+  defLegendPic pp GScatterPlot {..} =
+    pp ^. themeMarker
+      & applyStyle (pp ^. themeMarkerStyle)
+
+connectingLine :: Lens' (GScatterPlot v n a) Bool
+connectingLine = lens cLine (\s b -> (s {cLine = b}))
+
+deriving instance Typeable Point
+
+_ScatterPlot :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+             => Traversal' (Plot b V2 n) (ScatterPlot V2 n)
+_ScatterPlot = plotT
 
 ------------------------------------------------------------------------
 -- Scatter plot
@@ -87,6 +110,7 @@ mkScatterPlotOf f a = GScatterPlot
   , sPos  = id
   , sTr   = Nothing
   , sSty  = Nothing
+  , cLine = False
   }
 
 ------------------------------------------------------------------------
@@ -103,6 +127,7 @@ mkBubblePlotOf f a = GScatterPlot
   , sPos  = snd
   , sTr   = Just (scaling . fst)
   , sSty  = Nothing
+  , cLine = False
   }
 
 mkBubblePlot :: (PointLike v n p, Foldable f, Fractional n)
@@ -121,6 +146,7 @@ mkGScatterPlotOf f a pf = GScatterPlot
   , sPos  = view unpointLike . pf
   , sTr   = Nothing
   , sSty  = Nothing
+  , cLine = False
   }
 
 mkGScatterPlot :: (PointLike v n p, Foldable f, Fractional n)
@@ -144,5 +170,4 @@ scatterTransform = lens (\GScatterPlot {sTr = t} -> t)
 scatterStyle :: Lens' (GScatterPlot v n a) (Maybe (a -> Style V2 n))
 scatterStyle = lens (\GScatterPlot {sSty = sty} -> sty)
                     (\sp sty -> sp {sSty = sty})
-
 
