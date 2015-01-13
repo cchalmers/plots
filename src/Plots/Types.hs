@@ -322,6 +322,11 @@ class (Typeable a, Enveloped a) => Plotable a b where
     => PlotProperties b v n -> a -> QDiagram b V2 n Any
   defLegendPic = mempty
 
+deriving instance Typeable Any
+
+instance (Typeable b, Typeable v, Metric v, Typeable n, OrderedField n)
+  => Plotable (QDiagram b v n Any) b where
+  renderPlotable _ _ t dia = dia # transform t
 
 ------------------------------------------------------------------------
 -- Plot wrapper

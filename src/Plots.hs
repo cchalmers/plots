@@ -370,7 +370,7 @@ scatterPlot pp = addPlotable pp . mkScatterPlot
 -- Legend
 
 addLegend :: (HasPlotProperties a, Num (N a)) => String -> a -> a
-addLegend txt = legendEntries <>~ pure (mkLegendEntry txt)
+addLegend txt = legendEntries <>~ [mkLegendEntry txt]
 
 -- legendEntry :: (Plotable a, Num (N a)) => String -> a -> a
 -- legendEntry txt = legendEntries <>~ pure (mkLegendEntry txt)
@@ -382,8 +382,8 @@ setAxisRatio :: E v -> n -> Axis b v n -> Axis b v n
 setAxisRatio e = set (axisScaling . el e . aspectRatio) . Commit
 
 -- | Make each axis have the same unit length.
-equalAxis :: (Traversable v, Num n) => Axis b v n -> Axis b v n
-equalAxis = axisScaling . traversed . aspectRatio .~ Commit 1
+equalAxis :: (Functor v, Num n) => Axis b v n -> Axis b v n
+equalAxis = axisScaling . mapped . aspectRatio .~ Commit 1
 
 axisPlotProperties :: IndexedTraversal' Int (Axis b v n) (PlotProperties b v n)
 axisPlotProperties = axisPlots . traversed . ipp
@@ -401,22 +401,22 @@ setTheme = set axisTheme
 -- Grid lines
 
 -- | Set no major or minor grid lines for all axes.
-noGridLines :: Traversable v => Axis b v n -> Axis b v n
+noGridLines :: Functor v => Axis b v n -> Axis b v n
 noGridLines = noMajorGridLines . noMinorGridLines
 
 -- Majors
 
 -- | Add major grid lines for all axes.
-addMajorGridLines :: Traversable v => Axis b v n -> Axis b v n
-addMajorGridLines = set (axisGridLines . traversed . majorGridF) tickGridF
+addMajorGridLines :: Functor v => Axis b v n -> Axis b v n
+addMajorGridLines = set (axisGridLines . mapped . majorGridF) tickGridF
 
 -- | Add major grid lines for given axis.
 addMajorGridLine :: E v -> Axis b v n -> Axis b v n
 addMajorGridLine (E e) = set (axisGridLines . e . majorGridF) tickGridF
 
 -- | Set no major grid lines for all axes.
-noMajorGridLines :: Traversable v => Axis b v n -> Axis b v n
-noMajorGridLines = set (axisGridLines . traversed . majorGridF) noGridF
+noMajorGridLines :: Functor v => Axis b v n -> Axis b v n
+noMajorGridLines = set (axisGridLines . mapped . majorGridF) noGridF
 
 -- | Set no major grid lines for given axis.
 noMajorGridLine :: E v -> Axis b v n -> Axis b v n
@@ -425,16 +425,16 @@ noMajorGridLine (E e) = set (axisGridLines . e . majorGridF) noGridF
 -- Minors
 
 -- | Add minor grid lines for all axes.
-addMinorGridLines :: Traversable v => Axis b v n -> Axis b v n
-addMinorGridLines = set (axisGridLines . traversed . minorGridF) tickGridF
+addMinorGridLines :: Functor v => Axis b v n -> Axis b v n
+addMinorGridLines = set (axisGridLines . mapped . minorGridF) tickGridF
 
 -- | Add minor grid lines for given axis.
 addMinorGridLine :: E v -> Axis b v n -> Axis b v n
 addMinorGridLine (E e) = set (axisGridLines . e . minorGridF) tickGridF
 
 -- | Set no minor grid lines for all axes.
-noMinorGridLines :: Traversable v => Axis b v n -> Axis b v n
-noMinorGridLines = set (axisGridLines . traversed . minorGridF) noGridF
+noMinorGridLines :: Functor v => Axis b v n -> Axis b v n
+noMinorGridLines = set (axisGridLines . mapped . minorGridF) noGridF
 
 -- | Set no minor grid lines for given axis.
 noMinorGridLine :: E v -> Axis b v n -> Axis b v n
