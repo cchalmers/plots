@@ -41,7 +41,7 @@ module Plots.State
     -- ** Bounds
 
   , noGridLines
-  , withLegend
+  , addLegendEntry
 
     -- ** Ticks
 
@@ -110,10 +110,14 @@ import Data.Default
 type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, TypeableFloat n, Enum n)
 
 
-newtype AxisStateM b v n a = AxisState (State (P.Axis b v n) a)
-  deriving (Functor, Applicative, Monad, MonadState (P.Axis b v n))
+-- newtype AxisStateM b v n a = AxisState (State (P.Axis b v n) a)
+--   deriving (Functor, Applicative, Monad, MonadState (P.Axis b v n))
 
-type AxisState b v n = AxisStateM b v n ()
+type AxisStateM b v n a = State (P.Axis b v n) a
+type AxisState b v n    = AxisStateM b v n ()
+
+type PropertyStateM b v n a = State (PlotProperties b v n) a
+type PropertyState b v n = State (PlotProperties b v n) ()
 
 cartesianLabels :: Traversable v => AxisState b v n
 cartesianLabels =
@@ -145,10 +149,9 @@ cartesianLabels =
 -- The 'Plotable' class defines ways of converting the data type to a
 -- diagram for some axis.
 
-addPlotable :: (InSpace v n a, Default (PlotProperties b v n), Plotable a b,
-                Typeable n, Typeable b, Typeable v)
+addPlotable :: (InSpace v n a, Plotable a b, Typeable n, Typeable b, Typeable v)
             => a -> AxisState b v n
-addPlotable a = axisPlots <>= [Plot a def]
+addPlotable a = axisPlots <>= [(Plot a, id)]
 
 
 -- | Add something 'Plotable' while adjusting the 'PlotProperties' for
@@ -160,15 +163,13 @@ addPlotable a = axisPlots <>= [Plot a def]
 --     plotName .= mkName 5
 --     addLegendEntry "pentagon"
 -- @
-addPlotable' :: (InSpace v n a, Default (PlotProperties b v n), Plotable a b,
-                Typeable n, Typeable b, Typeable v)
-            => a -> State (PlotProperties b v n) c -> AxisState b v n
-addPlotable' a s = axisPlots <>= [Plot a (execState s def)]
+addPlotable' :: (InSpace v n a, Plotable a b, Typeable n, Typeable b, Typeable v)
+             => a -> PropertyStateM b v n a0 -> AxisState b v n
+addPlotable' a s = axisPlots <>= [(Plot a, execState s)]
 
-addPlotableL :: (InSpace v n a, Default (PlotProperties b v n), Plotable a b,
-                Typeable n, Typeable b, Typeable v)
-            => String -> a -> AxisState b v n
-addPlotableL l a = axisPlots <>= [Plot a (def & legendEntries <>~ [mkLegendEntry l])]
+addPlotableL :: (InSpace v n a, Plotable a b, Typeable n, Typeable b, Typeable v)
+             => String -> a -> AxisState b v n
+addPlotableL l a = axisPlots <>= [(Plot a, legendEntries <>~ [mkLegendEntry l])]
 
 ------------------------------------------------------------------------
 -- Scatter plot
@@ -194,7 +195,7 @@ addPlotableL l a = axisPlots <>= [Plot a (def & legendEntries <>~ [mkLegendEntry
 --   @
 scatterPlot :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, Foldable f)
             => f p -> AxisState b v n
-scatterPlot d = axisPlots <>= [P.Plot (P.mkScatterPlot d) def]
+scatterPlot d = addPlotable (P.mkScatterPlot d)
 
 -- | Make a 'ScatterPlot' and take a 'State' on the plot to alter it's
 --   options
@@ -206,7 +207,7 @@ scatterPlot d = axisPlots <>= [P.Plot (P.mkScatterPlot d) def]
 --   @
 scatterPlot' :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, Foldable f)
             => f p -> State (P.ScatterPlot v n) a -> AxisState b v n
-scatterPlot' d s = axisPlots <>= [P.Plot (execState s $ P.mkScatterPlot d) def]
+scatterPlot' d s = addPlotable (execState s $ P.mkScatterPlot d)
 
 -- $ bubble
 -- Scatter plots with extra numeric parameter. By default the extra
@@ -236,10 +237,10 @@ scatterPlot' d s = axisPlots <>= [P.Plot (execState s $ P.mkScatterPlot d) def]
 
 linePlot :: (PointLike v n p, R2Backend b n, Plotable (Path v n) b, Foldable f)
          => f p -> AxisState b v n
-linePlot d = axisPlots <>= [P.Plot (P.mkPath $ Identity d) def]
+linePlot d = addPlotable (P.mkPath $ Identity d)
 
 pathPlot :: (R2Backend b n) => Path V2 n -> AxisState b V2 n
-pathPlot p = axisPlots <>= [Plot p def]
+pathPlot = addPlotable
 
 ------------------------------------------------------------------------
 -- Bar Plot
@@ -266,23 +267,25 @@ pathPlot p = axisPlots <>= [Plot p def]
 ------------------------------------------------------------------------
 
 diagramPlot :: (Renderable (Path V2 n) b, Typeable b, Typeable v, Metric v, TypeableFloat n)
-              => QDiagram b v n Any -> Plot b v n
-diagramPlot d = Plot d def
+              => QDiagram b v n Any -> AxisState b v n
+diagramPlot = addPlotable
 
 ------------------------------------------------------------------------
--- Axis lenses
+-- Axis properties
 ------------------------------------------------------------------------
-
 
 -- | Traversal over the axis' most recent 'PlotProperties'.
-recentProps :: Traversal' (Axis b v n) (PlotProperties b v n)
-recentProps = axisPlots . _last . plotProperties
+recentProps :: PropertyState b v n -> AxisState b v n
+recentProps s = axisPlots . _last . _2 %= (execState s .)
 
-withLegend :: Num n => String -> AxisState b v n
-withLegend s = recentProps . legendEntries <>= [mkLegendEntry s]
+-- Legend
+------------
+
+addLegendEntry :: Num n => String -> PropertyState b v n
+addLegendEntry s = legendEntries <>= [mkLegendEntry s]
 
 axisState :: Axis b v n -> AxisStateM b v n a -> Axis b v n
-axisState a (AxisState s) = execState s a
+axisState a s = execState s a
 
 noGridLines :: Functor v => AxisState b v n
 noGridLines = modify P.noGridLines
