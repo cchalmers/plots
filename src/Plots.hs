@@ -3,6 +3,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TypeFamilies          #-}
+
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 -----------------------------------------------------------------------------
@@ -45,27 +46,34 @@
 -- @
 
 module Plots
-  ( AxisState
+  ( -- * Data types and classes
+    AxisState
   , axisState
+  , PointLike
   , Axis
   , r2Axis
   , renderAxis
-  , Plot (..)
+  , Plot
 
     -- * Plotable
+    -- $plotable
   , addPlotable
   , addPlotable'
   , addPlotableL
+  , addPlotableL'
 
     -- ** Scatter plot
+  , ScatterPlot
   , scatterPlot
   , scatterPlot'
   , scatterPlotL
   , scatterPlotOf
   , scatterPlotOf'
   , scatterPlotLOf
+  , module Plots.Types.Scatter
 
     -- ** Line plot
+  , Path
   , linePlot
   -- , linePlot'
   -- , linePlotL
@@ -75,45 +83,13 @@ module Plots
   -- , pathPlot'
   -- , pathPlotL
   -- , pathPlotL'
+  , module Plots.Types.Line
 
     -- ** Diagram plot
   , diagramPlot
 
-    -- * Axis properties
-
-    -- ** Bounds
-
-  , noGridLines
-  , addLegendEntry
-
-    -- ** Ticks
-
-  -- , ticks
-
-    -- ** Grid lines
-
-  -- , recentProps
-  , cartesianLabels
-
-    -- ** Axis labels
-    -- ** Axis title
-
-    -- ** Scatter plot
-    -- | Put markers at points. For more options see 'Plots.Types.Scatter'
-  , scatterPlot
-  , mkScatterPlot
-  -- , connectedScattered
-  , module Plots.Types.Scatter
-
-    -- ** Line plot
-    -- | Plot simple lines.
-  -- , addLinePlot
-  -- , linePlot
-  -- , multiLinePlot
-  -- , linePlotFromPath
-  , module Plots.Types.Line
-
   -- ** Parametric plot
+  --
   -- , parametricPlot
 
   -- ** Mesh plot
@@ -131,6 +107,37 @@ module Plots
   -- , barPlotAxis
   -- , module Plots.Types.Bar
 
+    -- * Axis properties
+
+    -- ** Bounds
+  , xMin, xMax
+  , yMin, yMax
+  , zMin, zMax
+
+    -- ** Grid lines
+  , noGridLines
+  , addLegendEntry
+
+    -- ** Ticks
+
+  -- , ticks
+
+    -- ** Grid lines
+
+  -- , recentProps
+  , cartesianLabels
+
+    -- ** Axis labels
+    -- ** Axis title
+
+    -- ** Line plot
+    -- | Plot simple lines.
+  -- , addLinePlot
+  -- , linePlot
+  -- , multiLinePlot
+  -- , linePlotFromPath
+
+
     -- * Legend
   , addLegendEntry
 
@@ -144,12 +151,13 @@ module Plots
   , SizeSpec
   , lc
   , fc
+  , fcA
 
     -- * Optics
     -- ** Basis elements
     -- | These basis elements can be used to select a specific coordinate axis.
     --   These can be used henever a function has a @E v@ argument.
-  , E (..), ex, ey, ez
+  , ex, ey, ez
 
     -- ** Common functions
     -- | These lens functions can be used to change some of the more advanced
@@ -157,14 +165,12 @@ module Plots
   , (&)
   , set, (.~)
   , over, (%~)
-
-
+  , (&~)
+  , (.=), assign
+  , (%=), modify
 
     -- * Axis adjustments
     -- ** Axis size
-  , xMin , xMax
-  , yMin , yMax
-  , zMin , zMax
 
    -- ** Axis labels
    -- *** Label text
@@ -194,6 +200,7 @@ module Plots
 
     -- * Axis ticks
     -- | Placement of major and minor ticks.
+
   -- , noMinorTicks
   -- , noMajorTicks
   , module Plots.Axis.Ticks
@@ -203,23 +210,16 @@ module Plots
 
     -- ** Axis Grid
   , noGridLines
-  , addMajorGridLines, addMajorGridLine
-  , noMajorGridLines, noMajorGridLine
-  , addMinorGridLines, addMinorGridLine
-  , noMinorGridLines, noMinorGridLine
+  , noGridLine
+  , setMajorGridLines
+  , setMajorGridLine
+  , noMajorGridLines
+  , noMajorGridLine
+  , setMinorGridLines
+  , setMinorGridLine
+  , noMinorGridLines
+  , noMinorGridLine
 
-    -- * do notation
-    -- | If you prefer you can use do notation with the @(&~)@ operator.
-    -- ** State operators
-    -- ```
-    -- myaxis = r2axis &~ do
-    --   axisLabel ex .= "x-axis"
-    --   assign axesLabelPositions LowerAxisLabel
-    --   modify noGridLines
-    -- ```
-  , (&~)
-  , (.=), assign
-  , (%=), modify
   ) where
 
 import           Control.Lens                    hiding (( # ))
@@ -295,6 +295,9 @@ type AxisStateM b v n = State (Axis b v n)
 type AxisState b v n  = AxisStateM b v n ()
 
 type PlotStateM a b = State (PropertiedPlot a b)
+
+-- | The plot state allows you to use lenses for the plot @a@ as well as
+--   the @PlotProperties@.
 type PlotState a b  = PlotStateM a b ()
 
 -- type PropertyStateM b v n a = State (PlotProperties b v n) a
@@ -303,27 +306,16 @@ type PlotState a b  = PlotStateM a b ()
 -- newtype PlotStateM p b v n = PState (State (p, PlotProperties))
 --   deriving (Functor, Applicative, Monad, MonadState (P.Axis b v n))
 
-cartesianLabels :: Traversable v => AxisState b v n
-cartesianLabels =
-  partsOf (axisLabels . traversed . axisLabelText) .= ["x", "y", "z"]
-
 ------------------------------------------------------------------------
 -- Plot properties
 ------------------------------------------------------------------------
 
 -- $properties
 -- Every plot has a assosiating 'PlotProperties'. These contain general
--- attributes like the legend entryies and the style and the name for
+-- attributes like the legend entries and the style and the name for
 -- the plot.
 --
 -- There are several ways to adjust the properties.
-
--- $naming
--- The plot adding functions follow the following naming conventions:
---
--- * addPlot :: data -> AxisState
--- * addPlot' :: data -> PropertyState -> AxisState
--- * addPlotL :: String -> data -> PropertyState -> AxisState
 
 ------------------------------------------------------------------------
 -- Plotable
@@ -331,28 +323,56 @@ cartesianLabels =
 
 -- $plotable
 -- The 'Plotable' class defines ways of converting the data type to a
--- diagram for some axis.
+-- diagram for some axis. There are several variants for adding an axis
+-- with constraints @('InSpace' v n a, 'Plotable' a b)@:
+--
+-- @
+-- 'addPlotable'   ::           a ->                  'AxisState' b v n
+-- 'addPlotable''  ::           a -> 'PlotState' a b -> 'AxisState' b v n
+-- 'addPlotableL'  :: 'String' -> a ->                  'AxisState' b v n
+-- 'addPlotableL'' :: 'String' -> a -> 'PlotState' a b -> 'AxisState' b v n
+-- @
+--
+-- The last argument is a 'PlotState' so you can use @do@ notation to
+-- make adjustments to the plot. The @L@ suffix stands for \"legend\",
+-- it is equivalent of using 'addLegendEntry' in the 'PlotState'. Since
+-- legend entries are so common it has it's own suffix. The following
+-- are equivalent:
+--
+-- @
+-- myaxis = 'r2Axis' &~ do
+--   'addPlotable'' myplot $ do
+--     'addLegendEntry' "my plot"
+-- @
+--
+-- @
+-- myaxis = 'r2Axis' &~ do
+--   'addPlotableL' "my plot" myplot
+-- @
+--
+-- Most of the time you won't use these functions directly. However,
+-- other plotting functions follow this naming convention where instead
+-- of @a@, it takes the data needed to make the plot.
 
+-- | Add something 'Plotable' to the axis.
 addPlotable :: (InSpace v n a, Plotable a b) => a -> AxisState b v n
 addPlotable a = axisPlots %= flip snoc (Plot' a mempty)
 
-
--- | Add something 'Plotable' while adjusting the 'PlotProperties' for
---   that plot.
---
--- @
--- myaxis = r2Axis ~& do
---   addPlotable' (asPath $ square 3) $ do
---     plotName .= mkName 5
---     addLegendEntry "pentagon"
--- @
+-- | Add something 'Plotable' and modify the 'PlotState' of that plot.
 addPlotable' :: (InSpace v n a, Plotable a b)
-             => a -> PlotStateM a b a0 -> AxisState b v n
+             => a -> PlotState a b -> AxisState b v n
 addPlotable' a s = axisPlots <>= [Plot' a (Endo $ execState s)]
 
+-- | Add something 'Plotable' with given legend entry.
 addPlotableL :: (InSpace v n a, Plotable a b)
              => String -> a -> AxisState b v n
 addPlotableL l a = addPlotable' a $ addLegendEntry l
+
+-- | Add something 'Plotable' with given legend entry and modify the
+--   'PlotState' of that plot.
+addPlotableL' :: (InSpace v n a, Plotable a b)
+              => String -> a -> PlotState a b -> AxisState b v n
+addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
 ------------------------------------------------------------------------
 -- Scatter plot
@@ -372,10 +392,10 @@ addPlotableL l a = addPlotable' a $ addLegendEntry l
 
 -- | Add a 'ScatterPlot' to the 'AxisState' from a data set.
 --
---   @
+-- @
 --   myaxis = r2Axis ~&
 --     scatterPlot data1
---   @
+-- @
 scatterPlot :: (PointLike v n p, Plotable (ScatterPlot v n) b, Foldable f)
             => f p -> AxisState b v n
 scatterPlot d = addPlotable (mkScatterPlot d)
@@ -383,22 +403,23 @@ scatterPlot d = addPlotable (mkScatterPlot d)
 -- | Make a 'ScatterPlot' and take a 'State' on the plot to alter it's
 --   options
 --
---   @
+-- @
 --   myaxis = r2Axis &~ do
 --     scatterPlot' pointData1 $ do
 --       connectingLine .= True
 --       addLegendEntry "data 1"
---   @
+-- @
 scatterPlot' :: (PointLike v n p, Plotable (ScatterPlot v n) b, Foldable f)
              => f p -> PlotState (ScatterPlot v n) b -> AxisState b v n
 scatterPlot' d = addPlotable' (mkScatterPlot d)
 
 -- | Add a 'ScatterPlot' with the given name for the legend entry.
 --
---   @
+-- @
 --   myaxis = r2Axis &~ do
---     scatterPlotL "data 1" pointData1
---   @
+--     scatterPlotL "blue team" pointData1
+--     scatterPlotL "red team" pointData2
+-- @
 scatterPlotL :: (PointLike v n p, Plotable (ScatterPlot v n) b, Foldable f)
              => String -> f p -> AxisState b v n
 scatterPlotL l d = addPlotableL l (mkScatterPlot d)
@@ -446,6 +467,7 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 -- $line
 -- Line plots are internally represented by 'Path'.
 
+-- | Construct a single line plot.
 linePlot :: (PointLike v n p, R2Backend b n, Plotable (Path v n) b, Foldable f)
          => f p -> AxisState b v n
 linePlot d = addPlotable (mkPath $ Identity d)
@@ -526,11 +548,10 @@ r2Axis = def
 
 
 -- | Set the label for the given axis.
--- @
--- myaxis = 'r2Axis' # 'set' ('axisLabel' 'ex') "x-axis"
---        = 'r2Axis' & 'axisLabel' 'ex' .~ "x-axis"
---        = 'r2Axis' &~ 'axisLabel' 'ex' .= "x-axis"
--- @
+--
+--   @@
+--   myaxis = 'r2Axis' &~ 'axisLabel' 'ex' "x-axis"
+--   @@
 axisLabel :: E v -> Lens' (Axis b v n) String
 axisLabel (E e) = axisLabels . e . axisLabelText
 
@@ -550,25 +571,10 @@ setAxisLabelGap (E e) = axisLabels . e . axisLabelGap
 setAxesLabelGaps :: Traversable v => Traversal' (Axis b v n) n
 setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 
-
--- Parametric plots
-
--- parametricPlot
---   :: (PointLike v n a, R2Backend b n, Applicative v, Metric v, Typeable v)
---     => (n -> a) -> Axis b v n -> Axis b v n
--- parametricPlot = addPlotable . mkParametricPlot
-
--- Mesh plots
-
--- meshPlot :: R2Backend b n => (n -> n -> n) -> Axis b V3 n -> Axis b V3 n
--- meshPlot = addPlotable . mkMeshPlot
-
-
--- Surface plot
-
--- surfacePlot :: R2Backend b n => (n -> n -> n) -> Axis b V3 n -> Axis b V3 n
--- surfacePlot = addPlotable . mkSurfacePlot
-
+-- | Label the x,y and z axis with \"\x", \"y\" and \"z\"
+cartesianLabels :: Traversable v => AxisState b v n
+cartesianLabels =
+  partsOf (axisLabels . traversed . axisLabelText) .= ["x", "y", "z"]
 
 -- | Set the aspect ratio of given axis.
 setAxisRatio :: E v -> n -> AxisState b v n
@@ -578,33 +584,25 @@ setAxisRatio e n = axisScaling . el e . aspectRatio .= Commit n
 equalAxis :: (Functor v, Num n) => AxisState b v n
 equalAxis = axisScaling . mapped . aspectRatio .= Commit 1
 
--- axisPlotProperties :: IndexedTraversal' Int (Axis b v n) (PlotProperties b v n)
--- axisPlotProperties = axisPlots . traversed . _2ip
---   where
---     _2ip :: IndexPreservingLens' (Plot b v n, PlotProperties b v n)
---                                  (PlotProperties b v n)
---     _2ip = iplens (\(_,b)   -> b)
---                   (\(a,_) b -> (a,b))
-    -- ipp :: IndexPreservingLens' (Plot b v n) (PlotProperties b v n)
-    -- ipp = iplens (\(Plot _)   -> pp)
-    --              (\(Plot a) pp -> Plot a pp)
-
-
 -- Grid lines
 
 -- | Set no major or minor grid lines for all axes.
 noGridLines :: Functor v => AxisState b v n
 noGridLines = noMajorGridLines >> noMinorGridLines
 
+-- | Set no major or minor grid lines for given axes.
+noGridLine :: E v -> AxisState b v n
+noGridLine e = noMajorGridLine e >> noMinorGridLine e
+
 -- Majors
 
 -- | Add major grid lines for all axes.
-addMajorGridLines :: Functor v => AxisState b v n
-addMajorGridLines = axisGridLines . mapped . majorGridF .= tickGridF
+setMajorGridLines :: Functor v => AxisState b v n
+setMajorGridLines = axisGridLines . mapped . majorGridF .= tickGridF
 
 -- | Add major grid lines for given axis.
-addMajorGridLine :: E v -> AxisState b v n
-addMajorGridLine (E e) = axisGridLines . e . majorGridF .= tickGridF
+setMajorGridLine :: E v -> AxisState b v n
+setMajorGridLine (E e) = axisGridLines . e . majorGridF .= tickGridF
 
 -- | Set no major grid lines for all axes.
 noMajorGridLines :: Functor v => AxisState b v n
@@ -617,12 +615,12 @@ noMajorGridLine (E l) = axisGridLines . l . majorGridF .= noGridF
 -- Minors
 
 -- | Add minor grid lines for all axes.
-addMinorGridLines :: Functor v => AxisState b v n
-addMinorGridLines = axisGridLines . mapped . minorGridF .= tickGridF
+setMinorGridLines :: Functor v => AxisState b v n
+setMinorGridLines = axisGridLines . mapped . minorGridF .= tickGridF
 
 -- | Add minor grid lines for given axis.
-addMinorGridLine :: E v -> AxisState b v n
-addMinorGridLine (E l) = axisGridLines . l . minorGridF .= tickGridF
+setMinorGridLine :: E v -> AxisState b v n
+setMinorGridLine (E l) = axisGridLines . l . minorGridF .= tickGridF
 
 -- | Set no minor grid lines for all axes.
 noMinorGridLines :: Functor v => AxisState b v n
@@ -657,31 +655,31 @@ zMax :: (HasBounds a, R3 (V a)) => Lens' a (Recommend (N a))
 zMax = boundMin ey
 
 
-{-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}
-
 -- -- | Traversal over all axis line types.
 -- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType
 -- axisLineTypes = axisLines . traversed . axisLine
---
+
 -- -- | Lens onto x axis line type.
 -- xAxisLineType :: (L.R1 v, HasAxisLines a v) => Lens' a AxisLineType
 -- xAxisLineType = axisLine ex . axisLineType
---
+
 -- -- | Lens onto y axis line type.
 -- yAxisLineType :: (L.V2 n v, HasAxisLines a v) => Lens' a AxisLineType
 -- yAxisLineType = axisLine ey . axisLineType
---
+
 -- -- | Lens onto z axis line type.
 -- zAxisLineType :: (L.V3 n v, HasAxisLines a v) => Lens' a AxisLineType
 -- zAxisLineType = axisLine ez . axisLineType
---
+
 -- xAxisArrowOpts :: (L.R1 v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- xAxisArrowOpts = axisLine ex . axisArrowOpts
---
+
 -- yAxisArrowOpts :: (L.V2 n v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- yAxisArrowOpts = axisLine ey . axisArrowOpts
---
+
 -- zAxisArrowOpts :: (L.V3 n v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- zAxisArrowOpts = axisLines ez . axisArrowOpts
 --
---
+
+
+{-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}
