@@ -15,10 +15,9 @@ module Plots.Types.Bar
 
 
     -- * Lenses
-  , barPlotBars
-  , barPlotWidth
-  , barPlotSpacing
-  , barPlotIsVerticle
+  , barWidth
+  , barSpacing
+  , verticleBars
   ) where
 
 import Control.Lens     hiding (transform, ( # ))
@@ -47,7 +46,7 @@ instance OrderedField n => Enveloped (BarPlot n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
-  renderPlotable _gp _ t d = drawBarPlot d # transform t
+  renderPlotable _ t d _pp = drawBarPlot d # transform t
 
 instance Fractional n => Default (BarPlot n) where
   def = BarPlot

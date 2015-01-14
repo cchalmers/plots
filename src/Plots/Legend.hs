@@ -158,7 +158,7 @@ instance TypeableFloat n => HasStyle (Legend b n) where
   applyStyle sty = over legendStyle (applyStyle sty)
 
 drawLegend :: (TypeableFloat n, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
-           => BoundingBox V2 n -> Legend b n -> [Plot b V2 n] -> QDiagram b V2 n Any
+           => BoundingBox V2 n -> Legend b n -> [(Plot b V2 n, PlotProperties b V2 n)] -> QDiagram b V2 n Any
 drawLegend bb l ps = alignTo (l ^. legendPosition)
                              bb
                              (l ^. legendAnchor)
@@ -170,7 +170,7 @@ drawLegend bb l ps = alignTo (l ^. legendPosition)
     --
     ledge      = orient (l ^. legendOrientation) hcat vcat
                $ concatMap mkLabels ps
-    mkLabels p = map mkLabel (p ^. legendEntries)
+    mkLabels (p,pp) = map mkLabel (pp ^. legendEntries)
       where
         mkLabel entry = txt ||| pic
           where
@@ -179,8 +179,8 @@ drawLegend bb l ps = alignTo (l ^. legendPosition)
                     # applyStyle (l ^. legendTextStyle)
                     # withEnvelope (fromCorners origin (mkP2 w h))
             pic = case entry ^. legendPic of
-                    DefaultLegendPic  -> plotDefLegendPic p
-                    CustomLegendPic f -> f $ p ^. themeEntry
+                    DefaultLegendPic  -> defLegendPic p pp
+                    CustomLegendPic f -> f $ pp ^. themeEntry
 
 wrapPic :: RealFloat n => V2 n -> QDiagram b V2 n Any -> QDiagram b V2 n Any
 wrapPic ((^/ 2) -> v) d

@@ -178,7 +178,7 @@ module Plots
   , AxisLabelPosition (..)
   , axesLabelPositions
   , axisLabelPosition
-  , axisPlotProperties
+  -- , axisPlotProperties
 
     -- *** Label gaps
   , setAxisLabelGap
@@ -304,7 +304,7 @@ setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 -- @
 addPlotable :: (Plotable a b, Typeable (N a), Typeable b, Typeable (V a))
             => PlotProperties b (V a) (N a) -> a -> Axis b (V a) (N a) -> Axis b (V a) (N a)
-addPlotable pp p = axisPlots <>~ [review _Plot (p, pp)]
+addPlotable pp p = axisPlots <>~ [(Plot p, const pp)]
 
 -- Scatter plot
 
@@ -385,12 +385,16 @@ setAxisRatio e = set (axisScaling . el e . aspectRatio) . Commit
 equalAxis :: (Functor v, Num n) => Axis b v n -> Axis b v n
 equalAxis = axisScaling . mapped . aspectRatio .~ Commit 1
 
-axisPlotProperties :: IndexedTraversal' Int (Axis b v n) (PlotProperties b v n)
-axisPlotProperties = axisPlots . traversed . ipp
-  where
-    ipp :: IndexPreservingLens' (Plot b v n) (PlotProperties b v n)
-    ipp = iplens (\(Plot _ pp)   -> pp)
-                 (\(Plot a _) pp -> Plot a pp)
+-- axisPlotProperties :: IndexedTraversal' Int (Axis b v n) (PlotProperties b v n)
+-- axisPlotProperties = axisPlots . traversed . _2ip
+--   where
+--     _2ip :: IndexPreservingLens' (Plot b v n, PlotProperties b v n)
+--                                  (PlotProperties b v n)
+--     _2ip = iplens (\(_,b)   -> b)
+--                   (\(a,_) b -> (a,b))
+    -- ipp :: IndexPreservingLens' (Plot b v n) (PlotProperties b v n)
+    -- ipp = iplens (\(Plot _)   -> pp)
+    --              (\(Plot a) pp -> Plot a pp)
 
 -- Themes
 

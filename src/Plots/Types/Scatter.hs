@@ -62,7 +62,7 @@ instance (Metric v, OrderedField n) => Enveloped (GScatterPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GScatterPlot V2 n a) b where
-  renderPlotable pp _ t GScatterPlot {..} =
+  renderPlotable _ t GScatterPlot {..} pp =
       foldMapOf sFold mk sData # applyStyle gSty
    <> if cLine
         then fromVertices (toListOf (sFold . to sPos) sData)
@@ -77,7 +77,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       gSty   = pp ^. themeMarkerStyle
       lSty   = pp ^. themeLineStyle
 
-  defLegendPic pp GScatterPlot {..} =
+  defLegendPic GScatterPlot {..} pp =
     pp ^. themeMarker
       & applyStyle (pp ^. themeMarkerStyle)
 
@@ -86,9 +86,8 @@ connectingLine = lens cLine (\s b -> (s {cLine = b}))
 
 deriving instance Typeable Point
 
-_ScatterPlot :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-             => Traversal' (Plot b V2 n) (ScatterPlot V2 n)
-_ScatterPlot = plotT
+_ScatterPlot :: (Plotable (ScatterPlot v n) b, Typeable b) => Prism' (Plot b v n) (ScatterPlot v n)
+_ScatterPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Scatter plot

@@ -82,7 +82,7 @@ renderR2Axis a = frame 15
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LowerLabels
   where
-    plots = foldMap (renderPlot xs t) plots'
+    plots = foldMap (uncurry $ renderPlotable xs t) plots'
     drawAxis = axisOnBasis origin xs a t
     --
     (xs, tv, t') = workOutScale a
@@ -92,8 +92,19 @@ renderR2Axis a = frame 15
     legend = drawLegend bb (a ^. axisLegend) (toList plots')
     --
     -- TODO: fix this
-    applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
-    plots'     = a ^. axisPlots . to applyTheme
+    -- applyTheme = zipWith (\axisEntry -> over plotThemeEntry
+    --                        (Commit . fromCommit axisEntry))
+    --                      (a ^. axisTheme)
+    appTheme theme = over plotThemeEntry (Commit . fromCommit theme)
+    pp = a ^. defProperties
+    preparePlots =
+      zipWith (\theme (p,pf) -> (p, pf pp & appTheme theme))
+              (a ^. axisTheme)
+    --
+    -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))
+    --                      (a ^. axisPlots)
+    --                      (a ^. defProperties)
+    plots'     = a ^. axisPlots . to preparePlots
 
 data LabelPosition = NoLabels
                    | LowerLabels
@@ -279,7 +290,7 @@ workOutScale a = (enlargedBounds, aspectScaling, specScaling)
     spec     = a ^. axisSize
     aScaling = a ^. axisScaling
     -- bb       = a ^. axisPlots . folded . plotBoundingBox
-    bb       = a ^. axisPlots . folded . to boundingBox
+    bb       = a ^. axisPlots . folded . _1 . to boundingBox
     bnd      = a ^. bounds
 
 -- messy tempory fix while stuff is getting worked out

@@ -91,6 +91,8 @@ instance Fractional n => Default (Scaling n) where
           , _enlargeAxisLimits = Just $ Recommend 0.1
           }
 
+type PropertyAdjust b v n = PlotProperties b v n -> PlotProperties b v n
+
 -- axis data type
 
 -- | Axis is the data type that holds all the nessessary information to render
@@ -106,13 +108,14 @@ data Axis b v n = Axis
   , _axisLabels     :: AxisLabels b v n
   , _axisLegend     :: Legend b n
   , _axisLines      :: AxisLines v n
-  , _axisPlots      :: [Plot b v n]
+  , _axisPlots      :: [(Plot b v n, PropertyAdjust b v n)]
   , _axisScaling    :: AxisScaling v n
   , _axisSize       :: SizeSpec v n
   , _axisTheme      :: Theme b n
   , _axisTickLabels :: AxisTickLabels b v n
   , _axisTicks      :: AxisTicks v n
   , _axisTitle      :: Maybe String
+  , _defProperties  :: PlotProperties b v n
   } deriving Typeable
 
 makeLenses ''Axis
@@ -144,6 +147,7 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
           , _axisTickLabels = pure def
           , _axisTicks      = pure def
           , _axisLines      = pure def
+          , _defProperties  = def
           }
 
 -- R3 Axis
