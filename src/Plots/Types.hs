@@ -14,6 +14,7 @@
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE RankNTypes                #-}
 
 {-# LANGUAGE CPP                       #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
@@ -59,6 +60,13 @@ module Plots.Types
   , recommend
   , _Recommend
   , _Commit
+
+  , PropertiedPlot (..)
+  , _pp
+
+  , Plot' (..)
+  , unPlot'
+  , appPlot'
   ) where
 
 import           Control.Lens          as L hiding (transform, ( # ), (|>))
@@ -366,4 +374,32 @@ _Plot = prism' Plot (\(Plot a) -> cast a)
 -- plotT :: (Typeable (N a), Typeable (V a), Typeable b, Plotable a b)
 --       => Traversal' (Plot b (V a) (N a)) a
 -- plotT = _Plot . _1
+
+data PropertiedPlot p b = PP p (PlotProperties b (V p) (N p))
+
+_pp :: (V p ~ V p', N p ~ N p') => Lens (PropertiedPlot p b) (PropertiedPlot p' b) p p'
+_pp = lens (\(PP a _) -> a) (\(PP _ p) a -> PP a p)
+
+type instance B (PropertiedPlot p b) = b
+type instance V (PropertiedPlot p b) = V p
+type instance N (PropertiedPlot p b) = N p
+
+instance HasPlotProperties (PropertiedPlot p b) where
+  plotProperties = lens (\(PP _ pp) -> pp) (\(PP a _) pp -> PP a pp)
+
+-- | Internal type for storing plots in an axis.
+data Plot' b v n where
+  Plot' :: (V a ~ v, N a ~ n, Plotable a b)
+       => a -> Endo (PropertiedPlot a b) -> Plot' b v n
+  deriving (Typeable)
+
+unPlot' :: Plot' b v n -> PlotProperties b v n -> (Plot b v n, PlotProperties b v n)
+unPlot' (Plot' a (Endo pf)) pp = (Plot a', pp')
+  where
+    PP a' pp' = pf $ PP a pp
+
+appPlot' :: (forall a. (V a ~ v, N a ~ n, Plotable a b) =>
+             PropertiedPlot a b -> PropertiedPlot a b)
+         -> Plot' b v n -> Plot' b v n
+appPlot' f (Plot' a pf) = Plot' a (Endo f <> pf)
 

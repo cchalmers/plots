@@ -6,6 +6,7 @@
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE FunctionalDependencies    #-}
 
 {-# LANGUAGE StandaloneDeriving        #-}
 
@@ -81,9 +82,6 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     pp ^. themeMarker
       & applyStyle (pp ^. themeMarkerStyle)
 
-connectingLine :: Lens' (GScatterPlot v n a) Bool
-connectingLine = lens cLine (\s b -> (s {cLine = b}))
-
 deriving instance Typeable Point
 
 _ScatterPlot :: (Plotable (ScatterPlot v n) b, Typeable b) => Prism' (Plot b v n) (ScatterPlot v n)
@@ -156,17 +154,26 @@ mkGScatterPlot = mkGScatterPlotOf folded
 -- Scatter plot lenses
 ------------------------------------------------------------------------
 
-scatterTransform :: Lens' (GScatterPlot v n a) (Maybe (a -> T2 n))
-scatterTransform = lens (\GScatterPlot {sTr = t} -> t)
-                        (\sp t -> sp {sTr = t})
+class HasScatter a v n d | a -> v n, a -> d where
+  scatter :: Lens' a (GScatterPlot v n d)
 
--- | Change the style for a scatter plot, given the data entry.
---
--- @@@
--- mybubbleplot & scatterStyle     ?~ mkAttr . transparency
---              & scatterTransform .~ Nothing
--- @@@
-scatterStyle :: Lens' (GScatterPlot v n a) (Maybe (a -> Style V2 n))
-scatterStyle = lens (\GScatterPlot {sSty = sty} -> sty)
-                    (\sp sty -> sp {sSty = sty})
+  scatterTransform :: Lens' a (Maybe (d -> T2 n))
+  scatterTransform = scatter . lens (\GScatterPlot {sTr = t} -> t)
+                                    (\sp t -> sp {sTr = t})
 
+  -- | Change the style for a scatter plot, given the data entry.
+  --
+  -- @@@
+  -- mybubbleplot & scatterStyle     ?~ mkAttr . transparency
+  --              & scatterTransform .~ Nothing
+  -- @@@
+  scatterStyle :: Lens' a (Maybe (d -> Style V2 n))
+  scatterStyle = scatter . lens (\GScatterPlot {sSty = sty} -> sty)
+                                (\sp sty -> sp {sSty = sty})
+
+
+  connectingLine :: Lens' a Bool
+  connectingLine = scatter . lens cLine (\s b -> (s {cLine = b}))
+
+instance HasScatter (PropertiedPlot (GScatterPlot v n d) b) v n d where
+  scatter = _pp

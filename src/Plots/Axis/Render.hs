@@ -98,12 +98,11 @@ renderR2Axis a = frame 15
     appTheme theme = over plotThemeEntry (Commit . fromCommit theme)
     pp = a ^. defProperties
     preparePlots =
-      zipWith (\theme (p,pf) -> (p, pf pp & appTheme theme))
+      zipWith (\theme p' -> (unPlot' (appPlot' (appTheme theme) p') pp))
               (a ^. axisTheme)
     --
     -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))
     --                      (a ^. axisPlots)
-    --                      (a ^. defProperties)
     plots'     = a ^. axisPlots . to preparePlots
 
 data LabelPosition = NoLabels
@@ -290,7 +289,7 @@ workOutScale a = (enlargedBounds, aspectScaling, specScaling)
     spec     = a ^. axisSize
     aScaling = a ^. axisScaling
     -- bb       = a ^. axisPlots . folded . plotBoundingBox
-    bb       = a ^. axisPlots . folded . _1 . to boundingBox
+    bb       = a ^. axisPlots . folded . to (\(Plot' p _) -> boundingBox p)
     bnd      = a ^. bounds
 
 -- messy tempory fix while stuff is getting worked out

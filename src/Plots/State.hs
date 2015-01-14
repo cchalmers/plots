@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RankNTypes #-}
 
 module Plots.State
   ( AxisState
@@ -19,8 +20,10 @@ module Plots.State
     -- ** Scatter plot
   , scatterPlot
   , scatterPlot'
-  -- , scatterPlotL
-  -- , scatterPlotL'
+  , scatterPlotL
+  , scatterPlotOf
+  , scatterPlotOf'
+  , scatterPlotLOf
 
     -- ** Line plot
   , linePlot
@@ -49,7 +52,7 @@ module Plots.State
 
     -- ** Grid lines
 
-  , recentProps
+  -- , recentProps
   , cartesianLabels
 
     -- ** Axis labels
@@ -113,11 +116,17 @@ type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable 
 -- newtype AxisStateM b v n a = AxisState (State (P.Axis b v n) a)
 --   deriving (Functor, Applicative, Monad, MonadState (P.Axis b v n))
 
-type AxisStateM b v n a = State (P.Axis b v n) a
-type AxisState b v n    = AxisStateM b v n ()
+type AxisStateM b v n = State (P.Axis b v n)
+type AxisState b v n  = AxisStateM b v n ()
 
-type PropertyStateM b v n a = State (PlotProperties b v n) a
-type PropertyState b v n = State (PlotProperties b v n) ()
+type PlotStateM a b = State (PropertiedPlot a b)
+type PlotState a b  = PlotStateM a b ()
+
+-- type PropertyStateM b v n a = State (PlotProperties b v n) a
+-- type PropertyState b v n = State (PlotProperties b v n) ()
+
+-- newtype PlotStateM p b v n = PState (State (p, PlotProperties))
+--   deriving (Functor, Applicative, Monad, MonadState (P.Axis b v n))
 
 cartesianLabels :: Traversable v => AxisState b v n
 cartesianLabels =
@@ -149,9 +158,8 @@ cartesianLabels =
 -- The 'Plotable' class defines ways of converting the data type to a
 -- diagram for some axis.
 
-addPlotable :: (InSpace v n a, Plotable a b, Typeable n, Typeable b, Typeable v)
-            => a -> AxisState b v n
-addPlotable a = axisPlots <>= [(Plot a, id)]
+addPlotable :: (InSpace v n a, Plotable a b) => a -> AxisState b v n
+addPlotable a = axisPlots %= flip snoc (Plot' a mempty)
 
 
 -- | Add something 'Plotable' while adjusting the 'PlotProperties' for
@@ -159,17 +167,17 @@ addPlotable a = axisPlots <>= [(Plot a, id)]
 --
 -- @
 -- myaxis = r2Axis ~& do
---   addPlotable' (pentagon 3) $ do
+--   addPlotable' (asPath $ square 3) $ do
 --     plotName .= mkName 5
 --     addLegendEntry "pentagon"
 -- @
-addPlotable' :: (InSpace v n a, Plotable a b, Typeable n, Typeable b, Typeable v)
-             => a -> PropertyStateM b v n a0 -> AxisState b v n
-addPlotable' a s = axisPlots <>= [(Plot a, execState s)]
+addPlotable' :: (InSpace v n a, Plotable a b)
+             => a -> PlotStateM a b a0 -> AxisState b v n
+addPlotable' a s = axisPlots <>= [Plot' a (Endo $ execState s)]
 
-addPlotableL :: (InSpace v n a, Plotable a b, Typeable n, Typeable b, Typeable v)
+addPlotableL :: (InSpace v n a, Plotable a b)
              => String -> a -> AxisState b v n
-addPlotableL l a = axisPlots <>= [(Plot a, legendEntries <>~ [mkLegendEntry l])]
+addPlotableL l a = addPlotable' a $ addLegendEntry l
 
 ------------------------------------------------------------------------
 -- Scatter plot
@@ -191,9 +199,9 @@ addPlotableL l a = axisPlots <>= [(Plot a, legendEntries <>~ [mkLegendEntry l])]
 --
 --   @
 --   myaxis = r2Axis ~&
---              scatterPlot data1
+--     scatterPlot data1
 --   @
-scatterPlot :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, Foldable f)
+scatterPlot :: (PointLike v n p, Plotable (P.ScatterPlot v n) b, Foldable f)
             => f p -> AxisState b v n
 scatterPlot d = addPlotable (P.mkScatterPlot d)
 
@@ -202,12 +210,37 @@ scatterPlot d = addPlotable (P.mkScatterPlot d)
 --
 --   @
 --   myaxis = r2Axis &~ do
---              scatterPlot' pointData1 $ do
---                connectingLine .= True
+--     scatterPlot' pointData1 $ do
+--       connectingLine .= True
+--       addLegendEntry "data 1"
 --   @
-scatterPlot' :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, Foldable f)
-            => f p -> State (P.ScatterPlot v n) a -> AxisState b v n
-scatterPlot' d s = addPlotable (execState s $ P.mkScatterPlot d)
+scatterPlot' :: (PointLike v n p, Plotable (P.ScatterPlot v n) b, Foldable f)
+             => f p -> PlotState (P.ScatterPlot v n) b -> AxisState b v n
+scatterPlot' d = addPlotable' (P.mkScatterPlot d)
+
+-- | Add a 'ScatterPlot' with the given name for the legend entry.
+--
+--   @
+--   myaxis = r2Axis &~ do
+--     scatterPlotL "data 1" pointData1
+--   @
+scatterPlotL :: (PointLike v n p, Plotable (P.ScatterPlot v n) b, Foldable f)
+             => String -> f p -> AxisState b v n
+scatterPlotL l d = addPlotableL l (P.mkScatterPlot d)
+
+-- Fold varients
+
+scatterPlotOf :: (PointLike v n p, Plotable (P.ScatterPlot v n) b)
+              => Fold s p -> s -> AxisState b v n
+scatterPlotOf f s = addPlotable (P.mkScatterPlotOf f s)
+
+scatterPlotOf' :: (PointLike v n p, Plotable (P.ScatterPlot v n) b)
+               => Fold s p -> s -> PlotState (P.ScatterPlot v n) b -> AxisState b v n
+scatterPlotOf' f s = addPlotable' (P.mkScatterPlotOf f s)
+
+scatterPlotLOf :: (PointLike v n p, Plotable (P.ScatterPlot v n) b)
+               => String -> Fold s p -> s -> AxisState b v n
+scatterPlotLOf l f s = addPlotableL l (P.mkScatterPlotOf f s)
 
 -- $ bubble
 -- Scatter plots with extra numeric parameter. By default the extra
@@ -239,7 +272,7 @@ linePlot :: (PointLike v n p, R2Backend b n, Plotable (Path v n) b, Foldable f)
          => f p -> AxisState b v n
 linePlot d = addPlotable (P.mkPath $ Identity d)
 
-pathPlot :: (R2Backend b n) => Path V2 n -> AxisState b V2 n
+pathPlot :: R2Backend b n => Path V2 n -> AxisState b V2 n
 pathPlot = addPlotable
 
 ------------------------------------------------------------------------
@@ -275,13 +308,14 @@ diagramPlot = addPlotable
 ------------------------------------------------------------------------
 
 -- | Traversal over the axis' most recent 'PlotProperties'.
-recentProps :: PropertyState b v n -> AxisState b v n
-recentProps s = axisPlots . _last . _2 %= (execState s .)
+-- recentProps :: PropertyState b v n -> AxisState b v n
+-- recentProps s = axisPlots . _last . _2 %= (execState s .)
 
 -- Legend
 ------------
 
-addLegendEntry :: Num n => String -> PropertyState b v n
+addLegendEntry :: (HasPlotProperties a, MonadState a m, Num (N a))
+               => String -> m ()
 addLegendEntry s = legendEntries <>= [mkLegendEntry s]
 
 axisState :: Axis b v n -> AxisStateM b v n a -> Axis b v n

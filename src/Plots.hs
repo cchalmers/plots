@@ -304,7 +304,7 @@ setAxesLabelGaps = axisLabels . traversed . axisLabelGap
 -- @
 addPlotable :: (Plotable a b, Typeable (N a), Typeable b, Typeable (V a))
             => PlotProperties b (V a) (N a) -> a -> Axis b (V a) (N a) -> Axis b (V a) (N a)
-addPlotable pp p = axisPlots <>~ [(Plot p, const pp)]
+addPlotable pp p = axisPlots <>~ [Plot' p $ Endo (\(PP a _) -> PP a pp)]
 
 -- Scatter plot
 

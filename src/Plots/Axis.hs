@@ -108,7 +108,7 @@ data Axis b v n = Axis
   , _axisLabels     :: AxisLabels b v n
   , _axisLegend     :: Legend b n
   , _axisLines      :: AxisLines v n
-  , _axisPlots      :: [(Plot b v n, PropertyAdjust b v n)]
+  , _axisPlots      :: [Plot' b v n]
   , _axisScaling    :: AxisScaling v n
   , _axisSize       :: SizeSpec v n
   , _axisTheme      :: Theme b n
