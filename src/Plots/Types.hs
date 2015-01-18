@@ -154,32 +154,32 @@ orient Verticle   _ v = v
 
 -- Legends
 
-data LegendPic b n = DefaultLegendPic
-                   | CustomLegendPic (ThemeEntry b n -> QDiagram b V2 n Any)
+data LegendPic b v n = DefaultLegendPic
+                     | CustomLegendPic (PlotStyle b v n -> QDiagram b v n Any)
 
-instance Default (LegendPic b n) where
+instance Default (LegendPic b v n) where
   def = DefaultLegendPic
 
-data LegendEntry b n = LegendEntry
-  { _legendPic        :: LegendPic b n
+data LegendEntry b v n = LegendEntry
+  { _legendPic        :: LegendPic b v n
   , _legendText       :: String
   , _legendPrecidence :: n
   } deriving Typeable
 
 makeLenses ''LegendEntry
 
-type instance V (LegendEntry b n) = V2
-type instance N (LegendEntry b n) = n
-type instance B (LegendEntry b n) = b
+type instance V (LegendEntry b v n) = v
+type instance N (LegendEntry b v n) = n
+type instance B (LegendEntry b v n) = b
 
-instance Num n => Default (LegendEntry b n) where
+instance Num n => Default (LegendEntry b v n) where
   def = LegendEntry
           { _legendPic        = def
           , _legendText       = ""
           , _legendPrecidence = 0
           }
 
-mkLegendEntry :: Num n => String -> LegendEntry b n
+mkLegendEntry :: Num n => String -> LegendEntry b v n
 mkLegendEntry x = LegendEntry DefaultLegendPic x 0
 
 -- Generic Plot info
@@ -189,9 +189,9 @@ data PlotProperties b v n = PlotProperties
   { _plotTransform   :: Transformation v n
   , _plotBounds      :: Bounds v n
   , _clipPlot        :: Bool
-  , _plotThemeEntry  :: Recommend (ThemeEntry b n)
-  , _legendEntries   :: [LegendEntry b n]
+  , _legendEntries   :: [LegendEntry b v n]
   , _plotName        :: Name
+  , _plotStyle       :: PlotStyle b v n
   , _plotBoundingBox :: BoundingBox v n
   } deriving Typeable
 
@@ -220,14 +220,14 @@ class HasPlotProperties t where
   {-# INLINE clipPlot #-}
 
   -- | The theme entry to be used for the current plot.
-  plotThemeEntry :: Lens' t (Recommend (ThemeEntry (B t) (N t)))
-  plotThemeEntry = plotProperties . lens
-    (\PlotProperties { _plotThemeEntry = a } -> a)
-    (\g a -> g { _plotThemeEntry = a})
-  {-# INLINE plotThemeEntry #-}
+  plotPropertiesStyle :: Lens' t (PlotStyle (B t) (V t) (N t))
+  plotPropertiesStyle = plotProperties . lens
+    (\PlotProperties { _plotStyle = a } -> a)
+    (\g a -> g { _plotStyle = a})
+  {-# INLINE plotPropertiesStyle #-}
 
   -- | The legend entries to be used for the current plot.
-  legendEntries :: Lens' t [LegendEntry (B t) (N t)]
+  legendEntries :: Lens' t [LegendEntry (B t) (V t) (N t)]
   legendEntries = plotProperties . lens
     (\PlotProperties { _legendEntries = a } -> a)
     (\g a -> g { _legendEntries = a})
@@ -270,42 +270,34 @@ instance HasPlotProperties (PlotProperties b v n) where
 -- alternative is to have this all these instances defined for each plot or
 -- rewrite lenses specific to HasPlotProperties.
 
-instance (HasPlotProperties a, N a ~ n, B a ~ b) => HasThemeEntry a b n where
-  themeEntry = plotThemeEntry . recommend
-
--- | The style is applied to all theme styles. Only works for R2 due to
---   HasStyle limitations.
-instance (HasPlotProperties a, V a ~ V2, Typeable (N a)) => HasStyle a where
-  applyStyle sty = over themeEntry
-                 $ over themeLineStyle (applyStyle sty)
-                 . over themeMarkerStyle (applyStyle sty)
-                 . over themeFillStyle (applyStyle sty)
-
-instance (Num (N a), HasPlotProperties a , HasLinearMap (V a)) => Transformable a where
+instance (HasLinearMap v, Num n) => Transformable (PlotProperties b v n) where
   transform = over plotTransform . transform
 
-instance HasPlotProperties a => HasBounds a where
+instance HasBounds (PlotProperties b v n) where
   bounds = plotBounds
 
 -- | Move origin by applying to @plotTransform@.
-instance (Num (N a), HasPlotProperties a, HasLinearMap (V a)) => HasOrigin a where
+instance (Additive v, Num n) => HasOrigin (PlotProperties b v n) where
   moveOriginTo = over plotTransform . moveOriginTo
 
-instance HasPlotProperties a => Qualifiable a where
+instance HasPlotStyle (PlotProperties b v n) b where
+  plotStyle = plotPropertiesStyle
+
+instance Qualifiable (PlotProperties b v n) where
   n |> p = over plotName (n |>) p
 
 zeroInt :: Additive v => v Int
 zeroInt = zero
 
-instance (TypeableFloat n, Renderable (Path V2 n) b, Additive v)
+instance (TypeableFloat n, Renderable (Path V2 n) b, Metric v)
     => Default (PlotProperties b v n) where
   def = PlotProperties
           { _plotTransform   = mempty
           , _plotBounds      = Bounds $ def <$ zeroInt
           , _clipPlot        = True
-          , _plotThemeEntry  = Recommend def
           , _legendEntries   = []
           , _plotName        = mempty
+          , _plotStyle       = mempty
           , _plotBoundingBox = emptyBox
           }
 
@@ -403,3 +395,18 @@ appPlot' :: (forall a. (V a ~ v, N a ~ n, Plotable a b) =>
          -> Plot' b v n -> Plot' b v n
 appPlot' f (Plot' a pf) = Plot' a (Endo f <> pf)
 
+instance (HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
+  transform = over plotTransform . transform
+
+instance HasBounds (PropertiedPlot p b) where
+  bounds = plotBounds
+
+-- | Move origin by applying to @plotTransform@.
+instance (Additive (V p), Num (N p)) => HasOrigin (PropertiedPlot p b) where
+  moveOriginTo = over plotTransform . moveOriginTo
+
+instance HasPlotStyle (PropertiedPlot p b) b where
+  plotStyle = plotPropertiesStyle
+
+instance Qualifiable (PropertiedPlot p b) where
+  n |> p = over plotName (n |>) p

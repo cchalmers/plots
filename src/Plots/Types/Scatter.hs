@@ -64,23 +64,21 @@ instance (Metric v, OrderedField n) => Enveloped (GScatterPlot v n a) where
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GScatterPlot V2 n a) b where
   renderPlotable _ t GScatterPlot {..} pp =
-      foldMapOf sFold mk sData # applyStyle gSty
+      foldMapOf sFold mk sData # applyMarkerStyle pp
    <> if cLine
         then fromVertices (toListOf (sFold . to sPos) sData)
                # transform t
-               # applyStyle lSty
+               # applyLineStyle pp
         else mempty
     where
       mk a = marker # moveTo (papply t $ sPos a)
                     # maybe id (transform  . ($ a)) sTr
                     # maybe id (applyStyle . ($ a)) sSty
-      marker = pp ^. themeMarker
-      gSty   = pp ^. themeMarkerStyle
-      lSty   = pp ^. themeLineStyle
+      marker = pp ^. plotMarker
 
   defLegendPic GScatterPlot {..} pp =
-    pp ^. themeMarker
-      & applyStyle (pp ^. themeMarkerStyle)
+    pp ^. plotMarker
+      & applyMarkerStyle pp
 
 deriving instance Typeable Point
 

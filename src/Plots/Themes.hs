@@ -1,74 +1,179 @@
+{-# LANGUAGE ConstraintKinds        #-}
 {-# LANGUAGE DeriveDataTypeable     #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
-module Plots.Themes where
+module Plots.Themes
+  ( -- * Theme
+    Theme
+  , themeColors
+  , themeMarkers
 
-import Control.Lens     hiding (( # ))
-import Data.Colour.SRGB
-import Data.List
-import Data.Typeable
-import Data.Default
-import Diagrams.Prelude
--- import Data.Monoid.Recommend
+    -- * Plot Style
+  , PlotStyle
+  , HasPlotStyle (..)
+  , applyLineStyle
+  , applyMarkerStyle
+  , applyBarStyle
 
--- * An entry can be applied to a 'Plot' to change it's style.
-data ThemeEntry b n = ThemeEntry
-  { _themeEntryColor  :: Colour Double
-  , _themeLineStyle   :: Style V2 n
-  , _themeMarkerStyle :: Style V2 n
-  , _themeFillStyle   :: Style V2 n
-  , _themeMarker      :: QDiagram b V2 n Any
+    -- * Common themes
+  , coolTheme
+  , corperateTheme
+
+    -- * Colour schemes
+  , colourfullColours
+  -- , corperateTheme
+
+    -- * Marker shapes
+  , ThemeContructor
+  , constructorColours
+  , constructLineStyle
+  , constructMarkerStyle
+  , constructTheme
+
+    -- * Marker shapes
+  , prong
+  , diamond
+  , cross
+  , star'
+  , plus
+  , lineMarkers
+  ) where
+
+import           Control.Lens     hiding (transform, ( # ))
+import           Data.Colour.SRGB
+-- import Data.List
+import           Data.Typeable
+-- import Data.Default
+import           Diagrams.Prelude
+
+-- | A plot style is made up of separate styles for the line, marker and
+--   fill aspects of a plot. It also contains a marker in the form of a
+--   'Diagram' and a maybe colour which is applied to everything at the
+--   end.
+data PlotStyle b v n = PlotStyle
+  { _plotColor   :: Colour Double
+  , _lineStyle   :: Colour Double -> Style v n
+  , _markerStyle :: Colour Double -> Style v n
+  , _barStyle    :: Colour Double -> Style v n
+  , _plotMarker  :: QDiagram b v n Any
   } deriving Typeable
 
-makeClassy ''ThemeEntry
+instance (Metric v, Typeable n, OrderedField n) => Semigroup (PlotStyle b v n) where
+  PlotStyle c ls1 ms1 bs1 m1 <> PlotStyle _ ls2 ms2 bs2 m2
+    = PlotStyle c (ls1 <> ls2) (ms1 <> ms2) (bs1 <> bs2) (m1 <> m2)
 
--- class HasThemeEntry a b | a -> b where
---   themeEntry :: Lens' a (Recommend (ThemeEntry b (N a)))
+instance (Metric v, Typeable n, OrderedField n) => Monoid (PlotStyle b v n) where
+  mappend = (<>)
+  mempty  = PlotStyle black mempty mempty mempty mempty
 
-type instance V (ThemeEntry b n) = V2
-type instance N (ThemeEntry b n) = n
+type instance V (PlotStyle b v n) = v
+type instance N (PlotStyle b v n) = n
 
-instance (TypeableFloat n, Renderable (Path V2 n) b) => Default (ThemeEntry b n) where
-  def = ThemeEntry
-          { _themeEntryColor  = black
-          , _themeLineStyle   = mempty
-          , _themeMarkerStyle = mempty
-          , _themeFillStyle   = mempty
-          , _themeMarker      = circle 5
-          }
+class HasPlotStyle a b | a -> b where
+  plotStyle :: Lens' a (PlotStyle b (V a) (N a))
+  {-# MINIMAL plotStyle #-}
+
+  plotColor :: Lens' a (Colour Double)
+  plotColor = plotStyle .
+    lens (\(PlotStyle {_plotColor = f}) -> f) (\p f -> p {_plotColor = f})
+
+  lineStyle :: Lens' a (Colour Double -> Style (V a) (N a))
+  lineStyle = plotStyle .
+    lens (\(PlotStyle {_lineStyle = f}) -> f) (\p f -> p {_lineStyle = f})
+
+  markerStyle :: Lens' a (Colour Double -> Style (V a) (N a))
+  markerStyle = plotStyle .
+    lens (\(PlotStyle {_markerStyle = f}) -> f) (\p f -> p {_markerStyle = f})
+
+  barStyle :: Lens' a (Colour Double -> Style (V a) (N a))
+  barStyle = plotStyle .
+    lens (\(PlotStyle {_barStyle = f}) -> f) (\p f -> p {_barStyle = f})
+
+  plotMarker :: Lens' a (QDiagram b (V a) (N a) Any)
+  plotMarker = plotStyle .
+    lens (\(PlotStyle {_plotMarker = f}) -> f) (\p f -> p {_plotMarker = f})
+
+instance HasPlotStyle (PlotStyle b v n) b where
+  plotStyle = id
+
+-- | Apply the line style from a plot style.
+applyLineStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
+applyLineStyle a = applyStyle $ (a ^. lineStyle) (a ^. plotColor)
+
+-- | Apply the marker style from a plot style.
+applyMarkerStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
+applyMarkerStyle a = applyStyle $ (a ^. lineStyle) (a ^. plotColor)
+
+-- | Apply the fill style from a plot style.
+applyBarStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
+applyBarStyle a = applyStyle $ (a ^. lineStyle) (a ^. plotColor)
+
+plotStyles :: HasPlotStyle a b => Traversal' a (Colour Double -> Style (V a) (N a))
+plotStyles = plotStyle . t
+  where
+    t f PlotStyle {..} = PlotStyle
+      <$> pure _plotColor
+      <*> f _lineStyle
+      <*> f _markerStyle
+      <*> f _barStyle
+      <*> pure _plotMarker
+
+instance (Metric v, Traversable v, OrderedField n) => Transformable (PlotStyle b v n) where
+  transform t = (plotMarker %~ transform t) . (plotStyles . mapped %~ transform t)
 
 -- * A theme can be applied to multiple plots in an axis.
-type Theme b n = [ThemeEntry b n]
+type Theme b v n = [PlotStyle b v n]
+
+-- | Traversal over the colours of a theme.
+themeColors :: Traversal' (Theme b v n) (Colour Double)
+themeColors = each . plotColor
+
+-- | Traversal over the markers of a theme.
+themeMarkers :: Traversal' (Theme b v n) (Colour Double)
+themeMarkers = each . plotColor
 
 -- * Theme construction
 
 -- | Convenient way to construct themes.
-data ThemeContructor n = ThemeContructor
+data ThemeContructor v n = ThemeContructor
   { _constructorColours   :: [Colour Double]
-  , _constructLineStyle   :: Colour Double -> Style V2 n
-  , _constructMarkerStyle :: Colour Double -> Style V2 n
-  , _constructFillStyle   :: Colour Double -> Style V2 n
-  , _markerPaths          :: [Path V2 n]
+  , _constructLineStyle   :: Colour Double -> Style v n
+  , _constructMarkerStyle :: Colour Double -> Style v n
+  , _constructFillStyle   :: Colour Double -> Style v n
+  , _markerPaths          :: [Path v n]
   }
 
 makeLenses ''ThemeContructor
 
-constructTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => ThemeContructor n -> Theme b n
-constructTheme tc = zipWith5 ThemeEntry
-  colours
-  (tc^.constructLineStyle   <$> colours)
-  (tc^.constructMarkerStyle <$> colours)
-  (tc^.constructFillStyle   <$> colours)
-  (stroke                   <$> tc^.markerPaths)
-  where colours = tc ^. constructorColours
+------------------------------------------------------------------------
+-- Theme construction
+------------------------------------------------------------------------
 
-coolThemeConstructor :: (TypeableFloat n) => ThemeContructor n
+-- constructTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => ThemeContructor n -> Theme b n
+-- constructTheme tc = zipWith5 PlotStyle
+--   colours
+--   (tc^.constructLineStyle   <$> colours)
+--   (tc^.constructMarkerStyle <$> colours)
+--   (tc^.constructFillStyle   <$> colours)
+--   (stroke                   <$> tc^.markerPaths)
+--   where colours = tc ^. constructorColours
+
+constructTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => ThemeContructor V2 n -> Theme b V2 n
+constructTheme tc = zipWith
+  (\c s -> PlotStyle c
+                     (tc ^. constructLineStyle)
+                     (tc ^. constructMarkerStyle)
+                     (tc ^. constructFillStyle)
+                     s) (tc ^. constructorColours) (map stroke $ tc ^. markerPaths)
+
+coolThemeConstructor :: TypeableFloat n => ThemeContructor V2 n
 coolThemeConstructor = ThemeContructor
   { _constructorColours   = corperateColours
   , _constructLineStyle   = \c -> mempty
@@ -83,13 +188,17 @@ coolThemeConstructor = ThemeContructor
   }
 
 
-coolTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => Theme b n
+coolTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => Theme b V2 n
 coolTheme = constructTheme coolThemeConstructor
 
-corperateTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => Theme b n
+corperateTheme :: (TypeableFloat n, Renderable (Path V2 n) b) => Theme b V2 n
 corperateTheme = constructTheme $
   coolThemeConstructor
     & constructorColours .~ corperateColours
+
+------------------------------------------------------------------------
+-- Colours
+------------------------------------------------------------------------
 
 
 colourfullColours :: OrderedField n => [Colour n]
@@ -139,6 +248,10 @@ lineMarkers = cycle
   , prong 3 1
   , prong 3 1 # rotateBy (1/2)
   ]
+
+------------------------------------------------------------------------
+-- Shapes
+------------------------------------------------------------------------
 
 prong :: OrderedField n => Int -> n -> Path V2 n
 prong n x = mconcat . take n

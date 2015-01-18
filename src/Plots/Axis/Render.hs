@@ -29,6 +29,7 @@ import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Types
 import           Plots.Utils
+import           Plots.Themes
 
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b V2 n Any
@@ -95,10 +96,9 @@ renderR2Axis a = frame 15
     -- applyTheme = zipWith (\axisEntry -> over plotThemeEntry
     --                        (Commit . fromCommit axisEntry))
     --                      (a ^. axisTheme)
-    appTheme theme = over plotThemeEntry (Commit . fromCommit theme)
     pp = a ^. defProperties
     preparePlots =
-      zipWith (\theme p' -> (unPlot' (appPlot' (appTheme theme) p') pp))
+      zipWith (\theme p' -> (unPlot' (appPlot' (set plotStyle theme) p') pp))
               (a ^. axisTheme)
     --
     -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))

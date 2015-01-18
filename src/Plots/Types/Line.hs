@@ -40,11 +40,11 @@ instance (TypeableFloat n, Renderable (Path V2 n) b) => Plotable (Path V2 n) b w
   renderPlotable _ t path pp
     = stroke path
         # transform t
-        # applyStyle (pp ^. themeLineStyle)
+        # applyLineStyle pp
 
   defLegendPic _ pp
     = (p2 (-10,0) ~~ p2 (10,0))
-        # applyStyle (pp ^. themeLineStyle)
+        # applyLineStyle pp
 
 ------------------------------------------------------------------------
 -- Sample

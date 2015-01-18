@@ -220,6 +220,12 @@ module Plots
   , noMinorGridLines
   , noMinorGridLine
 
+    -- ** Axis Grid
+  , PlotStyle
+  , plotColor
+  , plotMarker
+  , axisTheme
+  , module Plots.Themes
   ) where
 
 import           Control.Lens                    hiding (( # ))
@@ -240,7 +246,7 @@ import           Plots.Axis.Labels
 import           Plots.Axis.Render
 import           Plots.Axis.Ticks
 import           Plots.Types
--- import           Plots.Themes
+import           Plots.Themes
 
 import           Plots.Types.Line
 import           Plots.Types.Scatter
@@ -424,7 +430,7 @@ scatterPlotL :: (PointLike v n p, Plotable (ScatterPlot v n) b, Foldable f)
              => String -> f p -> AxisState b v n
 scatterPlotL l d = addPlotableL l (mkScatterPlot d)
 
--- Fold varients
+-- Fold variants
 
 scatterPlotOf :: (PointLike v n p, Plotable (ScatterPlot v n) b) => Fold s p -> s -> AxisState b v n
 scatterPlotOf f s = addPlotable (mkScatterPlotOf f s)
@@ -514,7 +520,7 @@ diagramPlot = addPlotable
 -- Legend
 ------------
 
-addLegendEntry :: (HasPlotProperties a, MonadState a m, Num (N a))
+addLegendEntry :: (MonadState a m, HasPlotProperties a, Num (N a))
                => String -> m ()
 addLegendEntry s = legendEntries <>= [mkLegendEntry s]
 
@@ -584,7 +590,9 @@ setAxisRatio e n = axisScaling . el e . aspectRatio .= Commit n
 equalAxis :: (Functor v, Num n) => AxisState b v n
 equalAxis = axisScaling . mapped . aspectRatio .= Commit 1
 
+------------------------------------------------------------------------
 -- Grid lines
+------------------------------------------------------------------------
 
 -- | Set no major or minor grid lines for all axes.
 noGridLines :: Functor v => AxisState b v n
@@ -630,6 +638,10 @@ noMinorGridLines = axisGridLines . mapped . minorGridF .= noGridF
 noMinorGridLine :: E v -> AxisState b v n
 noMinorGridLine (E l) = axisGridLines . l . minorGridF .= noGridF
 
+------------------------------------------------------------------------
+-- Bounds
+------------------------------------------------------------------------
+
 boundMin :: HasBounds a => E (V a) -> Lens' a (Recommend (N a))
 boundMin (E l) = bounds . _Wrapped . l . lowerBound
 
@@ -654,6 +666,10 @@ zMin = boundMin ey
 zMax :: (HasBounds a, R3 (V a)) => Lens' a (Recommend (N a))
 zMax = boundMin ey
 
+
+------------------------------------------------------------------------
+-- Grid lines
+------------------------------------------------------------------------
 
 -- -- | Traversal over all axis line types.
 -- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType
@@ -680,6 +696,17 @@ zMax = boundMin ey
 -- zAxisArrowOpts :: (L.V3 n v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- zAxisArrowOpts = axisLines ez . axisArrowOpts
 --
+
+------------------------------------------------------------------------
+-- Style
+------------------------------------------------------------------------
+
+-- $style
+-- Styles are a key part of a plot. It defines properties like colours
+-- and markers for each plot. The default way a plot gets it's style is
+-- from the axis theme. This is a list of plot styles that is zipped
+-- with the plots when the axis is rendered.
+
 
 
 {-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}

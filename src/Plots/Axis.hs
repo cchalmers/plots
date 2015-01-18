@@ -111,7 +111,7 @@ data Axis b v n = Axis
   , _axisPlots      :: [Plot' b v n]
   , _axisScaling    :: AxisScaling v n
   , _axisSize       :: SizeSpec v n
-  , _axisTheme      :: Theme b n
+  , _axisTheme      :: Theme b v n
   , _axisTickLabels :: AxisTickLabels b v n
   , _axisTicks      :: AxisTicks v n
   , _axisTitle      :: Maybe String

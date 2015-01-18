@@ -180,7 +180,7 @@ drawLegend bb l ps = alignTo (l ^. legendPosition)
                     # withEnvelope (fromCorners origin (mkP2 w h))
             pic = case entry ^. legendPic of
                     DefaultLegendPic  -> defLegendPic p pp
-                    CustomLegendPic f -> f $ pp ^. themeEntry
+                    CustomLegendPic f -> f $ pp ^. plotStyle
 
 wrapPic :: RealFloat n => V2 n -> QDiagram b V2 n Any -> QDiagram b V2 n Any
 wrapPic ((^/ 2) -> v) d
