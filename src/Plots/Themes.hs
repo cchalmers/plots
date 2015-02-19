@@ -79,24 +79,19 @@ class HasPlotStyle a b | a -> b where
   {-# MINIMAL plotStyle #-}
 
   plotColor :: Lens' a (Colour Double)
-  plotColor = plotStyle .
-    lens (\(PlotStyle {_plotColor = f}) -> f) (\p f -> p {_plotColor = f})
+  plotColor = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
 
   lineStyle :: Lens' a (Colour Double -> Style (V a) (N a))
-  lineStyle = plotStyle .
-    lens (\(PlotStyle {_lineStyle = f}) -> f) (\p f -> p {_lineStyle = f})
+  lineStyle = plotStyle . lens _lineStyle (\p f -> p {_lineStyle = f})
 
   markerStyle :: Lens' a (Colour Double -> Style (V a) (N a))
-  markerStyle = plotStyle .
-    lens (\(PlotStyle {_markerStyle = f}) -> f) (\p f -> p {_markerStyle = f})
+  markerStyle = plotStyle . lens _markerStyle (\p f -> p {_markerStyle = f})
 
   barStyle :: Lens' a (Colour Double -> Style (V a) (N a))
-  barStyle = plotStyle .
-    lens (\(PlotStyle {_barStyle = f}) -> f) (\p f -> p {_barStyle = f})
+  barStyle = plotStyle . lens _barStyle (\p f -> p {_barStyle = f})
 
   plotMarker :: Lens' a (QDiagram b (V a) (N a) Any)
-  plotMarker = plotStyle .
-    lens (\(PlotStyle {_plotMarker = f}) -> f) (\p f -> p {_plotMarker = f})
+  plotMarker = plotStyle . lens _plotMarker (\p f -> p {_plotMarker = f})
 
 instance HasPlotStyle (PlotStyle b v n) b where
   plotStyle = id

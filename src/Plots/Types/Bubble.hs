@@ -129,8 +129,7 @@ mkGScatterPlot = mkGScatterPlotOf folded
 ------------------------------------------------------------------------
 
 scatterTransform :: Lens' (GScatterPlot v n a) (Maybe (a -> T2 n))
-scatterTransform = lens (\GScatterPlot {sTr = t} -> t)
-                        (\sp t -> sp {sTr = t})
+scatterTransform = lens sTr (\sp t -> sp {sTr = t})
 
 -- | Change the style for a scatter plot, given the data entry.
 --
@@ -139,6 +138,5 @@ scatterTransform = lens (\GScatterPlot {sTr = t} -> t)
 --              & scatterTransform .~ Nothing
 -- @@@
 scatterStyle :: Lens' (GScatterPlot v n a) (Maybe (a -> Style V2 n))
-scatterStyle = lens (\GScatterPlot {sSty = sty} -> sty)
-                    (\sp sty -> sp {sSty = sty})
+scatterStyle = lens sSty (\sp sty -> sp {sSty = sty})
 

@@ -214,44 +214,32 @@ class HasPlotProperties t where
 
   -- | Clip anything outside the current axis bounds.
   clipPlot :: Lens' t Bool
-  clipPlot = plotProperties . lens
-    (\PlotProperties { _clipPlot = a } -> a)
-    (\g a -> g { _clipPlot = a})
+  clipPlot = plotProperties . lens _clipPlot (\g a -> g { _clipPlot = a})
   {-# INLINE clipPlot #-}
 
   -- | The theme entry to be used for the current plot.
   plotPropertiesStyle :: Lens' t (PlotStyle (B t) (V t) (N t))
-  plotPropertiesStyle = plotProperties . lens
-    (\PlotProperties { _plotStyle = a } -> a)
-    (\g a -> g { _plotStyle = a})
+  plotPropertiesStyle = plotProperties . lens _plotStyle (\g a -> g { _plotStyle = a})
   {-# INLINE plotPropertiesStyle #-}
 
   -- | The legend entries to be used for the current plot.
   legendEntries :: Lens' t [LegendEntry (B t) (V t) (N t)]
-  legendEntries = plotProperties . lens
-    (\PlotProperties { _legendEntries = a } -> a)
-    (\g a -> g { _legendEntries = a})
+  legendEntries = plotProperties . lens _legendEntries (\g a -> g { _legendEntries = a})
   {-# INLINE legendEntries #-}
 
   -- | The bounds the current plot requests.
   plotBounds :: Lens' t (Bounds (V t) (N t))
-  plotBounds = plotProperties . lens
-    (\PlotProperties { _plotBounds = a } -> a)
-    (\g a -> g { _plotBounds = a})
+  plotBounds = plotProperties . lens _plotBounds (\g a -> g { _plotBounds = a})
   {-# INLINE plotBounds #-}
 
   -- | The name of the plot. This name is given to the rendered diagram.
   plotName :: Lens' t Name
-  plotName = plotProperties . lens
-    (\PlotProperties { _plotName = a } -> a)
-    (\g a -> g { _plotName = a})
+  plotName = plotProperties . lens _plotName (\g a -> g { _plotName = a})
   {-# INLINE plotName #-}
 
   -- | The transformation to be applied to the plot.
   plotTransform :: Lens' t (Transformation (V t) (N t))
-  plotTransform = plotProperties . lens
-    (\PlotProperties { _plotTransform = a } -> a)
-    (\g a -> g { _plotTransform = a})
+  plotTransform = plotProperties . lens _plotTransform (\g a -> g { _plotTransform = a})
   {-# INLINE plotTransform #-}
 
   -- -- | The transformation to be applied to the plot.

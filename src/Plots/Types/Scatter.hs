@@ -80,8 +80,6 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     pp ^. plotMarker
       & applyMarkerStyle pp
 
-deriving instance Typeable Point
-
 _ScatterPlot :: (Plotable (ScatterPlot v n) b, Typeable b) => Prism' (Plot b v n) (ScatterPlot v n)
 _ScatterPlot = _Plot
 
@@ -156,8 +154,7 @@ class HasScatter a v n d | a -> v n, a -> d where
   scatter :: Lens' a (GScatterPlot v n d)
 
   scatterTransform :: Lens' a (Maybe (d -> T2 n))
-  scatterTransform = scatter . lens (\GScatterPlot {sTr = t} -> t)
-                                    (\sp t -> sp {sTr = t})
+  scatterTransform = scatter . lens sTr (\sp t -> sp {sTr = t})
 
   -- | Change the style for a scatter plot, given the data entry.
   --
@@ -166,8 +163,7 @@ class HasScatter a v n d | a -> v n, a -> d where
   --              & scatterTransform .~ Nothing
   -- @@@
   scatterStyle :: Lens' a (Maybe (d -> Style V2 n))
-  scatterStyle = scatter . lens (\GScatterPlot {sSty = sty} -> sty)
-                                (\sp sty -> sp {sSty = sty})
+  scatterStyle = scatter . lens sSty (\sp sty -> sp {sSty = sty})
 
 
   connectingLine :: Lens' a Bool
