@@ -99,7 +99,6 @@ type PropertyAdjust b v n = PlotProperties b v n -> PlotProperties b v n
 --   a plot. The idea is to use one of the default axis, customise, add plots
 --   and render using @drawAxis@.
 data Axis b v n = Axis
-
   { -- These lenses are not being exported, they're just here for instances.
     _axisAxisBounds :: Bounds v n
 

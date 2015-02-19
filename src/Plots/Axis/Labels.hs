@@ -16,7 +16,7 @@ import Numeric
 import Diagrams.Prelude   hiding (view)
 import Diagrams.TwoD.Text
 
--- data 
+-- data
 
 -- Axis labels
 
@@ -51,7 +51,7 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (AxisLabel b n) whe
           , _axisLabelPos       = MiddleAxisLabel
           , _axisLabelPlacement = OutsideAxisLabel
           }
-                     
+
 type AxisLabels b v n = v (AxisLabel b n)
 
 -- Tick labels

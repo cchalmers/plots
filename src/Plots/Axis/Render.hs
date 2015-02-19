@@ -83,7 +83,7 @@ renderR2Axis a = frame 15
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LowerLabels
   where
-    plots = foldMap (uncurry $ renderPlotable xs t) plots'
+    plots    = foldMap (uncurry $ renderPlotable xs t) plots'
     drawAxis = axisOnBasis origin xs a t
     --
     (xs, tv, t') = workOutScale a
@@ -110,21 +110,30 @@ data LabelPosition = NoLabels
                    | UpperLabels
   deriving (Show, Eq, Typeable)
 
+drawR2Axis :: Axis b V2 n -> Path V2 n
+drawR2Axis a =
+  -- when axis lines' ends meet, we want them to be connected
+  case a ^. axisLines . column axisLineType of
+    V2 BoxAxisLine BoxAxisLine   = rect w h
+    _                            =
+
+        mkline y = pathFromVertices
+         $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
+
+
+
 axisOnBasis
   :: forall b v n. (v ~ V2, TypeableFloat n, HasLinearMap v, Metric v,
                     Renderable (Path V2 n) b, n ~ N (v n), v ~ V (v n), OrderedField n)
   => Point v n        -- start of axis
   -> v (n, n)         -- calculated bounds
   -> Axis b v n       -- axis data
-  -- -> Transformation v n -- transformation to apply to positions of things
-  -- -> (v n -> V2 n)    -- linear map onto R2
   -> T2 n             -- transformation to apply to positions of things
   -> E v              -- direction of axis
   -> E v              -- orthogonal direction of axis
   -> LabelPosition    -- where (if at all) should labels be placed?
-  -- -> QDiagram b V2 n Any   -- resulting axis
+  -> AxisLineType     -- where (if at all) should labels be placed?
   -> QDiagram b V2 n Any   -- resulting axis
--- axisOnBasis p bs a tv l t2 e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
 axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
   where
     tStroke = stroke . transform t
@@ -140,9 +149,6 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
         p' = p # over lensP ((el e .~ x) . (el eO .~ y0))
                -- # papply (translationE eO (negate' labelGap / avgScale t2))
                # papply t
-               -- # papply tv
-               -- # lmap l
-               -- # papply t2
         -- labelGap = axLabelD ^. axisLabelGap
         txt      = axLabelD ^. axisLabelText
         x = case axLabelD ^. axisLabelPos of
@@ -166,7 +172,6 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
                 p' = over lensP ((el e .~ x) . (el eO .~ y)) p
                        # papply t
                        # papply (translationE eO (negate' 25))
-                       -- # papply t2
 
     -- grid
     grid = majorLines <> minorLines
@@ -206,19 +211,14 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
           pathFromVertices
             [ origin & ep eO -~ d
             , origin & ep eO +~ d ]
-              -- # lmap l -- Note: only works for linear maps
         positionTick tick x = place tick p'
           where
             p' = over lensP ((el e .~ x) . (el eO .~ y)) p
                    # transform t
-                   -- # lmap l
-                   -- # transform t2
 
     -- axis lines
     line = foldMap mkline ys -- merge with ticks?
              # transform t
-             -- # lmap l
-             -- # transform t2
              # stroke
              # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
       where
@@ -275,7 +275,7 @@ workOutScale a = (enlargedBounds, aspectScaling, specScaling)
     -- the vector that points from the lower bound to the upper bound of the
     -- axis
     v  = uncurry (flip (-)) <$> enlargedBounds
-    v' = apply aspectScaling $ v
+    v' = apply aspectScaling v
     specScaling = requiredScaling spec v'
     aspectScaling
       -- if any of the aspect ratios are committed we use the aspect ratio from

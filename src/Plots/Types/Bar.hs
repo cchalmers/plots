@@ -11,8 +11,7 @@ module Plots.Types.Bar
   ( BarPlot
   , simpleBarPlot
     -- * Prism
-  -- , _BarPlot
-
+  , _BarPlot
 
     -- * Lenses
   , barWidth
@@ -34,6 +33,7 @@ data BarPlot n = BarPlot
   , _barWidth     :: n         -- total width of bars for one 'bit'
   , _barSpacing   :: n         -- gap between multibars in same value
   , _verticleBars :: Bool    -- whether the bars are verticle
+  , _stacked      :: Bool    -- whether the bars stacked (or side by side)
   } deriving Typeable
 
 type instance V (BarPlot n) = V2
@@ -82,8 +82,8 @@ simpleBarPlot (toList -> xs) = def { barData = imap f xs }
     f i h = (fromIntegral i + 1, [h])
 
 
--- _BarPlot :: Plotable (BarPlot n) => Prism' (Plot b V2 n) (BarPlot n)
--- _BarPlot = _Plot
+_BarPlot :: Plotable (BarPlot n) b => Prism' (Plot b V2 n) (BarPlot n)
+_BarPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Histogram

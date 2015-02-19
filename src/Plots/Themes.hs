@@ -48,9 +48,7 @@ module Plots.Themes
 
 import           Control.Lens     hiding (transform, ( # ))
 import           Data.Colour.SRGB
--- import Data.List
 import           Data.Typeable
--- import Data.Default
 import           Diagrams.Prelude
 
 -- | A plot style is made up of separate styles for the line, marker and
