@@ -30,23 +30,25 @@ import           Diagrams.Prelude
 
 type HasIndexedBasis v = (HasBasis v, TraversableWithIndex (E v) v)
 
--- | Umbrella class giving everything needed for working in the space. This is 
+-- | Umbrella class giving everything needed for working in the space. This is
 --   basically a @V*@ from "linear".
 type Euclidean v = (HasLinearMap v, HasIndexedBasis v, Metric v)
 
--- | Provides an 'Iso\'' between @a@ and @v n@. This is normally used to 
---   convert between the data type you're already using, @a@, and diagram's 
+-- vector like ---------------------------------------------------------
+
+-- | Provides an 'Iso\'' between @a@ and @v n@. This is normally used to
+--   convert between the data type you're already using, @a@, and diagram's
 --   native form, @v n@.
 class (Euclidean v, Typeable v) => VectorLike v n a | a -> v n where
   -- | Isomorphism from @Point v n@ to something 'PointLike' @a@.
-  -- 
+  --
   -- >>> V2 3 5 ^. vectorLike :: (Int, Int)
   -- (3,5)
   vectorLike :: Iso' (v n) a
 
   -- | Isomorphism from something 'PointLike' @a@ to @Point v n@.
-  -- 
-  -- >>> ((3, 5) :: (Int, Int)) ^. vectorLike
+  --
+  -- >>> ((3, 5) :: (Int, Int)) ^. unvectorLike
   -- V2 3 5
   unvectorLike :: Iso' a (v n)
   unvectorLike = from vectorLike
@@ -77,18 +79,20 @@ instance VectorLike V3 n (n, n, n) where
   vectorLike = iso unr3 r3
   {-# INLINE vectorLike #-}
 
--- | Provides an 'Iso\'' between @a@ and @Point v n@. This is normally used to 
---   convert between the data type you're already using, @a@, and diagram's 
+-- point like ----------------------------------------------------------
+
+-- | Provides an 'Iso\'' between @a@ and @Point v n@. This is normally used to
+--   convert between the data type you're already using, @a@, and diagram's
 --   native form, @Point v n@.
 class (Euclidean v, Typeable v) => PointLike v n a | a -> v n where
   -- | Isomorphism from @Point v n@ to something 'PointLike' @a@.
-  -- 
+  --
   -- >>> mkP2 3 5 ^. pointLike :: (Int, Int)
   -- (3,5)
   pointLike :: Iso' (Point v n) a
 
   -- | Isomorphism from something 'PointLike' @a@ to @Point v n@.
-  -- 
+  --
   -- >>> ((3, 5) :: (Int, Int)) ^. unpointLike
   -- P (V2 3 5)
   unpointLike :: Iso' a (Point v n)
@@ -113,7 +117,6 @@ instance PointLike V2 n (Complex n) where
   pointLike = iso (\(unp2 -> (x,y)) -> x :+ y)
                   (\(i :+ j)        -> p2 (i,j))
   {-# INLINE pointLike #-}
-
 
 type P3Like = PointLike V3
 

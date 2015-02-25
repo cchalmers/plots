@@ -32,7 +32,7 @@ import           Plots.Utils
 import           Plots.Themes
 
 class RenderAxis b v n where
-  renderAxis :: Axis b v n -> QDiagram b V2 n Any
+  renderAxis :: Axis b v n -> QDiagram b v n Any
 
 -- instance (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
 --     => RenderAxis b V3 n where
@@ -105,20 +105,21 @@ renderR2Axis a = frame 15
     --                      (a ^. axisPlots)
     plots'     = a ^. axisPlots . to preparePlots
 
-data LabelPosition = NoLabels
-                   | LowerLabels
-                   | UpperLabels
+data LabelPosition
+  = NoLabels
+  | LowerLabels
+  | UpperLabels
   deriving (Show, Eq, Typeable)
 
-drawR2Axis :: Axis b V2 n -> Path V2 n
-drawR2Axis a =
-  -- when axis lines' ends meet, we want them to be connected
-  case a ^. axisLines . column axisLineType of
-    V2 BoxAxisLine BoxAxisLine   = rect w h
-    _                            =
+-- drawR2Axis :: Axis b V2 n -> Path V2 n
+-- drawR2Axis a =
+--   -- when axis lines' ends meet, we want them to be connected
+--   case a ^. axisLines . column axisLineType of
+--     V2 BoxAxisLine BoxAxisLine   -> rect w h
+--     _                            ->
 
-        mkline y = pathFromVertices
-         $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
+--         mkline y = pathFromVertices
+--          $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
 
 
 
@@ -132,7 +133,7 @@ axisOnBasis
   -> E v              -- direction of axis
   -> E v              -- orthogonal direction of axis
   -> LabelPosition    -- where (if at all) should labels be placed?
-  -> AxisLineType     -- where (if at all) should labels be placed?
+  -- -> AxisLineType     -- type of the axis line
   -> QDiagram b V2 n Any   -- resulting axis
 axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
   where
@@ -244,6 +245,18 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
                 then id
                 else negate
 
+primStroke :: (Ord n, Typeable n, Typeable v, Renderable (Path v n) b)
+           => Path v n -> QDiagram b v n Any
+primStroke path =
+  mkQD (Prim path)
+       mempty
+       mempty
+       mempty
+       mempty
+
+------------------------------------------------------------------------
+-- Calculating the bounds and scales
+------------------------------------------------------------------------
 
 -- Rules for choosing scales:
 --   - The default is to have each axis the same length:
@@ -281,7 +294,7 @@ workOutScale a = (enlargedBounds, aspectScaling, specScaling)
       -- if any of the aspect ratios are committed we use the aspect ratio from
       -- aScaling
       | anyOf (folded . aspectRatio) (is _Commit) aScaling
-          = vectorScaling (view (aspectRatio . recommend) <$> aScaling)
+          = vectorScaling (view (aspectRatio . _recommend) <$> aScaling)
       -- otherwise all ratios are just recommend, ignore them and scale such
       -- that each axis is the same length
       | otherwise = inv $ vectorScaling v
@@ -335,10 +348,6 @@ workOutUsedBound aScale mBox (Bound rL rU) = enlarged
 
 translationE :: (Num n, HasLinearMap v) => E v -> n -> Transformation v n
 translationE (E l) x = translation (zero & l .~ x)
-
-ep :: E v -> Lens' (Point v x) x
-ep (E l) = lensP . l
-{-# INLINE ep #-}
 
 vectorScaling :: (Additive v, Fractional n) => v n -> Transformation v n
 vectorScaling v = fromLinear f f
@@ -398,4 +407,77 @@ getAxisLinePos (a,b) aType = case aType of
   RightAxisLine  -> [b]
   NoAxisLine     -> []
 
+------------------------------------------------------------------------
+-- Elements
+------------------------------------------------------------------------
+
+-- Ticks ---------------------------------------------------------------
+
+-- renderTicks
+--   :: (TypeableFloat n, HasLinearMap v, Metric v, Typeable v,
+--       Renderable (Path v n) b, OrderedField n)
+--   => Point v n -- start point
+--   -- minor
+--   -> [n]   -- positions
+--   -> (n,n) -- (lower, upper)
+--   -- major
+--   -> [n]   -- positions
+--   -> (n,n) -- (lower, upper)
+--   -> E v   -- direction of axis
+--   -> E v   -- orthogonal direction of axis
+--   -> (Path v n, Path v n) -- resulting ticks
+-- renderTicks p0 t b ticks e down eO = majorTicks <> minorTicks
+--   where
+--     majorTicks = foldMap (positionTick majorTick) majorTickXs
+--                    # primStroke
+--                    # applyStyle (ticks ^. majorTickStyle)
+--     --
+--     minorTicks = foldMap (positionTick minorTick) minorTickXs
+--                    # primStroke
+--                    # applyStyle (ticks ^. minorTickStyle)
+--     --
+--     minorTick = middleTick (ticks ^. minorTickLength)
+--     majorTick = middleTick (ticks ^. majorTickLength)
+--     --
+--     drawTick  d =
+--       fromVertices
+--         [ origin & ep eO -~ d
+--         , origin & ep eO +~ d ]
+--         # whenever down reversing
+--     middleTick d =
+--       fromVertices
+--         [ origin & ep eO -~ d
+--         , origin & ep eO +~ d ]
+--         # whenever down reversing
+
+--     positionTick tick x = place tick p'
+--       where p' = p0 & ep e .~ x & papply t
+
+--     majorTickXs = (ticks ^. majorTicksFun) b
+--     minorTickXs = (ticks ^. minorTicksFun) majorTickXs b
+
+-- Gird ----------------------------------------------------------------
+
+-- renderGrid
+--   :: (TypeableFloat n, HasLinearMap v, Metric v, Typeable v,
+--       Renderable (Path v n) b, OrderedField n)
+--   => Point v n -- start point
+--   -- minor
+--   -> [n]   -- positions
+--   -> (n,n) -- (lower, upper)
+--   -- major
+--   -> [n]   -- positions
+--   -> (n,n) -- (lower, upper)
+--   -> E v   -- direction of axis
+--   -> E v   -- orthogonal direction of axis
+--   -> (Path v n, Path v n) -- resulting ticks
+-- renderTicks p0 t b ticks e down eO = majorTicks <> minorTicks
+
+------------------------------------------------------------------------
+-- Utilities
+------------------------------------------------------------------------
+
+ep :: E v -> Lens' (Point v x) x
+ep (E l) = lensP . l
+{-# INLINE ep #-}
 

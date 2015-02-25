@@ -55,23 +55,23 @@ liftRecommend _ (Recommend _) (Commit b)    = Commit b
 liftRecommend f (Recommend a) (Recommend b) = Recommend (f a b)
 liftRecommend f (Commit a) (Commit b)       = Commit (f a b)
 
-recommend :: Lens' (Recommend a) a
-recommend = lens getRecommend setRecommend
-  where
-    setRecommend (Recommend _) a = Recommend a
-    setRecommend (Commit _   ) a = Commit a
+-- recommend :: Lens' (Recommend a) a
+-- recommend = lens getRecommend setRecommend
+--   where
+--     setRecommend (Recommend _) a = Recommend a
+--     setRecommend (Commit _   ) a = Commit a
 
-_Recommend :: Prism' (Recommend a) a
-_Recommend = prism' Recommend getRec
-  where
-    getRec (Recommend a) = Just a
-    getRec _             = Nothing
+-- _Recommend :: Prism' (Recommend a) a
+-- _Recommend = prism' Recommend getRec
+--   where
+--     getRec (Recommend a) = Just a
+--     getRec _             = Nothing
 
-_Commit :: Prism' (Recommend a) a
-_Commit = prism' Commit getCommit
-  where
-    getCommit (Commit a) = Just a
-    getCommit _          = Nothing
+-- _Commit :: Prism' (Recommend a) a
+-- _Commit = prism' Commit getCommit
+--   where
+--     getCommit (Commit a) = Just a
+--     getCommit _          = Nothing
 
 fromCommit :: a -> Recommend a -> a
 fromCommit _ (Commit a) = a

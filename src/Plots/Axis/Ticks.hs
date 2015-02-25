@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE TypeFamilies       #-}
 {-# LANGUAGE TemplateHaskell    #-}
+{-# LANGUAGE RankNTypes         #-}
+{-# LANGUAGE FlexibleContexts   #-}
 module Plots.Axis.Ticks where
 
 import Control.Lens  hiding (transform, ( # ))
@@ -12,10 +14,20 @@ import Data.Data
 
 import Diagrams.Prelude
 
-data TickType = AutoTick
-              | CentreTick
-              | InsideTick
-              | OutsideTick
+------------------------------------------------------------------------
+-- Types
+------------------------------------------------------------------------
+
+data TickType
+  = TickSpec !Rational !Rational
+  | AutoTick -- center tick for middle axis, outside tick otherwise
+  deriving (Show, Typeable)
+
+autoTick, centreTick, insideTick, outsideTick :: TickType
+autoTick    = AutoTick
+centreTick  = TickSpec 1 1
+insideTick  = TickSpec 0 1
+outsideTick = TickSpec 1 0
 
 -- | Function with access to the bounds of a coordinate.
 type MajorTickFunction n = (n, n) -> [n]
@@ -24,33 +36,33 @@ type MajorTickFunction n = (n, n) -> [n]
 type MinorTickFunction n = [n] -> (n, n) -> [n]
 
 -- | Information for drawing ticks for a single coordinate.
-data Ticks n = Ticks
+data Ticks v n = Ticks
   { _majorTicksFun   :: MajorTickFunction n
-  , _minorTicksFun   :: MinorTickFunction n
   , _majorTickType   :: TickType
-  , _minorTickType   :: TickType
   , _majorTickLength :: n
+  , _majorTickStyle  :: Style v n
+  , _minorTicksFun   :: MinorTickFunction n
+  , _minorTickType   :: TickType
   , _minorTickLength :: n
-  , _majorTickStyle  :: Style V2 n
-  , _minorTickStyle  :: Style V2 n
+  , _minorTickStyle  :: Style v n
   } deriving Typeable
 
 makeLenses ''Ticks
 
 -- | Information for drawing ticks for a coordinate system.
-type AxisTicks v n = v (Ticks n)
+type AxisTicks v n = v (Ticks v n)
 
-instance (TypeableFloat n, Enum n) => Default (Ticks n) where
+instance (TypeableFloat n, Enum n) => Default (Ticks v n) where
   def = Ticks
-          { _majorTicksFun   = niceTicks 7
-          , _minorTicksFun   = minors 4
-          , _majorTickType   = AutoTick
-          , _minorTickType   = AutoTick
-          , _majorTickLength = 5
-          , _minorTickLength = 3
-          , _minorTickStyle  = mempty # lwO 0.4
-          , _majorTickStyle  = mempty # lwO 0.6
-          }
+    { _majorTicksFun   = niceTicks 7
+    , _minorTicksFun   = minors 4
+    , _majorTickType   = AutoTick
+    , _minorTickType   = AutoTick
+    , _majorTickLength = 5
+    , _minorTickLength = 3
+    , _minorTickStyle  = mempty # lwO 0.4
+    , _majorTickStyle  = mempty # lwO 0.6
+    }
 
 -- functions for common ticks
 
@@ -64,7 +76,6 @@ noMinorTicksFunction _ = const []
 -- this means if log t is an integer, t = 10^j
 
 -- pgfplotsticks.code.tex lines: 1762, 1923, 2161
-
 
 minors :: (Enum n, Fractional n, Ord n) => n -> [n] -> (n, n) -> [n]
 minors p xs@(x1:x2:_) (a,b) =

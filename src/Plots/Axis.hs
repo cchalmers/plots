@@ -58,16 +58,18 @@ instance Default (AxisLine n) where
 
 type AspectRatio v n = v n
 
-data ScaleMode = AutoScale
-               | NoScale
-               | Stretch
-               | UniformScale UniformScaleStrategy
+data ScaleMode
+  = AutoScale
+  | NoScale
+  | Stretch
+  | UniformScale UniformScaleStrategy
   deriving (Show, Read)
 
-data UniformScaleStrategy = AutoUniformScale
-                          | UnitOnly
-                          | ChangeVerticalLimits
-                          | ChangeHorizontalLimits
+data UniformScaleStrategy
+  = AutoUniformScale
+  | UnitOnly
+  | ChangeVerticalLimits
+  | ChangeHorizontalLimits
   deriving (Show, Read)
 
 data Scaling n = Scaling
@@ -78,18 +80,17 @@ data Scaling n = Scaling
   }
   deriving Show
 
-
 makeLenses ''Scaling
 
 type AxisScaling v n = v (Scaling n)
 
 instance Fractional n => Default (Scaling n) where
   def = Scaling
-          { _aspectRatio       = Recommend 1
-          , _axisPostScale     = Nothing
-          , _axisScaleMode     = AutoScale
-          , _enlargeAxisLimits = Just $ Recommend 0.1
-          }
+    { _aspectRatio       = Recommend 1
+    , _axisPostScale     = Nothing
+    , _axisScaleMode     = AutoScale
+    , _enlargeAxisLimits = Just $ Recommend 0.1
+    }
 
 type PropertyAdjust b v n = PlotProperties b v n -> PlotProperties b v n
 

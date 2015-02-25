@@ -37,7 +37,7 @@ Library
     Diagrams.Coordinates.Isomorphic
   Hs-source-dirs:      src
   Build-depends:
-    base          >= 4.3   && < 5.0,
+    base          >= 4.3 && < 5.0,
     adjunctions,
     colour,
     containers    >= 0.3 && < 0.6,

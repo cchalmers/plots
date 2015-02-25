@@ -57,7 +57,7 @@ module Plots.Types
   -- , plotLineStyle
   -- , plotMarkerStyle
   -- , plotFillStyle
-  , recommend
+  , _recommend
   , _Recommend
   , _Commit
 
@@ -137,11 +137,11 @@ getBound e a = getBounds $ a ^. bounds . _Wrapped' . el e
 
 -- | Lens to the minimum point of a 'Bounds'.
 boundsMin :: (InSpace v n a, Representable v, HasBounds a) => Lens' a (Point v n)
-boundsMin = bounds . _Wrapped' . column (lowerBound . recommend) . iso P (\(P a) -> a)
+boundsMin = bounds . _Wrapped' . column (lowerBound . _recommend) . iso P (\(P a) -> a)
 
 -- | Lens to the maximum point of a 'Bounds'.
 boundsMax :: (InSpace v n a, HasBasis v, HasBounds a) => Lens' a (Point v n)
-boundsMax = bounds . _Wrapped' . column (upperBound . recommend) . iso P (\(P a) -> a)
+boundsMax = bounds . _Wrapped' . column (upperBound . _recommend) . iso P (\(P a) -> a)
 
 -- Orientation
 
