@@ -220,7 +220,10 @@ module Plots
   , noMinorGridLines
   , noMinorGridLine
 
-    -- ** Axis Grid
+    -- ** Axis Lines
+  , middleAxisLines
+
+    -- ** Axis theme
   , PlotStyle
   , plotColor
   , plotMarker
@@ -253,14 +256,6 @@ import           Plots.Types.Scatter
 -- import Plots.Types.Bar
 -- import Plots.Types.Function
 -- import Plots.Types.Surface
-
-
--- $ state
--- This module uses the state monad to alter the 'Axis' and other
--- properties. This is mainly for nicer syntax. You may notice there are
--- many ways to achieve the same thing. This is because I'm
--- experimenting. There is a chance that some functions will change / be
--- removed. Let me know what you think!
 
 -- $ pointlike
 -- The 'PointLike' class is used for convienience so you don't have to
@@ -567,7 +562,7 @@ axisLabelPosition (E e) = axisLabels . e . axisLabelPos
 
 -- | Set the position of all axes labels.
 axesLabelPositions :: Traversable v => Traversal' (Axis b v n) AxisLabelPosition
-axesLabelPositions = axisLabels . traversed . axisLabelPos
+axesLabelPositions = axisLabels . traversed. axisLabelPos
 
 -- | Set the gap between the axis and the axis label.
 setAxisLabelGap :: E v -> Lens' (Axis b v n) n
@@ -575,12 +570,12 @@ setAxisLabelGap (E e) = axisLabels . e . axisLabelGap
 
 -- | Set the gaps between all axes and the axis labels.
 setAxesLabelGaps :: Traversable v => Traversal' (Axis b v n) n
-setAxesLabelGaps = axisLabels . traversed . axisLabelGap
+setAxesLabelGaps = axisLabels . traverse . axisLabelGap
 
 -- | Label the x,y and z axis with \"\x", \"y\" and \"z\"
 cartesianLabels :: Traversable v => AxisState b v n
 cartesianLabels =
-  partsOf (axisLabels . traversed . axisLabelText) .= ["x", "y", "z"]
+  partsOf (axisLabels . traverse . axisLabelText) .= ["x", "y", "z"]
 
 -- | Set the aspect ratio of given axis.
 setAxisRatio :: E v -> n -> AxisState b v n
@@ -670,6 +665,10 @@ zMax = boundMin ey
 ------------------------------------------------------------------------
 -- Grid lines
 ------------------------------------------------------------------------
+
+middleAxisLines :: Functor v => AxisState b v n
+middleAxisLines =
+  axisLines . mapped . axisLineType .= MiddleAxisLine
 
 -- -- | Traversal over all axis line types.
 -- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType

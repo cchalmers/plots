@@ -84,7 +84,7 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (TickLabels b V2 n)
   def = TickLabels
           { _tickLabelFunction = atMajorTicks label
           , _tickLabelStyle    = mempty # fontSizeL 9
-          , _tickGap           = 7
+          , _tickGap           = 10
           }
 
 -- | Make a 'TickLabelFunction' by specifying how to draw a single label

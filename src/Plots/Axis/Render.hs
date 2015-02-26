@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ViewPatterns          #-}
 {-# LANGUAGE MultiWayIf            #-}
 
 module Plots.Axis.Render where
@@ -81,7 +82,7 @@ renderR2Axis a = frame 15
                $ legend
               <> plots
               <> drawAxis ex ey LowerLabels
-              <> drawAxis ey ex LowerLabels
+              <> drawAxis ey ex LeftLabels
   where
     plots    = foldMap (uncurry $ renderPlotable xs t) plots'
     drawAxis = axisOnBasis origin xs a t
@@ -92,10 +93,6 @@ renderR2Axis a = frame 15
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     legend = drawLegend bb (a ^. axisLegend) (toList plots')
     --
-    -- TODO: fix this
-    -- applyTheme = zipWith (\axisEntry -> over plotThemeEntry
-    --                        (Commit . fromCommit axisEntry))
-    --                      (a ^. axisTheme)
     pp = a ^. defProperties
     preparePlots =
       zipWith (\theme p' -> (unPlot' (appPlot' (set plotStyle theme) p') pp))
@@ -108,6 +105,8 @@ renderR2Axis a = frame 15
 data LabelPosition
   = NoLabels
   | LowerLabels
+  | LeftLabels
+  | RightLabels
   | UpperLabels
   deriving (Show, Eq, Typeable)
 
@@ -161,7 +160,7 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
     -- tick labels
     tickLabels
       | lp == NoLabels = mempty
-      | otherwise = foldMap drawLabels (take 1 ys)
+      | otherwise = foldMap drawLabels (map snd $ take 1 ys)
                       # applyStyle (tickLabelsD ^. tickLabelStyle)
       where
         tickLabelsD  = a ^. axisTickLabels . el e
@@ -172,7 +171,7 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
               where
                 p' = over lensP ((el e .~ x) . (el eO .~ y)) p
                        # papply t
-                       # papply (translationE eO (negate' 25))
+                       # papply (translationE eO (negate' $ tickLabelsD ^. tickGap))
 
     -- grid
     grid = majorLines <> minorLines
@@ -195,7 +194,7 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
     -- ticks
     ticks = foldMap drawTicks ys
 
-    drawTicks y = majorTicks <> minorTicks
+    drawTicks (pos,y) = majorTicks <> minorTicks
       where
         majorTicks = foldMap (positionTick majorTick) majorTickXs
                        # stroke
@@ -205,20 +204,30 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
                        # stroke
                        # applyStyle (ticksD ^. minorTickStyle)
         --
-        minorTick = middleTick (ticksD ^. minorTickLength)
-        majorTick = middleTick (ticksD ^. majorTickLength)
+        minorTick = someTick (ticksD ^. majorTickType) (ticksD ^. minorTickLength)
+        majorTick = someTick (ticksD ^. minorTickType) (ticksD ^. majorTickLength)
         --
-        middleTick d =
-          pathFromVertices
-            [ origin & ep eO -~ d
-            , origin & ep eO +~ d ]
+        someTick tType d = pathFromVertices $
+          case tType  of
+            AutoTick ->
+              case pos of
+                LowerAxis  -> [origin & ep eO -~ d, origin]
+                MiddleAxis -> [origin & ep eO -~ d, origin & ep eO +~ d]
+                UpperAxis  -> [origin, origin & ep eO +~ d]
+            TickSpec (fromRational -> aa) (fromRational -> bb) ->
+              case pos of
+                UpperAxis -> [origin & ep eO -~ d*bb, origin & ep eO +~ d*aa]
+                _         -> [origin & ep eO -~ d*aa, origin & ep eO +~ d*bb]
+            NoTick -> []
+        -- middleTick d =
+        --   pathFromVertices
         positionTick tick x = place tick p'
           where
             p' = over lensP ((el e .~ x) . (el eO .~ y)) p
                    # transform t
 
     -- axis lines
-    line = foldMap mkline ys -- merge with ticks?
+    line = foldMap mkline (map snd ys) -- merge with ticks?
              # transform t
              # stroke
              # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
@@ -239,10 +248,15 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
     --
     ys       = getAxisLinePos yb lineType
     lineType = a ^. axisLines . el e . axisLineType
-    txtAlign = BoxAlignedText 0.5 1
+    txtAlign = case lp of
+                  LowerLabels -> BoxAlignedText 0.5 1
+                  LeftLabels  -> BoxAlignedText 1   0.5
+                  RightLabels -> BoxAlignedText 0   0.5
+                  UpperLabels -> BoxAlignedText 1   0
+                  _           -> error "No labels" -- XXX Temporary
     -- t2 = scaling 4
     --
-    negate' = if lp == UpperLabels
+    negate' = if lp == UpperLabels || lp == RightLabels
                 then id
                 else negate
 
@@ -398,15 +412,22 @@ scaleE e s = fromLinear f f
 --       Dims w h -> scalingX (w / x) <> scalingY (h / y)
 
 
-getAxisLinePos :: (Num n, Ord n) => (n, n) -> AxisLineType -> [n]
+getAxisLinePos :: (Num n, Ord n) => (n, n) -> AxisLineType -> [(AxisPos, n)]
 getAxisLinePos (a,b) aType = case aType of
-  BoxAxisLine    -> [a, b]
-  LeftAxisLine   -> [a]
-  MiddleAxisLine -> [if | a > 0     -> a
+  BoxAxisLine    -> [(LowerAxis, a), (UpperAxis, b)]
+  LeftAxisLine   -> [(LowerAxis, a)]
+  MiddleAxisLine -> [(,) MiddleAxis $
+                     if | a > 0     -> a
                         | b < 0     -> b
                         | otherwise -> 0]
-  RightAxisLine  -> [b]
+  RightAxisLine  -> [(UpperAxis, b)]
   NoAxisLine     -> []
+
+              -- MiddleAxisLabel -> (x0 + x1) / 2
+              -- LowerAxisLabel  -> x0
+              -- UpperAxisLabel  -> x1
+
+data AxisPos = LowerAxis | MiddleAxis | UpperAxis
 
 ------------------------------------------------------------------------
 -- Elements

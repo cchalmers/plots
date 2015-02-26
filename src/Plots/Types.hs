@@ -355,6 +355,8 @@ _Plot = prism' Plot (\(Plot a) -> cast a)
 --       => Traversal' (Plot b (V a) (N a)) a
 -- plotT = _Plot . _1
 
+-- The main perpose of a 'PropertiedPlot' is so we can use lenses from
+-- both the plot its self and the plots properites.
 data PropertiedPlot p b = PP p (PlotProperties b (V p) (N p))
 
 _pp :: (V p ~ V p', N p ~ N p') => Lens (PropertiedPlot p b) (PropertiedPlot p' b) p p'

@@ -18,16 +18,20 @@ import Diagrams.Prelude
 -- Types
 ------------------------------------------------------------------------
 
+-- | Low level type for determiniting length of tick below and above the
+--   axis.
 data TickType
   = TickSpec !Rational !Rational
   | AutoTick -- center tick for middle axis, outside tick otherwise
+  | NoTick
   deriving (Show, Typeable)
 
-autoTick, centreTick, insideTick, outsideTick :: TickType
+autoTick, centreTick, insideTick, outsideTick, noTick :: TickType
 autoTick    = AutoTick
 centreTick  = TickSpec 1 1
 insideTick  = TickSpec 0 1
 outsideTick = TickSpec 1 0
+noTick      = NoTick
 
 -- | Function with access to the bounds of a coordinate.
 type MajorTickFunction n = (n, n) -> [n]
