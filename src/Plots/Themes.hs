@@ -102,11 +102,11 @@ applyLineStyle a = applyStyle $ (a ^. lineStyle) (a ^. plotColor)
 
 -- | Apply the marker style from a plot style.
 applyMarkerStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
-applyMarkerStyle a = applyStyle $ (a ^. lineStyle) (a ^. plotColor)
+applyMarkerStyle a = applyStyle $ (a ^. markerStyle) (a ^. plotColor)
 
 -- | Apply the fill style from a plot style.
 applyBarStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
-applyBarStyle a = applyStyle $ (a ^. lineStyle) (a ^. plotColor)
+applyBarStyle a = applyStyle $ (a ^. barStyle) (a ^. plotColor)
 
 plotStyles :: HasPlotStyle a b => Traversal' a (Colour Double -> Style (V a) (N a))
 plotStyles = plotStyle . t

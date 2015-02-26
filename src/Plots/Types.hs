@@ -381,7 +381,7 @@ unPlot' (Plot' a (Endo pf)) pp = (Plot a', pp')
 appPlot' :: (forall a. (V a ~ v, N a ~ n, Plotable a b) =>
              PropertiedPlot a b -> PropertiedPlot a b)
          -> Plot' b v n -> Plot' b v n
-appPlot' f (Plot' a pf) = Plot' a (Endo f <> pf)
+appPlot' f (Plot' a pf) = Plot' a (pf <> Endo f)
 
 instance (HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
   transform = over plotTransform . transform

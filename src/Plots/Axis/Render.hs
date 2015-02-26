@@ -142,7 +142,7 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
     -- axis labels (x,y etc.)
     axLabels = if null txt || lp == NoLabels
                  then mempty
-                 else (axLabelD ^. axisLabelFunction) txt
+                 else (axLabelD ^. axisLabelFunction) txtAlign txt
                          # moveTo p'
                          # applyStyle (axLabelD ^. axisLabelStyle)
 
@@ -166,7 +166,7 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
       where
         tickLabelsD  = a ^. axisTickLabels . el e
         labelFun     = tickLabelsD ^. tickLabelFunction
-        drawLabels y = foldMap f (labelFun majorTickXs b)
+        drawLabels y = foldMap f (labelFun majorTickXs b txtAlign)
           where
             f (x, dia) = place dia p'
               where
@@ -239,6 +239,7 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
     --
     ys       = getAxisLinePos yb lineType
     lineType = a ^. axisLines . el e . axisLineType
+    txtAlign = BoxAlignedText 0.5 1
     -- t2 = scaling 4
     --
     negate' = if lp == UpperLabels
