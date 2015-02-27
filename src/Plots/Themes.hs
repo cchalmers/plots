@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RankNTypes  #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
@@ -40,16 +41,27 @@ module Plots.Themes
     -- * Marker shapes
   , prong
   , diamond
-  , cross
+  , cross'
   , star'
   , plus
   , lineMarkers
+
+    -- * Colour maps
+  , ColourMap
+  , ixColour
+  , cmTraverse
+  , colourMap
+  , alphaColourMap
+  , colourList
+
   ) where
 
 import           Control.Lens     hiding (transform, ( # ))
 import           Data.Colour.SRGB
 import           Data.Typeable
 import           Diagrams.Prelude
+import qualified Data.Map as M
+import Linear
 
 -- | A plot style is made up of separate styles for the line, marker and
 --   fill aspects of a plot. It also contains a marker in the form of a
@@ -225,7 +237,7 @@ filledMarkers = map (centerXY . pathFromTrail) $ cycle
   , triangle 1
   , diamond (1 / sqrt 2)
   , pentagon 0.6
-  , cross 1
+  , cross' 1
   , plus 1
   , star' 0.8
   ]
@@ -257,8 +269,8 @@ diamond :: (TrailLike t, Transformable t, V t ~ V2, N t ~ n, RealFloat n)
         => n -> t
 diamond = rotateBy (1/8) . square
 
-cross :: RealFloat n => n -> Trail V2 n
-cross = rotateBy (1/8) . plus
+cross' :: RealFloat n => n -> Trail V2 n
+cross' = rotateBy (1/8) . plus
 
 plus :: RealFloat n => n -> Trail V2 n
 plus x = wrapTrail . glueLine . mconcat . take 4
@@ -278,4 +290,91 @@ star' x = wrapTrail . glueLine . mconcat . take 5
 --   $ zipWith (\c m -> styleF c m <> lineBehind c) cs ms
 --   where
 --     lineBehind c = (p2 (-1,0) ~~ p2 (1,0)) # lc c # lwG 0.2
+
+------------------------------------------------------------------------
+-- Colour maps
+------------------------------------------------------------------------
+
+-- type ColourMap = [(Double, AlphaColour Double)]
+
+newtype ColourMap = ColourMap (M.Map Rational (AlphaColour Double))
+  deriving Show
+
+makeWrapped ''ColourMap
+
+type instance V ColourMap = V1
+type instance N ColourMap = Rational
+
+-- instance t ~ V1 b => Rewrapped (V1 a) t
+-- instance Wrapped (V1 a) where
+--   type Unwrapped (V1 a) = a
+--   _Wrapped' = iso (\(V1 a) -> a) V1
+--   {-# INLINE _Wrapped' #-}
+
+p1apply :: Num a => Transformation V1 a -> a -> a
+p1apply t a = papply t (P (V1 a)) ^. _x
+
+instance Transformable ColourMap where
+  transform t = over (_Wrapped' . _Wrapped' . mapped . _1) (p1apply t)
+
+type instance Index ColourMap   = Rational
+type instance IxValue ColourMap = AlphaColour Double
+
+instance AsEmpty ColourMap where
+  _Empty = nearly (ColourMap M.empty) (allOf each (==transparent))
+
+instance Each ColourMap ColourMap (AlphaColour Double) (AlphaColour Double) where
+  each = _Wrapped . each
+
+instance Ixed ColourMap where
+  ix = ixColour
+
+-- | 'Nothing' == 'transparent'
+instance At ColourMap where
+  at x = ixColour x . from (non transparent)
+
+ixColour :: Rational -> Lens' ColourMap (AlphaColour Double)
+ixColour x f (ColourMap cm) = f c <&> \c' -> ColourMap (M.insert x c' cm)
+  where
+  c = case (M.lookupLE x cm, M.lookupGE x cm) of
+        (Just (i,c1), Just (j,c2))
+          | i == j    -> c1
+          | otherwise ->
+              let a = fromRational $ (x - i) / (j - i)
+              in  blend a c1 c2
+        (Just (_,c1), Nothing) -> c1
+        (Nothing, Just (_,c2)) -> c2
+        _                      -> transparent
+
+-- | Indexed traversal over the colours indexed and ordered by their
+--   position in the map.
+cmTraverse :: IndexedTraversal' Rational ColourMap (AlphaColour Double)
+cmTraverse = _Wrapped' . itraversed
+
+-- | Return the list of colours in the [0,1] range in order. This always
+--   includes colours 0 and 1.
+colourList :: ColourMap -> [(Rational, AlphaColour Double)]
+colourList = itoListOf (cmTraverse . ifiltered (\i _ -> i >= 0 && i <= 1))
+           . (ixColour 0 %~ id) . (ixColour 1 %~ id)
+           -- touch colours at 0 and 1 so they're in the list
+
+colourMap :: [(Rational, Colour Double)] -> ColourMap
+colourMap = alphaColourMap . over (mapped . _2) opaque
+
+alphaColourMap :: [(Rational, AlphaColour Double)] -> ColourMap
+alphaColourMap [] = ColourMap M.empty
+alphaColourMap cs
+  | a == b        = ColourMap (M.singleton 0.5 c)
+  | otherwise     = ColourMap (M.mapKeysMonotonic normalise cm)
+  where
+    cm    = M.fromList cs
+    (a,c) = M.findMin cm
+    (b,_) = M.findMax cm
+    normalise x = (x - a) / (b - a)
+
+toStops :: Fractional n => ColourMap -> [GradientStop n]
+toStops = map (\(x,c) -> GradientStop (SomeColor c) x) . colourList
+
+-- hot :: ColourMap
+-- hot = opaqueMap [(0, red), (1, yellow), (2, blue), (3, grey)]
 
