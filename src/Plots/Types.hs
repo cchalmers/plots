@@ -69,8 +69,8 @@ module Plots.Types
   , appPlot'
   ) where
 
-import           Control.Lens          as L hiding (transform, ( # ), (|>))
-import           Data.Default
+-- import           Control.Lens          as L hiding (transform, ( # ), (|>))
+-- import           Data.Default
 import           Data.Functor.Rep
 import           Data.Monoid.Recommend
 import           Data.Typeable
@@ -272,7 +272,7 @@ instance HasPlotStyle (PlotProperties b v n) b where
   plotStyle = plotPropertiesStyle
 
 instance Qualifiable (PlotProperties b v n) where
-  n |> p = over plotName (n |>) p
+  n .>> p = over plotName (n .>>) p
 
 zeroInt :: Additive v => v Int
 zeroInt = zero
@@ -399,4 +399,4 @@ instance HasPlotStyle (PropertiedPlot p b) b where
   plotStyle = plotPropertiesStyle
 
 instance Qualifiable (PropertiedPlot p b) where
-  n |> p = over plotName (n |>) p
+  n .>> p = over plotName (n .>>) p

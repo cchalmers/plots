@@ -4,7 +4,7 @@
 module Plots.Name where
 
 import Control.Lens
-import Data.Map            (Map)
+-- import Data.Map            (Map)
 import Data.Ord            (comparing)
 import Data.Function
 import Data.Typeable
@@ -33,18 +33,18 @@ instance Ord (PlotName n) where
 
 instance Typeable n => IsName (PlotName n)
 
-_AName :: IsName a => Prism' AName a
-_AName = prism' AName (\(AName a) -> cast a)
+-- _AName :: IsName a => Prism' AName a
+-- _AName = prism' AName (\(AName a) -> cast a)
 
-_Names :: IsName a => Traversal' Name a
-_Names = _Wrapped' . traverse . _AName
+-- _Names :: IsName a => Traversal' Name a
+-- _Names = _Wrapped' . traverse . _AName
 
-_NamedString :: Traversal' Name String
-_NamedString = _Names
+-- _NamedString :: Traversal' Name String
+-- _NamedString = _Names
 
-_NamedPlot :: Typeable n => Traversal' Name (PlotName n)
-_NamedPlot = _Names
+-- _NamedPlot :: Typeable n => Traversal' Name (PlotName n)
+-- _NamedPlot = _Names
 
-diaNames :: OrderedField n => QDiagram b V2 n Any -> Map Name [P2 n]
-diaNames = over (mapped . traversed) location . view (subMap . _Wrapped')
+-- diaNames :: OrderedField n => QDiagram b V2 n Any -> Map Name [P2 n]
+-- diaNames = over (mapped . traversed) location . view (subMap . _Wrapped')
 

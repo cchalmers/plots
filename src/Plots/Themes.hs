@@ -41,7 +41,7 @@ module Plots.Themes
     -- * Marker shapes
   , prong
   , diamond
-  , cross'
+  , crossShape
   , star'
   , plus
   , lineMarkers
@@ -53,6 +53,10 @@ module Plots.Themes
   , colourMap
   , alphaColourMap
   , colourList
+  , toStops
+
+    -- ** Sample maps
+  , hot
 
   ) where
 
@@ -237,7 +241,7 @@ filledMarkers = map (centerXY . pathFromTrail) $ cycle
   , triangle 1
   , diamond (1 / sqrt 2)
   , pentagon 0.6
-  , cross' 1
+  , crossShape 1
   , plus 1
   , star' 0.8
   ]
@@ -269,8 +273,8 @@ diamond :: (TrailLike t, Transformable t, V t ~ V2, N t ~ n, RealFloat n)
         => n -> t
 diamond = rotateBy (1/8) . square
 
-cross' :: RealFloat n => n -> Trail V2 n
-cross' = rotateBy (1/8) . plus
+crossShape :: RealFloat n => n -> Trail V2 n
+crossShape = rotateBy (1/8) . plus
 
 plus :: RealFloat n => n -> Trail V2 n
 plus x = wrapTrail . glueLine . mconcat . take 4
@@ -373,8 +377,9 @@ alphaColourMap cs
     normalise x = (x - a) / (b - a)
 
 toStops :: Fractional n => ColourMap -> [GradientStop n]
-toStops = map (\(x,c) -> GradientStop (SomeColor c) x) . colourList
+toStops = map (\(x,c) -> GradientStop (SomeColor c) (fromRational x))
+        . colourList
 
--- hot :: ColourMap
--- hot = opaqueMap [(0, red), (1, yellow), (2, blue), (3, grey)]
+hot :: ColourMap
+hot = colourMap [(0, red), (1, yellow), (2, blue), (3, grey)]
 
