@@ -15,6 +15,8 @@
 {-# LANGUAGE UndecidableInstances      #-}
 {-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 
 {-# LANGUAGE CPP                       #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
@@ -65,6 +67,7 @@ module Plots.Types
   , _pp
 
   , Plot' (..)
+  , _Plot'
   , unPlot'
   , appPlot'
   ) where
@@ -373,7 +376,17 @@ instance HasPlotProperties (PropertiedPlot p b) where
 data Plot' b v n where
   Plot' :: (V a ~ v, N a ~ n, Plotable a b)
        => a -> Endo (PropertiedPlot a b) -> Plot' b v n
-  deriving (Typeable)
+  deriving Typeable
+
+
+_Plot' :: forall a b v n. Plotable a b => Traversal' (Plot' b v n) a
+_Plot' f p@(Plot' a e) =
+  case eq a of
+    Just Refl -> f a <&> \b' -> Plot' b' e
+    Nothing   -> pure p
+  where
+  eq :: Typeable a' => a' -> Maybe (a :~: a')
+  eq _ = eqT
 
 unPlot' :: Plot' b v n -> PlotProperties b v n -> (Plot b v n, PlotProperties b v n)
 unPlot' (Plot' a (Endo pf)) pp = (Plot a', pp')

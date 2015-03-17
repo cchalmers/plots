@@ -8,31 +8,32 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE ViewPatterns          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-module Plots.Legend
- ( -- * Legend entries
-   LegendEntry
- , legendText
- , legendPic
- , legendAnchor
- , legendGap
-   -- * Legend configuration
- , legendPosition
+module Plots.Legend where
+ -- ( -- * Legend entries
+ --   LegendEntry
+ -- , legendText
+ -- , legendPic
+ -- , legendAnchor
+ -- , legendGap
+ --   -- * Legend configuration
+ -- , legendPosition
 
-   -- * Positioning
- , Position (..)
- , getPosition
- , Anchor (..)
- , anchor
+ --   -- * Positioning
+ -- , Position (..)
+ -- , getPosition
+ -- , Anchor (..)
+ -- , anchor
 
- , legendOrientation
- , Legend
- , drawLegend
- ) where
+ -- , legendOrientation
+ -- , Legend
+ -- , drawLegend
+ -- ) where
 
 import           Control.Lens         hiding (none, ( # ))
 import           Data.Default
 import           Data.Typeable
 import           Diagrams.TwoD.Text
+import Data.Monoid.Recommend
 
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude hiding (view)
@@ -150,7 +151,7 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
           , _legendTextWidth   = 60
           , _legendStyle       = mempty
           , _legendTextF       = alignedText 0 0.5
-          , _legendTextStyle   = mempty # fontSizeG 12
+          , _legendTextStyle   = mempty & _fontSizeR .~ fmap Recommend (output 12)
           , _legendOrientation = Verticle
           }
 
@@ -172,7 +173,7 @@ drawLegend bb l ps = alignTo (l ^. legendPosition)
                $ concatMap mkLabels ps
     mkLabels (p,pp) = map mkLabel (pp ^. legendEntries)
       where
-        mkLabel entry = txt ||| pic
+        mkLabel entry = pic ||| strutX 5 ||| txt
           where
             -- pps = p ^. plotProperties
             txt = (l ^. legendTextF) (entry ^. legendText)

@@ -146,10 +146,11 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
                          # applyStyle (axLabelD ^. axisLabelStyle)
 
       where
-        p' = p # over lensP ((el e .~ x) . (el eO .~ y0))
+        -- TODO: labelGap (right now it's getting transformed)
+        p' = p # over lensP ((el e .~ x) . (el eO .~ y0 - labelGap))
                -- # papply (translationE eO (negate' labelGap / avgScale t2))
                # papply t
-        -- labelGap = axLabelD ^. axisLabelGap
+        labelGap = axLabelD ^. axisLabelGap
         txt      = axLabelD ^. axisLabelText
         x = case axLabelD ^. axisLabelPos of
               MiddleAxisLabel -> (x0 + x1) / 2

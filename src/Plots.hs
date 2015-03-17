@@ -223,6 +223,11 @@ module Plots
     -- ** Axis Lines
   , middleAxisLines
 
+    -- ** Axis ticks
+  , noTicks
+  , noMajorTicks
+  , noMinorTicks
+
     -- ** Axis theme
   , PlotStyle
   , plotColor
@@ -695,6 +700,22 @@ middleAxisLines =
 -- zAxisArrowOpts :: (L.V3 n v, HasAxisLines a v) => Lens' a (Maybe ArrowOpts)
 -- zAxisArrowOpts = axisLines ez . axisArrowOpts
 --
+
+
+------------------------------------------------------------------------
+-- Ticks
+------------------------------------------------------------------------
+
+noMinorTicks :: Functor v => AxisState b v n
+noMinorTicks =
+  axisTicks . mapped . minorTickType .= NoTick
+
+noMajorTicks :: Functor v => AxisState b v n
+noMajorTicks =
+  axisTicks . mapped . majorTickType .= NoTick
+
+noTicks :: Functor v => AxisState b v n
+noTicks = noMinorTicks >> noMajorTicks
 
 ------------------------------------------------------------------------
 -- Style

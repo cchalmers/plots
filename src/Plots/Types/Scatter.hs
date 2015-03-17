@@ -80,7 +80,8 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     pp ^. plotMarker
       & applyMarkerStyle pp
 
-_ScatterPlot :: (Plotable (ScatterPlot v n) b, Typeable b) => Prism' (Plot b v n) (ScatterPlot v n)
+_ScatterPlot :: (Plotable (ScatterPlot v n) b, Typeable b)
+             => Prism' (Plot b v n) (ScatterPlot v n)
 _ScatterPlot = _Plot
 
 ------------------------------------------------------------------------
@@ -168,6 +169,9 @@ class HasScatter a v n d | a -> v n, a -> d where
 
   connectingLine :: Lens' a Bool
   connectingLine = scatter . lens cLine (\s b -> (s {cLine = b}))
+
+instance HasScatter (GScatterPlot v n d) v n d where
+  scatter = id
 
 instance HasScatter (PropertiedPlot (GScatterPlot v n d) b) v n d where
   scatter = _pp
