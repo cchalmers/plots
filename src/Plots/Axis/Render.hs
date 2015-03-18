@@ -146,10 +146,10 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
                          # applyStyle (axLabelD ^. axisLabelStyle)
 
       where
-        -- TODO: labelGap (right now it's getting transformed)
-        p' = p # over lensP ((el e .~ x) . (el eO .~ y0 - labelGap))
-               -- # papply (translationE eO (negate' labelGap / avgScale t2))
-               # papply t
+        p' = p & ep e  .~ x
+               & ep eO .~ y0
+               & papply t
+               & ep eO +~ negate' labelGap
         labelGap = axLabelD ^. axisLabelGap
         txt      = axLabelD ^. axisLabelText
         x = case axLabelD ^. axisLabelPos of
@@ -170,9 +170,10 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
           where
             f (x, dia) = place dia p'
               where
-                p' = over lensP ((el e .~ x) . (el eO .~ y)) p
-                       # papply t
-                       # papply (translationE eO (negate' $ tickLabelsD ^. tickGap))
+                p' = p & ep e  .~ x
+                       & ep eO .~ y
+                       & papply t
+                       & ep eO +~ negate' (tickLabelsD ^. tickGap)
 
     -- grid
     grid = majorLines <> minorLines
