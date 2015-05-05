@@ -291,8 +291,9 @@ import           Plots.Types.Scatter
 -- @
 
 
+-- | Convienient type synonym for renderable types that all the standard
+--   2D backends support.
 type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, TypeableFloat n, Enum n)
-
 
 -- newtype AxisStateM b v n a = AxisState (State (P.Axis b v n) a)
 --   deriving (Functor, Applicative, Monad, MonadState (P.Axis b v n))
@@ -432,7 +433,8 @@ scatterPlotL l d = addPlotableL l (mkScatterPlot d)
 
 -- Fold variants
 
-scatterPlotOf :: (PointLike v n p, Plotable (ScatterPlot v n) b) => Fold s p -> s -> AxisState b v n
+scatterPlotOf :: (PointLike v n p, Plotable (ScatterPlot v n) b)
+              => Fold s p -> s -> AxisState b v n
 scatterPlotOf f s = addPlotable (mkScatterPlotOf f s)
 
 scatterPlotOf' :: (PointLike v n p, Plotable (ScatterPlot v n) b)
@@ -561,13 +563,25 @@ r2Axis = def
 axisLabel :: E v -> Lens' (Axis b v n) String
 axisLabel (E e) = axisLabels . e . axisLabelText
 
+-- | Lens onto the x axis label.
+xAxisLabel :: R1 v => Lens' (Axis b v n) String
+xAxisLabel = axisLabel ex
+
+-- | Lens onto the y axis label.
+yAxisLabel :: R2 v => Lens' (Axis b v n) String
+yAxisLabel = axisLabel ey
+
+-- | Lens onto the z axis label.
+zAxisLabel :: R3 v => Lens' (Axis b v n) String
+zAxisLabel = axisLabel ex
+
 -- | Set the position of the given axis label.
 axisLabelPosition :: E v -> Lens' (Axis b v n) AxisLabelPosition
 axisLabelPosition (E e) = axisLabels . e . axisLabelPos
 
 -- | Set the position of all axes labels.
 axesLabelPositions :: Traversable v => Traversal' (Axis b v n) AxisLabelPosition
-axesLabelPositions = axisLabels . traversed. axisLabelPos
+axesLabelPositions = axisLabels . traversed . axisLabelPos
 
 -- | Set the gap between the axis and the axis label.
 setAxisLabelGap :: E v -> Lens' (Axis b v n) n
@@ -577,7 +591,7 @@ setAxisLabelGap (E e) = axisLabels . e . axisLabelGap
 setAxesLabelGaps :: Traversable v => Traversal' (Axis b v n) n
 setAxesLabelGaps = axisLabels . traverse . axisLabelGap
 
--- | Label the x,y and z axis with \"\x", \"y\" and \"z\"
+-- | Label the x,y and z axis with \"x\", \"y\" and \"z\" respectively.
 cartesianLabels :: Traversable v => AxisState b v n
 cartesianLabels =
   partsOf (axisLabels . traverse . axisLabelText) .= ["x", "y", "z"]
@@ -666,11 +680,17 @@ zMin = boundMin ey
 zMax :: (HasBounds a, R3 (V a)) => Lens' a (Recommend (N a))
 zMax = boundMin ey
 
-
 ------------------------------------------------------------------------
 -- Grid lines
 ------------------------------------------------------------------------
 
+-- | Set all axis grid lines to form a box.
+boxAxisLines :: Functor v => AxisState b v n
+boxAxisLines =
+  axisLines . mapped . axisLineType .= BoxAxisLine
+
+-- | Set all axis grid lines to pass though the origin. If the origin is
+--   not in bounds the line will be on the edge closest to the origin.
 middleAxisLines :: Functor v => AxisState b v n
 middleAxisLines =
   axisLines . mapped . axisLineType .= MiddleAxisLine
@@ -701,21 +721,27 @@ middleAxisLines =
 -- zAxisArrowOpts = axisLines ez . axisArrowOpts
 --
 
-
 ------------------------------------------------------------------------
 -- Ticks
 ------------------------------------------------------------------------
 
+-- | Remove minor ticks from all axes.
 noMinorTicks :: Functor v => AxisState b v n
 noMinorTicks =
-  axisTicks . mapped . minorTickType .= NoTick
+  axisTicks . mapped . minorTickAlign .= noTicks
 
+-- | Remove major ticks from all axes.
 noMajorTicks :: Functor v => AxisState b v n
 noMajorTicks =
-  axisTicks . mapped . majorTickType .= NoTick
+  axisTicks . mapped . majorTickAlign .= noTicks
 
-noTicks :: Functor v => AxisState b v n
-noTicks = noMinorTicks >> noMajorTicks
+-- | Remove both major and minor ticks from all axes.
+noAxisTicks :: Functor v => AxisState b v n
+noAxisTicks = noMinorTicks >> noMajorTicks
+
+centerAxisTicks :: Functor v => AxisState b v n
+centerAxisTicks =
+  axisTicks . mapped . tickAlign .= centerTicks
 
 ------------------------------------------------------------------------
 -- Style

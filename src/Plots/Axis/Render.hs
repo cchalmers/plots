@@ -205,8 +205,8 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
                        # stroke
                        # applyStyle (ticksD ^. minorTickStyle)
         --
-        minorTick = someTick (ticksD ^. minorTickType) (ticksD ^. minorTickLength)
-        majorTick = someTick (ticksD ^. majorTickType) (ticksD ^. majorTickLength)
+        minorTick = someTick (ticksD ^. minorTickAlign) (ticksD ^. minorTickLength)
+        majorTick = someTick (ticksD ^. majorTickAlign) (ticksD ^. majorTickLength)
         --
         someTick tType d = pathFromVertices $
           case tType  of

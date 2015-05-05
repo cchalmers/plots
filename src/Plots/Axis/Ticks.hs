@@ -20,18 +20,37 @@ import Diagrams.Prelude
 
 -- | Low level type for determiniting length of tick below and above the
 --   axis.
-data TickType
+data TickAlign
   = TickSpec !Rational !Rational
   | AutoTick -- center tick for middle axis, outside tick otherwise
   | NoTick
   deriving (Show, Typeable)
 
-autoTick, centreTick, insideTick, outsideTick, noTick :: TickType
-autoTick    = AutoTick
-centreTick  = TickSpec 1 1
-insideTick  = TickSpec 0 1
-outsideTick = TickSpec 1 0
-noTick      = NoTick
+-- | Set the tick type depending on the axis line position. 'centreTick'
+--   for 'middleAxis', 'insideTick' for everything else.
+autoTicks :: TickAlign
+autoTicks = AutoTick
+
+-- | Set the tick to be in the centre of the axis with total length of
+--   the corresponding tick length.
+centreTicks :: TickAlign
+centreTicks  = TickSpec 0.5 0.5
+
+-- | Synonym for 'centreTicks'.
+centerTicks :: TickAlign
+centerTicks  = centreTicks
+
+-- | Align the ticks to be inside a box axis.
+insideTicks :: TickAlign
+insideTicks  = TickSpec 0 1
+
+-- | Align the ticks to be outside a box axis.
+outsideTicks :: TickAlign
+outsideTicks = TickSpec 1 0
+
+-- | Do not show any ticks.
+noTicks :: TickAlign
+noTicks = NoTick
 
 -- | Function with access to the bounds of a coordinate.
 type MajorTickFunction n = (n, n) -> [n]
@@ -42,14 +61,17 @@ type MinorTickFunction n = [n] -> (n, n) -> [n]
 -- | Information for drawing ticks for a single coordinate.
 data Ticks v n = Ticks
   { _majorTicksFun   :: MajorTickFunction n
-  , _majorTickType   :: TickType
+  , _majorTickAlign  :: TickAlign
   , _majorTickLength :: n
   , _majorTickStyle  :: Style v n
   , _minorTicksFun   :: MinorTickFunction n
-  , _minorTickType   :: TickType
+  , _minorTickAlign  :: TickAlign
   , _minorTickLength :: n
   , _minorTickStyle  :: Style v n
   } deriving Typeable
+
+type instance V (Ticks v n) = v
+type instance N (Ticks v n) = n
 
 makeLenses ''Ticks
 
@@ -60,13 +82,26 @@ instance (TypeableFloat n, Enum n) => Default (Ticks v n) where
   def = Ticks
     { _majorTicksFun   = niceTicks 7
     , _minorTicksFun   = minors 4
-    , _majorTickType   = AutoTick
-    , _minorTickType   = AutoTick
+    , _majorTickAlign  = autoTicks
+    , _minorTickAlign  = autoTicks
     , _majorTickLength = 5
     , _minorTickLength = 3
     , _minorTickStyle  = mempty # lwO 0.4
     , _majorTickStyle  = mempty # lwO 0.6
     }
+
+instance Typeable n => HasStyle (Ticks v n) where
+  applyStyle s = over tickStyles (applyStyle s)
+
+-- | Traversal over both major and minor tick alignment.
+tickAlign :: Traversal' (Ticks v n) TickAlign
+tickAlign f a = (\m mn -> a & majorTickAlign .~ m & minorTickAlign .~ mn)
+                  <$> f (a ^. majorTickAlign) <*> f (a ^. minorTickAlign)
+
+-- | Traversal over both major and minor tick styles.
+tickStyles :: Traversal' (Ticks v n) (Style v n)
+tickStyles f a = (\m mn -> a & majorTickStyle .~ m & minorTickStyle .~ mn)
+              <$> f (a ^. majorTickStyle) <*> f (a ^. minorTickStyle)
 
 -- functions for common ticks
 
