@@ -232,6 +232,7 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
              # transform t
              # stroke
              # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
+             # lineCap LineCapSquare
       where
         -- TODO: Arrow for R3
         mkline y = pathFromVertices
