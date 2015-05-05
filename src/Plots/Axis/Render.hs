@@ -144,7 +144,6 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
                  else (axLabelD ^. axisLabelFunction) txtAlign txt
                          # moveTo p'
                          # applyStyle (axLabelD ^. axisLabelStyle)
-
       where
         p' = p & ep e  .~ x
                & ep eO .~ y0
