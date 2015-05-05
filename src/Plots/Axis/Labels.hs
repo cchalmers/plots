@@ -51,7 +51,7 @@ makeLenses ''AxisLabel
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (AxisLabel b V2 n) where
   def = AxisLabel
-          { _axisLabelFunction  = mkText
+          { _axisLabelFunction  = mkText'
           , _axisLabelText      = ""
           , _axisLabelStyle     = mempty & recommendFontSize (output 8)
           , _axisLabelGap       = 12
@@ -104,7 +104,7 @@ label
   => TextAlignment n
   -> n
   -> QDiagram b V2 n Any
-label a n = mkText a $ showFFloat (Just 2) n ""
+label a n = mkText' a $ showFFloat (Just 2) n ""
 
 leftLabel :: (TypeableFloat n, Renderable (Text n) b) => n -> QDiagram b V2 n Any
 leftLabel n = alignedText 1 0.5 (showFFloat (Just 2) n "")
