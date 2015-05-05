@@ -33,7 +33,7 @@ import           Plots.Themes
 import Plots.Types
 
 data HeatMap n = HeatMap
-  { hmFunction :: Int -> Int -> n
+  { hmFunction :: Int -> Int -> Double
   , hmExtent   :: V2 Int  -- total x and y boxes
   , hmStart    :: P2 n
   , hmSize     :: V2 n    -- width and height of each box
@@ -42,7 +42,8 @@ data HeatMap n = HeatMap
 type instance V (HeatMap n) = V2
 type instance N (HeatMap n) = n
 
-instance Enveloped (HeatMap n)
+instance OrderedField n => Enveloped (HeatMap n) where
+  getEnvelope HeatMap {..} = getEnvelope (fromCorners hmStart (hmStart .+^ fmap fromIntegral hmExtent))
 
 -- diagrams really needs a prim to deal with copies objects like this.
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
@@ -55,7 +56,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
                  # moveTo p
         where
           n = hmFunction i j
-          p = hmStart .+^ hmSize * fmap fromIntegral x'
+          p = hmStart .+^ hmSize * x'
           x'@(V2 i' j') = fromIntegral <$> x
           -- p = transform t $ sPos a
       ps = [ V2 i j | i <- [0..x], j <- [0..y] ]
@@ -113,7 +114,8 @@ intHeatMap p0 x s f =
     }
 
 heatMap
-  :: P2 n   -- ^ start
+  :: Fractional n
+  => P2 n   -- ^ start
   -> V2 n   -- ^ extent
   -> V2 Int -- ^ number of boxes
   -> V2 n   -- ^ size of each box
@@ -121,7 +123,7 @@ heatMap
   -> HeatMap n
 heatMap p0@(P (V2 xp yp)) extnt ns s f' = intHeatMap p0 ns s f
   where
-    V2 dx dy = extnt / ns
+    V2 dx dy = extnt / fmap fromIntegral ns
     f x y = f' (xp + x' * dx) (yp + y' * dy)
       where
         x' = fromIntegral x

@@ -7,7 +7,6 @@
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE OverlappingInstances      #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE TypeFamilies              #-}
@@ -87,11 +86,6 @@ import           Plots.Utils
 type family B a :: *
 
 type instance B (QDiagram b v n m) = b
-
-deriving instance (Show a) => Show (Recommend a)
-deriving instance (Read a) => Read (Recommend a)
-deriving instance (Eq a)   => Eq (Recommend a)
-deriving instance (Ord a)  => Ord (Recommend a)
 
 -- Bounds
 

@@ -159,7 +159,10 @@ instance TypeableFloat n => HasStyle (Legend b n) where
   applyStyle sty = over legendStyle (applyStyle sty)
 
 drawLegend :: (TypeableFloat n, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
-           => BoundingBox V2 n -> Legend b n -> [(Plot b V2 n, PlotProperties b V2 n)] -> QDiagram b V2 n Any
+           => BoundingBox V2 n
+           -> Legend b n
+           -> [(Plot b V2 n, PlotProperties b V2 n)]
+           -> QDiagram b V2 n Any
 drawLegend bb l ps = alignTo (l ^. legendPosition)
                              bb
                              (l ^. legendAnchor)
