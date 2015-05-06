@@ -33,6 +33,12 @@ module Plots.Types
   , boundsMin, boundsMax
   -- , zMin, zMax, zAxisBounds
 
+  -- * Logarithmic scaling
+  , AxisScale
+  , logNumber
+  , logPoint
+  , logDeform
+
   -- * Orientation
   , Orientation (..)
   , orient
@@ -140,7 +146,36 @@ boundsMin = bounds . _Wrapped' . column (lowerBound . _recommend) . iso P (\(P a
 boundsMax :: (InSpace v n a, HasBasis v, HasBounds a) => Lens' a (Point v n)
 boundsMax = bounds . _Wrapped' . column (upperBound . _recommend) . iso P (\(P a) -> a)
 
--- Orientation
+-- Logarithmic scaling -------------------------------------------------
+
+-- | Should the axis be on a logarithmic scale.
+data AxisScale = LinearAxis | LogAxis
+  deriving (Show, Eq)
+
+-- | Log the number for 'LogAxis', do nothing for 'LinearAxis'.
+logNumber :: Floating a => AxisScale -> a -> a
+logNumber LinearAxis = id
+logNumber LogAxis    = log
+{-# INLINE logNumber #-}
+
+-- | Transform a point according to the axis scale. Does nothing for
+--   linear scales.
+logPoint :: (Additive v, Floating n) => v AxisScale -> Point v n -> Point v n
+logPoint v = _Point %~ liftI2 logNumber v
+{-# INLINE logPoint #-}
+
+-- | Deform an object according to the axis scale. Does nothing for
+--   linear scales.
+logDeform :: (InSpace v n a, Additive v, Foldable v, Floating n, Deformable a a)
+          => v AxisScale -> a -> a
+logDeform v
+  | allOf folded (== LinearAxis) v = id
+  | otherwise                      = deform (Deformation $ logPoint v)
+
+instance Default AxisScale where
+  def = LinearAxis
+
+-- Orientation ---------------------------------------------------------
 
 data Orientation = Horizontal | Verticle
 
@@ -169,13 +204,6 @@ type instance V (LegendEntry b v n) = v
 type instance N (LegendEntry b v n) = n
 type instance B (LegendEntry b v n) = b
 
-instance Num n => Default (LegendEntry b v n) where
-  def = LegendEntry
-          { _legendPic        = def
-          , _legendText       = ""
-          , _legendPrecidence = 0
-          }
-
 mkLegendEntry :: Num n => String -> LegendEntry b v n
 mkLegendEntry x = LegendEntry DefaultLegendPic x 0
 
@@ -199,7 +227,7 @@ type instance N (PlotProperties b v n) = n
 -- makeLensesWith (classyRules & generateSignatures .~ False) ''PlotProperties
 -- makeClassy ''PlotProperties
 
--- I don't know how to give documenation for classes using TH, so I just wrote
+-- I don't know how to give documentation for classes using TH, so I just wrote
 -- it by hand.
 
 -- | Class that gives a lens onto a 'plotProperties'. All 'Plot's must impliment

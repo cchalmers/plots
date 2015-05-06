@@ -24,8 +24,6 @@ import           Plots.Legend
 import           Plots.Themes
 import           Plots.Types
 
--- Lines types
-
 -- | Where axis line for coordinate should be drawn.
 data AxisLineType
   = BoxAxisLine
@@ -115,6 +113,7 @@ data Axis b v n = Axis
   , _axisTickLabels :: AxisTickLabels b v n
   , _axisTicks      :: AxisTicks v n
   , _axisTitle      :: Maybe String
+  , _axisScale      :: v AxisScale
   , _defProperties  :: PlotProperties b v n
   } deriving Typeable
 
@@ -147,6 +146,7 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
           , _axisTickLabels = pure def
           , _axisTicks      = pure def
           , _axisLines      = pure def
+          , _axisScale      = pure def
           , _defProperties  = def
           }
 
