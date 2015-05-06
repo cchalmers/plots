@@ -175,6 +175,9 @@ module Plots
    -- ** Axis labels
    -- *** Label text
   , axisLabel
+  , xAxisLabel
+  , yAxisLabel
+  , zAxisLabel
   , cartesianLabels
 
     -- *** Label position
@@ -219,14 +222,17 @@ module Plots
   , setMinorGridLine
   , noMinorGridLines
   , noMinorGridLine
+  , allGridLines
 
     -- ** Axis Lines
   , middleAxisLines
+  , boxAxisLines
 
     -- ** Axis ticks
   , noTicks
   , noMajorTicks
   , noMinorTicks
+  , centerAxisTicks
 
     -- ** Axis theme
   , PlotStyle
@@ -651,6 +657,10 @@ noMinorGridLines = axisGridLines . mapped . minorGridF .= noGridF
 -- | Set no minor grid lines for given axis.
 noMinorGridLine :: E v -> AxisState b v n
 noMinorGridLine (E l) = axisGridLines . l . minorGridF .= noGridF
+
+-- | Traversal over both major and minor grid lines for all axes.
+allGridLines :: Traversable v => Traversal' (Axis b v n) (GridLines v n)
+allGridLines = axisGridLines . traverse
 
 ------------------------------------------------------------------------
 -- Bounds

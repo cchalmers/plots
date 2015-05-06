@@ -111,10 +111,6 @@ noMajorTicksFunction = const []
 noMinorTicksFunction :: MinorTickFunction n
 noMinorTicksFunction _ = const []
 
--- if T = i * 10^j then log t = log i + j
--- this means if log t is an integer, t = 10^j
-
--- pgfplotsticks.code.tex lines: 1762, 1923, 2161
 
 minors :: (Enum n, Fractional n, Ord n) => n -> [n] -> (n, n) -> [n]
 minors p xs@(x1:x2:_) (a,b) =
@@ -126,9 +122,11 @@ minors p xs@(x1:x2:_) (a,b) =
     ε  = h * 0.1
 minors _ _ _ = []
 
+-- if T = i * 10^j then log t = log i + j
+-- this means if log t is an integer, t = 10^j
+
 -- | Ticks whose value ends in 1, 0.5, 0.25, 0.2 (*10^n).
 niceTicks :: (Enum n, RealFrac n, Floating n) => n -> (n, n) -> [n]
--- niceTicks desiredTicks (a,b) = [i*h, (i + signum (b - a) ) * h .. b]
 niceTicks desiredTicks (a,b) =
   filter (\n -> n > a + ε && n < b - ε)
          [i*h, (i + 1) * h .. b]
