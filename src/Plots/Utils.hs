@@ -20,8 +20,8 @@ import Diagrams.Prelude hiding (diff)
 enumFromToN :: Fractional n => n -> n -> Int -> [n]
 enumFromToN a b n = step n a
   where
-    step !i x | i < 1     = []
-              | otherwise = step (i - 1) (x + diff)
+    step !i !x | i < 1     = [x]
+               | otherwise = x : step (i - 1) (x + diff)
     diff = (b - a) / fromIntegral n
 
 ------------------------------------------------------------------------

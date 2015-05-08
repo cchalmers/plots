@@ -233,6 +233,7 @@ module Plots
   , noMajorTicks
   , noMinorTicks
   , centerAxisTicks
+  , insideAxisTicks
 
     -- ** Axis theme
   , PlotStyle
@@ -752,6 +753,11 @@ noAxisTicks = noMinorTicks >> noMajorTicks
 centerAxisTicks :: Functor v => AxisState b v n
 centerAxisTicks =
   axisTicks . mapped . tickAlign .= centerTicks
+
+insideAxisTicks :: Functor v => AxisState b v n
+insideAxisTicks =
+  axisTicks . mapped . tickAlign .= insideTicks
+
 
 ------------------------------------------------------------------------
 -- Style

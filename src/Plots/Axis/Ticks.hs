@@ -11,6 +11,7 @@ import Data.Foldable
 import Data.List     ((\\))
 import Data.Ord
 import Data.Data
+import Plots.Utils
 
 import Diagrams.Prelude
 
@@ -18,7 +19,7 @@ import Diagrams.Prelude
 -- Types
 ------------------------------------------------------------------------
 
--- | Low level type for determiniting length of tick below and above the
+-- | Low level type for determining length of tick below and above the
 --   axis.
 data TickAlign
   = TickSpec !Rational !Rational
@@ -80,8 +81,8 @@ type AxisTicks v n = v (Ticks v n)
 
 instance (TypeableFloat n, Enum n) => Default (Ticks v n) where
   def = Ticks
-    { _majorTicksFun   = niceTicks 7
-    , _minorTicksFun   = minors 4
+    { _majorTicksFun   = linearMajorTicks 7
+    , _minorTicksFun   = linearMinorTicks 4
     , _majorTickAlign  = autoTicks
     , _minorTickAlign  = autoTicks
     , _majorTickLength = 5
@@ -111,108 +112,81 @@ noMajorTicksFunction = const []
 noMinorTicksFunction :: MinorTickFunction n
 noMinorTicksFunction _ = const []
 
+------------------------------------------------------------------------
+-- Calculating ticks
+------------------------------------------------------------------------
 
-minors :: (Enum n, Fractional n, Ord n) => n -> [n] -> (n, n) -> [n]
-minors p xs@(x1:x2:_) (a,b) =
-  filter (\n -> n > a + ε && n < b - ε)
-         [x1 - 3*h, x1 - 2*h .. b] -- could get rid of Enum by doing this manually
-   \\ xs
-  where
-    h = (x2 - x1) / p
-    ε  = h * 0.1
-minors _ _ _ = []
-
--- if T = i * 10^j then log t = log i + j
--- this means if log t is an integer, t = 10^j
+-- Linear ticks --------------------------------------------------------
 
 -- | Ticks whose value ends in 1, 0.5, 0.25, 0.2 (*10^n).
-niceTicks :: (Enum n, RealFrac n, Floating n) => n -> (n, n) -> [n]
-niceTicks desiredTicks (a,b) =
-  filter (\n -> n > a + ε && n < b - ε)
-         [i*h, (i + 1) * h .. b]
-  where
-    i = fromIntegral (truncate ( a / h ) :: Int)
-    --
-    d  = abs $ b - a
-    ε  = h * 0.1
-    h' = d / desiredTicks
-    h  = minimumBy (comparing $ abs . (h' -)) allowedH
-    --
-    allowedH = map (* 10 ^^ (floor x :: Int)) allowedH'
-    x        = logBase 10 d
-    --
-    allowedH' = [1, 0.5, 0.25, 0.2]
+linearMajorTicks :: (Enum n, RealFrac n, Floating n) => n -> (n, n) -> [n]
+linearMajorTicks = majorTicksHelper [1, 0.5, 0.25, 0.2]
 
--- -- | Generate a log axis automatically, scaled appropriate for the
--- -- input data.
--- autoScaledLogAxis :: RealFloat a => n -> (n,n) -> [n]
--- autoScaledLogAxis lap ps0 =
---     makeAxis' (realToFrac . log) (realToFrac . exp)
---               (_loga_labelf lap) (wrap rlabelvs, wrap rtickvs, wrap rgridvs)
---   where
---     ps        = filter (\x -> isValidNumber x && 0 < x) ps0
---     (minV,maxV) = (minimum ps,maximum ps)
---     wrap      = map fromRational
---     range []  = (3,30)
---     range _   | minV == maxV = (realToFrac $ minV/3, realToFrac $ maxV*3)
---               | otherwise    = (realToFrac $ minV,   realToFrac $ maxV)
---     (rlabelvs, rtickvs, rgridvs) = logTicks (range ps)
+-- | Position @n@ minor ticks between each major tick.
+linearMinorTicks :: (Enum n, Fractional n, Ord n) => n -> [n] -> (n, n) -> [n]
+linearMinorTicks p xs@(x1:x2:_) (a,b) = filter inRange ts \\ xs where
+  -- This whole things pretty hacky right now. Needs to be thought about
+  -- and cleaned up.
+  inRange n = n > a + ε && n < b - ε
+  -- Could get rid of Enum by doing this manually.
+  ts = [x1 - 3*h, x1 - 2*h .. b]
+  h = (x2 - x1) / p
+  ε  = h * 0.1
+linearMinorTicks _ _ _ = []
 
--- logTicks :: (Double,Double) -> ([Rational],[Rational],[Rational])
--- logTicks (low,high) = (major,minor,major)
---  where
---   pf :: RealFrac a => a -> (Integer, a)
---   pf = properFraction
+-- Logarithmic ticks ---------------------------------------------------
 
---   -- frac :: (RealFrac a, Integral b) => a -> (b, a)
---   frac :: (RealFrac a) => a -> (Integer, a)
---   frac x | 0 <= b    = (a,b)
---          | otherwise = (a-1,b+1)
---     where
---       (a,b) = properFraction x
+-- | Place n ticks at powers of 10 on the axis.
+logMajorTicks :: (Enum n, RealFrac n, Floating n) => n -> (n, n) -> [n]
+logMajorTicks n (a,b) =
+  -- Logarithmic ticks are just like linear ticks but in a different domain.
+  map (10**) $ majorTicksHelper [1..9] n (log10 (max 2 a), log10 b)
 
---   ratio      = high/low
---   lower a l  = let (i,r) = frac (log10 a) in
---                maximum (1:filter (\x -> log10 (fromRational x) <= r) l)*10^^i
---   upper a l  = let (i,r) = pf (log10 a) in
---                minimum (10:filter (\x -> r <= log10 (fromRational x)) l)*10^^i
+-- Ticks helpers -------------------------------------------------------
 
---   powers           :: (Double,Double) -> [Rational] -> [Rational]
---   powers (x,y) l    = [ a*10^^p | p <- [(floor (log10 x))..(ceiling (log10 y))] :: [Integer]
---                                 , a <- l ]
---   midselection r l  = filter (inRange r l) (powers r l)
---   inRange (a,b) l x = (lower a l <= x) && (x <= upper b l)
+-- | Place n linear spaced ticks between each major tick.
+minorTicksHelper
+  :: Fractional n
+  => Int    -- ^ Number of minor ticks between each major tick
+  -> [n]    -- ^ Positions of major ticks
+  -> (n, n) -- ^ Bounds
+  -> [n]    -- ^ Minor tick positions
+minorTicksHelper n ts _ = concat $ go ts where
+  -- we won't want x1 and x2 to be minor ticks too we init/tail them.
+  go (x1:x2:xs) = (init . tail) (enumFromToN x1 x2 (n+2)) : go (x2:xs)
+  go _          = []
 
---   logRange = (log10 low, log10 high)
+-- | Choose ticks whose step size is a multiple of 10 of the allowed
+--   numbers and tries to match the number of desired ticks.
+majorTicksHelper
+  :: (Enum n, RealFrac n, Floating n)
+  => [n]    -- ^ Allowed numbers (up to powers of 10)
+  -> n      -- ^ desired number of ticks
+  -> (n, n) -- ^ bounds
+  -> [n]    -- ^ tick positions
+majorTicksHelper ts0 n (a,b) = filter inRange hs where
+  hs = [i*h, (i + 1) * h .. b]
+  i  = fromIntegral (truncate ( a / h ) :: Int)
 
---   roundPow x = 10^^(round x :: Integer)
+  -- We don't want the ticks touching the edge of the axis bounds so
+  -- we discard any too close. This should be a parameter?
+  inRange n = n > a + ε && n < b - ε
+  ε         = h * 0.1
 
---   major | 17.5 < log10 ratio = map roundPow $
---                                steps (min 5 (log10 ratio)) logRange
---         | 12 < log10 ratio   = map roundPow $
---                                steps (log10 ratio / 5) logRange
---         | 6 < log10 ratio    = map roundPow $
---                                steps (log10 ratio / 2) logRange
---         | 3 < log10 ratio    = midselection (low,high) [1,10]
---         | 20 < ratio         = midselection (low,high) [1,5,10]
---         | 6 < ratio          = midselection (low,high) [1,2,4,6,8,10]
---         | 3 < ratio          = midselection (low,high) [1..10]
---         | otherwise          = steps 5 (low,high)
+  -- Nice height that's closest to the height needed for desired number
+  -- of ticks.
+  h  = minimumBy (comparing $ abs . (h' -)) ts'
 
---   (l',h')   = (minimum major, maximum major)
---   (dl',dh') = (fromRational l', fromRational h')
---   ratio' :: Double
---   ratio' = fromRational (h'/l')
---   filterX = filter (\x -> l'<=x && x <=h') . powers (dl',dh')
+  -- Height for the desired number of ticks.
+  h' = d / n
 
---   minor | 50 < log10 ratio' = map roundPow $
---                               steps 50 (log10 dl', log10 dh')
---         | 6 < log10 ratio'  = filterX [1,10]
---         | 3 < log10 ratio'  = filterX [1,5,10]
---         | 6 < ratio'        = filterX [1..10]
---         | 3 < ratio'        = filterX [1,1.2..10]
---         | otherwise         = steps 50 (dl', dh')
+  -- Potential step heights that look nice and are in a suitable range
+  -- for the axis bounds.
+  ts' = map (* 10 ^^ (floor $ log10 d :: Int)) ts0
+  d   = abs $ b - a
 
+-- logged :: Floating a => Iso' a a
+-- logged = iso log10 (10**)
 
--- log10 :: Floating a => a -> a
--- log10 = logBase 10
+log10 :: Floating a => a -> a
+log10 = logBase 10
