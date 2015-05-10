@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -7,7 +8,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE RecordWildCards  #-}
 
-module Plots.Types.Bar where
+module Plots.Types.Heatmap where
   -- ( HeatMap
   -- , simpleHeatMap
   --   -- * Prism
@@ -26,6 +27,8 @@ import           Data.Typeable
 import           Data.Foldable                   as F
 import qualified Data.Vector.Generic             as GV
 import qualified Data.Vector.Generic.Mutable     as GMV
+import qualified Data.Vector.Unboxed as U
+import           Data.Vector.Unboxed ((!))
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
 
@@ -38,31 +41,63 @@ data HeatMap n = HeatMap
   , hmStart    :: P2 n
   , hmSize     :: V2 n    -- width and height of each box
   } deriving Typeable
+-- I'm still unsure of the "right" way to do this. On the one hand, by
+-- restricting it to int users can read off data from an array without
+-- any problems. On the other hand it's not an ideal representation for
+-- heat maps of functions. Maybe we need two primitives.
 
 type instance V (HeatMap n) = V2
 type instance N (HeatMap n) = n
 
 instance OrderedField n => Enveloped (HeatMap n) where
-  getEnvelope HeatMap {..} = getEnvelope (fromCorners hmStart (hmStart .+^ fmap fromIntegral hmExtent))
+  getEnvelope HeatMap {..} = getEnvelope $
+    fromCorners hmStart (hmStart .+^ fmap fromIntegral hmExtent)
 
--- diagrams really needs a prim to deal with copies objects like this.
+-- diagrams really needs a prim to deal with multiple objects like this.
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HeatMap n) b where
-  renderPlotable _ t HeatMap {..} pp =
-    foldMap mk ps
+  renderPlotable s hm@(HeatMap {..}) _pp =
+      foldMap mk ps
+        # transform t
+        # lwO 0.5
+        # withEnvelope (getEnvelope hm)
     where
-      mk x@(V2 i j) =
-        rect w h # fcA (hot ^. ixColour (toRational n))
+      mk z@(V2 i j) =
+        square 1 # fcA (hot ^. ixColour (toRational $ normise n))
+                 -- # translate (2*x')
                  # moveTo p
         where
-          n = hmFunction i j
-          p = hmStart .+^ hmSize * x'
-          x'@(V2 i' j') = fromIntegral <$> x
+          n  = hmFunction i j
+          p  = hmStart .+^ (hmSize * x' + 0.5)
+          x' = fromIntegral <$> z
           -- p = transform t $ sPos a
-      ps = [ V2 i j | i <- [0..x], j <- [0..y] ]
+      ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
       V2 x y = hmExtent
-      V2 w h = apply t hmSize
-      V2 x0 y0 = apply t $ hmStart ^. _Point
+      t = s ^. specTrans
+      -- p0 = apply t $ hmStart ^. _Point
+      V2 vMin vMax = minmaxOf each (map (\(V2 i j) -> hmFunction i j) ps)
+      normise v = (v - vMin) / (vMax - vMin)
+
+-- | 'V2 min max'
+minmaxOf :: (Fractional a, Ord a) => Getting (Endo (Endo (V2 a))) s a -> s -> V2 a
+minmaxOf l = foldlOf' l (\(V2 mn mx) a -> V2 (min mn a) (max mx a)) (V2 (1/0) (-1/0))
+      -- (\acc a -> acc <**> V2 min max ?? a)
+-- V2 is used instead of a tuple because V2 is strict.
+{-# INLINE minmaxOf #-}
+
+-- | Indexed traversal over the values of a heat map.
+heatPoints :: IndexedTraversal' (V2 Int) (HeatMap n) Double
+heatPoints f hm@(HeatMap {..}) = go 0 0 <&> \vs ->
+  let v       = U.fromListN (x*y) vs
+      hIx i j = v ! (x*j + i)
+  in  hm { hmFunction = hIx }
+  where
+    V2 x y = hmExtent
+    go !i !j
+      | i >= x    = go 0 (j+1)
+      | j >= y    = pure []
+      | otherwise = (:) <$> indexed f (V2 i j) (hmFunction i j) <*> go (i+1) j
+{-# INLINE heatPoints #-}
 
 -- instance HasGenericPlot (GHeatMap v a b n) where
 --   genericPlot = heatMapGeneric
@@ -112,6 +147,11 @@ intHeatMap p0 x s f =
     , hmStart    = p0
     , hmSize     = s
     }
+
+  -- { hmFunction :: Int -> Int -> Double
+  -- , hmExtent   :: V2 Int  -- total x and y boxes
+  -- , hmStart    :: P2 n
+  -- , hmSize     :: V2 n    --
 
 heatMap
   :: Fractional n

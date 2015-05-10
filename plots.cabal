@@ -32,6 +32,7 @@ Library
     Plots.Themes
     Plots.Types
     Plots.Types.Line
+    Plots.Types.Heatmap
     Plots.Types.Scatter
     Plots.Utils
     Diagrams.Coordinates.Isomorphic
