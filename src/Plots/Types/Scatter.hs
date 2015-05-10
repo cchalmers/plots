@@ -63,15 +63,17 @@ instance (Metric v, OrderedField n) => Enveloped (GScatterPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GScatterPlot V2 n a) b where
-  renderPlotable _ t GScatterPlot {..} pp =
+  renderPlotable s GScatterPlot {..} pp =
       foldMapOf sFold mk sData # applyMarkerStyle pp
    <> if cLine
-        then fromVertices (toListOf (sFold . to sPos) sData)
+        then fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
                # transform t
                # applyLineStyle pp
         else mempty
     where
-      mk a = marker # moveTo (papply t $ sPos a)
+      t = s ^. specTrans
+      ls = s ^. specScale
+      mk a = marker # moveTo (specPoint s $ sPos a)
                     # maybe id (transform  . ($ a)) sTr
                     # maybe id (applyStyle . ($ a)) sSty
       marker = pp ^. plotMarker

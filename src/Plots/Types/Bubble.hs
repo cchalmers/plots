@@ -54,13 +54,14 @@ type instance N (GScatterPlot v n a) = n
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GScatterPlot V2 n a) b where
-  renderPlotable pp _ t GScatterPlot {..} = foldMapOf sFold mk sData # applyStyle gSty
+  renderPlotable pp s GScatterPlot {..} =
+      foldMapOf sFold mk sData # applyStyle gSty
     where
       mk a = marker # moveTo p
                     # maybe id (transform  . ($ a)) sTr
                     # maybe id (applyStyle . ($ a)) sSty
         where
-          p = transform t $ sPos a
+          p = transform (s^.specTrans) $ sPos a
       marker = pp ^. themeMarker
       gSty   = pp ^. themeMarkerStyle
 

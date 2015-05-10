@@ -37,9 +37,9 @@ mkPath :: (PointLike v n p, OrderedField n, Foldable f, Foldable g) => g (f p) -
 mkPath = mkPathOf folded folded
 
 instance (TypeableFloat n, Renderable (Path V2 n) b) => Plotable (Path V2 n) b where
-  renderPlotable _ t path pp
+  renderPlotable s path pp
     = stroke path
-        # transform t
+        # transform (s^.specTrans)
         # applyLineStyle pp
 
   defLegendPic _ pp

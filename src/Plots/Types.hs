@@ -1,4 +1,5 @@
 {-# LANGUAGE ConstraintKinds           #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE DefaultSignatures         #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -34,7 +35,7 @@ module Plots.Types
   -- , zMin, zMax, zAxisBounds
 
   -- * Logarithmic scaling
-  , AxisScale
+  , AxisScale (..)
   , logNumber
   , logPoint
   , logDeform
@@ -54,6 +55,14 @@ module Plots.Types
   -- * Generic plot
   , PlotProperties
   , HasPlotProperties (..)
+
+  -- * Plot spec
+  , AxisSpec (..)
+  , specTrans
+  , specBounds
+  , specScale
+  , scaleNum
+  , specPoint
 
   -- * Plot / Plotable
   , Plotable (..)
@@ -318,12 +327,35 @@ instance (TypeableFloat n, Renderable (Path V2 n) b, Metric v)
 -- Plotable
 ------------------------------------------------------------------------
 
+-- | Data given to a 'Plotable' before rendering.
+data AxisSpec v n = AxisSpec
+  -- I need to get better an naming things.
+  { _specBounds :: v (n, n)
+  , _specTrans  :: Transformation v n
+  , _specScale  :: v AxisScale
+  }
+
+makeLenses ''AxisSpec
+
+-- | Scale a number by log10-ing it and linearly scaleing it so it's
+--    within the same range.
+scaleNum :: Floating n => (n, n) -> AxisScale -> n -> n
+scaleNum (a,b) s x = case s of
+  LinearAxis -> x
+  LogAxis    -> subtract a $ (b / logBase 10 d) * (logBase 10 x)
+    where d = b - a
+
+-- | Apply log scalling and the transform to a point.
+specPoint :: (Applicative v, Additive v, Floating n) => AxisSpec v n -> Point v n -> Point v n
+specPoint (AxisSpec bs tr ss) p =
+  papply tr $ over _Point (scaleNum <$> bs <*> ss <*>) p
+
 -- | General class for something that can be wrapped in 'Plot'. The 'plot'
 --   function is rarely used by the end user.
 class (Typeable a, Enveloped a) => Plotable a b where
-  renderPlotable :: InSpace v n a
-    => v (n, n)
-    -> Transformation v n
+  renderPlotable
+    :: InSpace v n a
+    => AxisSpec v n
     -> a
     -> PlotProperties b v n
     -> QDiagram b v n Any
@@ -336,7 +368,7 @@ deriving instance Typeable Any
 
 instance (Typeable b, Typeable v, Metric v, Typeable n, OrderedField n)
   => Plotable (QDiagram b v n Any) b where
-  renderPlotable _ t dia _ = dia # transform t
+  renderPlotable s dia _ = dia # transform (s^.specTrans)
 
 ------------------------------------------------------------------------
 -- Plot wrapper
@@ -359,8 +391,8 @@ instance (Metric v, OrderedField n) => Enveloped (Plot b v n) where
   getEnvelope (Plot a) = getEnvelope a
 
 instance (Metric v, OrderedField n, Typeable (Plot b v n)) => Plotable (Plot b v n) b where
-  renderPlotable bs t (Plot a) pp = renderPlotable bs t a pp
-  defLegendPic (Plot a) pp        = defLegendPic a pp
+  renderPlotable s (Plot a) pp = renderPlotable s a pp
+  defLegendPic (Plot a) pp     = defLegendPic a pp
 
 -- instance HasPlotProperties (Plot b v n) where
 --   plotProperties = lens (\(Plot _ pp)   -> pp)

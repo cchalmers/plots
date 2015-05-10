@@ -170,7 +170,7 @@ majorTicksHelper ts0 n (a,b) = filter inRange hs where
 
   -- We don't want the ticks touching the edge of the axis bounds so
   -- we discard any too close. This should be a parameter?
-  inRange n = n > a + ε && n < b - ε
+  inRange x = x > a + ε && x < b - ε
   ε         = h * 0.1
 
   -- Nice height that's closest to the height needed for desired number

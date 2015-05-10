@@ -84,8 +84,8 @@ renderR2Axis a = frame 15
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LeftLabels
   where
-    plots    = foldMap (uncurry $ renderPlotable xs t) plots'
-    drawAxis = axisOnBasis origin xs a t
+    plots    = foldMap (uncurry $ renderPlotable (AxisSpec xs t (a^.axisScale))) plots'
+    drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --
     (xs, tv, t') = workOutScale a
     t = tv <> t'
@@ -128,13 +128,14 @@ axisOnBasis
   => Point v n        -- start of axis
   -> v (n, n)         -- calculated bounds
   -> Axis b v n       -- axis data
+  -> v AxisScale      -- log scale?
   -> T2 n             -- transformation to apply to positions of things
   -> E v              -- direction of axis
   -> E v              -- orthogonal direction of axis
   -> LabelPosition    -- where (if at all) should labels be placed?
   -- -> AxisLineType     -- type of the axis line
   -> QDiagram b V2 n Any   -- resulting axis
-axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
+axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
   where
     tStroke = stroke . transform t
 
@@ -147,6 +148,8 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
       where
         p' = p & ep e  .~ x
                & ep eO .~ y0
+               -- & logPoint ls
+               & coscale
                & papply t
                & ep eO +~ negate' labelGap
         labelGap = axLabelD ^. axisLabelGap
@@ -171,6 +174,8 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
               where
                 p' = p & ep e  .~ x
                        & ep eO .~ y
+                       -- & logPoint ls
+                       & coscale
                        & papply t
                        & ep eO +~ negate' (tickLabelsD ^. tickGap)
 
@@ -180,12 +185,12 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
         majorLines = foldMap mkGridLine majorGridXs
                        # tStroke
                        # applyStyle (gridD ^. majorGridStyle)
-        majorGridXs = (gridD ^. majorGridF) majorTickXs b
+        majorGridXs = (gridD ^. majorGridF) majorTickXs' b
         --
         minorLines = foldMap mkGridLine minorGridXs
                        # tStroke
                        # applyStyle (gridD ^. minorGridStyle)
-        minorGridXs = (gridD ^. minorGridF) minorTickXs b
+        minorGridXs = (gridD ^. minorGridF) minorTickXs' b
         -- --
         mkGridLine x = pathFromVertices [f y0, f y1]
           where f y = over lensP ((el e .~ x) . (el eO .~ y)) p
@@ -197,11 +202,11 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
 
     drawTicks (pos,y) = majorTicks <> minorTicks
       where
-        majorTicks = foldMap (positionTick majorTick) majorTickXs
+        majorTicks = foldMap (positionTick majorTick) majorTickXs'
                        # stroke
                        # applyStyle (ticksD ^. majorTickStyle)
         --
-        minorTicks = foldMap (positionTick minorTick) minorTickXs
+        minorTicks = foldMap (positionTick minorTick) minorTickXs'
                        # stroke
                        # applyStyle (ticksD ^. minorTickStyle)
         --
@@ -240,13 +245,21 @@ axisOnBasis p bs a t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
 
     -- measurements
     b@(x0,x1)  = bs ^. el e :: (n, n)
+    -- b@(x0,x1)  = over both ((*ssX) . logNumber (ls^.el e)) $ bs ^. el e :: (n, n)
+    coscale = ep e %~ coscaleNum
+    coscaleNum = scaleNum (bs ^. el e) (ls ^. el e)
+    -- ssX = x10 / logNumber (ls^.el e) x10
     yb@(y0,y1) = bs ^. el eO . if lp == UpperLabels
                                  then swapped
                                  else id
     --
-    ticksD      = a ^. axisTicks . el e
-    majorTickXs = (ticksD ^. majorTicksFun) b
-    minorTickXs = (ticksD ^. minorTicksFun) majorTickXs b
+    ticksD       = a ^. axisTicks . el e
+    majorTickXs  = (ticksD ^. majorTicksFun) b
+    majorTickXs' = map coscaleNum majorTickXs
+    minorTickXs  = (ticksD ^. minorTicksFun) majorTickXs b
+    minorTickXs' = map coscaleNum minorTickXs
+    -- majorTickXs = logNumber (ls ^. el e) <$> (ticksD ^. majorTicksFun) b
+    -- minorTickXs = logNumber (ls ^. el e) <$> (ticksD ^. minorTicksFun) majorTickXs b
     --
     ys       = getAxisLinePos yb lineType
     lineType = a ^. axisLines . el e . axisLineType
