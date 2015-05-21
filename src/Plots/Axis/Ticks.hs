@@ -7,7 +7,7 @@ module Plots.Axis.Ticks where
 
 import Control.Lens  hiding (transform, ( # ))
 import Data.Default
-import Data.Foldable
+import Data.Foldable as F
 import Data.List     ((\\))
 import Data.Ord
 import Data.Data
@@ -151,7 +151,7 @@ minorTicksHelper
   -> [n]    -- ^ Positions of major ticks
   -> (n, n) -- ^ Bounds
   -> [n]    -- ^ Minor tick positions
-minorTicksHelper n ts _ = concat $ go ts where
+minorTicksHelper n ts _ = F.concat $ go ts where
   -- we won't want x1 and x2 to be minor ticks too we init/tail them.
   go (x1:x2:xs) = (init . tail) (enumFromToN x1 x2 (n+2)) : go (x2:xs)
   go _          = []

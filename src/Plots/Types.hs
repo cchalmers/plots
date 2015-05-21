@@ -93,6 +93,7 @@ import           Data.Monoid.Recommend
 import           Data.Typeable
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude      as D hiding (view)
+import Data.Foldable (Foldable)
 
 import           Linear
 import           Plots.Themes
