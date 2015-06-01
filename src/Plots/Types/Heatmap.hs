@@ -56,7 +56,7 @@ instance OrderedField n => Enveloped (HeatMap n) where
 -- diagrams really needs a prim to deal with multiple objects like this.
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HeatMap n) b where
-  renderPlotable s hm@(HeatMap {..}) _pp =
+  renderPlotable s hm@HeatMap {..} _pp =
       foldMap mk ps
         # transform t
         # lwO 0.5
@@ -87,7 +87,7 @@ minmaxOf l = foldlOf' l (\(V2 mn mx) a -> V2 (min mn a) (max mx a)) (V2 (1/0) (-
 
 -- | Indexed traversal over the values of a heat map.
 heatPoints :: IndexedTraversal' (V2 Int) (HeatMap n) Double
-heatPoints f hm@(HeatMap {..}) = go 0 0 <&> \vs ->
+heatPoints f hm@HeatMap {..} = go 0 0 <&> \vs ->
   let v       = U.fromListN (x*y) vs
       hIx i j = v ! (x*j + i)
   in  hm { hmFunction = hIx }

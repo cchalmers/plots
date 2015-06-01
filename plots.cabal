@@ -22,6 +22,7 @@ Library
   Exposed-modules:
     Plots
     Plots.Axis
+    Plots.Axis.ColourBar
     Plots.Axis.Grid
     Plots.Axis.Labels
     Plots.Axis.Render

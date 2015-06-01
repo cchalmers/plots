@@ -345,7 +345,7 @@ ixColour x f (ColourMap cm) = f c <&> \c' -> ColourMap (M.insert x c' cm)
           | i == j    -> c1
           | otherwise ->
               let a = fromRational $ (x - i) / (j - i)
-              in  blend a c1 c2
+              in  blend a c2 c1
         (Just (_,c1), Nothing) -> c1
         (Nothing, Just (_,c2)) -> c2
         _                      -> transparent
