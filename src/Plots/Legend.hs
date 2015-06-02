@@ -33,7 +33,6 @@ import           Control.Lens         hiding (none, ( # ))
 import           Data.Default
 import           Data.Typeable
 import           Diagrams.TwoD.Text
-import Data.Monoid.Recommend
 
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude hiding (view)

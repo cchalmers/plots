@@ -17,6 +17,7 @@ import           Data.Typeable
 import           Diagrams.Prelude      as D hiding (under, view)
 import           Diagrams.TwoD.Text
 
+import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
@@ -102,6 +103,7 @@ data Axis b v n = Axis
     _axisAxisBounds :: Bounds v n
 
   -- These lenses are exported.
+  , _axisColourBar  :: ColourBarOpts b n
   , _axisGridLines  :: AxisGridLines v n
   , _axisLabels     :: AxisLabels b v n
   , _axisLegend     :: Legend b n
@@ -134,21 +136,22 @@ instance HasBounds (Axis b v n) where
 instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
     => Default (Axis b V2 n) where
   def = Axis
-          { _axisTitle      = Nothing
-          , _axisSize       = mkWidth 300
-          , _axisPlots      = []
-          , _axisLegend     = def
-          , _axisTheme      = coolTheme
-          , _axisAxisBounds = Bounds $ pure def
-          , _axisGridLines  = pure def
-          , _axisLabels     = V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4)))
-          , _axisScaling    = pure def
-          , _axisTickLabels = pure def
-          , _axisTicks      = pure def
-          , _axisLines      = pure def
-          , _axisScale      = pure def
-          , _defProperties  = def
-          }
+    { _axisTitle      = Nothing
+    , _axisSize       = mkWidth 300
+    , _axisPlots      = []
+    , _axisLegend     = def
+    , _axisColourBar  = defColourBar
+    , _axisTheme      = coolTheme
+    , _axisAxisBounds = Bounds $ pure def
+    , _axisGridLines  = pure def
+    , _axisLabels     = V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4)))
+    , _axisScaling    = pure def
+    , _axisTickLabels = pure def
+    , _axisTicks      = pure def
+    , _axisLines      = pure def
+    , _axisScale      = pure def
+    , _defProperties  = def
+    }
 
 -- R3 Axis
 

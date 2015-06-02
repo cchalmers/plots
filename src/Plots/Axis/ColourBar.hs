@@ -8,13 +8,14 @@ import Plots.Types (Orientation (..), orient)
 import Plots.Axis.Ticks
 import Plots.Axis.Labels
 import Plots.Themes
+import Plots.Legend
 
 data ColourBarOpts b n = ColourBarOpts
   { _cbOrientation :: Orientation
   , _cbShow        :: Bool
   , _cbTickFun     :: (n,n) -> [n] -- MajorTicksFunction
   , _cbTicks       :: Bool
-  , _cbTickLabels  :: [n] -> (n,n) -> TextAlignment n -> [(n, QDiagram b V2 n Any)] -- TickLabelFunction b v n
+  , _cbTickLabels  :: [n] -> (n,n) -> TextAlignment n -> [(n, QDiagram b V2 n Any)]
   , _cbExtent      :: V2 n
   , _cbStyle       :: Style V2 n
   -- , _colourBarSamples     :: Sampled n
@@ -51,6 +52,23 @@ drawColourBar cbo cm a b = centerY $ bar ||| strutX 5 ||| position (over (each .
     ps = view cbTickFun cbo (a,b)
     ls = view cbTickLabels cbo ps (a,b) tAlign
     tAlign = orient (cbo^.cbOrientation) (BoxAlignedText 0.5 1) (BoxAlignedText 0 0.5)
+
+addColourBar :: (TypeableFloat n, Renderable (Path V2 n) b)
+             => BoundingBox V2 n
+             -> ColourBarOpts b n
+             -> ColourMap
+             -> n
+             -> n
+             -> QDiagram b V2 n Any
+addColourBar bb cbo cm a b
+  | not $ cbo^.cbShow = mempty
+  | otherwise         = alignTo cbPos bb cbAnchor zero cb
+  where
+    cbPos    = orient (cbo^.cbOrientation) South     East
+    cbAnchor = orient (cbo^.cbOrientation) AnchorTop AnchorLeft
+    cb       = drawColourBar cbo cm a b
+
+
 
 
 -- make :: Diagram PGF -> IO ()

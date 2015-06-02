@@ -80,6 +80,7 @@ renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 15
                $ legend
+              <> colourBar
               <> plots
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LeftLabels
@@ -97,6 +98,8 @@ renderR2Axis a = frame 15
     preparePlots =
       zipWith (\theme p' -> (unPlot' (appPlot' (set plotStyle theme) p') pp))
               (a ^. axisTheme)
+    --
+    colourBar = addColourBar bb (a ^. axisColourBar) hot 0 1
     --
     -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))
     --                      (a ^. axisPlots)
