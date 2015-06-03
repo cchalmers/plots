@@ -24,6 +24,7 @@ import           Diagrams.TwoD.Text
 import           Diagrams.Prelude      as D hiding (under, view)
 
 import           Plots.Axis
+import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
