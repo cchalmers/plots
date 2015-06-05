@@ -144,7 +144,8 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
     , _axisTheme      = coolTheme
     , _axisAxisBounds = Bounds $ pure def
     , _axisGridLines  = pure def
-    , _axisLabels     = V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4)))
+    , _axisLabels     = V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4))
+                                    & axisLabelGap .~ 40)
     , _axisScaling    = pure def
     , _axisTickLabels = pure def
     , _axisTicks      = pure def

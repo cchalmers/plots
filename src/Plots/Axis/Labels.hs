@@ -54,7 +54,7 @@ instance (TypeableFloat n, Renderable (Text n) b)
           { _axisLabelFunction  = mkText'
           , _axisLabelText      = ""
           , _axisLabelStyle     = mempty & recommendFontSize (output 8)
-          , _axisLabelGap       = 12
+          , _axisLabelGap       = 20
           , _axisLabelPos       = MiddleAxisLabel
           , _axisLabelPlacement = OutsideAxisLabel
           }
@@ -88,7 +88,7 @@ instance (TypeableFloat n, Renderable (Text n) b)
   def = TickLabels
           { _tickLabelFunction = atMajorTicks label
           , _tickLabelStyle    = mempty & recommendFontSize (output 8)
-          , _tickGap           = 10
+          , _tickGap           = 8
           }
 
 -- | Make a 'TickLabelFunction' by specifying how to draw a single label

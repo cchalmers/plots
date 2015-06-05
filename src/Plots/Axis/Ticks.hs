@@ -164,14 +164,14 @@ majorTicksHelper
   -> n      -- ^ desired number of ticks
   -> (n, n) -- ^ bounds
   -> [n]    -- ^ tick positions
-majorTicksHelper ts0 n (a,b) = filter inRange hs where
+majorTicksHelper ts0 n (a,b) = hs where
   hs = [i*h, (i + 1) * h .. b]
   i  = fromIntegral (truncate ( a / h ) :: Int)
 
-  -- We don't want the ticks touching the edge of the axis bounds so
-  -- we discard any too close. This should be a parameter?
-  inRange x = x > a + ε && x < b - ε
-  ε         = h * 0.1
+  -- -- We don't want the ticks touching the edge of the axis bounds so
+  -- -- we discard any too close. This should be a parameter?
+  -- inRange x = x > a + ε && x < b - ε
+  -- ε         = h * 0.1
 
   -- Nice height that's closest to the height needed for desired number
   -- of ticks.
