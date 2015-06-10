@@ -95,12 +95,12 @@ renderR2Axis a = frame 15
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     legend = drawLegend bb (a ^. axisLegend) (toList plots')
     --
-    pp = a ^. defProperties
+    pp = a ^. plotProperties
     preparePlots =
       zipWith (\theme p' -> (unPlot' (appPlot' (set plotStyle theme) p') pp))
               (a ^. axisTheme)
     --
-    colourBar = addColourBar bb (a ^. axisColourBar) (a ^. defProperties . plotColourMap) 0 1
+    colourBar = addColourBar bb (a ^. axisColourBar) (pp ^. plotColourMap) 0 1
     --
     -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))
     --                      (a ^. axisPlots)

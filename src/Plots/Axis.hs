@@ -101,6 +101,7 @@ type PropertyAdjust b v n = PlotProperties b v n -> PlotProperties b v n
 data Axis b v n = Axis
   { -- These lenses are not being exported, they're just here for instances.
     _axisAxisBounds :: Bounds v n
+  , _axisPP         :: PlotProperties b v n
 
   -- These lenses are exported.
   , _axisColourBar  :: ColourBarOpts b n
@@ -116,7 +117,6 @@ data Axis b v n = Axis
   , _axisTicks      :: AxisTicks v n
   , _axisTitle      :: Maybe String
   , _axisScale      :: v AxisScale
-  , _defProperties  :: PlotProperties b v n
   } deriving Typeable
 
 makeLenses ''Axis
@@ -151,8 +151,12 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
     , _axisTicks      = pure def
     , _axisLines      = pure def
     , _axisScale      = pure def
-    , _defProperties  = def
+    , _axisPP         = def
     }
+
+instance HasPlotProperties (Axis b v n) where
+  plotProperties = axisPP
+  {-# INLINE plotProperties #-}
 
 -- R3 Axis
 
