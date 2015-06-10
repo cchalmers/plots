@@ -227,6 +227,7 @@ data PlotProperties b v n = PlotProperties
   , _legendEntries   :: [LegendEntry b v n]
   , _plotName        :: Name
   , _plotStyle       :: PlotStyle b v n
+  , _plotColourMap   :: ColourMap
   , _plotBoundingBox :: BoundingBox v n
   } deriving Typeable
 
@@ -261,6 +262,12 @@ class HasPlotProperties t where
   legendEntries :: Lens' t [LegendEntry (B t) (V t) (N t)]
   legendEntries = plotProperties . lens _legendEntries (\g a -> g { _legendEntries = a})
   {-# INLINE legendEntries #-}
+
+  -- | The colour map to use to render this plot (for
+  --   'Plots.Axis.Heatmap.HeatMap' like plots)
+  plotColourMap :: Lens' t ColourMap
+  plotColourMap = plotProperties . lens _plotColourMap (\g a -> g { _plotColourMap = a})
+  {-# INLINE plotColourMap #-}
 
   -- | The bounds the current plot requests.
   plotBounds :: Lens' t (Bounds (V t) (N t))
@@ -320,6 +327,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b, Metric v)
           , _clipPlot        = True
           , _legendEntries   = []
           , _plotName        = mempty
+          , _plotColourMap   = hot
           , _plotStyle       = mempty
           , _plotBoundingBox = emptyBox
           }

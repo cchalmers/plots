@@ -56,14 +56,15 @@ instance OrderedField n => Enveloped (HeatMap n) where
 -- diagrams really needs a prim to deal with multiple objects like this.
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HeatMap n) b where
-  renderPlotable s hm@HeatMap {..} _pp =
+  renderPlotable s hm@HeatMap {..} pp =
       foldMap mk ps
         # transform t
-        # lwO 0.5
+        # lwO 0.01
+        # lc grey
         # withEnvelope (getEnvelope hm)
     where
       mk z@(V2 i j) =
-        square 1 # fcA (hot ^. ixColour (toRational $ normise n))
+        square 1 # fcA (pp ^. plotColourMap . ixColour (toRational $ normise n))
                  -- # translate (2*x')
                  # moveTo p
         where

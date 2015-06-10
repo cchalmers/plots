@@ -17,6 +17,7 @@ data ColourBarOpts b n = ColourBarOpts
   , _cbTicks       :: Bool
   , _cbTickLabels  :: [n] -> (n,n) -> TextAlignment n -> [(n, QDiagram b V2 n Any)]
   , _cbExtent      :: V2 n
+  , _cbGap         :: n
   , _cbStyle       :: Style V2 n
   -- , _colourBarSamples     :: Sampled n
   }
@@ -30,6 +31,7 @@ defColourBar = ColourBarOpts
   , _cbTicks       = True
   , _cbTickLabels  = atMajorTicks label
   , _cbExtent      = V2 15 200
+  , _cbGap         = 20
   , _cbStyle       = mempty
   -- , _colourBarSamples     :: Sampled n
   }
@@ -62,10 +64,11 @@ addColourBar :: (TypeableFloat n, Renderable (Path V2 n) b)
              -> QDiagram b V2 n Any
 addColourBar bb cbo cm a b
   | not $ cbo^.cbShow = mempty
-  | otherwise         = alignTo cbPos bb cbAnchor zero cb
+  | otherwise         = alignTo cbPos bb cbAnchor v cb
   where
     cbPos    = orient (cbo^.cbOrientation) South     East
     cbAnchor = orient (cbo^.cbOrientation) AnchorTop AnchorLeft
+    v        = (cbo^.cbGap) *^ orient (cbo^.cbOrientation) unit_Y unitX
     cb       = drawColourBar cbo cm a b
 
 
