@@ -241,6 +241,12 @@ module Plots
   , plotMarker
   , axisTheme
   , module Plots.Themes
+
+    -- *** Colour bar
+  , ColourBarOpts
+  , ColourMap
+  -- , C
+  , showColourBar
   ) where
 
 import           Control.Lens                    hiding (( # ))
@@ -265,6 +271,7 @@ import           Plots.Themes
 
 import           Plots.Types.Line
 import           Plots.Types.Scatter
+import           Plots.Axis.ColourBar
 -- import Plots.Types.Bar
 -- import Plots.Types.Function
 -- import Plots.Types.Surface
@@ -769,6 +776,18 @@ insideAxisTicks =
 -- from the axis theme. This is a list of plot styles that is zipped
 -- with the plots when the axis is rendered.
 
+------------------------------------------------------------------------
+-- Colour bar
+------------------------------------------------------------------------
+
+-- $colourbar
+-- The 'ColourBar' provides a visual key between a colour and value. The
+-- colour bar is not shown by default, it either needs a plot like
+-- 'addHeatMap' to turn it on or it can be turned on explicitly by
+-- 'showColorBar'.
+
+showColourBar :: AxisState b v n
+showColourBar = axisColourBar . cbShow .= True
 
 
 {-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}
