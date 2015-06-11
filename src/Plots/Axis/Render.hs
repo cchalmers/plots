@@ -82,9 +82,9 @@ renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
 renderR2Axis a = frame 15
                $ legend
               <> colourBar
-              <> plots
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LeftLabels
+              <> plots
   where
     plots    = foldMap (uncurry $ renderPlotable (AxisSpec xs t (a^.axisScale))) plots'
     drawAxis = axisOnBasis origin xs a (a^.axisScale) t
@@ -100,7 +100,10 @@ renderR2Axis a = frame 15
       zipWith (\theme p' -> (unPlot' (appPlot' (set plotStyle theme) p') pp))
               (a ^. axisTheme)
     --
-    colourBar = addColourBar bb (a ^. axisColourBar) (pp ^. plotColourMap) 0 1
+    cbo = a ^. axisColourBar
+            & cbExtent .~ ex'
+    ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
+    colourBar = addColourBar bb cbo (pp ^. plotColourMap) 0 1
     --
     -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))
     --                      (a ^. axisPlots)
