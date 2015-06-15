@@ -229,7 +229,7 @@ module Plots
   , boxAxisLines
 
     -- ** Axis ticks
-  , noTicks
+  , noAxisTicks
   , noMajorTicks
   , noMinorTicks
   , centerAxisTicks
@@ -252,9 +252,9 @@ module Plots
 import           Control.Lens                    hiding (( # ))
 import           Control.Monad.State.Lazy
 import           Data.Default
-import           Data.Foldable
 import           Data.Monoid.Recommend
 import           Data.Typeable
+import qualified Data.Foldable as F
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
@@ -417,7 +417,7 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 --   myaxis = r2Axis ~&
 --     scatterPlot data1
 -- @
-scatterPlot :: (PointLike v n p, Plotable (ScatterPlot v n) b, Foldable f)
+scatterPlot :: (PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
             => f p -> AxisState b v n
 scatterPlot d = addPlotable (mkScatterPlot d)
 
@@ -430,7 +430,7 @@ scatterPlot d = addPlotable (mkScatterPlot d)
 --       connectingLine .= True
 --       addLegendEntry "data 1"
 -- @
-scatterPlot' :: (PointLike v n p, Plotable (ScatterPlot v n) b, Foldable f)
+scatterPlot' :: (PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
              => f p -> PlotState (ScatterPlot v n) b -> AxisState b v n
 scatterPlot' d = addPlotable' (mkScatterPlot d)
 
@@ -441,7 +441,7 @@ scatterPlot' d = addPlotable' (mkScatterPlot d)
 --     scatterPlotL "blue team" pointData1
 --     scatterPlotL "red team" pointData2
 -- @
-scatterPlotL :: (PointLike v n p, Plotable (ScatterPlot v n) b, Foldable f)
+scatterPlotL :: (PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
              => String -> f p -> AxisState b v n
 scatterPlotL l d = addPlotableL l (mkScatterPlot d)
 
@@ -474,11 +474,11 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 -- * 'scatterStyle': 'Maybe' ('Point' v n -> 'Style' 'V2' n) - @Nothing@
 -- @
 
--- bubblePlot :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, Foldable f)
+-- bubblePlot :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
 --             => f (n,p) -> AxisState b v n
 -- bubblePlot d = axisPlots <>= [P.Plot (P.mkBubblePlot d) def]
 
--- bubblePlot' :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, Foldable f)
+-- bubblePlot' :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
 --             => f (n,p) -> AxisState b v n
 -- bubblePlot' d s = axisPlots <>= [P.Plot (execState s $ P.mkBubblePlot d) def]
 
@@ -490,7 +490,7 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 -- Line plots are internally represented by 'Path'.
 
 -- | Construct a single line plot.
-linePlot :: (PointLike v n p, R2Backend b n, Plotable (Path v n) b, Foldable f)
+linePlot :: (PointLike v n p, R2Backend b n, Plotable (Path v n) b, F.Foldable f)
          => f p -> AxisState b v n
 linePlot d = addPlotable (mkPath $ Identity d)
 
@@ -505,15 +505,15 @@ pathPlot = addPlotable
 -- Bar plots are different in that you often want to specify the axis
 -- name along with the data.
 
--- barPlot :: (R2Backend, Plotable (Path v n) b, Foldable f)
+-- barPlot :: (R2Backend, Plotable (Path v n) b, F.Foldable f)
 --         => f (String, n) -> AxisState b v n
 -- barPlot d = addPlotable $ P.mkBarPlot' d
 
--- barPlot' :: (R2Backend, Plotable (Path v n) b, Foldable f)
+-- barPlot' :: (R2Backend, Plotable (Path v n) b, F.Foldable f)
 --         => f (String, n) -> AxisState b v n
 -- barPlot' d s = addPlotable (P.mkBarPlot d) s
 
--- barPlotL :: (R2Backend, Plotable (Path v n) b, Foldable f)
+-- barPlotL :: (R2Backend, Plotable (Path v n) b, F.Foldable f)
 --         => String -> f (String, n) -> AxisState b v n
 -- barPlotL s d = addPlotableL s (P.mkBarPlot d)
 

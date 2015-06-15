@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -7,14 +8,13 @@
 
 module Plots.Utils where
 
+import qualified Data.Foldable as F
 import           Control.Lens
 import           Control.Lens.Internal
 import           Control.Lens.Internal.Fold
-import           Data.Foldable
 import           Data.Monoid.Recommend
 import           Data.Profunctor.Unsafe
 import           Diagrams.Prelude           hiding (diff)
-import           Linear
 
 -- | @enumFromToN a b n@ calculates a list from @a@ to @b@ in @n@ steps.
 enumFromToN :: Fractional n => n -> n -> Int -> [n]
@@ -37,11 +37,11 @@ oneeach :: Each s t a b => IndexedTraversal Int s t a b
 oneeach = conjoined each (indexing each)
 {-# INLINE oneeach #-}
 
-onefolded :: Foldable f => IndexedFold Int (f a) a
+onefolded :: F.Foldable f => IndexedFold Int (f a) a
 onefolded = conjoined folded' (indexing folded')
 {-# INLINE onefolded #-}
 
-folded' :: Foldable f => Fold (f a) a
+folded' :: F.Foldable f => Fold (f a) a
 folded' f = coerce . getFolding . foldMap (Folding #. f)
 {-# INLINE folded' #-}
 

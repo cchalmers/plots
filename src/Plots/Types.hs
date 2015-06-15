@@ -1,5 +1,5 @@
+{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE ConstraintKinds           #-}
-{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE DefaultSignatures         #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -7,18 +7,16 @@
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
-{-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE RankNTypes                #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
-
-{-# LANGUAGE CPP                       #-}
 {-# OPTIONS_GHC -fno-warn-orphans       #-}
 
 module Plots.Types
@@ -95,13 +93,16 @@ import           Data.Functor.Rep
 import           Data.Monoid.Recommend
 import           Data.Typeable
 import           Diagrams.BoundingBox
-import           Diagrams.Prelude      as D hiding (view)
-import Data.Foldable (Foldable)
+import           Diagrams.Prelude           as D hiding (view)
 
+#if __GLASGOW_HASKELL__ < 710
+import           Data.Foldable           (Foldable)
+#endif
+
+import           Diagrams.Coordinates.Polar
 import           Linear
 import           Plots.Themes
 import           Plots.Utils
-import Diagrams.Coordinates.Polar
 
 -- | This family is used we can say (Axis Polar) but use V2 for the
 --   underlying diagram.

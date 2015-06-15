@@ -26,7 +26,7 @@ module Diagrams.Coordinates.Polar
   ) where
 
 -- import           Control.Applicative
--- import           Data.Foldable
+import qualified Data.Foldable as F
 
 import           Control.Lens
 import           Control.Monad.Fix
@@ -49,7 +49,7 @@ import           Diagrams.Coordinates.Isomorphic
 
 newtype Polar a = Polar (V2 a)
   deriving (Monad, Functor, Typeable, MonadFix, Applicative, Traversable,
-            Generic1, MonadZip, Foldable)
+            Generic1, MonadZip, F.Foldable)
 
 makeWrapped ''Polar
 

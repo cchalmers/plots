@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -34,7 +35,7 @@ module Plots.Types.Scatter
   ) where
 
 import           Control.Lens                    hiding (lmap, transform, ( # ))
-import           Data.Foldable                   (Foldable)
+import qualified Data.Foldable as F
 import           Data.Typeable
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude                hiding (view)
@@ -93,7 +94,7 @@ _ScatterPlot = _Plot
 type ScatterPlot v n = GScatterPlot v n (Point v n)
 
 -- | Make a scatter plot.
-mkScatterPlot :: (PointLike v n p, Foldable f, Num n)
+mkScatterPlot :: (PointLike v n p, F.Foldable f, Num n)
               => f p -> ScatterPlot v n
 mkScatterPlot = mkScatterPlotOf folded
 
@@ -126,7 +127,7 @@ mkBubblePlotOf f a = GScatterPlot
   , cLine = False
   }
 
-mkBubblePlot :: (PointLike v n p, Foldable f, Fractional n)
+mkBubblePlot :: (PointLike v n p, F.Foldable f, Fractional n)
              => f (n,p) -> BubblePlot v n
 mkBubblePlot = mkBubblePlotOf folded
 
@@ -145,7 +146,7 @@ mkGScatterPlotOf f a pf = GScatterPlot
   , cLine = False
   }
 
-mkGScatterPlot :: (PointLike v n p, Foldable f, Fractional n)
+mkGScatterPlot :: (PointLike v n p, F.Foldable f, Fractional n)
                => f a -> (a -> p) -> GScatterPlot v n a
 mkGScatterPlot = mkGScatterPlotOf folded
 

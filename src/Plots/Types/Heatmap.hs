@@ -24,12 +24,12 @@ module Plots.Types.Heatmap where
 
 import           Control.Lens                    hiding (transform, ( # ))
 import           Data.Typeable
-import           Data.Foldable                   as F
-import qualified Data.Vector.Generic             as GV
-import qualified Data.Vector.Generic.Mutable     as GMV
+-- import qualified Data.Foldable                   as F
+-- import qualified Data.Vector.Generic             as GV
+-- import qualified Data.Vector.Generic.Mutable     as GMV
 import qualified Data.Vector.Unboxed as U
 import           Data.Vector.Unboxed ((!))
-import           Diagrams.Coordinates.Isomorphic
+-- import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
 
 import           Plots.Themes
