@@ -105,8 +105,7 @@ type P2Like = PointLike V2
 instance PointLike V2 n (P2 n) where pointLike = id
 
 instance PointLike V2 n (V2 n) where
-  pointLike = iso (\(unp2 -> (x,y)) -> V2 x y)
-                  (\(V2 x y)        -> x ^& y)
+  pointLike = _Point
   {-# INLINE pointLike #-}
 
 instance PointLike V2 n (n, n) where
