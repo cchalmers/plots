@@ -1,20 +1,20 @@
-{-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Plots.Utils where
 
-import Control.Lens.Internal.Fold
-import Data.Foldable
-import Control.Lens
-import Control.Lens.Internal
-import Data.Profunctor.Unsafe
-import Data.Monoid.Recommend
-import Linear
-import Diagrams.Prelude hiding (diff)
+import           Control.Lens
+import           Control.Lens.Internal
+import           Control.Lens.Internal.Fold
+import           Data.Foldable
+import           Data.Monoid.Recommend
+import           Data.Profunctor.Unsafe
+import           Diagrams.Prelude           hiding (diff)
+import           Linear
 
 -- | @enumFromToN a b n@ calculates a list from @a@ to @b@ in @n@ steps.
 enumFromToN :: Fractional n => n -> n -> Int -> [n]

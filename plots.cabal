@@ -37,6 +37,7 @@ Library
     Plots.Types.Scatter
     Plots.Utils
     Diagrams.Coordinates.Isomorphic
+    Diagrams.Coordinates.Polar
   Hs-source-dirs:      src
   Build-depends:
     base          >= 4.3 && < 5.0,

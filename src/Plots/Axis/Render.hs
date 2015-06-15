@@ -311,9 +311,9 @@ primStroke path =
 --          - to do this we need to adjust the bounds (hard for 3d?)
 --
 
-workOutScale :: (HasLinearMap v, V (v n) ~ v, Distributive v, OrderedField n, Applicative v, Metric v)
+workOutScale :: (v ~ BaseSpace v, HasLinearMap v, V (v n) ~ v, Distributive v, OrderedField n, Applicative v, Metric v)
   => Axis b v n
-  -> (v (n,n), Transformation v n, Transformation v n)
+  -> (BaseSpace v (n,n), Transformation (BaseSpace v) n, Transformation (BaseSpace v) n)
 workOutScale a = (enlargedBounds, aspectScaling, specScaling)
  where
     enlargedBounds = workOutUsedBounds

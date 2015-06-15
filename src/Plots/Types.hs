@@ -23,8 +23,11 @@
 
 module Plots.Types
   (
+  -- * Base space
+    BaseSpace
+
   -- * Bounds
-    Bound (..)
+  , Bound (..)
   , Bounds (..)
   , HasBounds (..)
   , getBounds
@@ -98,7 +101,17 @@ import Data.Foldable (Foldable)
 import           Linear
 import           Plots.Themes
 import           Plots.Utils
+import Diagrams.Coordinates.Polar
 
+-- | This family is used we can say (Axis Polar) but use V2 for the
+--   underlying diagram.
+type family BaseSpace (c :: * -> *) :: * -> *
+
+type instance BaseSpace V2    = V2
+type instance BaseSpace Polar = V2
+type instance BaseSpace V3    = V3
+
+-- | Similar to V and N type families but for the Backend.
 type family B a :: *
 
 type instance B (QDiagram b v n m) = b
@@ -221,14 +234,14 @@ mkLegendEntry x = LegendEntry DefaultLegendPic x 0
 
 -- | Data type for holding information all plots must contain.
 data PlotProperties b v n = PlotProperties
-  { _plotTransform   :: Transformation v n
-  , _plotBounds      :: Bounds v n
+  { _plotTransform   :: Transformation (BaseSpace v) n
+  , _plotBounds      :: Bounds (BaseSpace v) n
   , _clipPlot        :: Bool
-  , _legendEntries   :: [LegendEntry b v n]
+  , _legendEntries   :: [LegendEntry b (BaseSpace v) n]
   , _plotName        :: Name
-  , _plotStyle       :: PlotStyle b v n
+  , _plotStyle       :: PlotStyle b (BaseSpace v) n
   , _plotColourMap   :: ColourMap
-  , _plotBoundingBox :: BoundingBox v n
+  , _plotBoundingBox :: BoundingBox (BaseSpace v) n
   } deriving Typeable
 
 type instance B (PlotProperties b v n) = b
@@ -240,6 +253,8 @@ type instance N (PlotProperties b v n) = n
 
 -- I don't know how to give documentation for classes using TH, so I just wrote
 -- it by hand.
+
+type BaseV t = BaseSpace (V t)
 
 -- | Class that gives a lens onto a 'plotProperties'. All 'Plot's must impliment
 --   this class.
@@ -254,12 +269,12 @@ class HasPlotProperties t where
   {-# INLINE clipPlot #-}
 
   -- | The theme entry to be used for the current plot.
-  plotPropertiesStyle :: Lens' t (PlotStyle (B t) (V t) (N t))
+  plotPropertiesStyle :: Lens' t (PlotStyle (B t) (BaseV t) (N t))
   plotPropertiesStyle = plotProperties . lens _plotStyle (\g a -> g { _plotStyle = a})
   {-# INLINE plotPropertiesStyle #-}
 
   -- | The legend entries to be used for the current plot.
-  legendEntries :: Lens' t [LegendEntry (B t) (V t) (N t)]
+  legendEntries :: Lens' t [LegendEntry (B t) (BaseV t) (N t)]
   legendEntries = plotProperties . lens _legendEntries (\g a -> g { _legendEntries = a})
   {-# INLINE legendEntries #-}
 
@@ -270,7 +285,7 @@ class HasPlotProperties t where
   {-# INLINE plotColourMap #-}
 
   -- | The bounds the current plot requests.
-  plotBounds :: Lens' t (Bounds (V t) (N t))
+  plotBounds :: Lens' t (Bounds (BaseV t) (N t))
   plotBounds = plotProperties . lens _plotBounds (\g a -> g { _plotBounds = a})
   {-# INLINE plotBounds #-}
 
@@ -280,7 +295,7 @@ class HasPlotProperties t where
   {-# INLINE plotName #-}
 
   -- | The transformation to be applied to the plot.
-  plotTransform :: Lens' t (Transformation (V t) (N t))
+  plotTransform :: Lens' t (Transformation (BaseV t) (N t))
   plotTransform = plotProperties . lens _plotTransform (\g a -> g { _plotTransform = a})
   {-# INLINE plotTransform #-}
 
@@ -300,17 +315,17 @@ instance HasPlotProperties (PlotProperties b v n) where
 -- alternative is to have this all these instances defined for each plot or
 -- rewrite lenses specific to HasPlotProperties.
 
-instance (HasLinearMap v, Num n) => Transformable (PlotProperties b v n) where
+instance (v ~ BaseSpace v, HasLinearMap v, Num n) => Transformable (PlotProperties b v n) where
   transform = over plotTransform . transform
 
-instance HasBounds (PlotProperties b v n) where
+instance v ~ BaseSpace v => HasBounds (PlotProperties b v n) where
   bounds = plotBounds
 
 -- | Move origin by applying to @plotTransform@.
-instance (Additive v, Num n) => HasOrigin (PlotProperties b v n) where
+instance (v ~ BaseSpace v, Additive v, Num n) => HasOrigin (PlotProperties b v n) where
   moveOriginTo = over plotTransform . moveOriginTo
 
-instance HasPlotStyle (PlotProperties b v n) b where
+instance v ~ BaseSpace v => HasPlotStyle (PlotProperties b v n) b where
   plotStyle = plotPropertiesStyle
 
 instance Qualifiable (PlotProperties b v n) where
@@ -319,7 +334,7 @@ instance Qualifiable (PlotProperties b v n) where
 zeroInt :: Additive v => v Int
 zeroInt = zero
 
-instance (TypeableFloat n, Renderable (Path V2 n) b, Metric v)
+instance (TypeableFloat n, Renderable (Path V2 n) b, Metric (BaseSpace v))
     => Default (PlotProperties b v n) where
   def = PlotProperties
           { _plotTransform   = mempty
@@ -461,17 +476,17 @@ appPlot' :: (forall a. (V a ~ v, N a ~ n, Plotable a b) =>
          -> Plot' b v n -> Plot' b v n
 appPlot' f (Plot' a pf) = Plot' a (pf <> Endo f)
 
-instance (HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
+instance (BaseV p ~ V p, HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
   transform = over plotTransform . transform
 
-instance HasBounds (PropertiedPlot p b) where
+instance BaseV p ~ V p => HasBounds (PropertiedPlot p b) where
   bounds = plotBounds
 
 -- | Move origin by applying to @plotTransform@.
-instance (Additive (V p), Num (N p)) => HasOrigin (PropertiedPlot p b) where
+instance (BaseV p ~ V p, Additive (V p), Num (N p)) => HasOrigin (PropertiedPlot p b) where
   moveOriginTo = over plotTransform . moveOriginTo
 
-instance HasPlotStyle (PropertiedPlot p b) b where
+instance BaseV p ~ V p => HasPlotStyle (PropertiedPlot p b) b where
   plotStyle = plotPropertiesStyle
 
 instance Qualifiable (PropertiedPlot p b) where

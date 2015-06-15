@@ -16,7 +16,7 @@ import Numeric
 
 import Diagrams.Prelude   hiding (view)
 import Diagrams.TwoD.Text
-import Data.Monoid.Recommend
+import Plots.Types
 
 ------------------------------------------------------------------------
 -- Axis labels
@@ -59,7 +59,7 @@ instance (TypeableFloat n, Renderable (Text n) b)
           , _axisLabelPlacement = OutsideAxisLabel
           }
 
-type AxisLabels b v n = v (AxisLabel b v n)
+type AxisLabels b v n = v (AxisLabel b (BaseSpace v) n)
 
 ------------------------------------------------------------------------
 -- Tick labels
@@ -81,7 +81,7 @@ data TickLabels b v n = TickLabels
 
 makeLenses ''TickLabels
 
-type AxisTickLabels b v n = v (TickLabels b v n)
+type AxisTickLabels b v n = v (TickLabels b (BaseSpace v) n)
 
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (TickLabels b V2 n) where

@@ -10,7 +10,7 @@
 
 module Diagrams.Coordinates.Polar
   ( -- * Polar type
-    Polar
+    Polar (..)
   , mkPolar, polar, unpolar, polarIso, polarV2
 
     -- * Polar functions

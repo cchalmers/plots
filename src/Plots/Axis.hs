@@ -25,6 +25,8 @@ import           Plots.Legend
 import           Plots.Themes
 import           Plots.Types
 
+import Diagrams.Coordinates.Polar
+
 -- | Where axis line for coordinate should be drawn.
 data AxisLineType
   = BoxAxisLine
@@ -111,8 +113,8 @@ data Axis b v n = Axis
   , _axisLines      :: AxisLines v n
   , _axisPlots      :: [Plot' b v n]
   , _axisScaling    :: AxisScaling v n
-  , _axisSize       :: SizeSpec v n
-  , _axisTheme      :: Theme b v n
+  , _axisSize       :: SizeSpec (BaseSpace v) n
+  , _axisTheme      :: Theme b (BaseSpace v) n
   , _axisTickLabels :: AxisTickLabels b v n
   , _axisTicks      :: AxisTicks v n
   , _axisTitle      :: Maybe String
@@ -178,5 +180,26 @@ instance HasPlotProperties (Axis b v n) where
 --           , _axisLines      = pure def
 --           }
 
--- Drawing the axis
+-- R3 Axis
+
+polarAxis :: (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) => Axis b Polar n
+polarAxis = Axis
+  { _axisTitle      = Nothing
+  , _axisSize       = mkWidth 300
+  , _axisPlots      = []
+  , _axisLegend     = def
+  , _axisColourBar  = defColourBar
+  , _axisTheme      = coolTheme
+  , _axisAxisBounds = Bounds $ pure def
+  , _axisGridLines  = pure def
+  , _axisLabels     = Polar $ V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4))
+                                          & axisLabelGap .~ 40
+                                     )
+  , _axisScaling    = pure def
+  , _axisTickLabels = pure def
+  , _axisTicks      = pure def
+  , _axisLines      = pure def
+  , _axisScale      = pure def
+  , _axisPP         = def
+  }
 
