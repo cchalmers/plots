@@ -33,6 +33,7 @@ Library
     Plots.Themes
     Plots.Types
     Plots.Types.Line
+    Plots.Types.Function
     Plots.Types.Heatmap
     Plots.Types.Scatter
     Plots.Utils

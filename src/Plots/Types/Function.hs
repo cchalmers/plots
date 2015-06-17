@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE OverlappingInstances   #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
@@ -29,6 +28,7 @@ module Plots.Types.Function
 
   , ParametricPlot (..)
   , mkParametricPlot
+  , parametricDomain
   -- mesh
   -- , MeshPlot (..)
   -- , mkMeshPlot
@@ -88,17 +88,21 @@ type instance N (ParametricPlot v n) = n
 instance HasFunctionPlotOptions (ParametricPlot v n) n where
   functionPlotOptions = parametricPlotOptions
 
+instance (Metric v, OrderedField n) => Enveloped (ParametricPlot v n) where
+  getEnvelope = const mempty
+
 instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
     => Plotable (ParametricPlot V2 n) b where
-  renderPlotable pp _ t fp = pathFromVertices p
-                            # transform t
-                            # stroke
-                            # applyStyle (pp ^. themeLineStyle)
+  renderPlotable s pa pp =
+    pathFromVertices p
+      # transform (s^.specTrans)
+      # stroke
+      # applyLineStyle pp
     where
-      p = map f [a, a + 1 / (fp ^. functionPlotNumPoints . to fromIntegral) .. b]
-      f = fp ^. parametricFunction
-      a = fp ^. parametricDomain . _1
-      b = fp ^. parametricDomain . _2
+      p = map f [a, a + 1 / (pa ^. functionPlotNumPoints . to fromIntegral) .. b]
+      f = pa ^. parametricFunction
+      a = pa ^. parametricDomain . _1
+      b = pa ^. parametricDomain . _2
 
 pathFromVertices :: (Metric v, OrderedField n) => [Point v n] -> Path v n
 pathFromVertices = fromVertices

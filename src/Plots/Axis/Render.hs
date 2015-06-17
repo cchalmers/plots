@@ -23,6 +23,8 @@ import           Diagrams.BoundingBox
 import           Diagrams.TwoD.Text
 import           Diagrams.Prelude      as D hiding (under, view)
 
+import Diagrams.Coordinates.Polar
+
 import           Plots.Axis
 import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
@@ -34,7 +36,7 @@ import           Plots.Utils
 import           Plots.Themes
 
 class RenderAxis b v n where
-  renderAxis :: Axis b v n -> QDiagram b v n Any
+  renderAxis :: Axis b v n -> QDiagram b (BaseSpace v) n Any
 
 -- instance (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
 --     => RenderAxis b V3 n where
@@ -524,4 +526,64 @@ data AxisPos = LowerAxis | MiddleAxis | UpperAxis
 ep :: E v -> Lens' (Point v x) x
 ep (E l) = lensP . l
 {-# INLINE ep #-}
+
+
+------------------------------------------------------------------------
+-- Polar
+------------------------------------------------------------------------
+
+instance
+     (Typeable b,
+      Enum n,
+      TypeableFloat n,
+      Renderable (Path V2 n) b,
+      Renderable (Text n) b) => RenderAxis b Polar n where
+  renderAxis = renderPolarAxis
+
+renderPolarAxis
+  :: (Typeable b,
+      Enum n,
+      TypeableFloat n,
+      Renderable (Path V2 n) b,
+      Renderable (Text n) b)
+  => Axis b Polar n -> QDiagram b V2 n Any
+renderPolarAxis a = frame 15
+               $ legend
+              <> colourBar
+              <> circles
+              <> rAxis
+              <> plots
+  where
+    -- plots    = foldMap (uncurry $ renderPlotable (AxisSpec xs t (a^.axisScale))) plots'
+    plots    = foldMap (uncurry $ renderPlotable (AxisSpec (pure (-10, 10)) mempty (pure LinearAxis))) plots'
+
+    -- drawAxis = axisOnBasis origin xs a (a^.axisScale) t
+    --
+    rAxis = rline <> rticks
+
+    rline = origin ~~ (10 *^ unitX) # lwO 2
+    rticks = foldMap moveTo (map (\x -> mkP2 x 0) [1..9]) tick # lwO 1
+    tick = unit_Y ~~ unitY & scale 0.2
+    --
+    circles = foldMap circle [1,3..9] # lwO 0.1 # lc grey
+    --
+    -- (xs, tv, t') = workOutScale a
+    -- t = tv <> t'
+    --
+    bb = fromCorners (p2 (-10,-10)) (p2 (10,10)) -- (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
+    legend = drawLegend bb (a ^. axisLegend) (toList plots')
+    --
+    pp = a ^. plotProperties
+    preparePlots =
+      zipWith (\theme p' -> (unPlot' (appPlot' (set plotStyle theme) p') pp))
+              (a ^. axisTheme)
+    --
+    cbo = a ^. axisColourBar
+            & cbExtent .~ ex'
+    ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
+    colourBar = addColourBar bb cbo (pp ^. plotColourMap) 0 1
+    --
+    -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))
+    --                      (a ^. axisPlots)
+    plots'     = a ^. axisPlots . to preparePlots
 
