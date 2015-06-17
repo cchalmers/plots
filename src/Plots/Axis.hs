@@ -103,7 +103,7 @@ type PropertyAdjust b v n = PlotProperties b v n -> PlotProperties b v n
 data Axis b v n = Axis
   { -- These lenses are not being exported, they're just here for instances.
     _axisAxisBounds :: Bounds v n
-  , _axisPP         :: PlotProperties b v n
+  , _axisPP         :: PlotProperties b (BaseSpace v) n
 
   -- These lenses are exported.
   , _axisColourBar  :: ColourBarOpts b n
@@ -111,7 +111,7 @@ data Axis b v n = Axis
   , _axisLabels     :: AxisLabels b v n
   , _axisLegend     :: Legend b n
   , _axisLines      :: AxisLines v n
-  , _axisPlots      :: [Plot' b v n]
+  , _axisPlots      :: [Plot' b (BaseSpace v) n]
   , _axisScaling    :: AxisScaling v n
   , _axisSize       :: SizeSpec (BaseSpace v) n
   , _axisTheme      :: Theme b (BaseSpace v) n
@@ -123,14 +123,14 @@ data Axis b v n = Axis
 
 makeLenses ''Axis
 
-type instance V (Axis b v n) = v
+type instance V (Axis b v n) = BaseSpace v
 type instance N (Axis b v n) = n
 type instance B (Axis b v n) = b
 
 axisLine :: E v -> Lens' (Axis b v n) (AxisLine n)
 axisLine (E l) = axisLines . l
 
-instance HasBounds (Axis b v n) where
+instance HasBounds (Axis b v n) v where
   bounds = axisAxisBounds
 
 -- R2 axis

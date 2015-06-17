@@ -287,7 +287,7 @@ import           Plots.Axis.ColourBar
 -- PointLike V3 Float (Float, Float, Float)
 -- @
 --
--- This means whenever you see @PointLike v n p@ in a type constaint,
+-- This means whenever you see @PointLike (BaseSpace v) n p@ in a type constaint,
 -- the @p@ in the type signature could be @(Double, Double)@ or @V2
 -- Double@ or anything
 
@@ -376,22 +376,22 @@ type PlotState a b  = PlotStateM a b ()
 -- of @a@, it takes the data needed to make the plot.
 
 -- | Add something 'Plotable' to the axis.
-addPlotable :: (InSpace v n a, Plotable a b) => a -> AxisState b v n
+addPlotable :: (InSpace (BaseSpace v) n a, Plotable a b) => a -> AxisState b v n
 addPlotable a = axisPlots %= flip snoc (Plot' a mempty)
 
 -- | Add something 'Plotable' and modify the 'PlotState' of that plot.
-addPlotable' :: (InSpace v n a, Plotable a b)
+addPlotable' :: (InSpace (BaseSpace v) n a, Plotable a b)
              => a -> PlotState a b -> AxisState b v n
 addPlotable' a s = axisPlots <>= [Plot' a (Endo $ execState s)]
 
 -- | Add something 'Plotable' with given legend entry.
-addPlotableL :: (InSpace v n a, Plotable a b)
+addPlotableL :: (InSpace (BaseSpace v) n a, Plotable a b)
              => String -> a -> AxisState b v n
 addPlotableL l a = addPlotable' a $ addLegendEntry l
 
 -- | Add something 'Plotable' with given legend entry and modify the
 --   'PlotState' of that plot.
-addPlotableL' :: (InSpace v n a, Plotable a b)
+addPlotableL' :: (InSpace (BaseSpace v) n a, Plotable a b)
               => String -> a -> PlotState a b -> AxisState b v n
 addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
@@ -417,8 +417,8 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 --   myaxis = r2Axis ~&
 --     scatterPlot data1
 -- @
-scatterPlot :: (PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
-            => f p -> AxisState b v n
+scatterPlot :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
+            => f p -> AxisState b c n
 scatterPlot d = addPlotable (mkScatterPlot d)
 
 -- | Make a 'ScatterPlot' and take a 'State' on the plot to alter it's
@@ -430,8 +430,8 @@ scatterPlot d = addPlotable (mkScatterPlot d)
 --       connectingLine .= True
 --       addLegendEntry "data 1"
 -- @
-scatterPlot' :: (PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
-             => f p -> PlotState (ScatterPlot v n) b -> AxisState b v n
+scatterPlot' :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
+             => f p -> PlotState (ScatterPlot v n) b -> AxisState b c n
 scatterPlot' d = addPlotable' (mkScatterPlot d)
 
 -- | Add a 'ScatterPlot' with the given name for the legend entry.
@@ -441,22 +441,22 @@ scatterPlot' d = addPlotable' (mkScatterPlot d)
 --     scatterPlotL "blue team" pointData1
 --     scatterPlotL "red team" pointData2
 -- @
-scatterPlotL :: (PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
-             => String -> f p -> AxisState b v n
+scatterPlotL :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
+             => String -> f p -> AxisState b c n
 scatterPlotL l d = addPlotableL l (mkScatterPlot d)
 
 -- Fold variants
 
-scatterPlotOf :: (PointLike v n p, Plotable (ScatterPlot v n) b)
-              => Fold s p -> s -> AxisState b v n
+scatterPlotOf :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b)
+              => Fold s p -> s -> AxisState b c n
 scatterPlotOf f s = addPlotable (mkScatterPlotOf f s)
 
-scatterPlotOf' :: (PointLike v n p, Plotable (ScatterPlot v n) b)
-               => Fold s p -> s -> PlotState (ScatterPlot v n) b -> AxisState b v n
+scatterPlotOf' :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b)
+               => Fold s p -> s -> PlotState (ScatterPlot v n) b -> AxisState b c n
 scatterPlotOf' f s = addPlotable' (mkScatterPlotOf f s)
 
-scatterPlotLOf :: (PointLike v n p, Plotable (ScatterPlot v n) b)
-               => String -> Fold s p -> s -> AxisState b v n
+scatterPlotLOf :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b)
+               => String -> Fold s p -> s -> AxisState b c n
 scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 
 ------------------------------------------------------------------------
@@ -474,11 +474,11 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 -- * 'scatterStyle': 'Maybe' ('Point' v n -> 'Style' 'V2' n) - @Nothing@
 -- @
 
--- bubblePlot :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
+-- bubblePlot :: (PointLike (BaseSpace v) n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
 --             => f (n,p) -> AxisState b v n
 -- bubblePlot d = axisPlots <>= [P.Plot (P.mkBubblePlot d) def]
 
--- bubblePlot' :: (PointLike v n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
+-- bubblePlot' :: (PointLike (BaseSpace v) n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
 --             => f (n,p) -> AxisState b v n
 -- bubblePlot' d s = axisPlots <>= [P.Plot (execState s $ P.mkBubblePlot d) def]
 
@@ -490,8 +490,8 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 -- Line plots are internally represented by 'Path'.
 
 -- | Construct a single line plot.
-linePlot :: (PointLike v n p, R2Backend b n, Plotable (Path v n) b, F.Foldable f)
-         => f p -> AxisState b v n
+linePlot :: (v ~ BaseSpace c, PointLike v n p, R2Backend b n, Plotable (Path v n) b, F.Foldable f)
+         => f p -> AxisState b c n
 linePlot d = addPlotable (mkPath $ Identity d)
 
 pathPlot :: R2Backend b n => Path V2 n -> AxisState b V2 n
@@ -521,8 +521,8 @@ pathPlot = addPlotable
 -- Diagram Plot
 ------------------------------------------------------------------------
 
-diagramPlot :: (Renderable (Path V2 n) b, Typeable b, Typeable v, Metric v, TypeableFloat n)
-              => QDiagram b v n Any -> AxisState b v n
+diagramPlot :: (v ~ BaseSpace c, Renderable (Path V2 n) b, Typeable b, Typeable v, Metric v, TypeableFloat n)
+              => QDiagram b v n Any -> AxisState b c n
 diagramPlot = addPlotable
 
 ------------------------------------------------------------------------
@@ -674,28 +674,28 @@ allGridLines = axisGridLines . traverse
 -- Bounds
 ------------------------------------------------------------------------
 
-boundMin :: HasBounds a => E (V a) -> Lens' a (Recommend (N a))
+boundMin :: HasBounds a c => E c -> Lens' a (Recommend (N a))
 boundMin (E l) = bounds . _Wrapped . l . lowerBound
 
-boundMax :: HasBounds a => E (V a) -> Lens' a (Recommend (N a))
+boundMax :: HasBounds a c => E c -> Lens' a (Recommend (N a))
 boundMax (E l) = bounds . _Wrapped . l . upperBound
 
-xMin :: (HasBounds a, R1 (V a)) => Lens' a (Recommend (N a))
+xMin :: (HasBounds a c, R1 c) => Lens' a (Recommend (N a))
 xMin = boundMin ex
 
-xMax :: (HasBounds a, R1 (V a)) => Lens' a (Recommend (N a))
+xMax :: (HasBounds a c, R1 c) => Lens' a (Recommend (N a))
 xMax = boundMax ex
 
-yMin :: (HasBounds a, R2 (V a)) => Lens' a (Recommend (N a))
+yMin :: (HasBounds a c, R2 c) => Lens' a (Recommend (N a))
 yMin = boundMin ey
 
-yMax :: (HasBounds a, R2 (V a)) => Lens' a (Recommend (N a))
+yMax :: (HasBounds a c, R2 c) => Lens' a (Recommend (N a))
 yMax = boundMin ey
 
-zMin :: (HasBounds a, R3 (V a)) => Lens' a (Recommend (N a))
+zMin :: (HasBounds a c, R3 c) => Lens' a (Recommend (N a))
 zMin = boundMin ey
 
-zMax :: (HasBounds a, R3 (V a)) => Lens' a (Recommend (N a))
+zMax :: (HasBounds a c, R3 c) => Lens' a (Recommend (N a))
 zMax = boundMin ey
 
 ------------------------------------------------------------------------

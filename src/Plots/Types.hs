@@ -142,32 +142,32 @@ instance Num n => Default (Bound n) where
 instance Ord n => Semigroup (Bound n) where
   Bound l1 u1 <> Bound l2 u2 = Bound (liftRecommend min l1 l2) (liftRecommend max u1 u2)
 
-class HasBounds a where
-  bounds :: Lens' a (Bounds (V a) (N a))
+class HasBounds a c | a -> c where
+  bounds :: Lens' a (Bounds c (N a))
 
-instance HasBounds (Bounds V2 n) where
+instance HasBounds (Bounds V2 n) V2 where
   bounds = id
   {-# INLINE bounds #-}
 
-instance HasBounds (Bounds V3 n) where
+instance HasBounds (Bounds V3 n) V3 where
   bounds = id
   {-# INLINE bounds #-}
 
 getBounds :: Bound n -> (n, n)
 getBounds (Bound l u) = (getRecommend l, getRecommend u)
 
-getBound :: HasBounds a => E (V a) -> a -> (N a, N a)
+getBound :: HasBounds a c => E c -> a -> (N a, N a)
 getBound e a = getBounds $ a ^. bounds . _Wrapped' . el e
 
 -- boundsMin :: (V a ~ v, N a ~ n, Representable v, HasBounds a) => Lens' a (v (Recommend n))
 -- boundsMin = bounds . _Wrapped' . column lowerBound
 
 -- | Lens to the minimum point of a 'Bounds'.
-boundsMin :: (InSpace v n a, Representable v, HasBounds a) => Lens' a (Point v n)
+boundsMin :: (InSpace v n a, Representable v, HasBounds a v) => Lens' a (Point v n)
 boundsMin = bounds . _Wrapped' . column (lowerBound . _recommend) . iso P (\(P a) -> a)
 
 -- | Lens to the maximum point of a 'Bounds'.
-boundsMax :: (InSpace v n a, HasBasis v, HasBounds a) => Lens' a (Point v n)
+boundsMax :: (InSpace v n a, HasBasis v, HasBounds a v) => Lens' a (Point v n)
 boundsMax = bounds . _Wrapped' . column (upperBound . _recommend) . iso P (\(P a) -> a)
 
 -- Logarithmic scaling -------------------------------------------------
@@ -235,14 +235,14 @@ mkLegendEntry x = LegendEntry DefaultLegendPic x 0
 
 -- | Data type for holding information all plots must contain.
 data PlotProperties b v n = PlotProperties
-  { _plotTransform   :: Transformation (BaseSpace v) n
-  , _plotBounds      :: Bounds (BaseSpace v) n
+  { _plotTransform   :: Transformation v n
+  , _plotBounds      :: Bounds v n
   , _clipPlot        :: Bool
-  , _legendEntries   :: [LegendEntry b (BaseSpace v) n]
+  , _legendEntries   :: [LegendEntry b v n]
   , _plotName        :: Name
-  , _plotStyle       :: PlotStyle b (BaseSpace v) n
+  , _plotStyle       :: PlotStyle b v n
   , _plotColourMap   :: ColourMap
-  , _plotBoundingBox :: BoundingBox (BaseSpace v) n
+  , _plotBoundingBox :: BoundingBox v n
   } deriving Typeable
 
 type instance B (PlotProperties b v n) = b
@@ -270,12 +270,12 @@ class HasPlotProperties t where
   {-# INLINE clipPlot #-}
 
   -- | The theme entry to be used for the current plot.
-  plotPropertiesStyle :: Lens' t (PlotStyle (B t) (BaseV t) (N t))
+  plotPropertiesStyle :: Lens' t (PlotStyle (B t) (V t) (N t))
   plotPropertiesStyle = plotProperties . lens _plotStyle (\g a -> g { _plotStyle = a})
   {-# INLINE plotPropertiesStyle #-}
 
   -- | The legend entries to be used for the current plot.
-  legendEntries :: Lens' t [LegendEntry (B t) (BaseV t) (N t)]
+  legendEntries :: Lens' t [LegendEntry (B t) (V t) (N t)]
   legendEntries = plotProperties . lens _legendEntries (\g a -> g { _legendEntries = a})
   {-# INLINE legendEntries #-}
 
@@ -286,7 +286,7 @@ class HasPlotProperties t where
   {-# INLINE plotColourMap #-}
 
   -- | The bounds the current plot requests.
-  plotBounds :: Lens' t (Bounds (BaseV t) (N t))
+  plotBounds :: Lens' t (Bounds (V t) (N t))
   plotBounds = plotProperties . lens _plotBounds (\g a -> g { _plotBounds = a})
   {-# INLINE plotBounds #-}
 
@@ -296,7 +296,7 @@ class HasPlotProperties t where
   {-# INLINE plotName #-}
 
   -- | The transformation to be applied to the plot.
-  plotTransform :: Lens' t (Transformation (BaseV t) (N t))
+  plotTransform :: Lens' t (Transformation (V t) (N t))
   plotTransform = plotProperties . lens _plotTransform (\g a -> g { _plotTransform = a})
   {-# INLINE plotTransform #-}
 
@@ -316,17 +316,17 @@ instance HasPlotProperties (PlotProperties b v n) where
 -- alternative is to have this all these instances defined for each plot or
 -- rewrite lenses specific to HasPlotProperties.
 
-instance (v ~ BaseSpace v, HasLinearMap v, Num n) => Transformable (PlotProperties b v n) where
+instance (HasLinearMap v, Num n) => Transformable (PlotProperties b v n) where
   transform = over plotTransform . transform
 
-instance v ~ BaseSpace v => HasBounds (PlotProperties b v n) where
+instance HasBounds (PlotProperties b v n) v where
   bounds = plotBounds
 
 -- | Move origin by applying to @plotTransform@.
-instance (v ~ BaseSpace v, Additive v, Num n) => HasOrigin (PlotProperties b v n) where
+instance (Additive v, Num n) => HasOrigin (PlotProperties b v n) where
   moveOriginTo = over plotTransform . moveOriginTo
 
-instance v ~ BaseSpace v => HasPlotStyle (PlotProperties b v n) b where
+instance HasPlotStyle (PlotProperties b v n) b where
   plotStyle = plotPropertiesStyle
 
 instance Qualifiable (PlotProperties b v n) where
@@ -335,7 +335,7 @@ instance Qualifiable (PlotProperties b v n) where
 zeroInt :: Additive v => v Int
 zeroInt = zero
 
-instance (TypeableFloat n, Renderable (Path V2 n) b, Metric (BaseSpace v))
+instance (TypeableFloat n, Renderable (Path V2 n) b, Metric v)
     => Default (PlotProperties b v n) where
   def = PlotProperties
           { _plotTransform   = mempty
@@ -477,10 +477,10 @@ appPlot' :: (forall a. (V a ~ v, N a ~ n, Plotable a b) =>
          -> Plot' b v n -> Plot' b v n
 appPlot' f (Plot' a pf) = Plot' a (pf <> Endo f)
 
-instance (BaseV p ~ V p, HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
+instance (HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
   transform = over plotTransform . transform
 
-instance BaseV p ~ V p => HasBounds (PropertiedPlot p b) where
+instance v ~ V p => HasBounds (PropertiedPlot p b) v where
   bounds = plotBounds
 
 -- | Move origin by applying to @plotTransform@.
