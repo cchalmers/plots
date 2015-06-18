@@ -40,14 +40,15 @@ makeLenses ''ColourBarOpts
 
 drawColourBar :: (TypeableFloat n, Renderable (Path V2 n) b)
               => ColourBarOpts b n -> ColourMap -> n -> n -> QDiagram b V2 n Any
-drawColourBar cbo cm a b = centerY $ bar ||| strutX 5 ||| position (over (each . _1) toPos ls)
+drawColourBar cbo cm a b = centerY $ bar ||| strutX 5 ||| labels
   where
     bar  = square 1 # fillTexture tx
                     # scaleX x
                     # scaleY y
                     # applyStyle (cbo ^. cbStyle)
                     # alignB
-    -- ls =
+    labels = position (over (each . _1) toPos ls)
+               # fontSizeO 8
     V2 x y = cbo ^. cbExtent
     toPos t = mkP2 0 (t * y / (b - a))
     tx = mkLinearGradient (toStops cm) (mkP2 0 (-0.5)) (mkP2 0 0.5) GradPad
