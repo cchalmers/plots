@@ -149,8 +149,8 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
           , _legendSpacing     = 20
           , _legendTextWidth   = 60
           , _legendStyle       = mempty
-          , _legendTextF       = mkText' (BoxAlignedText 0 0.5)
-          , _legendTextStyle   = mempty & recommendFontSize (output 8)
+          , _legendTextF       = mkText (BoxAlignedText 0 0.5)
+          , _legendTextStyle   = mempty & fontSize (output 8)
           , _legendOrientation = Verticle
           }
 
