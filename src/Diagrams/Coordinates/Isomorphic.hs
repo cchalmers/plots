@@ -60,7 +60,7 @@ instance VectorLike V2 n (V2 n) where
 
 type V2Like = VectorLike V2
 
-instance VectorLike V2 n (n, n) where
+instance n ~ m => VectorLike V2 n (n, m) where
   vectorLike = iso unr2 r2
   {-# INLINE vectorLike #-}
 
@@ -75,7 +75,7 @@ instance VectorLike V3 n (V3 n) where
   vectorLike = id
   {-# INLINE vectorLike #-}
 
-instance VectorLike V3 n (n, n, n) where
+instance (n ~ m, m ~ o) => VectorLike V3 n (n, m, o) where
   vectorLike = iso unr3 r3
   {-# INLINE vectorLike #-}
 
@@ -108,7 +108,7 @@ instance PointLike V2 n (V2 n) where
   pointLike = _Point
   {-# INLINE pointLike #-}
 
-instance PointLike V2 n (n, n) where
+instance n ~ m => PointLike V2 n (n, m) where
   pointLike = iso unp2 p2
   {-# INLINE pointLike #-}
 
@@ -123,7 +123,7 @@ instance PointLike V3 n (P3 n) where
   pointLike = id
   {-# INLINE pointLike #-}
 
-instance PointLike V3 n (n, n, n) where
+instance (n ~ m, m ~ o) => PointLike V3 n (n, m, o) where
   pointLike = iso unp3 p3
   {-# INLINE pointLike #-}
 
