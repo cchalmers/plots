@@ -565,7 +565,7 @@ renderPolarAxis a = frame 15
     rticks = foldMap moveTo (map (\x -> mkP2 x 0) [1..9]) tick # lwO 1
     tick = unit_Y ~~ unitY & scale 0.2
     --
-    circles = foldMap circle [1,3..9] # lwO 0.1 # lc grey
+    circles = foldMap circle [1,3..9] # lwO 1 # lc grey
     --
     -- (xs, tv, t') = workOutScale a
     -- t = tv <> t'
