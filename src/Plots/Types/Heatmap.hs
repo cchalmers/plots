@@ -34,6 +34,7 @@ import qualified Data.Foldable as F
 import           Diagrams.Prelude
 
 import           Plots.Themes
+import           Plots.Utils
 import Plots.Types
 
 data HeatMap n = HeatMap
@@ -80,12 +81,6 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       V2 vMin vMax = minmaxOf each (map (\(V2 i j) -> hmFunction i j) ps)
       normise v = (v - vMin) / (vMax - vMin)
 
--- | 'V2 min max'
-minmaxOf :: (Fractional a, Ord a) => Getting (Endo (Endo (V2 a))) s a -> s -> V2 a
-minmaxOf l = foldlOf' l (\(V2 mn mx) a -> V2 (min mn a) (max mx a)) (V2 (1/0) (-1/0))
-      -- (\acc a -> acc <**> V2 min max ?? a)
--- V2 is used instead of a tuple because V2 is strict.
-{-# INLINE minmaxOf #-}
 
 -- | Indexed traversal over the values of a heat map.
 heatPoints :: IndexedTraversal' (V2 Int) (HeatMap n) Double

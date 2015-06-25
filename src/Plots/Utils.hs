@@ -96,3 +96,10 @@ pathFromVertices = fromVertices
 --   where
 --     makeCommitted (Recommend a) = Commit a
 --     makeCommitted c             = c
+
+-- | 'V2 min max'
+minmaxOf :: (Fractional a, Ord a) => Getting (Endo (Endo (V2 a))) s a -> s -> V2 a
+minmaxOf l = foldlOf' l (\(V2 mn mx) a -> V2 (min mn a) (max mx a)) (V2 (1/0) (-1/0))
+      -- (\acc a -> acc <**> V2 min max ?? a)
+-- V2 is used instead of a tuple because V2 is strict.
+{-# INLINE minmaxOf #-}
