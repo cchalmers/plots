@@ -32,6 +32,7 @@ Library
     Plots.Name
     Plots.Themes
     Plots.Types
+    Plots.Types.Bar
     Plots.Types.Line
     Plots.Types.Function
     Plots.Types.Heatmap

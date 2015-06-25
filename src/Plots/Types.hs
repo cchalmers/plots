@@ -362,6 +362,9 @@ data AxisSpec v n = AxisSpec
 
 makeLenses ''AxisSpec
 
+type instance V (AxisSpec v n) = v
+type instance N (AxisSpec v n) = n
+
 -- | Scale a number by log10-ing it and linearly scaleing it so it's
 --    within the same range.
 scaleNum :: Floating n => (n, n) -> AxisScale -> n -> n

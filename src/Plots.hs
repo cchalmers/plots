@@ -690,7 +690,7 @@ yMin :: (HasBounds a c, R2 c) => Lens' a (Recommend (N a))
 yMin = boundMin ey
 
 yMax :: (HasBounds a c, R2 c) => Lens' a (Recommend (N a))
-yMax = boundMin ey
+yMax = boundMax ey
 
 zMin :: (HasBounds a c, R3 c) => Lens' a (Recommend (N a))
 zMin = boundMin ey

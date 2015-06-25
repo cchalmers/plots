@@ -24,6 +24,7 @@ import Data.Default
 import Data.Typeable
 import Data.Foldable (Foldable, foldMap, toList)
 import Diagrams.Prelude
+import Plots.Themes
 
 -- import Plots.Themes
 import Plots.Types
@@ -46,7 +47,10 @@ instance OrderedField n => Enveloped (BarPlot n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
-  renderPlotable _ t d _pp = drawBarPlot d # transform t
+  renderPlotable s d pp =
+    drawBarPlot d
+      # transform (s^.specTrans)
+      # applyBarStyle pp
 
 instance Fractional n => Default (BarPlot n) where
   def = BarPlot
@@ -54,6 +58,7 @@ instance Fractional n => Default (BarPlot n) where
           , _barWidth     = 0.5
           , _barSpacing   = 0.1
           , _verticleBars = True
+          , _stacked      = False
           }
 
 -- TODO: work out a nice way to get different colours for multi-bar plots.
