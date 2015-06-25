@@ -25,7 +25,7 @@ module Diagrams.Coordinates.Polar
 
   ) where
 
--- import           Control.Applicative
+import           Control.Applicative
 import qualified Data.Foldable as F
 
 import           Control.Lens
@@ -45,6 +45,7 @@ import           Linear.V3
 import           Linear.Vector
 
 import           Diagrams.Coordinates.Isomorphic
+import Prelude
 
 
 newtype Polar a = Polar (V2 a)

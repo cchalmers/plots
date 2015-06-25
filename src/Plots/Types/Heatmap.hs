@@ -29,6 +29,7 @@ import           Data.Typeable
 -- import qualified Data.Vector.Generic.Mutable     as GMV
 import qualified Data.Vector.Unboxed as U
 import           Data.Vector.Unboxed ((!))
+import qualified Data.Foldable as F
 -- import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
 
@@ -57,7 +58,7 @@ instance OrderedField n => Enveloped (HeatMap n) where
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HeatMap n) b where
   renderPlotable s hm@HeatMap {..} pp =
-      foldMap mk ps
+      F.foldMap mk ps
         # transform t
         # lwO 0.01
         # lc grey
@@ -174,7 +175,7 @@ heatMap p0@(P (V2 xp yp)) extnt ns s f' = intHeatMap p0 ns s f
 --   blocks, squares are overlapped to avoid this.
 heatSquares :: (TypeableFloat n, Renderable (Path V2 n) b) => V2 Int -> (V2 Int -> Colour Double) -> QDiagram b V2 n Any
 heatSquares (V2 x y) f =
-  alaf Dual foldMap mk ps
+  alaf Dual F.foldMap mk ps
     # lwO 0
 -- foldMap is reversed using Dual so the squares are placed in the correct order
   where

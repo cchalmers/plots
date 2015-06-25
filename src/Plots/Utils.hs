@@ -42,7 +42,7 @@ onefolded = conjoined folded' (indexing folded')
 {-# INLINE onefolded #-}
 
 folded' :: F.Foldable f => Fold (f a) a
-folded' f = coerce . getFolding . foldMap (Folding #. f)
+folded' f = coerce . getFolding . F.foldMap (Folding #. f)
 {-# INLINE folded' #-}
 
 ------------------------------------------------------------------------
