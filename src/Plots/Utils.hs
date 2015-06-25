@@ -15,6 +15,7 @@ import           Control.Lens.Internal.Fold
 import           Data.Monoid.Recommend
 import           Data.Profunctor.Unsafe
 import           Diagrams.Prelude           hiding (diff)
+import Data.Functor.Classes
 
 -- | @enumFromToN a b n@ calculates a list from @a@ to @b@ in @n@ steps.
 enumFromToN :: Fractional n => n -> n -> Int -> [n]
@@ -103,3 +104,17 @@ minmaxOf l = foldlOf' l (\(V2 mn mx) a -> V2 (min mn a) (max mx a)) (V2 (1/0) (-
       -- (\acc a -> acc <**> V2 min max ?? a)
 -- V2 is used instead of a tuple because V2 is strict.
 {-# INLINE minmaxOf #-}
+
+-- | Turn a containers of a tuple into an indexed container.
+newtype TIndexed f i a = TIndexed { unindex :: f (i, a) }
+
+instance (Show1 f, Show i, Show a) => Show (TIndexed f i a) where
+  showsPrec p (TIndexed f) = showParen (p > 10) $
+    showString "TIndexed " . showsPrec1 11 f
+
+instance F.Foldable f => F.Foldable (TIndexed f i) where
+  foldMap f = F.foldMap (f . snd) . unindex
+
+instance F.Foldable f => FoldableWithIndex i (TIndexed f i) where
+  ifoldMap f = F.foldMap (uncurry f) . unindex
+
