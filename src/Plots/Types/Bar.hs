@@ -17,6 +17,7 @@ module Plots.Types.Bar
   , barWidth
   , barSpacing
   , verticleBars
+  , stacked
   ) where
 
 import Control.Lens     hiding (transform, ( # ))
@@ -25,12 +26,14 @@ import Data.Typeable
 import Data.Foldable (Foldable, foldMap, toList)
 import Diagrams.Prelude
 import Plots.Themes
+import Data.Maybe
+import Plots.Utils
 
 -- import Plots.Themes
 import Plots.Types
 
 data BarPlot n = BarPlot
-  { barData       :: [(n,[n])] -- data for bars
+  { _barData       :: [(n,[n])] -- data for bars
   , _barWidth     :: n         -- total width of bars for one 'bit'
   , _barSpacing   :: n         -- gap between multibars in same value
   , _verticleBars :: Bool    -- whether the bars are verticle
@@ -43,7 +46,13 @@ type instance N (BarPlot n) = n
 makeLenses ''BarPlot
 
 instance OrderedField n => Enveloped (BarPlot n) where
-  getEnvelope = mempty
+  getEnvelope bp
+    | n == 0    = mempty
+    | otherwise = getEnvelope $ fromCorners (mkP2 xmin 0) (mkP2 xmax ymax)
+    where
+      n    = lengthOf barData bp
+      ymax = fromMaybe 0 $ maximumOf (barData . each . _2 . each) bp
+      V2 xmin xmax = minmaxOf (barData . each . _1) bp
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
@@ -54,7 +63,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
 
 instance Fractional n => Default (BarPlot n) where
   def = BarPlot
-          { barData       = []
+          { _barData       = []
           , _barWidth     = 0.5
           , _barSpacing   = 0.1
           , _verticleBars = True
@@ -64,7 +73,7 @@ instance Fractional n => Default (BarPlot n) where
 -- TODO: work out a nice way to get different colours for multi-bar plots.
 
 drawBarPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => BarPlot n -> QDiagram b V2 n Any
-drawBarPlot bp = foldMap makeBar (barData bp)
+drawBarPlot bp = foldMap makeBar (_barData bp)
   where
     tW = bp^.barWidth
     δ  = bp^.barSpacing
@@ -73,7 +82,7 @@ drawBarPlot bp = foldMap makeBar (barData bp)
     makeBar (x,bs) = ifoldMap mkBar bs
       where
         mkBar i h = rect w h
-                      # alignBL
+                      # alignB
                       # translateX (x + fromIntegral i * (δ + w))
         n = fromIntegral $ length bs
         w = recip n * (tW - δ * (n - 1))
@@ -82,7 +91,7 @@ drawBarPlot bp = foldMap makeBar (barData bp)
 --   plot _r _ t = transform t . drawBarPlot
 
 simpleBarPlot :: (TypeableFloat n, Foldable f) => f n -> BarPlot n
-simpleBarPlot (toList -> xs) = def { barData = imap f xs }
+simpleBarPlot (toList -> xs) = def { _barData = imap f xs }
   where
     f i h = (fromIntegral i + 1, [h])
 
