@@ -54,6 +54,7 @@ module Plots
   , r2Axis
   , renderAxis
   , Plot
+  , PlotState
 
     -- * Plotable
     -- $plotable

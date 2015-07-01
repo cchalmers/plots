@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 import Data.Csv hiding ((.=))
@@ -62,18 +63,31 @@ main = make $ renderAxis myaxis
 
 ------------------------------------------------------------------------
 
-namedBarPlotOf :: (Typeable b, Renderable (Text n) b, Renderable (Path V2 n) b, TypeableFloat n) => IndexedFold String s n -> s -> AxisState b V2 n
+namedBarPlotOf
+  :: (Typeable b,
+      Renderable (Text n) b,
+      Renderable (Path V2 n) b,
+      TypeableFloat n)
+  => IndexedFold String s n -> s -> AxisState b V2 n
 namedBarPlotOf l s = do
   let (nms, xs) = unzip $ itoListOf l s
   addPlotable $ simpleBarPlot xs
-  axisTickLabels . _x . tickLabelFunction .= \_ _ txtA -> imap (\x nm -> (fromIntegral x + 1, mkText (invertAlign txtA) nm # rotateBy (1/12))) nms
-  axisTickLabels . _y . tickLabelFunction .= atMajorTicks (\txtA n -> mkText txtA (show (toD n)))
+  axisTickLabels . _x . tickLabelFunction .= \_ _ a -> imap (rotatedLabel a) nms
+  axisTickLabels . _y . tickLabelFunction .=
+    atMajorTicks (\txtA n -> mkText txtA (show (toD n)))
   axisTicks . _x . majorTicksFun . mapped .= map fromIntegral [1 .. length xs]
   yMin .= Commit 0
 
 invertAlign :: TextAlignment n -> TextAlignment n
 invertAlign (BoxAlignedText x y) = BoxAlignedText y x
 invertAlign a = a
+
+rotatedLabel
+  :: (Renderable (Text n) b,
+      TypeableFloat n)
+  => TextAlignment n -> Int -> String -> (n, QDiagram b V2 n Any)
+rotatedLabel a x nm =
+  (fromIntegral x + 1, mkText (invertAlign a) nm # rotateBy (1/12))
 
 toD :: Real a => a -> Float
 toD = realToFrac

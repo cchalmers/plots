@@ -74,9 +74,9 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     where
       t = s ^. specTrans
       ls = s ^. specScale
-      mk a = marker # moveTo (specPoint s $ sPos a)
-                    # maybe id (transform  . ($ a)) sTr
+      mk a = marker # maybe id (transform  . ($ a)) sTr
                     # maybe id (applyStyle . ($ a)) sSty
+                    # moveTo (specPoint s $ sPos a)
       marker = pp ^. plotMarker
 
   defLegendPic GScatterPlot {..} pp =
