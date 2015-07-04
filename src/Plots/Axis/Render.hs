@@ -176,11 +176,12 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
                       # applyStyle (tickLabelsD ^. tickLabelStyle)
       where
         tickLabelsD  = a ^. axisTickLabels . el e
-        labelFun     = tickLabelsD ^. tickLabelFunction
-        drawLabels y = foldMap f (labelFun majorTickXs b txtAlign)
+        labelFun     = tickLabelsD ^. tickLabelFun
+        drawLabels y = foldMap f (labelFun majorTickXs b)
           where
-            f (x, dia) = place dia p'
+            f (x, l) = place dia p'
               where
+                dia = view tickLabelTextFun tickLabelsD txtAlign l
                 p' = p & ep e  .~ x
                        & ep eO .~ y
                        -- & logPoint ls

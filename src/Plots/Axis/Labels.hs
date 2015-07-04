@@ -12,11 +12,13 @@ import Control.Lens  hiding (( # ))
 import Data.Default
 import Data.Data
 
-import Numeric
-
 import Diagrams.Prelude   hiding (view)
 import Diagrams.TwoD.Text
 import Plots.Types
+
+-- | Function to render the axis label from a string. This is very basic
+--   now and will be replace by a more sophisticated system.
+type TextFunction b v n = TextAlignment n -> String -> QDiagram b v n Any
 
 ------------------------------------------------------------------------
 -- Axis labels
@@ -33,12 +35,8 @@ data AxisLabelPlacement
    = InsideAxisLabel
    | OutsideAxisLabel
 
--- | Function to render the axis label from a string. This is very basic
--- now and will be replace by a more sophisticated system.
-type AxisLabelFunction b v n = TextAlignment n -> String -> QDiagram b v n Any
-
 data AxisLabel b v n = AxisLabel
-  { _axisLabelFunction  :: AxisLabelFunction b v n
+  { _axisLabelFunction  :: TextFunction b v n
   , _axisLabelText      :: String
   , _axisLabelStyle     :: Style v n
   , _axisLabelGap       :: n
@@ -51,13 +49,13 @@ makeLenses ''AxisLabel
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (AxisLabel b V2 n) where
   def = AxisLabel
-          { _axisLabelFunction  = mkText
-          , _axisLabelText      = ""
-          , _axisLabelStyle     = mempty & fontSize (output 8)
-          , _axisLabelGap       = 20
-          , _axisLabelPos       = MiddleAxisLabel
-          , _axisLabelPlacement = OutsideAxisLabel
-          }
+    { _axisLabelFunction  = mkText
+    , _axisLabelText      = ""
+    , _axisLabelStyle     = mempty & fontSize (output 8)
+    , _axisLabelGap       = 20
+    , _axisLabelPos       = MiddleAxisLabel
+    , _axisLabelPlacement = OutsideAxisLabel
+    }
 
 type AxisLabels b v n = v (AxisLabel b (BaseSpace v) n)
 
@@ -70,11 +68,11 @@ type AxisLabels b v n = v (AxisLabel b (BaseSpace v) n)
 -- | Tick labels functions are used to draw the tick labels. They has access to
 --   the major ticks and the current bounds. Returns the position of the
 --   tick and label to use at that position.
-type TickLabelFunction b v n
-  = [n] -> (n,n) -> TextAlignment n -> [(n, QDiagram b v n Any)]
+type TickLabelFunction n = [n] -> (n,n) -> [(n, String)]
 
 data TickLabels b v n = TickLabels
-  { _tickLabelFunction :: TickLabelFunction b v n
+  { _tickLabelFun      :: TickLabelFunction n
+  , _tickLabelTextFun  :: TextFunction b v n
   , _tickLabelStyle    :: Style v n
   , _tickGap           :: n
   } deriving Typeable
@@ -86,36 +84,29 @@ type AxisTickLabels b v n = v (TickLabels b (BaseSpace v) n)
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (TickLabels b V2 n) where
   def = TickLabels
-          { _tickLabelFunction = atMajorTicks label
-          , _tickLabelStyle    = mempty & fontSize (output 8)
-          , _tickGap           = 8
-          }
+    { _tickLabelFun     = atMajorTicks floatShow
+    , _tickLabelTextFun = mkText
+    , _tickLabelStyle   = mempty & fontSize (output 8)
+    , _tickGap          = 8
+    }
+
+-- | Numbers are shown as 'Float's to reduce the chance of numbers like
+--   1.30000000008. (This is not an idea solution.)
+floatShow :: Real n => n -> String
+floatShow = show . (realToFrac :: Real n => n -> Float)
 
 -- | Make a 'TickLabelFunction' by specifying how to draw a single label
 --   from a position on the axis.
-atMajorTicks
-  :: (TextAlignment n -> n -> QDiagram b v n Any)
-  -> TickLabelFunction b v n
-atMajorTicks f ticks _ a = map ((,) <*> f a) ticks
+atMajorTicks :: (n -> String) -> TickLabelFunction n
+atMajorTicks f ticks _ = map ((,) <*> f) ticks
 
--- | Standard way to render a label by using 'Text'.
-label
-  :: (TypeableFloat n, Renderable (Text n) b)
-  => TextAlignment n
-  -> n
-  -> QDiagram b V2 n Any
-label a n = mkText a $ showFFloat (Just 2) n ""
+-- leftLabel :: (TypeableFloat n, Renderable (Text n) b) => n -> QDiagram b V2 n Any
+-- leftLabel n = alignedText 1 0.5 (showFFloat (Just 2) n "")
 
-leftLabel :: (TypeableFloat n, Renderable (Text n) b) => n -> QDiagram b V2 n Any
-leftLabel n = alignedText 1 0.5 (showFFloat (Just 2) n "")
-
--- | Use the list of strings as the labels for the axis, starting at 0
--- and going to 1, 2, 3 ...
-stringLabels :: Num n
-             => (TextAlignment n -> String -> QDiagram b v n Any)
-             -> [String]
-             -> TickLabelFunction b v n
-stringLabels f ls _ _ a = imap (\i l -> (fromIntegral i, f a l)) ls
+-- | Use the list of strings as the labels for the axis, starting at 1
+-- and going to 2, 3, 4 ...
+stringLabels :: Num n => [String] -> TickLabelFunction n
+stringLabels nms _ _ = imap (\i l -> (fromIntegral (i + 1), l)) nms
 
 
 -- -- horrible name

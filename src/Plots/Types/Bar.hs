@@ -8,7 +8,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Plots.Types.Bar
-  ( BarPlot
+  ( BarPlot (..)
   , simpleBarPlot
     -- * Prism
   , _BarPlot
@@ -47,10 +47,9 @@ makeLenses ''BarPlot
 
 instance OrderedField n => Enveloped (BarPlot n) where
   getEnvelope bp
-    | n == 0    = mempty
-    | otherwise = getEnvelope $ fromCorners (mkP2 xmin 0) (mkP2 xmax ymax)
+    | nullOf barData bp = mempty
+    | otherwise         = getEnvelope $ fromCorners (mkP2 xmin 0) (mkP2 xmax ymax)
     where
-      n    = lengthOf barData bp
       ymax = fromMaybe 0 $ maximumOf (barData . each . _2 . each) bp
       V2 xmin xmax = minmaxOf (barData . each . _1) bp
 

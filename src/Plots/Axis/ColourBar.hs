@@ -15,7 +15,8 @@ data ColourBarOpts b n = ColourBarOpts
   , _cbShow        :: Bool
   , _cbTickFun     :: (n,n) -> [n] -- MajorTicksFunction
   , _cbTicks       :: Bool
-  , _cbTickLabels  :: [n] -> (n,n) -> TextAlignment n -> [(n, QDiagram b V2 n Any)]
+  , _cbTickLabels  :: [n] -> (n,n) -> [(n, String)]
+  , _cbTextFun     :: TextAlignment n -> String -> QDiagram b V2 n Any
   , _cbExtent      :: V2 n
   , _cbGap         :: n
   , _cbStyle       :: Style V2 n
@@ -27,9 +28,10 @@ defColourBar :: (Renderable (Text n) b, Renderable (Path V2 n) b, TypeableFloat 
 defColourBar = ColourBarOpts
   { _cbOrientation = Verticle
   , _cbShow        = False
+  , _cbTextFun     = mkText
   , _cbTickFun     = linearMajorTicks 3
   , _cbTicks       = True
-  , _cbTickLabels  = atMajorTicks label
+  , _cbTickLabels  = atMajorTicks floatShow
   , _cbExtent      = V2 15 200
   , _cbGap         = 20
   , _cbStyle       = mempty
@@ -47,13 +49,13 @@ drawColourBar cbo cm a b = centerY $ bar ||| strutX 5 ||| labels
                     # scaleY y
                     # applyStyle (cbo ^. cbStyle)
                     # alignB
-    labels = position (over (each . _1) toPos ls)
+    labels = position (map (bimap toPos (view cbTextFun cbo tAlign)) ls)
                # fontSizeO 8
     V2 x y = cbo ^. cbExtent
     toPos t = mkP2 0 (t * y / (b - a))
     tx = mkLinearGradient (toStops cm) (mkP2 0 (-0.5)) (mkP2 0 0.5) GradPad
     ps = view cbTickFun cbo (a,b)
-    ls = view cbTickLabels cbo ps (a,b) tAlign
+    ls = view cbTickLabels cbo ps (a,b)
     tAlign = orient (cbo^.cbOrientation) (BoxAlignedText 0.5 1) (BoxAlignedText 0 0.5)
 
 addColourBar :: (TypeableFloat n, Renderable (Path V2 n) b)
