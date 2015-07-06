@@ -47,9 +47,7 @@
 
 module Plots
   ( -- * Data types and classes
-    AxisState
-  , axisState
-  , PointLike
+    PointLike
   , Axis
   , r2Axis
   , renderAxis
@@ -308,13 +306,15 @@ import           Plots.Axis.ColourBar
 
 -- | Convienient type synonym for renderable types that all the standard
 --   2D backends support.
-type R2Backend b n = (Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b, TypeableFloat n, Enum n)
+type R2Backend b n =
+  (Renderable (Path V2 n) b,
+   Renderable (Text n) b,
+   Typeable b,
+   TypeableFloat n,
+   Enum n)
 
--- newtype AxisStateM b v n a = AxisState (State (P.Axis b v n) a)
---   deriving (Functor, Applicative, Monad, MonadState (P.Axis b v n))
-
-type AxisStateM b v n = State (Axis b v n)
-type AxisState b v n  = AxisStateM b v n ()
+-- type AxisStateM b v n = State (Axis b v n)
+-- type AxisState b v n  = AxisStateM b v n ()
 
 type PlotStateM a b = State (PropertiedPlot a b)
 
@@ -377,23 +377,25 @@ type PlotState a b  = PlotStateM a b ()
 -- of @a@, it takes the data needed to make the plot.
 
 -- | Add something 'Plotable' to the axis.
-addPlotable :: (InSpace (BaseSpace v) n a, Plotable a b) => a -> AxisState b v n
+-- addPlotable :: (InSpace (BaseSpace v) n a, MoPlotable a b) => a -> AxisState b v n
+addPlotable :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
+            => a -> m ()
 addPlotable a = axisPlots %= flip snoc (Plot' a mempty)
 
 -- | Add something 'Plotable' and modify the 'PlotState' of that plot.
-addPlotable' :: (InSpace (BaseSpace v) n a, Plotable a b)
-             => a -> PlotState a b -> AxisState b v n
+addPlotable' :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
+             => a -> PlotState a b -> m ()
 addPlotable' a s = axisPlots <>= [Plot' a (Endo $ execState s)]
 
 -- | Add something 'Plotable' with given legend entry.
-addPlotableL :: (InSpace (BaseSpace v) n a, Plotable a b)
-             => String -> a -> AxisState b v n
+addPlotableL :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
+             => String -> a -> m ()
 addPlotableL l a = addPlotable' a $ addLegendEntry l
 
 -- | Add something 'Plotable' with given legend entry and modify the
 --   'PlotState' of that plot.
-addPlotableL' :: (InSpace (BaseSpace v) n a, Plotable a b)
-              => String -> a -> PlotState a b -> AxisState b v n
+addPlotableL' :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
+              => String -> a -> PlotState a b -> m ()
 addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
 ------------------------------------------------------------------------
@@ -418,8 +420,13 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 --   myaxis = r2Axis ~&
 --     scatterPlot data1
 -- @
-scatterPlot :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
-            => f p -> AxisState b c n
+scatterPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ScatterPlot v n) b,
+      F.Foldable f)
+  => f p -> m ()
 scatterPlot d = addPlotable (mkScatterPlot d)
 
 -- | Make a 'ScatterPlot' and take a 'State' on the plot to alter it's
@@ -431,8 +438,13 @@ scatterPlot d = addPlotable (mkScatterPlot d)
 --       connectingLine .= True
 --       addLegendEntry "data 1"
 -- @
-scatterPlot' :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
-             => f p -> PlotState (ScatterPlot v n) b -> AxisState b c n
+scatterPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ScatterPlot v n) b,
+      F.Foldable f)
+  => f p -> PlotState (ScatterPlot v n) b -> m ()
 scatterPlot' d = addPlotable' (mkScatterPlot d)
 
 -- | Add a 'ScatterPlot' with the given name for the legend entry.
@@ -442,22 +454,39 @@ scatterPlot' d = addPlotable' (mkScatterPlot d)
 --     scatterPlotL "blue team" pointData1
 --     scatterPlotL "red team" pointData2
 -- @
-scatterPlotL :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b, F.Foldable f)
-             => String -> f p -> AxisState b c n
+scatterPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ScatterPlot v n) b,
+      F.Foldable f)
+  => String -> f p -> m ()
 scatterPlotL l d = addPlotableL l (mkScatterPlot d)
 
 -- Fold variants
 
-scatterPlotOf :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b)
-              => Fold s p -> s -> AxisState b c n
+scatterPlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ScatterPlot v n) b)
+  => Fold s p -> s -> m ()
 scatterPlotOf f s = addPlotable (mkScatterPlotOf f s)
 
-scatterPlotOf' :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b)
-               => Fold s p -> s -> PlotState (ScatterPlot v n) b -> AxisState b c n
+scatterPlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ScatterPlot v n) b)
+  => Fold s p -> s -> PlotState (ScatterPlot v n) b -> m ()
 scatterPlotOf' f s = addPlotable' (mkScatterPlotOf f s)
 
-scatterPlotLOf :: (v ~ BaseSpace c, PointLike v n p, Plotable (ScatterPlot v n) b)
-               => String -> Fold s p -> s -> AxisState b c n
+scatterPlotLOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ScatterPlot v n) b)
+  => String -> Fold s p -> s -> m ()
 scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 
 ------------------------------------------------------------------------
@@ -491,11 +520,17 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 -- Line plots are internally represented by 'Path'.
 
 -- | Construct a single line plot.
-linePlot :: (v ~ BaseSpace c, PointLike v n p, R2Backend b n, Plotable (Path v n) b, F.Foldable f)
-         => f p -> AxisState b c n
+linePlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      R2Backend b n,
+      Plotable (Path v n) b,
+      F.Foldable f)
+  => f p -> m ()
 linePlot d = addPlotable (mkPath $ Identity d)
 
-pathPlot :: R2Backend b n => Path V2 n -> AxisState b V2 n
+pathPlot :: (R2Backend b n, MonadState (Axis b V2 n) m) => Path V2 n -> m ()
 pathPlot = addPlotable
 
 ------------------------------------------------------------------------
@@ -522,8 +557,15 @@ pathPlot = addPlotable
 -- Diagram Plot
 ------------------------------------------------------------------------
 
-diagramPlot :: (v ~ BaseSpace c, Renderable (Path V2 n) b, Typeable b, Typeable v, Metric v, TypeableFloat n)
-              => QDiagram b v n Any -> AxisState b c n
+diagramPlot
+  :: (v ~ BaseSpace c,
+      Renderable (Path V2 n) b,
+      MonadState (Axis b c n) m,
+      Typeable b,
+      Typeable v,
+      Metric v,
+      TypeableFloat n)
+  => QDiagram b v n Any -> m ()
 diagramPlot = addPlotable
 
 ------------------------------------------------------------------------
@@ -541,8 +583,8 @@ addLegendEntry :: (MonadState a m, HasPlotProperties a, Num (N a))
                => String -> m ()
 addLegendEntry s = legendEntries <>= [mkLegendEntry s]
 
-axisState :: Axis b v n -> AxisStateM b v n a -> Axis b v n
-axisState a s = execState s a
+-- axisState :: Axis b v n -> AxisStateM b v n a -> Axis b v n
+-- axisState a s = execState s a
 
 
 --
@@ -607,16 +649,16 @@ setAxesLabelGaps :: Traversable v => Traversal' (Axis b v n) n
 setAxesLabelGaps = axisLabels . traverse . axisLabelGap
 
 -- | Label the x,y and z axis with \"x\", \"y\" and \"z\" respectively.
-cartesianLabels :: Traversable v => AxisState b v n
+cartesianLabels :: (Traversable v, MonadState (Axis b v n) m) => m ()
 cartesianLabels =
   partsOf (axisLabels . traverse . axisLabelText) .= ["x", "y", "z"]
 
 -- | Set the aspect ratio of given axis.
-setAxisRatio :: E v -> n -> AxisState b v n
+setAxisRatio :: MonadState (Axis b v n) m => E v -> n -> m ()
 setAxisRatio e n = axisScaling . el e . aspectRatio .= Commit n
 
 -- | Make each axis have the same unit length.
-equalAxis :: (Functor v, Num n) => AxisState b v n
+equalAxis :: (MonadState (Axis b v n) m, Functor v, Num n) => m ()
 equalAxis = axisScaling . mapped . aspectRatio .= Commit 1
 
 ------------------------------------------------------------------------
@@ -624,47 +666,47 @@ equalAxis = axisScaling . mapped . aspectRatio .= Commit 1
 ------------------------------------------------------------------------
 
 -- | Set no major or minor grid lines for all axes.
-noGridLines :: Functor v => AxisState b v n
+noGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
 noGridLines = noMajorGridLines >> noMinorGridLines
 
 -- | Set no major or minor grid lines for given axes.
-noGridLine :: E v -> AxisState b v n
+noGridLine :: MonadState (Axis b v n) m => E v -> m ()
 noGridLine e = noMajorGridLine e >> noMinorGridLine e
 
 -- Majors
 
 -- | Add major grid lines for all axes.
-setMajorGridLines :: Functor v => AxisState b v n
+setMajorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
 setMajorGridLines = axisGridLines . mapped . majorGridF .= tickGridF
 
 -- | Add major grid lines for given axis.
-setMajorGridLine :: E v -> AxisState b v n
+setMajorGridLine :: MonadState (Axis b v n) m => E v -> m ()
 setMajorGridLine (E e) = axisGridLines . e . majorGridF .= tickGridF
 
 -- | Set no major grid lines for all axes.
-noMajorGridLines :: Functor v => AxisState b v n
+noMajorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
 noMajorGridLines = axisGridLines . mapped . majorGridF .= noGridF
 
 -- | Set no major grid lines for given axis.
-noMajorGridLine :: E v -> AxisState b v n
+noMajorGridLine :: MonadState (Axis b v n) m => E v -> m ()
 noMajorGridLine (E l) = axisGridLines . l . majorGridF .= noGridF
 
 -- Minors
 
 -- | Add minor grid lines for all axes.
-setMinorGridLines :: Functor v => AxisState b v n
+setMinorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
 setMinorGridLines = axisGridLines . mapped . minorGridF .= tickGridF
 
 -- | Add minor grid lines for given axis.
-setMinorGridLine :: E v -> AxisState b v n
+setMinorGridLine :: MonadState (Axis b v n) m => E v -> m ()
 setMinorGridLine (E l) = axisGridLines . l . minorGridF .= tickGridF
 
 -- | Set no minor grid lines for all axes.
-noMinorGridLines :: Functor v => AxisState b v n
+noMinorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
 noMinorGridLines = axisGridLines . mapped . minorGridF .= noGridF
 
 -- | Set no minor grid lines for given axis.
-noMinorGridLine :: E v -> AxisState b v n
+noMinorGridLine :: MonadState (Axis b v n) m => E v -> m ()
 noMinorGridLine (E l) = axisGridLines . l . minorGridF .= noGridF
 
 -- | Traversal over both major and minor grid lines for all axes.
@@ -704,13 +746,13 @@ zMax = boundMin ey
 ------------------------------------------------------------------------
 
 -- | Set all axis grid lines to form a box.
-boxAxisLines :: Functor v => AxisState b v n
+boxAxisLines :: (Functor v, MonadState (Axis b v n) m) => m ()
 boxAxisLines =
   axisLines . mapped . axisLineType .= BoxAxisLine
 
 -- | Set all axis grid lines to pass though the origin. If the origin is
 --   not in bounds the line will be on the edge closest to the origin.
-middleAxisLines :: Functor v => AxisState b v n
+middleAxisLines :: (Functor v, MonadState (Axis b v n) m) => m ()
 middleAxisLines =
   axisLines . mapped . axisLineType .= MiddleAxisLine
 
@@ -745,24 +787,24 @@ middleAxisLines =
 ------------------------------------------------------------------------
 
 -- | Remove minor ticks from all axes.
-noMinorTicks :: Functor v => AxisState b v n
+noMinorTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
 noMinorTicks =
   axisTicks . mapped . minorTickAlign .= noTicks
 
 -- | Remove major ticks from all axes.
-noMajorTicks :: Functor v => AxisState b v n
+noMajorTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
 noMajorTicks =
   axisTicks . mapped . majorTickAlign .= noTicks
 
 -- | Remove both major and minor ticks from all axes.
-noAxisTicks :: Functor v => AxisState b v n
+noAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
 noAxisTicks = noMinorTicks >> noMajorTicks
 
-centerAxisTicks :: Functor v => AxisState b v n
+centerAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
 centerAxisTicks =
   axisTicks . mapped . tickAlign .= centerTicks
 
-insideAxisTicks :: Functor v => AxisState b v n
+insideAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
 insideAxisTicks =
   axisTicks . mapped . tickAlign .= insideTicks
 
@@ -787,7 +829,7 @@ insideAxisTicks =
 -- 'addHeatMap' to turn it on or it can be turned on explicitly by
 -- 'showColorBar'.
 
-showColourBar :: AxisState b v n
+showColourBar :: MonadState (Axis b v n) m => m ()
 showColourBar = axisColourBar . cbShow .= True
 
 

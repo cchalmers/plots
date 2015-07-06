@@ -100,16 +100,8 @@ floatShow = show . (realToFrac :: Real n => n -> Float)
 atMajorTicks :: (n -> String) -> TickLabelFunction n
 atMajorTicks f ticks _ = map ((,) <*> f) ticks
 
--- leftLabel :: (TypeableFloat n, Renderable (Text n) b) => n -> QDiagram b V2 n Any
--- leftLabel n = alignedText 1 0.5 (showFFloat (Just 2) n "")
-
 -- | Use the list of strings as the labels for the axis, starting at 1
 -- and going to 2, 3, 4 ...
 stringLabels :: Num n => [String] -> TickLabelFunction n
 stringLabels nms _ _ = imap (\i l -> (fromIntegral (i + 1), l)) nms
-
-
--- -- horrible name
--- labelFunctionFromTicks :: (Double -> Diagram b R2) -> TickFunction -> LabelFunction b
--- labelFunctionFromTickFunction f aF bounds = map ((,) <*> f) (aF bounds)
 
