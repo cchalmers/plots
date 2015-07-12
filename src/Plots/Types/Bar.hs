@@ -23,13 +23,12 @@ module Plots.Types.Bar
 import Control.Lens     hiding (transform, ( # ))
 import Data.Default
 import Data.Typeable
-import Data.Foldable (Foldable, foldMap, toList)
+import qualified Data.Foldable as F (Foldable, foldMap, toList)
 import Diagrams.Prelude
 import Plots.Themes
 import Data.Maybe
 import Plots.Utils
 
--- import Plots.Themes
 import Plots.Types
 
 data BarPlot n = BarPlot
@@ -72,7 +71,7 @@ instance Fractional n => Default (BarPlot n) where
 -- TODO: work out a nice way to get different colours for multi-bar plots.
 
 drawBarPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => BarPlot n -> QDiagram b V2 n Any
-drawBarPlot bp = foldMap makeBar (_barData bp)
+drawBarPlot bp = F.foldMap makeBar (_barData bp)
   where
     tW = bp^.barWidth
     δ  = bp^.barSpacing
@@ -89,8 +88,8 @@ drawBarPlot bp = foldMap makeBar (_barData bp)
 -- instance (Typeable b, Renderable (Path R2) b) => Plotable (BarPlot b) b R2 where
 --   plot _r _ t = transform t . drawBarPlot
 
-simpleBarPlot :: (TypeableFloat n, Foldable f) => f n -> BarPlot n
-simpleBarPlot (toList -> xs) = def { _barData = imap f xs }
+simpleBarPlot :: (TypeableFloat n, F.Foldable f) => f n -> BarPlot n
+simpleBarPlot (F.toList -> xs) = def { _barData = imap f xs }
   where
     f i h = (fromIntegral i + 1, [h])
 

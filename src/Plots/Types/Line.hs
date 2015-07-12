@@ -14,10 +14,7 @@ module Plots.Types.Line where
 
 import Control.Lens     hiding (transform, ( # ), lmap)
 import qualified Data.Foldable    as F
--- import Data.Typeable
 import Diagrams.Prelude
--- import Diagrams.LinearMap
--- import Diagrams.ThreeD.Types
 
 import Diagrams.Coordinates.Isomorphic
 
