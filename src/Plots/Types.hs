@@ -70,7 +70,6 @@ module Plots.Types
   , Plot (..)
   , _Plot
 
-  , B
   -- , plotLineStyle
   -- , plotMarkerStyle
   -- , plotFillStyle
@@ -87,8 +86,6 @@ module Plots.Types
   , appPlot'
   ) where
 
--- import           Control.Lens          as L hiding (transform, ( # ), (|>))
--- import           Data.Default
 import           Data.Functor.Rep
 import           Data.Monoid.Recommend
 import           Data.Typeable
@@ -111,11 +108,6 @@ type family BaseSpace (c :: * -> *) :: * -> *
 type instance BaseSpace V2    = V2
 type instance BaseSpace Polar = V2
 type instance BaseSpace V3    = V3
-
--- | Similar to V and N type families but for the Backend.
-type family B a :: *
-
-type instance B (QDiagram b v n m) = b
 
 -- Bounds
 
@@ -226,7 +218,6 @@ makeLenses ''LegendEntry
 
 type instance V (LegendEntry b v n) = v
 type instance N (LegendEntry b v n) = n
-type instance B (LegendEntry b v n) = b
 
 mkLegendEntry :: Num n => String -> LegendEntry b v n
 mkLegendEntry x = LegendEntry DefaultLegendPic x 0
@@ -245,7 +236,6 @@ data PlotProperties b v n = PlotProperties
   , _plotBoundingBox :: BoundingBox v n
   } deriving Typeable
 
-type instance B (PlotProperties b v n) = b
 type instance V (PlotProperties b v n) = v
 type instance N (PlotProperties b v n) = n
 
@@ -259,10 +249,10 @@ type BaseV t = BaseSpace (V t)
 
 -- | Class that gives a lens onto a 'plotProperties'. All 'Plot's must impliment
 --   this class.
-class HasPlotProperties t where
+class HasPlotProperties t b | t -> b where
 
   {-# MINIMAL plotProperties #-}
-  plotProperties :: Lens' t (PlotProperties (B t) (V t) (N t))
+  plotProperties :: Lens' t (PlotProperties b (V t) (N t))
 
   -- | Clip anything outside the current axis bounds.
   clipPlot :: Lens' t Bool
@@ -270,12 +260,12 @@ class HasPlotProperties t where
   {-# INLINE clipPlot #-}
 
   -- | The theme entry to be used for the current plot.
-  plotPropertiesStyle :: Lens' t (PlotStyle (B t) (V t) (N t))
+  plotPropertiesStyle :: Lens' t (PlotStyle b (V t) (N t))
   plotPropertiesStyle = plotProperties . lens _plotStyle (\g a -> g { _plotStyle = a})
   {-# INLINE plotPropertiesStyle #-}
 
   -- | The legend entries to be used for the current plot.
-  legendEntries :: Lens' t [LegendEntry (B t) (V t) (N t)]
+  legendEntries :: Lens' t [LegendEntry b (V t) (N t)]
   legendEntries = plotProperties . lens _legendEntries (\g a -> g { _legendEntries = a})
   {-# INLINE legendEntries #-}
 
@@ -307,7 +297,7 @@ class HasPlotProperties t where
   --   (\g a -> g { _plotBoundingBox = a})
   -- {-# INLINE plotBoundingBox #-}
 
-instance HasPlotProperties (PlotProperties b v n) where
+instance HasPlotProperties (PlotProperties b v n) b where
   plotProperties = id
   {-# INLINE plotProperties #-}
 
@@ -411,7 +401,6 @@ data Plot b v n where
        => a -> Plot b v n
   deriving (Typeable)
 
-type instance B (Plot b v n) = b
 type instance V (Plot b v n) = v
 type instance N (Plot b v n) = n
 
@@ -447,11 +436,10 @@ data PropertiedPlot p b = PP p (PlotProperties b (V p) (N p))
 _pp :: (V p ~ V p', N p ~ N p') => Lens (PropertiedPlot p b) (PropertiedPlot p' b) p p'
 _pp = lens (\(PP a _) -> a) (\(PP _ p) a -> PP a p)
 
-type instance B (PropertiedPlot p b) = b
 type instance V (PropertiedPlot p b) = V p
 type instance N (PropertiedPlot p b) = N p
 
-instance HasPlotProperties (PropertiedPlot p b) where
+instance HasPlotProperties (PropertiedPlot p b) b where
   plotProperties = lens (\(PP _ pp) -> pp) (\(PP a _) pp -> PP a pp)
 
 -- | Internal type for storing plots in an axis.

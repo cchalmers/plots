@@ -125,7 +125,6 @@ makeLenses ''Axis
 
 type instance V (Axis b v n) = BaseSpace v
 type instance N (Axis b v n) = n
-type instance B (Axis b v n) = b
 
 axisLine :: E v -> Lens' (Axis b v n) (AxisLine n)
 axisLine (E l) = axisLines . l
@@ -156,7 +155,7 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
     , _axisPP         = def
     }
 
-instance HasPlotProperties (Axis b v n) where
+instance HasPlotProperties (Axis b v n) b where
   plotProperties = axisPP
   {-# INLINE plotProperties #-}
 

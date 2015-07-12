@@ -137,7 +137,6 @@ data Legend b n = Legend
 
 type instance V (Legend b n) = V2
 type instance N (Legend b n) = n
-type instance B (Legend b n) = b
 
 makeLenses ''Legend
 

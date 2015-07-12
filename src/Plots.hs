@@ -579,7 +579,7 @@ diagramPlot = addPlotable
 -- Legend
 ------------
 
-addLegendEntry :: (MonadState a m, HasPlotProperties a, Num (N a))
+addLegendEntry :: (MonadState a m, HasPlotProperties a b, Num (N a))
                => String -> m ()
 addLegendEntry s = legendEntries <>= [mkLegendEntry s]
 
