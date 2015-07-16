@@ -789,10 +789,10 @@ linerangehPlotL l a s = linePlotL l (createlinerangeh a s)
 
 linerangehPlotwithPoint a s = do 
      linePlot' (createlinerangeh a s) $ do
-        plotColor .= blue
+        plotColor .= purple
         addLegendEntry "data 1"
      scatterPlot' [a] $ do
-        plotColor .= blue
+        plotColor .= purple
         plotMarker %= scale 2 
 
 -- add more api with option for colour 
