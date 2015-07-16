@@ -30,7 +30,7 @@ module Plots.Types.Ribbon
   , mkRibbonPlot
   
   , strokeEdge
-  , fillStyle
+  , fillOpacity
   
 --  , StepPlot
 --  , mkStepPlotOf
@@ -62,7 +62,7 @@ data GRibbonPlot v n a = forall s. GRibbonPlot
   { sData :: s
   , sFold :: Fold s a
   , sPos  :: a -> Point v n
-  , sSty  :: Maybe (a -> Style V2 n)
+  , sOpa  :: Double
   , sLine :: Bool
   } deriving Typeable
 
@@ -79,9 +79,11 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         # closeLine 
         # strokeLoop
         # lw none
+        # applyBarStyle pp
         # translate  (r2 (unp2 (firstinlist (toListOf (sFold . to sPos . to (logPoint ls)) sData))))
         # transform t
-        # applyBarStyle pp
+        # opacity sOpa
+        
    <> if sLine
         then fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
                # transform t
@@ -90,8 +92,6 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     where
       t = s ^. specTrans
       ls = s ^. specScale
-      mk a = marker # maybe id (applyStyle . ($ a)) sSty
-                    # moveTo (specPoint s $ sPos a)
       marker = pp ^. plotMarker
 
   defLegendPic GRibbonPlot {..} pp 
@@ -126,7 +126,7 @@ mkRibbonPlotOf f a = GRibbonPlot
   { sData = a
   , sFold = f . unpointLike
   , sPos  = id
-  , sSty  = Nothing
+  , sOpa  = 1
   , sLine = True
   }
 
@@ -137,8 +137,8 @@ mkRibbonPlotOf f a = GRibbonPlot
 class HasRibbon a v n d | a -> v n, a -> d where
   ribbon :: Lens' a (GRibbonPlot v n d)
 
-  fillStyle  :: Lens' a (Maybe (d -> Style V2 n))
-  fillStyle  =  ribbon . lens sSty (\sp sty -> sp {sSty = sty})
+  fillOpacity  :: Lens' a Double
+  fillOpacity  =  ribbon . lens sOpa (\sp opa -> sp {sOpa = opa})
 
   strokeEdge :: Lens' a Bool
   strokeEdge = ribbon . lens sLine (\s b -> (s {sLine = b}))
