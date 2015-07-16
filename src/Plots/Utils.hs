@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Plots.Utils 
+module Plots.Utils
     ( zeroy
     , multiply'
     , append'
@@ -18,7 +18,7 @@ module Plots.Utils
     , oneeach
     , onefolded
     , folded'
-    , liftRecommend 
+    , liftRecommend
     , fromCommit
     , pathFromVertices
     , minmaxOf
@@ -42,13 +42,15 @@ import           Data.Functor.Classes
 zeroy :: [(Double, Double)] -> [(Double, Double)]
 zeroy xs = [(a,0) | (a,_) <- xs]
 
+multiply' :: Num a => a -> a -> a
 multiply' x y = x*y
 
 append' :: [a] -> [a] -> [a]
 append' a b = a ++ (reverse b)
 
-maker' x y = map p2 (zip x y)
+-- maker' x y = map p2 (zip x y)
 
+makepoint :: (n,n) -> P2 n
 makepoint (x,y) = p2 (x,y)
 
 createdata :: [String] -> [Double]
@@ -58,10 +60,13 @@ createdata xs = [(relate x (zip ds [1.0..]))/fromIntegral  ((length ds)+ 1)| x<-
 relate :: Eq a => a -> [(a, b)] -> b
 relate c = snd.head.dropWhile ((/=c).fst)
 
-creategroupdata :: [(Double, Double)] -> [String] -> [([(Double,Double)],String)]
-creategroupdata xs ys = foobarmulti (zip xs ys) (nub ys)
- 
+-- creategroupdata :: [(Double, Double)] -> [String] -> [([(Double,Double)],String)]
+-- creategroupdata xs ys = foobarmulti (zip xs ys) (nub ys)
+
+foobarsingle :: Eq t => [(t1, t)] -> t -> ([t1], t)
 foobarsingle xs string = ([fst x | x <- xs, snd x == string ], string)
+
+foobarmulti :: Eq t => [(t1, t)] -> [t] -> [([t1], t)]
 foobarmulti xs ds = [foobarsingle xs d | d <- ds]
 
 ------------------------------------------------------------------------

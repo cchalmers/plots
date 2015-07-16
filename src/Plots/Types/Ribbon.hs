@@ -28,10 +28,10 @@ module Plots.Types.Ribbon
   , RibbonPlot
   , mkRibbonPlotOf
   , mkRibbonPlot
-  
+
   , strokeEdge
   , fillOpacity
-  
+
 --  , StepPlot
 --  , mkStepPlotOf
 --  , mkStepPlot
@@ -47,7 +47,7 @@ module Plots.Types.Ribbon
 import           Control.Lens     hiding (transform, ( # ), lmap, none)
 import qualified Data.Foldable    as F
 import           Data.Typeable
-import           Diagrams.Coordinates.Isomorphic
+-- import           Diagrams.Coordinates.Isomorphic
 -- import Data.Typeable
 import           Diagrams.Prelude  hiding (view)
 -- import Diagrams.LinearMap
@@ -76,14 +76,14 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GRibbonPlot V2 n a) b where
   renderPlotable s GRibbonPlot {..} pp =
       fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
-        # closeLine 
+        # closeLine
         # strokeLoop
         # lw none
         # applyBarStyle pp
-        # translate  (r2 (unp2 (firstinlist (toListOf (sFold . to sPos . to (logPoint ls)) sData))))
+        # translate  (r2 (unp2 (head (toListOf (sFold . to sPos . to (logPoint ls)) sData))))
         # transform t
         # opacity sOpa
-        
+
    <> if sLine
         then fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
                # transform t
@@ -92,12 +92,12 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     where
       t = s ^. specTrans
       ls = s ^. specScale
-      marker = pp ^. plotMarker
+      -- marker = pp ^. plotMarker
 
-  defLegendPic GRibbonPlot {..} pp 
+  defLegendPic GRibbonPlot {..} pp
       = fromVertices [p2 (-2.5,2.5) , p2 (-2.5,-2.5), p2 (2.5,-2.5), p2 (2.5,2.5)]
-          # closeLine 
-          # strokeLoop 
+          # closeLine
+          # strokeLoop
           # lw none
           # applyBarStyle pp
 
@@ -105,9 +105,6 @@ _RibbonPlot :: (Plotable (RibbonPlot v n) b, Typeable b)
              => Prism' (Plot b v n) (RibbonPlot v n)
 _RibbonPlot = _Plot
 
-firstinlist :: [a] -> a
-firstinlist (x:xs) = x
-firstinlist [] = error "something"
 ------------------------------------------------------------------------
 -- Ribbon Plot
 ------------------------------------------------------------------------
