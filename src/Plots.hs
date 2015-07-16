@@ -61,8 +61,8 @@ module Plots
   , addPlotableL
   , addPlotableL'
 
-  , _LinePlot'
-  , _ScatterPlot'
+--  , _LinePlot'
+--  , _ScatterPlot'
     -- ** Scatter plot
   , ScatterPlot
   , scatterPlot
@@ -463,11 +463,11 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
 ------------------------------------------------------------------------
 ------------------------------------------------------------------------
-_LinePlot' :: Plotable (GLinePlot v n a) b => Traversal' (Plot' b v n) (GLinePlot v n a)
-_LinePlot' = _Plot'
+--_LinePlot' :: Plotable (GLinePlot v n a) b => Traversal' (Plot' b v n) (GLinePlot v n a)
+--_LinePlot' = _Plot'
 
-_ScatterPlot' :: Plotable (GScatterPlot v n a) b => Traversal' (Plot' b v n) (GScatterPlot v n a)
-_ScatterPlot' = _Plot'
+--_ScatterPlot' :: Plotable (GScatterPlot v n a) b => Traversal' (Plot' b v n) (GScatterPlot v n a)
+--_ScatterPlot' = _Plot'
 
 ------------------------------------------------------------------------
 -- Scatter plot

@@ -29,6 +29,9 @@ module Plots.Types.Ribbon
   , mkRibbonPlotOf
   , mkRibbonPlot
   
+  , strokeEdge
+  , fillStyle
+  
 --  , StepPlot
 --  , mkStepPlotOf
 --  , mkStepPlot
@@ -137,8 +140,8 @@ class HasRibbon a v n d | a -> v n, a -> d where
   fillStyle  :: Lens' a (Maybe (d -> Style V2 n))
   fillStyle  =  ribbon . lens sSty (\sp sty -> sp {sSty = sty})
 
-  strokeLine :: Lens' a Bool
-  strokeLine = ribbon . lens sLine (\s b -> (s {sLine = b}))
+  strokeEdge :: Lens' a Bool
+  strokeEdge = ribbon . lens sLine (\s b -> (s {sLine = b}))
 
 instance HasRibbon (GRibbonPlot v n d) v n d where
   ribbon = id
