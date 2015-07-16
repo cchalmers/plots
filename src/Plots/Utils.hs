@@ -6,17 +6,65 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Plots.Utils where
+module Plots.Utils 
+    ( zeroy
+    , multiply'
+    , append'
+    , makepoint
+    , createdata
+    , foobarsingle
+    , foobarmulti
+    , oneindexing
+    , oneeach
+    , onefolded
+    , folded'
+    , liftRecommend 
+    , fromCommit
+    , pathFromVertices
+    , minmaxOf
+    , enumFromToN
+    ) where
 
 import qualified Data.Foldable as F
 import           Control.Lens
 import           Control.Lens.Internal
 import           Control.Lens.Internal.Fold
+import           Data.List
 import           Data.Monoid.Recommend
 import           Data.Profunctor.Unsafe
 import           Diagrams.Prelude           hiding (diff)
-import Data.Functor.Classes
+import           Data.Functor.Classes
 
+
+
+------------------------------------------------------------------------
+-- support function
+zeroy :: [(Double, Double)] -> [(Double, Double)]
+zeroy xs = [(a,0) | (a,_) <- xs]
+
+multiply' x y = x*y
+
+append' :: [a] -> [a] -> [a]
+append' a b = a ++ (reverse b)
+
+maker' x y = map p2 (zip x y)
+
+makepoint (x,y) = p2 (x,y)
+
+createdata :: [String] -> [Double]
+createdata xs = [(relate x (zip ds [1.0..]))/fromIntegral  ((length ds)+ 1)| x<-xs]
+                where ds = nub xs
+
+relate :: Eq a => a -> [(a, b)] -> b
+relate c = snd.head.dropWhile ((/=c).fst)
+
+creategroupdata :: [(Double, Double)] -> [String] -> [([(Double,Double)],String)]
+creategroupdata xs ys = foobarmulti (zip xs ys) (nub ys)
+ 
+foobarsingle xs string = ([fst x | x <- xs, snd x == string ], string)
+foobarmulti xs ds = [foobarsingle xs d | d <- ds]
+
+------------------------------------------------------------------------
 -- | @enumFromToN a b n@ calculates a list from @a@ to @b@ in @n@ steps.
 enumFromToN :: Fractional n => n -> n -> Int -> [n]
 enumFromToN a b n = step n a

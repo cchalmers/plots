@@ -61,6 +61,8 @@ module Plots
   , addPlotableL
   , addPlotableL'
 
+--  , _LinePlot'
+--  , _ScatterPlot'
     -- ** Scatter plot
   , ScatterPlot
   , scatterPlot
@@ -70,15 +72,84 @@ module Plots
   , scatterPlotOf'
   , scatterPlotLOf
   , module Plots.Types.Scatter
+  
+  , gscatterPlot
+  , gscatterPlot'
+  , gscatterPlotL
+  -- **fold variant
+  --, gscatterPlotOf
+  --, gscatterPlotOf'
+  --, gscatterPlotLOf
 
     -- ** Line plot
   , Path
-  , linePlot
-  -- , linePlot'
-  -- , linePlotL
-  -- , linePlotL'
+  , linePlot''
+  , pathPlot''
 
-  , pathPlot
+  , LinePlot
+  , linePlot
+  , linePlot'
+  , linePlotL
+  , linePlotOf
+  , linePlotOf'
+  , linePlotLOf
+  , module Plots.Types.Line
+
+  , ribbonPlot
+  , ribbonPlot'
+  , ribbonPlotL
+  , ribbonPlotOf
+  , ribbonPlotOf'
+  , ribbonPlotLOf
+  , module Plots.Types.Ribbon
+  
+  , createstep
+  , stepPlot
+  , stepPlot'
+  , stepPlotL
+
+  , glinePlot
+  , glinePlot'
+  , glinePlotL
+
+  , createlinerangev
+  , linerangevPlot
+  , linerangevPlot'
+  , linerangevPlotL
+  , linerangevPlotwithPoint
+
+  , createlinerangeh
+  , linerangehPlot
+  , linerangehPlot'
+  , linerangehPlotL
+  , linerangehPlotwithPoint
+
+  , errorbarvPlot
+  , errorbarvPlotwithPoint
+
+  , errorbarhPlot
+  , errorbarhPlotwithPoint
+
+  , crossbarvPlot
+  , crossbarvPlotwithPoint
+
+  , crossbarhPlot
+  , crossbarhPlotwithPoint
+
+  , boxplotvPlot
+  , boxplothPlot
+
+  , makeribbon
+  , makearea
+  , makearea'
+  , zeroy
+  , makeareagroup'
+  -- ** Line plot
+  -- , addLinePlot
+  -- , linePlot
+  -- , multiLinePlot
+  -- , linePlotFromPath
+
   -- , pathPlot'
   -- , pathPlotL
   -- , pathPlotL'
@@ -128,15 +199,6 @@ module Plots
 
     -- ** Axis labels
     -- ** Axis title
-
-    -- ** Line plot
-    -- | Plot simple lines.
-  -- , addLinePlot
-  -- , linePlot
-  -- , multiLinePlot
-  -- , linePlotFromPath
-
-
     -- * Legend
   , addLegendEntry
 
@@ -270,6 +332,7 @@ import           Plots.Themes
 
 import           Plots.Types.Line
 import           Plots.Types.Scatter
+import           Plots.Types.Ribbon
 import           Plots.Axis.ColourBar
 -- import Plots.Types.Bar
 -- import Plots.Types.Function
@@ -399,6 +462,14 @@ addPlotableL' :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable
 addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
 ------------------------------------------------------------------------
+------------------------------------------------------------------------
+--_LinePlot' :: Plotable (GLinePlot v n a) b => Traversal' (Plot' b v n) (GLinePlot v n a)
+--_LinePlot' = _Plot'
+
+--_ScatterPlot' :: Plotable (GScatterPlot v n a) b => Traversal' (Plot' b v n) (GScatterPlot v n a)
+--_ScatterPlot' = _Plot'
+
+------------------------------------------------------------------------
 -- Scatter plot
 ------------------------------------------------------------------------
 
@@ -490,19 +561,12 @@ scatterPlotLOf
 scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 
 ------------------------------------------------------------------------
--- Bubble plot
+-- Bubble plot -- ??
 ------------------------------------------------------------------------
 
 -- $ bubble
 -- Scatter plots with extra numeric parameter. By default the extra
--- parameter is the scale of the marker but this can be changed. Bubble
--- plots admit the following lenses:
---
--- @
--- * 'connectingLine' :: 'Lens'' ('BubblePlot' v n) 'Bool' - @False@
--- * 'scatterTransform': ('Maybe' ('Point' v n -> 'T2' n)) - @Just (scaling . fst)@
--- * 'scatterStyle': 'Maybe' ('Point' v n -> 'Style' 'V2' n) - @Nothing@
--- @
+-- parameter is the scale of the marker but this can be changed. 
 
 -- bubblePlot :: (PointLike (BaseSpace v) n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
 --             => f (n,p) -> AxisState b v n
@@ -513,14 +577,60 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 -- bubblePlot' d s = axisPlots <>= [P.Plot (execState s $ P.mkBubblePlot d) def]
 
 ------------------------------------------------------------------------
+-- GScatterPlot
+------------------------------------------------------------------------
+
+gscatterPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (GScatterPlot v n a) b,
+      F.Foldable f)
+  => f a -> (a -> p) -> m ()
+gscatterPlot d pf = addPlotable (mkGScatterPlot d pf)
+
+gscatterPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (GScatterPlot v n a) b,
+      F.Foldable f)
+  => f a -> (a -> p) -> PlotState (GScatterPlot v n a) b -> m ()
+gscatterPlot' d pf = addPlotable' (mkGScatterPlot d pf)
+
+
+gscatterPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (GScatterPlot v n a) b,
+      F.Foldable f)
+  => String -> f a -> (a -> p) -> m ()
+gscatterPlotL l d pf = addPlotableL l (mkGScatterPlot d pf)
+
+------------------------------------------------------------------------
 -- Line plot
 ------------------------------------------------------------------------
 
--- $line
--- Line plots are internally represented by 'Path'.
+-- $ line
+-- line plots display data as dots. There are several representations
+-- for line plots for extra parameters. Line plots have the
+-- following lenses:
+--
+-- @
+-- * 'dotsonPoint' :: 'Lens'' ('LinePlot' v n) 'Bool' - False
+-- * 'lineStyle': 'Maybe' ('Point' v n -> 'Style' 'V2' n) - Nothing
+-- @
+--
 
--- | Construct a single line plot.
-linePlot
+-- | Add a 'LinePlot' to the 'AxisState' from a data set.
+--
+-- @
+--   myaxis = r2Axis ~&
+--     linePlot data1
+-- @ 
+
+linePlot''
   :: (v ~ BaseSpace c,
       PointLike v n p,
       MonadState (Axis b c n) m,
@@ -528,11 +638,388 @@ linePlot
       Plotable (Path v n) b,
       F.Foldable f)
   => f p -> m ()
-linePlot d = addPlotable (mkPath $ Identity d)
+linePlot'' d = addPlotable (mkPath $ Identity d)
 
-pathPlot :: (R2Backend b n, MonadState (Axis b V2 n) m) => Path V2 n -> m ()
-pathPlot = addPlotable
+pathPlot'' :: (R2Backend b n, MonadState (Axis b V2 n) m) => Path V2 n -> m ()
+pathPlot'' = addPlotable
 
+--------------------------------------------------------------------------
+
+linePlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (LinePlot v n) b,
+      F.Foldable f)
+  => f p -> m ()
+linePlot d = addPlotable (mkLinePlot d)
+
+-- | Make a 'LinePlot' and take a 'State' on the plot to alter it's
+--   options
+--
+linePlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (LinePlot v n) b,
+      F.Foldable f)
+  => f p -> PlotState (LinePlot v n) b -> m ()
+linePlot' d = addPlotable' (mkLinePlot d)
+
+-- | Add a 'LinePlot' with the given name for the legend entry.
+--
+-- @
+--   myaxis = r2Axis &~ do
+--     linePlotL "blue team" pointData1
+--     linePlotL "red team" pointData2
+-- @
+linePlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (LinePlot v n) b,
+      F.Foldable f)
+  => String -> f p -> m ()
+linePlotL l d = addPlotableL l (mkLinePlot d)
+
+-- Fold variants
+
+linePlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (LinePlot v n) b)
+  => Fold s p -> s -> m ()
+linePlotOf f s = addPlotable (mkLinePlotOf f s)
+
+linePlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (LinePlot v n) b)
+  => Fold s p -> s -> PlotState (LinePlot v n) b -> m ()
+linePlotOf' f s = addPlotable' (mkLinePlotOf f s)
+
+linePlotLOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (LinePlot v n) b)
+  => String -> Fold s p -> s -> m ()
+linePlotLOf l f s = addPlotableL l (mkLinePlotOf f s)
+
+--------------------------------------------------------------------------
+--Step
+--------------------------------------------------------------------------
+createstep :: [(a,a)] -> [(a,a)]
+createstep [] = []
+createstep (x1:[]) = x1:[]
+createstep (x1:x2:xs) = (x1):(fst x1, snd x2):(x2):(createstep (x2:xs))
+
+stepPlot  a   = linePlot (createstep a)
+
+stepPlot' a   = linePlot' (createstep a)
+
+stepPlotL l a = linePlotL l (createstep a)
+-------------------------------------------------------------------------
+--General Line Plot 
+--------------------------------------------------------------------------
+
+glinePlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (GLinePlot v n a) b,
+      F.Foldable f)
+  => f a -> (a -> p) -> m ()
+glinePlot d pf = addPlotable (mkGLinePlot d pf) 
+
+glinePlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (GLinePlot v n a) b,
+      F.Foldable f)
+  => f a -> (a -> p) -> PlotState (GLinePlot v n a) b -> m ()
+glinePlot' d pf = addPlotable' (mkGLinePlot d pf)
+
+glinePlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (GLinePlot v n a) b,
+      F.Foldable f)
+  => String -> f a -> (a -> p) -> m ()
+glinePlotL l d pf = addPlotableL l (mkGLinePlot d pf)
+
+------------------------------------------------------------------------
+-- Linerange Vertical
+------------------------------------------------------------------------
+createlinerangev :: (Double, Double) -> Double -> [(Double, Double)]
+createlinerangev (a, b) s = [(a+(s/2), b), (a-(s/2), b)]
+
+linerangevPlot a s  = linePlot (createlinerangev a s)
+
+linerangevPlot' a s  = linePlot (createlinerangev a s)
+
+linerangevPlotL l a s = linePlotL l (createlinerangev a s)
+
+linerangevPlotwithPoint a s = do 
+     linePlot' (createlinerangev a s) $ do
+        plotColor .= purple
+        addLegendEntry "data 1"
+     scatterPlot' [a] $ do
+        plotColor .= purple
+        plotMarker %= scale 2 
+
+-- add more api with option for colour 
+-- add group for line step, linerange
+
+------------------------------------------------------------------------
+-- Linerange Horizontal
+------------------------------------------------------------------------
+createlinerangeh :: (Double, Double) -> Double -> [(Double, Double)]
+createlinerangeh (a, b) s = [(a, b+(s/2)), (a, b-(s/2))]
+
+linerangehPlot a s  = linePlot (createlinerangeh a s)
+
+linerangehPlot' a s  = linePlot (createlinerangeh a s)
+
+linerangehPlotL l a s = linePlotL l (createlinerangeh a s)
+
+linerangehPlotwithPoint a s = do 
+     linePlot' (createlinerangeh a s) $ do
+        plotColor .= purple
+        addLegendEntry "data 1"
+     scatterPlot' [a] $ do
+        plotColor .= purple
+        plotMarker %= scale 2 
+
+-- add more api with option for colour 
+
+------------------------------------------------------------------------
+-- Errorbar Vertical
+------------------------------------------------------------------------
+-- figure out way to use same plotcolour
+
+errorbarvPlot (a,b) s h = do
+              linePlot' (createlinerangev (a, b) s) $ do
+                 plotColor .= red
+                 addLegendEntry "data 1"
+              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+                 plotColor .= red
+              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+                 plotColor .= red
+
+errorbarvPlotwithPoint (a,b) s h = do
+              linePlot' (createlinerangev (a, b) s) $ do
+                 plotColor .= blue
+                 addLegendEntry "data 1"
+              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+                 plotColor .= blue
+              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+                 plotColor .= blue
+              scatterPlot' [(a,b)] $ do
+                 plotColor .= blue
+ 
+  
+
+------------------------------------------------------------------------
+-- Errorbar Horizontal
+------------------------------------------------------------------------
+
+errorbarhPlot (a,b) s h = do
+              linePlot' (createlinerangeh (a, b) s) $ do
+                 plotColor .= red
+                 addLegendEntry "data n"
+              linePlot' (createlinerangev (a, b+(s/2)) h) $ do
+                 plotColor .= red
+              linePlot' (createlinerangev (a, b-(s/2)) h) $ do
+                 plotColor .= red
+
+errorbarhPlotwithPoint (a,b) s h = do
+              linePlot' (createlinerangeh (a, b) s) $ do
+                 plotColor .= blue
+                 addLegendEntry "data n"
+              linePlot' (createlinerangev (a, b+(s/2)) h) $ do
+                 plotColor .= blue
+              linePlot' (createlinerangev (a, b-(s/2)) h) $ do
+                 plotColor .= blue
+              scatterPlot' [(a,b)] $ do
+                 plotColor .= blue
+
+------------------------------------------------------------------------
+-- Crossbar Vertical
+------------------------------------------------------------------------
+crossbarvPlot (a,b) s h = do
+              linePlot' (createlinerangeh (a, b) h) $ do
+                 plotColor .= red
+                 addLegendEntry "data n"
+              linePlot' (createlinerangev (a, b+(h/2)) s) $ do
+                 plotColor .= red
+              linePlot' (createlinerangev (a, b-(h/2)) s) $ do
+                 plotColor .= red
+              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+                 plotColor .= red
+              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+                 plotColor .= red
+
+crossbarvPlotwithPoint (a,b) s h = do
+              linePlot' (createlinerangeh (a, b) h) $ do
+                 plotColor .= blue
+                 addLegendEntry "data n"
+              linePlot' (createlinerangev (a, b+(h/2)) s) $ do
+                 plotColor .= blue
+              linePlot' (createlinerangev (a, b-(h/2)) s) $ do
+                 plotColor .= blue
+              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+                 plotColor .= blue
+              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+                 plotColor .= blue
+              scatterPlot' [(a,b)] $ do
+                 plotColor .= blue
+
+------------------------------------------------------------------------
+-- Crossbar Horizontal  --options for colour and legends seperate
+------------------------------------------------------------------------
+crossbarhPlot (a,b) s h = do
+              linePlot' (createlinerangev (a, b) s) $ do
+                 plotColor .= red
+                 addLegendEntry "data n"
+              linePlot' (createlinerangev (a, b+(h/2)) s) $ do
+                 plotColor .= red
+              linePlot' (createlinerangev (a, b-(h/2)) s) $ do
+                 plotColor .= red
+              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+                 plotColor .= red
+              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+                 plotColor .= red
+
+crossbarhPlotwithPoint (a,b) s h = do
+              linePlot' (createlinerangev (a, b) s) $ do
+                 plotColor .= blue
+                 addLegendEntry "data n"
+              linePlot' (createlinerangev (a, b+(h/2)) s) $ do
+                 plotColor .= blue
+              linePlot' (createlinerangev (a, b-(h/2)) s) $ do
+                 plotColor .= blue
+              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+                 plotColor .= blue
+              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+                 plotColor .= blue
+              scatterPlot' [(a,b)] $ do
+                 plotColor .= blue
+------------------------------------------------------------------------
+-- Ribbon
+------------------------------------------------------------------------
+ribbonPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (RibbonPlot v n) b,
+      F.Foldable f)
+  => f p -> m ()
+ribbonPlot a = addPlotable (mkRibbonPlot a)
+
+ribbonPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (RibbonPlot v n) b,
+      F.Foldable f)
+  => f p -> PlotState (RibbonPlot v n) b -> m ()
+ribbonPlot' d = addPlotable' (mkRibbonPlot d)
+
+ribbonPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (RibbonPlot v n) b,
+      F.Foldable f)
+  => String -> f p -> m ()
+ribbonPlotL l d = addPlotableL l (mkRibbonPlot d)
+
+-- Fold variants
+
+ribbonPlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (RibbonPlot v n) b)
+  => Fold s p -> s -> m ()
+ribbonPlotOf f s = addPlotable (mkRibbonPlotOf f s)
+
+ribbonPlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (RibbonPlot v n) b)
+  => Fold s p -> s -> PlotState (RibbonPlot v n) b -> m ()
+ribbonPlotOf' f s = addPlotable' (mkRibbonPlotOf f s)
+
+ribbonPlotLOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (RibbonPlot v n) b)
+  => String -> Fold s p -> s -> m ()
+ribbonPlotLOf l f s = addPlotableL l (mkRibbonPlotOf f s)
+
+------------------------------------------------------------------------
+-- Area
+------------------------------------------------------------------------
+
+makeribbon x1s x2s ys colour = ribbonPlot' ((zip x1s ys) ++ reverse (zip x2s ys)) $ do
+                                 addLegendEntry "ribbon test"
+                                 plotColor .= colour
+
+makearea xs ys colour = ribbonPlot' ((zip xs ys) ++ reverse (zeroy (zip xs ys))) $ do
+                                 addLegendEntry "ribbon test"
+                                 plotColor .= colour
+
+makearea' sd string = ribbonPlot' (sd ++ reverse (zeroy sd)) $ do
+                                 addLegendEntry string
+
+zeroy :: [(Double, Double)] -> [(Double, Double)]
+zeroy xs = [(a,0) | (a,_) <- xs]
+
+-- makeareagroup xs ys ds = makeareagroup' (creategroupdata (zip xs ys) ds)
+-- error when using group 
+
+makeareagroup' xs  = do x <- xs 
+                        makearea' (fst x) (snd x)
+
+------------------------------------------------------------------------
+-- Rect
+------------------------------------------------------------------------
+------------------------------------------------------------------------
+-- Boxplot Vertical --fillalso
+------------------------------------------------------------------------
+
+boxplotvPlot (a,b) s1 s2 h = do
+                             crossbarhPlot (a,b) s1 h
+                             linePlot' (createlinerangeh (a-(s1/2), b) (s2-s1)) $ do
+                                 plotColor .= red
+                             linePlot' (createlinerangeh (a+(s1/2), b) (s2-s1)) $ do
+                                 plotColor .= red                            
+
+
+------------------------------------------------------------------------
+-- Boxplot Horizontal --fillalso
+------------------------------------------------------------------------
+
+boxplothPlot (a,b) s h1 h2= do
+                            crossbarhPlot (a,b) s h1
+                            linePlot' (createlinerangeh (a, b1) hmean) $ do
+                                 plotColor .= red
+                            linePlot' (createlinerangeh (a, b2) hmean) $ do
+                                 plotColor .= red
+                            where b1 = b + (h1/2) + (h2/2)
+                                  b2 = b - (h1/2) - (h2/2)
+                                  hmean = h2-h1
+                            
+
+-- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 ------------------------------------------------------------------------
 -- Bar Plot
 ------------------------------------------------------------------------
