@@ -6,7 +6,6 @@ import Plots.Types hiding (B)
 
 import Data.List
 
-import Dataset
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
 
@@ -21,7 +20,7 @@ myaxis = r2Axis &~ do
      plotColor .= green
 
 make :: Diagram B -> IO ()
-make = renderRasterific "test.png" (mkWidth 600) . frame 20
+make = renderRasterific "test2.png" (mkWidth 600) . frame 20
 
 main :: IO ()
 main = make $ renderAxis myaxis

@@ -1,22 +1,13 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE ConstraintKinds       #-}
-
-{-# OPTIONS_GHC -fno-warn-orphans       #-}
-
 {-# LANGUAGE CPP                       #-}
+{-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE FunctionalDependencies    #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
-
-{-# LANGUAGE StandaloneDeriving        #-}
-
--- Orphans: Plotable (Path V2 n)
+{-# LANGUAGE TypeFamilies              #-}
 
 module Plots.Types.Ribbon
   (
@@ -32,31 +23,18 @@ module Plots.Types.Ribbon
   , strokeEdge
   , fillOpacity
 
---  , StepPlot
---  , mkStepPlotOf
---  , mkStepPlot
-
---  , mkGLinePlotOf
--- , mkGLinePlot
-
---  , dotsonPoint
---  , fillStyle
---  , strokePath
   ) where
 
-import           Control.Lens     hiding (transform, ( # ), lmap, none)
-import qualified Data.Foldable    as F
+import           Control.Lens                    hiding (lmap, none, transform,
+                                                  ( # ))
+import qualified Data.Foldable                   as F
 import           Data.Typeable
--- import           Diagrams.Coordinates.Isomorphic
--- import Data.Typeable
-import           Diagrams.Prelude  hiding (view)
--- import Diagrams.LinearMap
--- import Diagrams.ThreeD.Types
+import           Diagrams.Prelude
 
-import          Diagrams.Coordinates.Isomorphic
+import           Diagrams.Coordinates.Isomorphic
 
-import          Plots.Themes
-import          Plots.Types
+import           Plots.Themes
+import           Plots.Types
 
 data GRibbonPlot v n a = forall s. GRibbonPlot
   { sData :: s
@@ -75,31 +53,28 @@ instance (Metric v, OrderedField n) => Enveloped (GRibbonPlot v n a) where
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GRibbonPlot V2 n a) b where
   renderPlotable s GRibbonPlot {..} pp =
-      fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
-        # closeLine
-        # strokeLoop
+      fromVertices ps
+        # mapLoc closeLine
+        # stroke
         # lw none
         # applyBarStyle pp
-        # translate  (r2 (unp2 (head (toListOf (sFold . to sPos . to (logPoint ls)) sData))))
         # transform t
         # opacity sOpa
 
    <> if sLine
-        then fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
+        then fromVertices ps
+               # mapLoc closeLine
+               # stroke
                # transform t
                # applyLineStyle pp
         else mempty
     where
-      t = s ^. specTrans
+      ps = toListOf (sFold . to sPos . to (logPoint ls)) sData
+      t  = s ^. specTrans
       ls = s ^. specScale
-      -- marker = pp ^. plotMarker
 
   defLegendPic GRibbonPlot {..} pp
-      = fromVertices [p2 (-2.5,2.5) , p2 (-2.5,-2.5), p2 (2.5,-2.5), p2 (2.5,2.5)]
-          # closeLine
-          # strokeLoop
-          # lw none
-          # applyBarStyle pp
+      = square 5 # applyBarStyle pp
 
 _RibbonPlot :: (Plotable (RibbonPlot v n) b, Typeable b)
              => Prism' (Plot b v n) (RibbonPlot v n)
