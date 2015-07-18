@@ -25,13 +25,3 @@ make = renderRasterific "test2.png" (mkWidth 600) . frame 20
 main :: IO ()
 main = make $ renderAxis myaxis
 
-foo1 = ([(111.0,0.1),(140.0,1.2),(150.0,2.3)],"typeA")
-foo2 = ([(155.0,3.5),(167.0,5.1),(200.0,6.4),(211.0,7.5)],"typeB")
-foo3 = ([(191.0,5.8),(233.0,8.5),(250.0,9.1),(270.0,9.6)],"typeC")
-
-
-
-
-
-
-

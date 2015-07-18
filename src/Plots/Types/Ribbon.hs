@@ -21,7 +21,6 @@ module Plots.Types.Ribbon
   , mkRibbonPlot
 
   , strokeEdge
-  , fillOpacity
 
   ) where
 
@@ -40,7 +39,6 @@ data GRibbonPlot v n a = forall s. GRibbonPlot
   { sData :: s
   , sFold :: Fold s a
   , sPos  :: a -> Point v n
-  , sOpa  :: Double
   , sLine :: Bool
   } deriving Typeable
 
@@ -59,7 +57,6 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         # lw none
         # applyBarStyle pp
         # transform t
-        # opacity sOpa
 
    <> if sLine
         then fromVertices ps
@@ -98,7 +95,6 @@ mkRibbonPlotOf f a = GRibbonPlot
   { sData = a
   , sFold = f . unpointLike
   , sPos  = id
-  , sOpa  = 1
   , sLine = True
   }
 
@@ -108,9 +104,6 @@ mkRibbonPlotOf f a = GRibbonPlot
 
 class HasRibbon a v n d | a -> v n, a -> d where
   ribbon :: Lens' a (GRibbonPlot v n d)
-
-  fillOpacity  :: Lens' a Double
-  fillOpacity  =  ribbon . lens sOpa (\sp opa -> sp {sOpa = opa})
 
   strokeEdge :: Lens' a Bool
   strokeEdge = ribbon . lens sLine (\s b -> (s {sLine = b}))
