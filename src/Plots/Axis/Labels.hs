@@ -46,6 +46,12 @@ data AxisLabel b v n = AxisLabel
 
 makeLenses ''AxisLabel
 
+type instance V (AxisLabel b v n) = v
+type instance N (AxisLabel b v n) = n
+
+instance Typeable n => HasStyle (AxisLabel b v n) where
+  applyStyle = over axisLabelStyle . applyStyle
+
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (AxisLabel b V2 n) where
   def = AxisLabel
