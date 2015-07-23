@@ -103,9 +103,9 @@ module Plots
   , ribbonPlotLOf
   , module Plots.Types.Ribbon
 
-  --  , barPlot
-  --  , barPlot'
-  --  , barPlotL
+  , barPlot
+  , barPlot'
+  , barPlotL
 
   --, module Plots.Types.Bar
 
@@ -148,7 +148,6 @@ module Plots
   , makeribbon
   , makearea
   , makearea'
-  , zeroy
   , makeareagroup'
   -- ** Line plot
   -- , addLinePlot
@@ -1044,18 +1043,15 @@ makeribbon x1s x2s ys colour = ribbonPlot' ((zip x1s ys) ++ reverse (zip x2s ys)
 makearea :: (Typeable b, Renderable (Path V2 Double) b,
              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
             [Double] -> [Double] -> Colour Double -> m ()
-makearea xs ys colour = ribbonPlot' ((zip xs ys) ++ reverse (zeroy (zip xs ys))) $ do
+makearea xs ys colour = ribbonPlot' ((zip xs ys) ++ reverse (zeroY (zip xs ys))) $ do
                                  addLegendEntry "ribbon test"
                                  plotColor .= colour
 
 makearea' :: (Typeable b, Renderable (Path V2 Double) b,
               MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
              [(Double, Double)] -> String -> m ()
-makearea' sd string = ribbonPlot' (sd ++ reverse (zeroy sd)) $ do
+makearea' sd string = ribbonPlot' (sd ++ reverse (zeroY sd)) $ do
                                  addLegendEntry string
-
-zeroy :: [(Double, Double)] -> [(Double, Double)]
-zeroy xs = [(a,0) | (a,_) <- xs]
 
 -- makeareagroup xs ys ds = makeareagroup' (creategroupdata (zip xs ys) ds)
 -- error when using group
@@ -1069,40 +1065,24 @@ makeareagroup' xs  = do x <- xs
 ------------------------------------------------------------------------
 -- Bar
 ------------------------------------------------------------------------
-{-
-barPlot
-  :: (v ~ V2,
-      PointLike v n p,
-      MonadState (Axis b V2 Double) m,
-      Plotable (BarPlot v n) b,
-      F.Foldable f,
-      Typeable b,
-      Renderable (Path V2 Double) b)
-  => (Double, Double) -> Double -> m ()
-barPlot bdata w  = addPlotable (mkBarPlot bdata w)
+barPlot :: (Typeable b, Renderable (Path V2 Double) b,
+             MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+            (Double,Double) -> Double -> Colour Double -> m ()
+barPlot x w colour = ribbonPlot' (createBarData x w) $ do
+                              plotColor .= colour
+barPlot' :: (Typeable b, Renderable (Path V2 Double) b,
+             MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+            (Double,Double) -> Double -> PlotState (RibbonPlot V2 Double) b -> m ()
+barPlot' x w = ribbonPlot' (createBarData x w)
 
-barPlot'
-  :: (v ~ V2,
-      PointLike v n p,
-      MonadState (Axis b V2 Double) m,
-      Plotable (BarPlot v n) b,
-      F.Foldable f,
-      Typeable b,
-      Renderable (Path V2 Double) b)
-  => (Double, Double) -> Double -> PlotState (BarPlot V2 Double) b -> m ()
-barPlot' a b = addPlotable' (mkBarPlot a b)
+barPlotL :: (Typeable b, Renderable (Path V2 Double) b,
+             MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+            (Double,Double) -> Double -> String -> Colour Double -> m ()
+barPlotL x w string colour = ribbonPlot' (createBarData x w) $ do
+                                plotColor .= colour
+                                addLegendEntry string
 
-barPlotL
-  :: (v ~ V2,
-      PointLike v n p,
-      MonadState (Axis b V2 Double) m,
-      Plotable (BarPlot v n) b,
-      F.Foldable f,
-      Typeable b,
-      Renderable (Path V2 Double) b)
-  => String -> (Double, Double) -> Double -> m ()
-barPlotL l a b = addPlotableL l (mkBarPlot a b)
--}
+
 ------------------------------------------------------------------------
 -- Boxplot Vertical --fillalso
 ------------------------------------------------------------------------

@@ -20,6 +20,14 @@ module Plots.Types.Ribbon
   , mkRibbonPlotOf
   , mkRibbonPlot
 
+  , createBarData
+  , zeroY
+
+--  , BarPlot
+--  , mkBarPlotOf
+--  , mkBarPlot
+--  , createbardata
+
   , strokeEdge
 
   ) where
@@ -98,6 +106,33 @@ mkRibbonPlotOf f a = GRibbonPlot
   , sLine = True
   }
 
+zeroY :: [(Double, Double)] -> [(Double, Double)]
+zeroY xs = [(a,0) | (a,_) <- xs]
+
+createBarData (x, y) w = [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
+        where xmax =  x + (w/2)
+              xmin =  x - (w/2)
+----------------------------------------------------------------------------
+{-
+type BarPlot v n = GRibbonPlot v n (Point v n)
+
+-- | Make a line plot.
+mkBarPlot = mkBarPlotOf folded
+
+-- | Make a line plot using the given fold.
+mkBarPlotOf :: (PointLike v n p, Num n)
+                => Fold [(Double, Double)] p -> (Double, Double) -> Double -> BarPlot v n
+mkBarPlotOf f bdata width = GRibbonPlot
+  { sData = a
+  , sFold = f . unpointLike
+  , sPos  = id
+  , sLine = True
+  }  where a = createbardata bdata width
+
+createbardata (x, y) w = [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
+        where xmax =  x + (w/2)
+              xmin =  x - (w/2)
+-}
 ------------------------------------------------------------------------
 -- Ribbon lenses
 ------------------------------------------------------------------------
