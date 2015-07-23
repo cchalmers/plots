@@ -6,31 +6,102 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE RecordWildCards       #-}
 
 module Plots.Types.Bar
-  ( BarPlot (..)
-  , simpleBarPlot
+  ( GBarPlot (..)
+  , createbardata
+  , _BarPlot 
+
+  , BarPlot (..)
+  , mkBarPlot
+--    BarPlot (..)
+--  , simpleBarPlot
     -- * Prism
-  , _BarPlot
+--  , _BarPlot
 
     -- * Lenses
-  , barWidth
-  , barSpacing
-  , verticleBars
-  , stacked
+--  , barWidth
+--  , barSpacing
+--  , verticleBars
+--  , stacked
   ) where
 
-import Control.Lens     hiding (transform, ( # ))
+import Control.Lens     hiding (transform, ( # ), none)
+
+import Data.Maybe
 import Data.Default
 import Data.Typeable
 import qualified Data.Foldable as F (Foldable, foldMap, toList)
-import Diagrams.Prelude
-import Plots.Themes
-import Data.Maybe
-import Plots.Utils
 
+import Diagrams.Prelude
+import           Diagrams.Coordinates.Isomorphic
+
+import Plots.Utils
+import Plots.Themes
 import Plots.Types
 
+
+data GBarPlot = GBarPlot 
+  { barData :: (Double, Double)
+  , barWidth :: Double
+  } deriving Typeable
+
+type instance V GBarPlot = V2
+--type instance N (GBarPlot n a) = n
+
+makeLenses ''GBarPlot
+
+instance Enveloped GBarPlot where
+  getEnvelope GBarPlot {..} = getEnvelope (fromVertices (createbardata a b))
+    where a = barData
+          b = barWidth
+
+createbardata (x, y) w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
+        where xmax =  x + (w/2)
+              xmin =  x - (w/2)
+
+
+instance (Typeable b, TypeableFloat n, Renderable (Path V2 N) b)
+    => Plotable GBarPlot b where
+  renderPlotable s GBarPlot {..} pp =
+      fromVertices ps
+        # mapLoc closeLine
+        # stroke
+        # lw none
+        # applyBarStyle pp
+        # transform t
+
+   <> fromVertices ps
+        # mapLoc closeLine
+        # stroke
+        # transform t
+        # applyLineStyle pp
+
+    where
+      ps = createbardata barData barWidth
+      t  = s ^. specTrans
+      ls = s ^. specScale
+
+  defLegendPic GBarPlot {..} pp
+      = square 5 # applyBarStyle pp
+
+_BarPlot :: (Plotable GBarPlot b, Typeable b)
+             => Prism' (Plot b v n) GBarPlot
+_BarPlot = _Plot
+
+------------------------------------------------------------------------
+-- Bar Plot
+------------------------------------------------------------------------
+
+mkBarPlot :: (Num n)
+                => (Double, Double) -> Double -> GBarPlot
+mkBarPlot a w = GBarPlot
+  { barData = a
+  , barWidth = w
+  }
+
+{-
 data BarPlot n = BarPlot
   { _barData       :: [(n,[n])] -- data for bars
   , _barWidth     :: n         -- total width of bars for one 'bit'
@@ -96,7 +167,7 @@ simpleBarPlot (F.toList -> xs) = def { _barData = imap f xs }
 
 _BarPlot :: Plotable (BarPlot n) b => Prism' (Plot b V2 n) (BarPlot n)
 _BarPlot = _Plot
-
+-}
 ------------------------------------------------------------------------
 -- Histogram
 ------------------------------------------------------------------------
