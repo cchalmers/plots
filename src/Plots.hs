@@ -107,6 +107,11 @@ module Plots
   , barPlot'
   , barPlotL
 
+  , barPlotNormal
+  , barPlotStacked
+  , barPlotSplit
+  , barPlotRatio
+
   --, module Plots.Types.Bar
 
   --, createstep
@@ -321,6 +326,7 @@ import           Data.Default
 import           Data.Monoid.Recommend
 import           Data.Typeable
 import qualified Data.Foldable as F
+import           Data.List
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
@@ -1067,9 +1073,9 @@ makeareagroup' xs  = do x <- xs
 ------------------------------------------------------------------------
 barPlot :: (Typeable b, Renderable (Path V2 Double) b,
              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-            (Double,Double) -> Double -> Colour Double -> m ()
-barPlot x w colour = ribbonPlot' (createBarData x w) $ do
-                              plotColor .= colour
+            (Double,Double) -> Double -> m ()
+barPlot x w = ribbonPlot (createBarData x w)
+
 barPlot' :: (Typeable b, Renderable (Path V2 Double) b,
              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
             (Double,Double) -> Double -> PlotState (RibbonPlot V2 Double) b -> m ()
@@ -1082,6 +1088,50 @@ barPlotL x w string colour = ribbonPlot' (createBarData x w) $ do
                                 plotColor .= colour
                                 addLegendEntry string
 
+--barPlotNormal :: (Typeable b, Renderable (Path V2 Double) b,
+--                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+--                 Int -> [Double] -> Double -> m ()
+--barPlotNormal x ys w = do 
+--                       y <- (sort ys) 
+--                       barPlot ((fromIntegral x), y) w 
+
+barPlotNormal :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                 Int -> (Double, Double, Double, Double) -> Double -> m ()
+barPlotNormal x (a,b,c,d) w = do 
+                       barPlot ((fromIntegral x), a) w 
+                       barPlot ((fromIntegral x), b) w 
+                       barPlot ((fromIntegral x), c) w
+                       barPlot ((fromIntegral x), d) w
+
+barPlotStacked :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                 Int -> (Double, Double, Double) -> Double -> m ()
+barPlotStacked x (a,b,c) w = do 
+                       barPlot ((fromIntegral x), a) w 
+                       barPlot ((fromIntegral x), a+b) w 
+                       barPlot ((fromIntegral x), a+b+c) w
+
+barPlotSplit :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                 Int -> (Double, Double, Double) -> Double -> m ()
+barPlotSplit x (a,b,c) w = do 
+                       barPlot ((fromIntegral x - w1), a) w1
+                       barPlot ((fromIntegral x), b) w1 
+                       barPlot ((fromIntegral x + w1), c) w1
+                       where w1 = (w/3.0)
+
+barPlotRatio :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                 Int -> (Double, Double, Double) -> Double -> m ()
+barPlotRatio t (a,b,c) w = do 
+                       barPlotStacked t (x, y, z) w
+--                       yMin .= Commit 0
+--                       yMax .= Commit 1
+                       where x = a/tot
+                             y = b/tot
+                             z = c/tot
+                             tot = a+b+c
 
 ------------------------------------------------------------------------
 -- Boxplot Vertical --fillalso
