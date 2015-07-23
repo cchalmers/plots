@@ -55,65 +55,65 @@ import           Plots.Types
 
 -- Options
 
-data FunctionPlotOptions n = FunctionPlotOpts
-  { _functionPlotNumPoints     :: Int
-  , _functionPlotSmooth        :: Bool
-  , _functionPlotDiscontinuous :: Maybe n
-  } deriving Typeable
+--data FunctionPlotOptions n = FunctionPlotOpts
+--  { _functionPlotNumPoints     :: Int
+--  , _functionPlotSmooth        :: Bool
+--  , _functionPlotDiscontinuous :: Maybe n
+--  } deriving Typeable
 
-makeClassy ''FunctionPlotOptions
+--makeClassy ''FunctionPlotOptions
 
-instance Default (FunctionPlotOptions n) where
-  def = FunctionPlotOpts
-          { _functionPlotNumPoints     = 100
-          , _functionPlotSmooth        = False
-          , _functionPlotDiscontinuous = Nothing
-          }
+--instance Default (FunctionPlotOptions n) where
+--  def = FunctionPlotOpts
+--          { _functionPlotNumPoints     = 100
+--          , _functionPlotSmooth        = False
+--          , _functionPlotDiscontinuous = Nothing
+--          }
 
 ------------------------------------------------------------------------
 -- Parametric plot
 ------------------------------------------------------------------------
 
-data ParametricPlot v n = ParametricPlot
-  { _parametricFunction    :: n -> Point v n
-  , _parametricDomain      :: (n, n)
-  , _parametricPlotOptions :: FunctionPlotOptions n
-  } deriving Typeable
+--data ParametricPlot v n = ParametricPlot
+--  { _parametricFunction    :: n -> Point v n
+-- , _parametricDomain      :: (n, n)
+--  , _parametricPlotOptions :: FunctionPlotOptions n
+--  } deriving Typeable
 
-makeLenses ''ParametricPlot
+--makeLenses ''ParametricPlot
 
-type instance V (ParametricPlot v n) = v
-type instance N (ParametricPlot v n) = n
+--type instance V (ParametricPlot v n) = v
+--type instance N (ParametricPlot v n) = n
 
-instance HasFunctionPlotOptions (ParametricPlot v n) n where
-  functionPlotOptions = parametricPlotOptions
+--instance HasFunctionPlotOptions (ParametricPlot v n) n where
+--  functionPlotOptions = parametricPlotOptions
 
-instance (Metric v, OrderedField n) => Enveloped (ParametricPlot v n) where
-  getEnvelope = const mempty
+--instance (Metric v, OrderedField n) => Enveloped (ParametricPlot v n) where
+--  getEnvelope = const mempty
 
-instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
-    => Plotable (ParametricPlot V2 n) b where
-  renderPlotable s pa pp =
-    pathFromVertices p
-      # transform (s^.specTrans)
-      # stroke
-      # applyLineStyle pp
-    where
-      p = map f [a, a + 1 / (pa ^. functionPlotNumPoints . to fromIntegral) .. b]
-      f = pa ^. parametricFunction
-      a = pa ^. parametricDomain . _1
-      b = pa ^. parametricDomain . _2
+--instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
+--    => Plotable (ParametricPlot V2 n) b where
+--  renderPlotable s pa pp =
+--    pathFromVertices p
+--      # transform (s^.specTrans)
+--      # stroke
+--      # applyLineStyle pp
+--    where
+--      p = map f [a, a + 1 / (pa ^. functionPlotNumPoints . to fromIntegral) .. b]
+--      f = pa ^. parametricFunction
+--      a = pa ^. parametricDomain . _1
+--      b = pa ^. parametricDomain . _2
 
-pathFromVertices :: (Metric v, OrderedField n) => [Point v n] -> Path v n
-pathFromVertices = fromVertices
+--pathFromVertices :: (Metric v, OrderedField n) => [Point v n] -> Path v n
+--pathFromVertices = fromVertices
 
-mkParametricPlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> ParametricPlot v n
-mkParametricPlot f
-  = ParametricPlot
-      { _parametricFunction = view unpointLike . f
-      , _parametricDomain   = (0,5)
-      , _parametricPlotOptions = def
-      }
+--mkParametricPlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> ParametricPlot v n
+--mkParametricPlot f
+--  = ParametricPlot
+--      { _parametricFunction = view unpointLike . f
+--      , _parametricDomain   = (0,5)
+--      , _parametricPlotOptions = def
+--      }
 
 ------------------------------------------------------------------------
 -- Mesh plot
