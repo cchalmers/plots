@@ -103,7 +103,13 @@ module Plots
   , ribbonPlotLOf
   , module Plots.Types.Ribbon
 
-  , createstep
+  --  , barPlot
+  --  , barPlot'
+  --  , barPlotL
+
+  --, module Plots.Types.Bar
+
+  --, createstep
   , stepPlot
   , stepPlot'
   , stepPlotL
@@ -330,10 +336,12 @@ import           Plots.Axis.Ticks
 import           Plots.Types
 import           Plots.Themes
 
+
 import           Plots.Types.Line
 import           Plots.Types.Scatter
 import           Plots.Types.Ribbon
 import           Plots.Axis.ColourBar
+
 -- import Plots.Types.Bar
 -- import Plots.Types.Function
 -- import Plots.Types.Surface
@@ -711,25 +719,21 @@ linePlotLOf l f s = addPlotableL l (mkLinePlotOf f s)
 ------------------------------------------------------------------------
 --Step
 ------------------------------------------------------------------------
-createstep :: [(a,a)] -> [(a,a)]
-createstep [] = []
-createstep (x1:[]) = x1:[]
-createstep (x1:x2:xs) = (x1):(fst x1, snd x2):(x2):(createstep (x2:xs))
 
 stepPlot :: (RealFloat n, Typeable n, Typeable b, Renderable (Path V2 n) b,
              MonadState (Axis b c n) m, BaseSpace c ~ V2)
          => [(n, n)] -> m ()
-stepPlot  a   = linePlot (createstep a)
+stepPlot  a   = linePlot (createStepData a)
 
 stepPlot' :: (RealFloat n, Typeable n, Typeable b, Renderable (Path V2 n) b,
               MonadState (Axis b c n) m, BaseSpace c ~ V2) =>
              [(n, n)] -> PlotState (LinePlot V2 n) b -> m ()
-stepPlot' a   = linePlot' (createstep a)
+stepPlot' a   = linePlot' (createStepData a)
 
 stepPlotL :: (RealFloat n, Typeable n, Typeable b, Renderable (Path V2 n) b,
               MonadState (Axis b c n) m, BaseSpace c ~ V2) =>
              String -> [(n, n)] -> m ()
-stepPlotL l a = linePlotL l (createstep a)
+stepPlotL l a = linePlotL l (createStepData a)
 
 ------------------------------------------------------------------------
 -- General Line Plot
@@ -1063,8 +1067,42 @@ makeareagroup' xs  = do x <- xs
                         makearea' (fst x) (snd x)
 
 ------------------------------------------------------------------------
--- Rect
+-- Bar
 ------------------------------------------------------------------------
+{-
+barPlot
+  :: (v ~ V2,
+      PointLike v n p,
+      MonadState (Axis b V2 Double) m,
+      Plotable (BarPlot v n) b,
+      F.Foldable f,
+      Typeable b,
+      Renderable (Path V2 Double) b)
+  => (Double, Double) -> Double -> m ()
+barPlot bdata w  = addPlotable (mkBarPlot bdata w)
+
+barPlot'
+  :: (v ~ V2,
+      PointLike v n p,
+      MonadState (Axis b V2 Double) m,
+      Plotable (BarPlot v n) b,
+      F.Foldable f,
+      Typeable b,
+      Renderable (Path V2 Double) b)
+  => (Double, Double) -> Double -> PlotState (BarPlot V2 Double) b -> m ()
+barPlot' a b = addPlotable' (mkBarPlot a b)
+
+barPlotL
+  :: (v ~ V2,
+      PointLike v n p,
+      MonadState (Axis b V2 Double) m,
+      Plotable (BarPlot v n) b,
+      F.Foldable f,
+      Typeable b,
+      Renderable (Path V2 Double) b)
+  => String -> (Double, Double) -> Double -> m ()
+barPlotL l a b = addPlotableL l (mkBarPlot a b)
+-}
 ------------------------------------------------------------------------
 -- Boxplot Vertical --fillalso
 ------------------------------------------------------------------------

@@ -34,9 +34,12 @@ module Plots.Types.Line
   , mkLinePlotOf
   , mkLinePlot
 
-  , StepPlot
-  , mkStepPlotOf
-  , mkStepPlot
+  , createStepData
+
+  --, StepPlot
+  --, mkStepPlotOf
+  --, mkStepPlot
+  --
 
   , mkGLinePlotOf
   , mkGLinePlot
@@ -151,7 +154,12 @@ mkLinePlotOf f a = GLinePlot
 ------------------------------------------------------------------------
 -- Step plot -- use fold here rather than api
 ------------------------------------------------------------------------
+createStepData :: [(a,a)] -> [(a,a)]
+createStepData [] = []
+createStepData (x1:[]) = x1:[]
+createStepData (x1:x2:xs) = (x1):(fst x1, snd x2):(x2):(createStepData (x2:xs))
 
+{-
 type StepPlot v n = GLinePlot v n (Point v n)
 
 mkStepPlotOf :: (PointLike v n p, Fractional n)
@@ -167,7 +175,7 @@ mkStepPlotOf f a = GLinePlot
 mkStepPlot :: (PointLike v n p, F.Foldable f, Fractional n)
              => f p -> StepPlot v n
 mkStepPlot = mkStepPlotOf folded
-
+-}
 ------------------------------------------------------------------------
 -- General Line Plot
 ------------------------------------------------------------------------
