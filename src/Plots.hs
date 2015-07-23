@@ -108,10 +108,15 @@ module Plots
   , barPlotL
 
   , barPlotNormal
+  , barPlotNormalC
+  , barPlotNormalCL
+  , barPlotNormalMulti
+  , barPlotNormalMultiC
+
   , barPlotStacked
   , barPlotSplit
   , barPlotRatio
-
+ 
   --, module Plots.Types.Bar
 
   --, createstep
@@ -1081,6 +1086,12 @@ barPlot' :: (Typeable b, Renderable (Path V2 Double) b,
             (Double,Double) -> Double -> PlotState (RibbonPlot V2 Double) b -> m ()
 barPlot' x w = ribbonPlot' (createBarData x w)
 
+barPlotC :: (Typeable b, Renderable (Path V2 Double) b,
+             MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+            (Double,Double) -> Double -> Colour Double -> m ()
+barPlotC x w colour = ribbonPlot' (createBarData x w) $ do
+                                plotColor .= colour
+
 barPlotL :: (Typeable b, Renderable (Path V2 Double) b,
              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
             (Double,Double) -> Double -> String -> Colour Double -> m ()
@@ -1088,10 +1099,10 @@ barPlotL x w string colour = ribbonPlot' (createBarData x w) $ do
                                 plotColor .= colour
                                 addLegendEntry string
 
---barPlotNormal :: (Typeable b, Renderable (Path V2 Double) b,
+--barPlotNormal' :: (Typeable b, Renderable (Path V2 Double) b,
 --                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
 --                 Int -> [Double] -> Double -> m ()
---barPlotNormal x ys w = do 
+--barPlotNormal' x ys w = do 
 --                       y <- (sort ys) 
 --                       barPlot ((fromIntegral x), y) w 
 
@@ -1103,6 +1114,47 @@ barPlotNormal x (a,b,c,d) w = do
                        barPlot ((fromIntegral x), b) w 
                        barPlot ((fromIntegral x), c) w
                        barPlot ((fromIntegral x), d) w
+
+barPlotNormalC :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                 Int -> (Double, Double, Double, Double) -> (Colour Double, Colour Double, Colour Double, Colour Double)-> Double -> m ()
+barPlotNormalC x (a,b,c,d) (p, q, r, s) w = do 
+                       barPlotC ((fromIntegral x), a) w p
+                       barPlotC ((fromIntegral x), b) w q
+                       barPlotC ((fromIntegral x), c) w r
+                       barPlotC ((fromIntegral x), d) w s 
+
+barPlotNormalCL :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                 Int -> (Double, Double, Double, Double) -> (Colour Double, Colour Double, Colour Double, Colour Double) 
+                     -> (String, String, String, String)-> Double -> m ()
+barPlotNormalCL x (a,b,c,d) (p, q, r, s) (s1, s2, s3, s4) w = do 
+                                                         barPlotL ((fromIntegral x), a) w s1 p
+                                                         barPlotL ((fromIntegral x), b) w s2 q
+                                                         barPlotL ((fromIntegral x), c) w s3 r
+                                                         barPlotL ((fromIntegral x), d) w s4 s 
+
+barPlotNormalMulti :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2,
+                  d ~ (Double, Double, Double, Double)) =>
+                 (d, d, d, d, d) -> Double -> m ()
+barPlotNormalMulti (a,b,c,d,e) w = do 
+                       barPlotNormal 1 a w
+                       barPlotNormal 2 b w
+                       barPlotNormal 3 c w
+                       barPlotNormal 4 d w
+                       barPlotNormal 5 e w
+
+barPlotNormalMultiC :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2,
+                  d ~ (Double, Double, Double, Double)) =>
+                 (d, d, d, d, d) -> (Colour Double, Colour Double, Colour Double, Colour Double)-> (String, String, String, String) -> Double -> m ()
+barPlotNormalMultiC (a,b,c,d,e) colormap names w = do 
+                             barPlotNormalCL 1 a colormap names w
+                             barPlotNormalC  2 b colormap w
+                             barPlotNormalC  3 c colormap w
+                             barPlotNormalC  4 d colormap w
+                             barPlotNormalC  5 e colormap w
 
 barPlotStacked :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
