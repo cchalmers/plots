@@ -10,10 +10,11 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Plots.Types.Function
-  ( FunctionPlotOptions
-  , functionPlotSmooth
-  , functionPlotNumPoints
-  , functionPlotDiscontinuous
+  (
+  --  FunctionPlotOptions
+  --, functionPlotSmooth
+  --, functionPlotNumPoints
+  --, functionPlotDiscontinuous
   -- , mkFunctionPlot
     -- * Prism
   -- , _FunctionPlot
@@ -26,9 +27,9 @@ module Plots.Types.Function
   -- , functionPlotSmooth
   -- , functionPlotDiscontinuous
 
-  , ParametricPlot (..)
-  , mkParametricPlot
-  , parametricDomain
+  --, ParametricPlot (..)
+  --, mkParametricPlot
+  --, parametricDomain
   -- mesh
   -- , MeshPlot (..)
   -- , mkMeshPlot
