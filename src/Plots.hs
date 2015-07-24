@@ -127,6 +127,8 @@ module Plots
   , barPlotRatioC
   , barPlotRatioCL
   , barPlotRatioMultiC
+
+--  , barPlotNormal'
   --, module Plots.Types.Bar
 
   --, createstep
@@ -342,6 +344,7 @@ import           Data.Monoid.Recommend
 import           Data.Typeable
 import qualified Data.Foldable as F
 import           Data.List
+import           Data.Function
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
@@ -1113,182 +1116,142 @@ barPlotL x w string colour = ribbonPlot' (createBarData x w) $ do
 ------------------------------------------------------------------------
 -- Normal Bar --figure out a way to loop and use sort
 ------------------------------------------------------------------------
-
 barPlotNormal :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double, Double) -> Double -> m ()
-barPlotNormal x (a,b,c,d) w = do 
-                       barPlot ((fromIntegral x), a) w 
-                       barPlot ((fromIntegral x), b) w 
-                       barPlot ((fromIntegral x), c) w
-                       barPlot ((fromIntegral x), d) w
+                 Int -> [Double] -> Double -> m ()
+barPlotNormal y xs w = F.for_ xs $ \x -> barPlot ((fromIntegral y), x) w
+
 
 barPlotNormalC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double, Double) -> (Colour Double, Colour Double, Colour Double, Colour Double)-> Double -> m ()
-barPlotNormalC x (a,b,c,d) (p, q, r, s) w = do 
-                       barPlotC ((fromIntegral x), a) w p
-                       barPlotC ((fromIntegral x), b) w q
-                       barPlotC ((fromIntegral x), c) w r
-                       barPlotC ((fromIntegral x), d) w s 
+                 Int -> [Double] -> [Colour Double]-> Double -> m ()
+barPlotNormalC y xs cs w = F.for_ (sortBy (compare `on` fst)(zip xs cs)) $ \x -> barPlotC ((fromIntegral y), fst x) w (snd x) 
+
 
 barPlotNormalCL :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double, Double) -> (Colour Double, Colour Double, Colour Double, Colour Double) 
-                     -> (String, String, String, String)-> Double -> m ()
-barPlotNormalCL x (a,b,c,d) (p, q, r, s) (s1, s2, s3, s4) w = do 
-                                                         barPlotL ((fromIntegral x), a) w s1 p
-                                                         barPlotL ((fromIntegral x), b) w s2 q
-                                                         barPlotL ((fromIntegral x), c) w s3 r
-                                                         barPlotL ((fromIntegral x), d) w s4 s 
+                 Int -> [Double] -> [Colour Double] -> [String]-> Double -> m ()
+barPlotNormalCL y xs cs ls w = F.for_ (sortBy (compare `on` fstof3)(zip3 xs cs ls)) $ \x -> barPlotL ((fromIntegral y), fstof3 x) w (trdof3 x) (sndof3 x) 
+
+fstof3 (a, _, _) = a
+sndof3 (_, a, _) = a
+trdof3 (_, _, a) = a
 
 barPlotNormalMulti :: (Typeable b, Renderable (Path V2 Double) b,
-                  MonadState (Axis b c Double) m, BaseSpace c ~ V2,
-                  d ~ (Double, Double, Double, Double)) =>
-                 (d, d, d, d, d) -> Double -> m ()
-barPlotNormalMulti (a,b,c,d,e) w = do 
-                       barPlotNormal 1 a w
-                       barPlotNormal 2 b w
-                       barPlotNormal 3 c w
-                       barPlotNormal 4 d w
-                       barPlotNormal 5 e w
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                  [[Double]] -> Double -> m ()
+barPlotNormalMulti xs w = F.for_ [1 .. length xs] $ \x -> barPlotNormal x (xs!!(x-1)) w 
 
 barPlotNormalMultiC :: (Typeable b, Renderable (Path V2 Double) b,
-                  MonadState (Axis b c Double) m, BaseSpace c ~ V2,
-                  d ~ (Double, Double, Double, Double)) =>
-                 (d, d, d, d, d) -> (Colour Double, Colour Double, Colour Double, Colour Double)-> (String, String, String, String) -> Double -> m ()
-barPlotNormalMultiC (a,b,c,d,e) colormap names w = do 
-                             barPlotNormalCL 1 a colormap names w
-                             barPlotNormalC  2 b colormap w
-                             barPlotNormalC  3 c colormap w
-                             barPlotNormalC  4 d colormap w
-                             barPlotNormalC  5 e colormap w
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                  [[Double]] -> [Colour Double] -> [String] -> Double -> m ()
+barPlotNormalMultiC xs colormap names w = do 
+                                          barPlotNormalCL 1 (xs!!0) colormap names w
+                                          F.for_ [2 .. length xs] $ \x -> barPlotNormalC x (xs!!(x-1)) colormap w 
 
 ------------------------------------------------------------------------
 -- Stacked Bar
 ------------------------------------------------------------------------
 barPlotStacked :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> Double -> m ()
-barPlotStacked x (a,b,c) w = do 
-                       barPlot ((fromIntegral x), a) w 
-                       barPlot ((fromIntegral x), a+b) w 
-                       barPlot ((fromIntegral x), a+b+c) w
+                 Int -> [Double] -> Double -> m ()
+barPlotStacked y xs w = F.for_ (additive xs) $ \x -> barPlot ((fromIntegral y), x) w
 
-barPlotStackedMultiC :: (Typeable b, Renderable (Path V2 Double) b,
-                  MonadState (Axis b c Double) m, BaseSpace c ~ V2,
-                  d ~ (Double, Double, Double)) =>
-                 (d, d, d, d, d) -> (Colour Double, Colour Double, Colour Double)-> (String, String, String) -> Double -> m ()
-barPlotStackedMultiC (a,b,c,d,e) colormap names w = do 
-                             barPlotStackedCL 1 a colormap names w
-                             barPlotStackedC  2 b colormap w
-                             barPlotStackedC  3 c colormap w
-                             barPlotStackedC  4 d colormap w
-                             barPlotStackedC  5 e colormap w
+additive :: [Double] -> [Double]
+additive [] = []
+additive (x:[]) = [x]
+additive (x:xs) = x:(additive (addtofst x xs))
+
+addtofst :: Double -> [Double] -> [Double]
+addtofst a (x:xs) = (a+x):xs
 
 barPlotStackedC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> (Colour Double, Colour Double, Colour Double)-> Double -> m ()
-barPlotStackedC x (a,b,c) (p, q, r) w = do 
-                       barPlotC ((fromIntegral x), a) w p
-                       barPlotC ((fromIntegral x), a+b) w q
-                       barPlotC ((fromIntegral x), a+b+c) w r
+                 Int -> [Double] -> [Colour Double]-> Double -> m ()
+barPlotStackedC y xs cs w = F.for_ (sortBy (compare `on` fst)(zip (additive xs) cs)) $ \x -> barPlotC ((fromIntegral y), fst x) w (snd x) 
 
 barPlotStackedCL :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> (Colour Double, Colour Double, Colour Double) 
-                     -> (String, String, String)-> Double -> m ()
-barPlotStackedCL x (a,b,c) (p, q, r) (s1, s2, s3) w = do 
-                                                         barPlotL ((fromIntegral x), a) w s1 p
-                                                         barPlotL ((fromIntegral x), a+b) w s2 q
-                                                         barPlotL ((fromIntegral x), a+b+c) w s3 r
+                 Int -> [Double] -> [Colour Double]
+                     -> [String] -> Double -> m ()
+barPlotStackedCL y xs cs ls w = F.for_ (sortBy (compare `on` fstof3)(zip3 (additive xs) cs ls)) $ \x -> barPlotL ((fromIntegral y), fstof3 x) w (trdof3 x) (sndof3 x)
+
+barPlotStackedMultiC :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                  [[Double]] -> [Colour Double]-> [String] -> Double -> m ()
+barPlotStackedMultiC xs colormap names w = do 
+                                          barPlotStackedCL 1 (xs!!0) colormap names w
+                                          F.for_ [2 .. length xs] $ \x -> barPlotStackedC x (xs!!(x-1)) colormap w 
 
 ------------------------------------------------------------------------
 -- Split Bar
 ------------------------------------------------------------------------
 barPlotSplit :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> Double -> m ()
-barPlotSplit x (a,b,c) w = do 
-                       barPlot ((fromIntegral x - w1), a) w1
-                       barPlot ((fromIntegral x), b) w1 
-                       barPlot ((fromIntegral x + w1), c) w1
-                       where w1 = (w/3.0)
+                 Int -> [Double] -> Double -> m ()
+barPlotSplit y xs w = F.for_ (zip (createsplitdata y len w) xs) $ \x -> barPlot x w1
+                      where w1 = w/fromIntegral len
+                            len = length xs
 
-barPlotSplitMultiC :: (Typeable b, Renderable (Path V2 Double) b,
-                  MonadState (Axis b c Double) m, BaseSpace c ~ V2,
-                  d ~ (Double, Double, Double)) =>
-                 (d, d, d, d, d) -> (Colour Double, Colour Double, Colour Double)-> (String, String, String) -> Double -> m ()
-barPlotSplitMultiC (a,b,c,d,e) colormap names w = do 
-                             barPlotSplitCL 1 a colormap names w
-                             barPlotSplitC  2 b colormap w
-                             barPlotSplitC  3 c colormap w
-                             barPlotSplitC  4 d colormap w
-                             barPlotSplitC  5 e colormap w
+createsplitdata :: Int -> Int -> Double -> [Double]
+createsplitdata y len w =  [b, b+w1 .. (a-w1)]
+                           where y1 = fromIntegral y
+                                 w1 = w/fromIntegral len
+                                 a  = y1+(w/2)+ (w1/2)
+                                 b  = y1-(w/2)+ (w1/2)
 
 barPlotSplitC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> (Colour Double, Colour Double, Colour Double)-> Double -> m ()
-barPlotSplitC x (a,b,c) (p, q, r) w = do 
-                       barPlotC ((fromIntegral x - w1), a) w1 p
-                       barPlotC ((fromIntegral x), b) w1 q
-                       barPlotC ((fromIntegral x + w1), c) w1 r
-                       where w1 = (w/3.0)
+                 Int -> [Double] -> [Colour Double]-> Double -> m ()
+barPlotSplitC y xs cs w = F.for_ (zip (zip (createsplitdata y len w) xs) cs) $ \x -> barPlotC (fst x) w1 (snd x) 
+                         where w1  = w/fromIntegral len
+                               len = length xs
 
 barPlotSplitCL :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> (Colour Double, Colour Double, Colour Double) 
-                     -> (String, String, String)-> Double -> m ()
-barPlotSplitCL x (a,b,c) (p, q, r) (s1, s2, s3) w = do 
-                                                 barPlotL ((fromIntegral x - w1), a) w1 s1 p
-                                                 barPlotL ((fromIntegral x), b) w1  s2 q
-                                                 barPlotL ((fromIntegral x + w1), c) w1 s3 r
-                                                 where w1 = (w/3.0)
+                 Int -> [Double] -> [Colour Double] 
+                     -> [String] -> Double -> m ()
+barPlotSplitCL y xs cs ls w = F.for_ (zip3 (zip (createsplitdata y len w) xs) cs ls) $ \x -> barPlotL (fstof3 x) w1 (trdof3 x) (sndof3 x) 
+                             where w1  = w/fromIntegral len
+                                   len = length xs
+
+barPlotSplitMultiC :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                  [[Double]] -> [Colour Double]-> [String] -> Double -> m ()
+barPlotSplitMultiC xs colormap names w = do 
+                                         barPlotSplitCL 1 (xs!!0) colormap names w
+                                         F.for_ [2 .. length xs] $ \x -> barPlotSplitC x (xs!!(x-1)) colormap w 
 ------------------------------------------------------------------------
 -- Ratio Bar
 ------------------------------------------------------------------------
 barPlotRatio :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> Double -> m ()
-barPlotRatio t (a,b,c) w = do 
-                       barPlotStacked t (x, y, z) w
-                       where x = a/tot
-                             y = b/tot
-                             z = c/tot
-                             tot = a+b+c
-
-barPlotRatioMultiC :: (Typeable b, Renderable (Path V2 Double) b,
-                  MonadState (Axis b c Double) m, BaseSpace c ~ V2,
-                  d ~ (Double, Double, Double)) =>
-                 (d, d, d, d, d) -> (Colour Double, Colour Double, Colour Double)-> (String, String, String) -> Double -> m ()
-barPlotRatioMultiC (a,b,c,d,e) colormap names w = do 
-                             barPlotRatioCL 1 a colormap names w
-                             barPlotRatioC  2 b colormap w
-                             barPlotRatioC  3 c colormap w
-                             barPlotRatioC  4 d colormap w
-                             barPlotRatioC  5 e colormap w
+                 Int -> [Double] -> Double -> m ()
+barPlotRatio t xs w = do 
+                      barPlotStacked t [ x/tot | x <- xs] w
+                      where tot = sum xs
 
 barPlotRatioC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> (Colour Double, Colour Double, Colour Double)-> Double -> m ()
-barPlotRatioC t (a,b,c) colormap w = do 
-                       barPlotStackedC t (x, y, z) colormap w
-                       where x = a/tot
-                             y = b/tot
-                             z = c/tot
-                             tot = a+b+c
+                 Int -> [Double] -> [Colour Double] -> Double -> m ()
+barPlotRatioC t xs colormap w = do 
+                                barPlotStackedC t [x/tot | x <- xs] colormap w
+                                where tot = sum xs
                              
 barPlotRatioCL :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                 Int -> (Double, Double, Double) -> (Colour Double, Colour Double, Colour Double) 
-                     -> (String, String, String)-> Double -> m ()
-barPlotRatioCL t (a,b,c) colormap names w = do 
-                                   barPlotStackedCL t (x, y, z) colormap names w
-                                   where x = a/tot
-                                         y = b/tot
-                                         z = c/tot
-                                         tot = a+b+c
-                             
+                 Int -> [Double] -> [Colour Double] 
+                     -> [String]-> Double -> m ()
+barPlotRatioCL t xs colormap names w = do 
+                                       barPlotStackedCL t [x/tot | x <- xs] colormap names w
+                                       where tot = sum xs
+
+barPlotRatioMultiC :: (Typeable b, Renderable (Path V2 Double) b,
+                  MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+                  [[Double]] -> [Colour Double] -> [String] -> Double -> m ()
+barPlotRatioMultiC xs colormap names w = do 
+                                         barPlotRatioCL 1 (xs!!0) colormap names w
+                                         F.for_ [2 .. length xs] $ \x -> barPlotRatioC x (xs!!(x-1)) colormap w 
 
 ------------------------------------------------------------------------
 -- Boxplot Vertical --fillalso
