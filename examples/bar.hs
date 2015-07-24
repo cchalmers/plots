@@ -31,14 +31,14 @@ myaxis = r2Axis &~ do
     plotColor .= blue
     strokeEdge .= False
 
-  barPlotNormal 3 (0.8, 2.1, 3.4, 5.6) 0.7
+  barPlotNormal 3 [0.8, 2.1, 3.4, 5.6] 0.7
 
-  barPlotStacked 4 (0.2, 0.6, 2.1) 0.5
+  barPlotStacked 4  [0.6, 2.1] 0.5
 
-  barPlotRatio 5 (0.6, 1.6, 3.6) 0.3
+  barPlotRatio 5 [0.6, 1.6, 3.6, 3.1] 0.3
 
 -- take a [colour] and data as [Double]
-  barPlotSplit 6 (0.8, 3.4, 5.6) 0.7
+  barPlotSplit 6 [0.8, 3.4, 5.6] 0.7
   
   xMax .= Commit 7
   yMin .= Commit 0
