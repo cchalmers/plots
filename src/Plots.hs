@@ -195,7 +195,7 @@ module Plots
 
   -- ** Parametric plot
   --
-  -- , parametricPlot
+  , parametricPlot
 
   -- ** Mesh plot
   -- , meshPlot
@@ -204,7 +204,7 @@ module Plots
     -- ** Function plot
     -- | Plot a given function.
   -- , addFunctionPlot
-  -- , module Plots.Types.Function
+   , module Plots.Types.Function
 
     -- ** Bar plot
     -- | Bar plot
@@ -374,10 +374,10 @@ import           Plots.Types.Line
 import           Plots.Types.Scatter
 import           Plots.Types.Ribbon
 
-
+import           Plots.Types.Function
 
 -- import Plots.Types.Bar
--- import Plots.Types.Function
+
 -- import Plots.Types.Surface
 
 -- $ pointlike
@@ -510,6 +510,17 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
 --_ScatterPlot' :: Plotable (GScatterPlot v n a) b => Traversal' (Plot' b v n) (GScatterPlot v n a)
 --_ScatterPlot' = _Plot'
+
+-- Parametric Plot
+
+parametricPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => (n -> p) -> m ()
+parametricPlot d = addPlotable (mkParametricPlot d)
 
 ------------------------------------------------------------------------
 -- Scatter plot
