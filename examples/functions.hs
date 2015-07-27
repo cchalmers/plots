@@ -13,22 +13,26 @@ import Diagrams.Backend.CmdLine
 
 import Data.Monoid.Recommend
 
-
-mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1),(1,3), (2,5.5), (3.2, 6), (5.5, 6.1),(1,3), (2,5.5), (3.2, 6), (3.5, 6.1),(1,3), (2,5.5), (3.2, 6), (3.5, 6.1),(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
-
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
   
-  parametricRangePlotL "dragon" sine' (0,20)
-  
-  parametricRangePlot' cose' (0,10) $ do
-     addLegendEntry "cosine"
-     plotColor .= blue
+  vectorFieldPlot (map vectorField loc1) loc1 arrowOpts
+
+  vectorFieldPlot (map vectorField2 loc1) loc1 arrowOpts2
     
   yMin .= Commit 0
 
-sine' x = p2 (0.25*x, 2*(sin x) + 3)
-cose' x = p2 (0.50*x, 1.5*(cos x) + 1.5)
+point1  = (0.2, 0.2)
+vector1 = r2 (0.2, 0.2)
+
+loc1 = [(x, y) | x <- [0.5,0.7 .. 4.3], y <- [0.5,0.7 .. 4.3]]
+
+vectorField (x, y) = r2 ((sin y)/4, (sin (x+1))/4)
+
+vectorField2 (x, y) = r2 ((cos y)/4, (cos (x+1))/4)
+
+arrowOpts = ( with & arrowHead .~ tri & headLength .~ global 5 & headTexture .~ solid blue)
+arrowOpts2 = ( with & arrowHead .~ tri & headLength .~ global 5 & headTexture .~ solid red)
 
 make :: Diagram B -> IO ()
 make = renderRasterific "test.png" (mkWidth 600) . frame 20
