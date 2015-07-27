@@ -104,6 +104,7 @@ _HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
                    => Prism' (Plot b v n) (HistogramPlot v n)
 _HistogramPlot = _Plot
 
+---------- add more of this function - one for mean other for sum --
 binY1 :: (Ord n, Fractional n, Enum n) => Int -> [P2 n] -> [P2 n]
 binY1 b xs = map p2 (zip [(xmin+(w/2)), (xmin+(3*w/2)) .. (xmax-(w/2))] [0.5, 1..])
              where xmin = fst (head (sortBy (compare `on` fst) (map unp2 xs)))
