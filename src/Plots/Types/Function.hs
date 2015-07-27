@@ -6,8 +6,9 @@
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE RecordWildCards        #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -fno-warn-orphans   #-}
 
 module Plots.Types.Function
   (
@@ -30,14 +31,16 @@ module Plots.Types.Function
   , ParametricPlot (..)
   , mkParametricPlot
   , parametricDomain
+  , mkParametricRangePlot
 
   -- mesh
   -- , MeshPlot (..)
   -- , mkMeshPlot
 
-   -- * Vector field
-  -- , VectorField
-  -- , mkVectorField
+  , VectorPlot (..)
+  , mkVectorPlot
+  , mkVectorPointPlot
+  , setArrowOpts 
   ) where
 
 import           Control.Lens                    hiding (lmap, transform, ( # ))
@@ -89,8 +92,13 @@ type instance N (ParametricPlot v n) = n
 instance HasFunctionPlotOptions (ParametricPlot v n) n where
   functionPlotOptions = parametricPlotOptions
 
-instance (Metric v, OrderedField n) => Enveloped (ParametricPlot v n) where
-  getEnvelope = const mempty
+instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (ParametricPlot v n) where
+  getEnvelope pa = getEnvelope p 
+                   where 
+                     p = map f [a, a + 1 / (pa ^. functionPlotNumPoints . to fromIntegral) .. b]
+                     f = pa ^. parametricFunction
+                     a = pa ^. parametricDomain . _1
+                     b = pa ^. parametricDomain . _2
 
 instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
     => Plotable (ParametricPlot V2 n) b where
@@ -105,6 +113,10 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
       a = pa ^. parametricDomain . _1
       b = pa ^. parametricDomain . _2
 
+  defLegendPic ParametricPlot {..} pp
+      = (p2 (-10,0) ~~ p2 (10,0))
+          # applyLineStyle pp
+
 pathFromVertices :: (Metric v, OrderedField n, Fractional (v n)) => [Point v n] -> Path v n
 pathFromVertices = cubicSpline False
 
@@ -116,53 +128,81 @@ mkParametricPlot f
       , _parametricPlotOptions = def
       }
 
+mkParametricRangePlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> (n, n)-> ParametricPlot v n
+mkParametricRangePlot f d
+  = ParametricPlot
+      { _parametricFunction = view unpointLike . f
+      , _parametricDomain   = d
+      , _parametricPlotOptions = def
+      }
+
 ------------------------------------------------------------------------
--- Mesh plot
+-- Vectors
 ------------------------------------------------------------------------
 
--- data MeshPlot n = MeshPlot
---   { _meshFunction    :: n -> n -> n -- ^ $\x y -> z$
---   , _meshDomain      :: V2 (n, n)
---   -- , _meshPlotOptions :: FunctionPlotOptions b R3
---   } deriving Typeable
+data VectorPlot v n = VectorPlot
+   { _vectorV        :: v n
+   , _vectorPoint   :: (n,n) 
+   , _vectorArrows  :: ArrowOpts n
+   }
 
--- type instance V (MeshPlot n) = V3
--- type instance N (MeshPlot n) = n
+makeLenses ''VectorPlot
 
--- makeLenses ''MeshPlot
+type instance V (VectorPlot v n) = v
+type instance N (VectorPlot v n) = n
 
+instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (VectorPlot v n) where
+  getEnvelope = const mempty
 
--- instance HasGenericPlot (MeshPlot b n) where
---   genericPlot = meshPlotGeneric
+instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
+    => Plotable (VectorPlot V2 n) b where
+  renderPlotable s v pp = arrowAt' opts pt1 (V2 q r) 
+                          # transform (s^.specTrans)
+                          # translate (r2 (x, y))
+                          where
+                             pt1      = p2 (x, y)
+                             (x, y)   = v ^. vectorPoint
+                             (V2 q r) = v ^. vectorV
+                             opts     = v ^. vectorArrows
 
--- instance HasFunctionPlotOptions (MeshPlot b) b R3 where
---   functionPlotOptions = meshPlotOptions
+  defLegendPic VectorPlot {..} pp
+      = (p2 (-10,0) ~~ p2 (10,0))
+          # applyLineStyle pp
 
--- instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
---     => Plotable (MeshPlot n) b where
---   renderPlotable pp _ tv l t2 mp =
---     path # transform t
---          # stroke
---          # applyStyle (pp ^. themeLineStyle)
---     where
---       path = foldMap xlines xs <> foldMap ylines ys
---       --
---       f = mp ^. meshFunction
---       xlines x = pathFromVertices [ mkP3 x y (f x y) | y <- ys ]
---       ylines y = pathFromVertices [ mkP3 x y (f x y) | x <- xs ]
---       --
---       xs = [xa, xa + (xb - xa) / n .. xb]
---       ys = [ya, ya + (xb - xa) / n .. yb]
---       (xa,xb) = mp ^. meshDomain . el ex
---       (ya,yb) = mp ^. meshDomain . el ey
---       -- n = mp ^. functionPlotNumPoints . to fromIntegral
---       n = 15
+mkVectorPlot :: (Additive v, TypeableFloat n) => v n -> VectorPlot v n
+mkVectorPlot f
+  = VectorPlot
+      { _vectorV       = f
+      , _vectorPoint   = (0,0) 
+      , _vectorArrows  = def
+      }
 
--- mkMeshPlot :: (TypeableFloat n) => (n -> n -> n) -> MeshPlot n
--- mkMeshPlot f = def & meshFunction .~ f
+mkVectorPointPlot :: (Additive v, TypeableFloat n) => v n -> (n, n) ->VectorPlot v n
+mkVectorPointPlot f d
+  = VectorPlot
+      { _vectorV       = f
+      , _vectorPoint   = d
+      , _vectorArrows  = def
+      }
+
+------------------------------------------------------------------------
+-- Vector Lenses
+------------------------------------------------------------------------
+class HasVector a v n | a -> v n where
+  vector :: Lens' a (VectorPlot v n)
+
+  setArrowOpts :: Lens' a (ArrowOpts n)
+  setArrowOpts = vector . lens _vectorArrows (\s b -> (s {_vectorArrows = b}))
+
+instance HasVector (VectorPlot v n) v n where
+  vector = id
+
+instance HasVector (PropertiedPlot (VectorPlot v n) b) v n where
+  vector = _pp
+
 
 -- ------------------------------------------------------------------------
--- -- Mesh plot
+-- -- Function plot
 -- ------------------------------------------------------------------------
 
 -- data FunctionPlot n = FunctionPlot
@@ -258,4 +298,49 @@ mkParametricPlot f
 -- liftI3 :: Additive f => (a -> b -> c -> d) -> f a -> f b -> f c -> f d
 -- liftI3 f a b c = liftI2 f a b <~> c
 -- {-# INLINE liftI3 #-}
+
+------------------------------------------------------------------------
+-- Mesh plot
+------------------------------------------------------------------------
+
+-- data MeshPlot n = MeshPlot
+--   { _meshFunction    :: n -> n -> n -- ^ $\x y -> z$
+--   , _meshDomain      :: V2 (n, n)
+--   -- , _meshPlotOptions :: FunctionPlotOptions b R3
+--   } deriving Typeable
+
+-- type instance V (MeshPlot n) = V3
+-- type instance N (MeshPlot n) = n
+
+-- makeLenses ''MeshPlot
+
+
+-- instance HasGenericPlot (MeshPlot b n) where
+--   genericPlot = meshPlotGeneric
+
+-- instance HasFunctionPlotOptions (MeshPlot b) b R3 where
+--   functionPlotOptions = meshPlotOptions
+
+-- instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
+--     => Plotable (MeshPlot n) b where
+--   renderPlotable pp _ tv l t2 mp =
+--     path # transform t
+--          # stroke
+--          # applyStyle (pp ^. themeLineStyle)
+--     where
+--       path = foldMap xlines xs <> foldMap ylines ys
+--       --
+--       f = mp ^. meshFunction
+--       xlines x = pathFromVertices [ mkP3 x y (f x y) | y <- ys ]
+--       ylines y = pathFromVertices [ mkP3 x y (f x y) | x <- xs ]
+--       --
+--       xs = [xa, xa + (xb - xa) / n .. xb]
+--       ys = [ya, ya + (xb - xa) / n .. yb]
+--       (xa,xb) = mp ^. meshDomain . el ex
+--       (ya,yb) = mp ^. meshDomain . el ey
+--       -- n = mp ^. functionPlotNumPoints . to fromIntegral
+--       n = 15
+
+-- mkMeshPlot :: (TypeableFloat n) => (n -> n -> n) -> MeshPlot n
+-- mkMeshPlot f = def & meshFunction .~ f
 

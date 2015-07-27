@@ -196,7 +196,20 @@ module Plots
   -- ** Parametric plot
   --
   , parametricPlot
+  , parametricRangePlot
 
+  , parametricPlot'
+  , parametricRangePlot'
+
+  , parametricPlotL
+  , parametricRangePlotL
+
+  , vectorPlot
+  , vectorPointPlot
+  , vectorPointPlot'
+  , vectorPointPlot''
+  , vectorPointPlotL
+  , vectorFieldPlot
   -- ** Mesh plot
   -- , meshPlot
   -- , surfacePlot
@@ -511,7 +524,56 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 --_ScatterPlot' :: Plotable (GScatterPlot v n a) b => Traversal' (Plot' b v n) (GScatterPlot v n a)
 --_ScatterPlot' = _Plot'
 
--- Parametric Plot
+vectorPlot
+  :: (v ~ BaseSpace c,
+      MonadState (Axis b c n) m,
+      Plotable (VectorPlot v n) b,
+      Additive v, TypeableFloat n)
+  =>  v n -> m ()
+vectorPlot f = addPlotable (mkVectorPlot f)
+
+vectorPointPlot
+  :: (v ~ BaseSpace c,
+      MonadState (Axis b c n) m,
+      Plotable (VectorPlot v n) b,
+      Additive v, TypeableFloat n)
+  =>  v n -> (n, n)  -> m ()
+vectorPointPlot f d = addPlotable (mkVectorPointPlot f d)
+
+vectorPointPlot'
+  :: (v ~ BaseSpace c,
+      MonadState (Axis b c n) m,
+      Plotable (VectorPlot v n) b,
+      Additive v, TypeableFloat n)
+  =>  v n -> (n, n) -> PlotState (VectorPlot v n) b -> m ()
+vectorPointPlot' f d = addPlotable' (mkVectorPointPlot f d)
+
+vectorPointPlot''
+  :: (v ~ BaseSpace c,
+      MonadState (Axis b c n) m,
+      Plotable (VectorPlot v n) b,
+      Additive v, TypeableFloat n)
+  =>  v n -> (n, n) -> ArrowOpts n -> m ()
+vectorPointPlot'' f d opts = addPlotable' (mkVectorPointPlot f d) $ do
+                              setArrowOpts .= opts
+
+vectorPointPlotL
+  :: (v ~ BaseSpace c,
+      MonadState (Axis b c n) m,
+      Plotable (VectorPlot v n) b,
+      Additive v, TypeableFloat n)
+  =>  String -> v n -> (n, n) -> m ()
+vectorPointPlotL l f d = addPlotableL l (mkVectorPointPlot f d)
+
+vectorFieldPlot
+  :: (v ~ BaseSpace c,
+      MonadState (Axis b c n) m,
+      Plotable (VectorPlot v n) b,
+      Additive v, TypeableFloat n)
+  =>  [v n] -> [(n, n)] -> ArrowOpts n -> m ()
+vectorFieldPlot vs ps opts = F.for_ (zip vs ps) $ \x -> vectorPointPlot'' (fst x) (snd x) opts
+
+-- Parametric Plot ---
 
 parametricPlot
   :: (v ~ BaseSpace c,
@@ -520,8 +582,53 @@ parametricPlot
       Plotable (ParametricPlot v n) b,
       Additive v, TypeableFloat n)
   => (n -> p) -> m ()
-parametricPlot d = addPlotable (mkParametricPlot d)
+parametricPlot f = addPlotable (mkParametricPlot f)
 
+parametricRangePlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => (n -> p) -> (n ,n) -> m ()
+parametricRangePlot f d = addPlotable (mkParametricRangePlot f d)
+
+parametricPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => (n -> p) -> PlotState (ParametricPlot v n) b -> m ()
+parametricPlot' f = addPlotable' (mkParametricPlot f)
+
+parametricRangePlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => (n -> p) -> (n ,n) -> PlotState (ParametricPlot v n) b -> m ()
+parametricRangePlot' f d = addPlotable' (mkParametricRangePlot f d)
+
+parametricPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => String -> (n -> p) -> m ()
+parametricPlotL l f = addPlotableL l (mkParametricPlot f)
+
+parametricRangePlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => String -> (n -> p) -> (n ,n) -> m ()
+parametricRangePlotL l f d = addPlotableL l (mkParametricRangePlot f d)
+ 
 ------------------------------------------------------------------------
 -- Scatter plot
 ------------------------------------------------------------------------
