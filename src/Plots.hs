@@ -128,6 +128,14 @@ module Plots
   , barPlotRatioCL
   , barPlotRatioMultiC
 
+  , histogramPlot
+  , histogramPlot'
+  , histogramPlotL
+  , histogramPlotOf
+  , histogramPlotOf'
+  , histogramPlotLOf
+  , module Plots.Types.Histogram
+
 --  , barPlotNormal'
   --, module Plots.Types.Bar
 
@@ -356,14 +364,17 @@ import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Render
 import           Plots.Axis.Ticks
+import           Plots.Axis.ColourBar
+
 import           Plots.Types
 import           Plots.Themes
 
-
+import           Plots.Types.Histogram
 import           Plots.Types.Line
 import           Plots.Types.Scatter
 import           Plots.Types.Ribbon
-import           Plots.Axis.ColourBar
+
+
 
 -- import Plots.Types.Bar
 -- import Plots.Types.Function
@@ -1252,6 +1263,63 @@ barPlotRatioMultiC :: (Typeable b, Renderable (Path V2 Double) b,
 barPlotRatioMultiC xs colormap names w = do 
                                          barPlotRatioCL 1 (xs!!0) colormap names w
                                          F.for_ [2 .. length xs] $ \x -> barPlotRatioC x (xs!!(x-1)) colormap w 
+
+------------------------------------------------------------------------
+-- Histogram
+------------------------------------------------------------------------
+
+histogramPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b,
+      F.Foldable f, Enum n)
+  => f p -> m ()
+histogramPlot d = addPlotable (mkHistogramPlot d)
+
+histogramPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b,
+      F.Foldable f, Enum n)
+  => f p -> PlotState (HistogramPlot v n) b -> m ()
+histogramPlot' d = addPlotable' (mkHistogramPlot d)
+
+histogramPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b,
+      F.Foldable f, Enum n)
+  => String -> f p -> m ()
+histogramPlotL l d = addPlotableL l (mkHistogramPlot d)
+
+-- Fold variants
+
+histogramPlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b, Enum n)
+  => Fold s p -> s -> m ()
+histogramPlotOf f s = addPlotable (mkHistogramPlotOf f s)
+
+histogramPlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b, Enum n)
+  => Fold s p -> s -> PlotState (HistogramPlot v n) b -> m ()
+histogramPlotOf' f s = addPlotable' (mkHistogramPlotOf f s)
+
+histogramPlotLOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b, Enum n)
+  => String -> Fold s p -> s -> m ()
+histogramPlotLOf l f s = addPlotableL l (mkHistogramPlotOf f s)
 
 ------------------------------------------------------------------------
 -- Boxplot Vertical --fillalso
