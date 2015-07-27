@@ -36,6 +36,9 @@ module Plots.Types.Function
   -- mesh
   -- , MeshPlot (..)
   -- , mkMeshPlot
+  ,createABLine
+  ,createHLine
+  ,createVLine
 
   , VectorPlot (..)
   , mkVectorPlot
@@ -136,6 +139,9 @@ mkParametricRangePlot f d
       , _parametricPlotOptions = def
       }
 
+createABLine slope intercept x = p2 (x ,(slope*x) +  intercept)
+createHLine intercept x = p2 (x, intercept)
+createVLine intercept x = p2 (intercept, x)
 ------------------------------------------------------------------------
 -- Vectors
 ------------------------------------------------------------------------

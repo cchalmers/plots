@@ -3,6 +3,8 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE AllowAmbiguousTypes          #-}
+
 
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
@@ -203,6 +205,10 @@ module Plots
 
   , parametricPlotL
   , parametricRangePlotL
+
+  , abLinePlot
+  , hLinePlot
+  , vLinePlot
 
   , vectorPlot
   , vectorPointPlot
@@ -628,6 +634,33 @@ parametricRangePlotL
       Additive v, TypeableFloat n)
   => String -> (n -> p) -> (n ,n) -> m ()
 parametricRangePlotL l f d = addPlotableL l (mkParametricRangePlot f d)
+
+abLinePlot
+  :: (v ~ BaseSpace c,
+      PointLike v n (P2 n),
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+     => n -> n -> (n ,n) -> m ()
+abLinePlot slope intercept d = addPlotable (mkParametricRangePlot (createABLine slope intercept) d)
+
+hLinePlot
+  :: (v ~ BaseSpace c,
+      PointLike v n (P2 n),
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+     => n -> (n ,n) -> m ()
+hLinePlot intercept d = addPlotable (mkParametricRangePlot (createHLine intercept) d)
+
+vLinePlot
+  :: (v ~ BaseSpace c,
+      PointLike v n (P2 n),
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+     => n -> (n ,n) -> m ()
+vLinePlot intercept d = addPlotable (mkParametricRangePlot (createVLine intercept) d)
  
 ------------------------------------------------------------------------
 -- Scatter plot
