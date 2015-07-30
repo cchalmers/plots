@@ -538,6 +538,10 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 --_ScatterPlot' :: Plotable (GScatterPlot v n a) b => Traversal' (Plot' b v n) (GScatterPlot v n a)
 --_ScatterPlot' = _Plot'
 
+------------------------------------------------------------------------
+-- Box Plot
+------------------------------------------------------------------
+
 boxPlot
   :: (v ~ BaseSpace c,
       PointLike v n p,
@@ -547,6 +551,10 @@ boxPlot
       Enum n, TypeableFloat n)
   => f p -> m ()
 boxPlot d = addPlotable (mkBoxPlot d)
+
+------------------------------------------------------------------------
+-- Density Plot
+------------------------------------------------------------------------
 
 densityPlot'
   :: (v ~ BaseSpace c,
@@ -558,6 +566,10 @@ densityPlot'
   => f p -> PlotState (DensityPlot v n) b -> m ()
 densityPlot' d = addPlotable' (mkDensityPlot d)
 
+------------------------------------------------------------------------
+-- Smooth Plot
+------------------------------------------------------------------------
+
 smoothPlot
   :: (v ~ BaseSpace c,
       PointLike v n p,
@@ -567,6 +579,10 @@ smoothPlot
       Enum n, TypeableFloat n)
   => f p -> m ()
 smoothPlot d = addPlotable (mkSmoothPlot d)
+
+------------------------------------------------------------------------
+-- Vector Plot
+------------------------------------------------------------------------
 
 vectorPlot
   :: (v ~ BaseSpace c,
@@ -617,7 +633,9 @@ vectorFieldPlot
   =>  [v n] -> [(n, n)] -> ArrowOpts n -> m ()
 vectorFieldPlot vs ps opts = F.for_ (zip vs ps) $ \x -> vectorPointPlot'' (fst x) (snd x) opts
 
--- Parametric Plot ---
+------------------------------------------------------------------------
+-- Parametric Plot
+------------------------------------------------------------------------
 
 parametricPlot
   :: (v ~ BaseSpace c,
