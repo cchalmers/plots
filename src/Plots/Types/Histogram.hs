@@ -44,6 +44,9 @@ data GHistogramPlot v n a = forall s. GHistogramPlot
   , hFold :: Fold s a
   , hPos  :: a -> Point v n
   , hFunc :: Int -> [P2 n] -> [P2 n]
+-- change P2 n to Point v n
+-- need to add v ~ V2 every where, both in mkHistogramPlot and BinY1
+-- also change in some places in Plots.hs
   , hBin  :: Int 
   } deriving Typeable
 

@@ -224,7 +224,8 @@ module Plots
     -- | Plot a given function.
   -- , addFunctionPlot
    , module Plots.Types.Function
-
+   , module Plots.Types.Smooth
+   , smoothPlot
     -- ** Bar plot
     -- | Bar plot
   -- , addBarPlot
@@ -394,6 +395,7 @@ import           Plots.Types.Scatter
 import           Plots.Types.Ribbon
 
 import           Plots.Types.Function
+import           Plots.Types.Smooth
 
 -- import Plots.Types.Bar
 
@@ -529,6 +531,16 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
 --_ScatterPlot' :: Plotable (GScatterPlot v n a) b => Traversal' (Plot' b v n) (GScatterPlot v n a)
 --_ScatterPlot' = _Plot'
+
+smoothPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => f p -> m ()
+smoothPlot d = addPlotable (mkSmoothPlot d)
 
 vectorPlot
   :: (v ~ BaseSpace c,
