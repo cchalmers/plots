@@ -20,7 +20,6 @@ module Plots.Types.Boxplot
   , mkBoxPlotOf
   , mkBoxPlot
 
-  , boxplotXY1
   , fillBox
 
   ) where
@@ -54,7 +53,7 @@ data GBoxPlot v n a = forall s. GBoxPlot
   { bData  :: s
   , bFold  :: Fold s a
   , bPos   :: a -> Point v n
-  , bBox  :: [P2 n] -> BP
+  , bBox  :: [P2 Double] -> BP
   , bFill  :: Bool
   } deriving Typeable
 
@@ -103,7 +102,7 @@ mkBoxPlotOf f a = GBoxPlot
   { bData = a
   , bFold = f . unpointLike
   , bPos  = id
-  , bBox  = boxplotXY1
+  , bBox  = boxplotstat
   , bFill = True 
   }
 
@@ -113,15 +112,24 @@ _BoxPlot = _Plot
 
 ---------- add more of this function - one for mean other for sum --
 
-boxplotXY1 :: (Ord n, Floating n, Enum n) => [P2 n] -> BP
-boxplotXY1 _ = BP
-   { bppoint = (3.0, 3.0)
-   , bpw = 1.0
-   , bph1 = 1.0
-   , bph2 = 1.5
+boxplotstat :: (Ord n, Floating n, Enum n, n ~ Double) => [P2 n] -> BP
+boxplotstat ps = BP
+   { bppoint = meanXY
+   , bpw  = maxX * 0.3
+   , bph1 = maxY * 0.5
+   , bph2 = maxY * 0.8
    }
+   where 
+     xs     = [fst (unp2 p) | p <- ps]
+     ys     = [snd (unp2 p) | p <- ps]
+     meanXY = ((mean xs), (mean ys))
+     maxX   = maximum xs - (mean xs)
+     maxY   = maximum ys - (mean ys)
 
-drawBoxPlot :: (n ~ Double) => BP -> [Located (Trail' Line V2 n)]
+mean :: (Real a, Fractional b) => [a] -> b
+mean xs = realToFrac (sum xs)/ genericLength xs
+
+drawBoxPlot :: BP -> [Located (Trail' Line V2 Double)]
 drawBoxPlot (BP (x,y) w h1 h2) = [a, b ,c ,d ,e]
                                  where
                                    xmin  = x - w/2
@@ -136,7 +144,7 @@ drawBoxPlot (BP (x,y) w h1 h2) = [a, b ,c ,d ,e]
                                    d     = fromVertices (map p2 [(x,y1min),(x,y2min)])
                                    e     = fromVertices (map p2 [(x,y1max),(x,y2max)])
 
-makeRect :: (n ~ Double) => BP -> Located (Trail' Line V2 n)
+makeRect :: BP -> Located (Trail' Line V2 Double)
 makeRect  (BP (x,y) w h1 h2) = fromVertices (map p2 [(xmin,y1max),(xmax,y1max),(xmax,y1min),(xmin,y1min)])
                                  where
                                    xmin  = x - w/2
