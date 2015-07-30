@@ -66,7 +66,8 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
                   # transform t
             <> if sLine 
                 then ln # transform t # stroke
---                        # applyLineStyle pp
+--                        # applyLineStyle pp -- dont know why doesnt work 
+--                        add easy options for linesize colour dashing opacity; same for fill
                 else mempty
           where
             ps             = toListOf (sFold . to sPos . to (logPoint ls)) sData

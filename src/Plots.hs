@@ -225,7 +225,9 @@ module Plots
   -- , addFunctionPlot
    , module Plots.Types.Function
    , module Plots.Types.Smooth
+   , module Plots.Types.Density
    , smoothPlot
+   , densityPlot'
     -- ** Bar plot
     -- | Bar plot
   -- , addBarPlot
@@ -396,6 +398,7 @@ import           Plots.Types.Ribbon
 
 import           Plots.Types.Function
 import           Plots.Types.Smooth
+import           Plots.Types.Density
 
 -- import Plots.Types.Bar
 
@@ -531,6 +534,16 @@ addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
 --_ScatterPlot' :: Plotable (GScatterPlot v n a) b => Traversal' (Plot' b v n) (GScatterPlot v n a)
 --_ScatterPlot' = _Plot'
+
+densityPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (DensityPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => f p -> PlotState (DensityPlot v n) b -> m ()
+densityPlot' d = addPlotable' (mkDensityPlot d)
 
 smoothPlot
   :: (v ~ BaseSpace c,
