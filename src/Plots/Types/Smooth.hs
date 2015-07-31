@@ -21,7 +21,7 @@ module Plots.Types.Smooth
   , mkSmoothPlot
 
   , drawTrail
-  , testXY1
+  , testXY
 
   ) where
 
@@ -63,6 +63,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
                lp # stroke
                   # lw none
                   # applyBarStyle pp
+                  # opacity 0.7
                   # transform t
             <> if sLine 
                 then ln # transform t # stroke
@@ -95,7 +96,7 @@ mkSmoothPlotOf f a = GSmoothPlot
   { sData = a
   , sFold = f . unpointLike
   , sPos  = id
-  , sMeth = testXY1
+  , sMeth = testXY
   , sLine = True 
   }
   
@@ -105,12 +106,59 @@ _SmoothPlot = _Plot
 
 ---------- add more of this function - one for mean other for sum --
 -- lm ---
-testXY1 :: (Ord n, Floating n, Enum n) => [P2 n] -> (Located (Trail' Loop V2 n) ,Located (Trail' Line V2 n))
-testXY1 _ = (lp, ln) 
+
+testXY :: (Ord n, Floating n, Enum n) => [P2 n] -> (Located (Trail' Loop V2 n) ,Located (Trail' Line V2 n))
+testXY ps = (lp, ln) 
             where 
-            lp = footest # mapLoc closeLine
-            ln = footest
-            footest = fromVertices (map p2 [(1.0,0.5), (2.0,1.0), (3.0,2.1), (4.0, 5.0), (4.5,3.2), (5.1,1.4)])
+            xpts = map fst (map unp2 ps)
+            ypts = map snd (map unp2 ps)
+            xmean = mean xpts
+            ymean = mean ypts
+            xmin = minimum xpts
+            ymin = minimum ypts
+            xmax = maximum xpts
+            ymax = maximum ypts
+            h    = 0.3 * (ymax - ymean)
+            (m, b) = simpleLinear (map unp2 ps)
+            y1   = predict xmin (m, b)
+            y2   = predict xmax (m, b)
+            lp   = (fromVertices (map p2 [(xmin, y1-h),(xmax, y2-h),(xmax, y2+h),(xmin, y1+h)])) #mapLoc closeLine
+            ln   = fromVertices (map p2 [(xmin, y1),(xmax, y2)])
+                                      
+                                                                                
+mean :: (Fractional a) => [a] -> a                                              
+mean xs = sum(xs) / fromIntegral (length xs)                                    
+                                                                                
+meanOfPoints :: (Fractional a) => [(a, a)] -> (a, a)                            
+meanOfPoints x = let (a, b) = unzip x                                           
+                 in (mean a, mean b)                                            
+                                                                                
+correlation :: (Floating a) => [(a, a)] -> a                                    
+correlation xs = xy / sqrt (xx * yy)                                            
+                 where xy = sum $ map (\x -> fst x * snd x) xs                  
+                       xx = sum $ map (\x -> fst x ^ 2) xs                      
+                       yy = sum $ map (\x -> snd x ^ 2) xs                      
+                                                                                
+stdDev :: Floating a => [a] -> a                                                
+stdDev xs = sqrt $ sum (xMinusMean xs) / lengthList                             
+            where mu = mean xs                                                  
+                  xMinusMean = map (\x -> (x - mu) ^ 2)                         
+                  lengthList = fromIntegral (length xs)                         
+                                                                                
+stdDevOfPoints :: (Floating a) => [(a, a)] -> (a, a)                            
+stdDevOfPoints x = let (a, b) = unzip x                                         
+                   in (stdDev a, stdDev b)                                      
+                                                                                
+simpleLinear :: (Ord n, Floating n, Enum n) => [(n , n)] -> (n, n)                            
+simpleLinear xs = (m, b)                                                      
+                  where r = correlation xs                                      
+                        (sx, sy) = stdDevOfPoints xs                            
+                        (mx, my) = meanOfPoints xs                              
+                        m = r * sy / sx                                         
+                        b = my - m * mx                                         
+                                                                                
+predict :: (Ord n, Floating n, Enum n) => n -> (n, n) -> n                                   
+predict x (m, b) = b + m * x  
 
 ----------------------------------------------------------------------------
 -- Smooth Lenses
