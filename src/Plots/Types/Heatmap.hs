@@ -41,6 +41,7 @@ import           Plots.Types
 --   , hmStart    :: P2 n
 --   , hmSize     :: V2 n    -- width and height of each box
 --   } deriving Typeable
+
 -- I'm still unsure of the "right" way to do this. On the one hand, by
 -- restricting it to int users can read off data from an array without
 -- any problems. On the other hand it's not an ideal representation for
@@ -49,8 +50,9 @@ import           Plots.Types
 type ColourRange = (Colour Double, Colour Double)
    
 data HeatPlot n = HeatPlot
-  { hmData      =    [[n]]
-    hmColorMap  =    ColourRange
+  { hData      =    [[n]]
+    hColorMap  =    ColourRange
+    hGrid      =    Bool
   }
 type instance V (HeatMap n) = V2
 type instance N (HeatMap n) = n
@@ -59,10 +61,11 @@ instance OrderedField n => Enveloped (HeatPlot n) where
   getEnvelope HeatMap {..} = getEnvelope $
     boundingBox (fromVertices [(p2 (0.5,0.5)), (p2 (0.5, ymax)), (p2 (xmax, ymax)), (p2 (ymax, 0.5))])
     where 
-      ymax = (length hmData) + 0.5
-      xmax = (max [length x | x <- hmData]) + 0.5
+      ymax = (length hmata) + 0.5
+      xmax = (max [length x | x <- hData]) + 0.5
 
 -- diagrams really needs a prim to deal with multiple objects like this.
+
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HeatPlot n) b where
   renderPlotable s HeatPlot {..} pp =
@@ -90,14 +93,16 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
 
   defLegendPic HeatMap {..} pp
       = square 5 # applyBarStyle pp
-myCircle :: Diagram B
+
+{-
 myCircle = rect 1 3 #fillTexture gradient #lw none
 
 gradient = mkLinearGradient stops ((-1) ^& (-1)) (1 ^& 1) GradPad
 stops =  mkStops [(teal, 0, 1),(orange, 1, 1)]
-
+-}
 -- | Squares for heat map. Since some renderers leave gaps for adjacent
 --   blocks, squares are overlapped to avoid this.
+
 heatSquares :: (TypeableFloat n, Renderable (Path V2 n) b) => n -> ColourRange -> QDiagram b V2 n Any
 heatSquares (V2 x y) f =
   alaf Dual F.foldMap mk ps
@@ -121,8 +126,9 @@ heatSquares (V2 x y) f =
 mkHeatPlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> ParametricPlot v n
 mkParametricPlot f
   = HeatPlot
-        { hmData      =    [[n]]
-          hmColorMap  =    ColourRange
+        { hData      =    [[n]]
+          hColorMap  =    ColourRange
+          hGrid      =    False
         }
 
 ------------------------------------------------------------------------
@@ -130,18 +136,95 @@ mkParametricPlot f
 ------------------------------------------------------------------------
 
 class HasHeatmap a v n | a -> v n where
-  heatmp :: Lens' a (HeatPlot v n)
+  heat :: Lens' a (HeatPlot v n)
 
-  setArrowOpts :: Lens' a ColourRange
-  setArrowOpts = heatmp . lens hmColorMap (\s b -> (s {hmColorMap = b}))
+  setColourMap :: Lens' a ColourRange
+  setColourMap = heatmp . lens hmColorMap (\s b -> (s {hColorMap = b}))
+
+  drawGrid :: Lens' a Bool
+  drawGrid = heatmp . lens hmGrid (\s b -> (s {hGrid = b}))
 
 instance HasVector (HeatPlot v n) v n where
-  heatmp = id
+  heat = id
 
 instance HasVector (PropertiedPlot (HeatPlot v n) b) v n where
-  heatmp = _pp
+  heat = _pp
 
 ------------------------------------------------------------------------
+-- Heatmap 
+------------------------------------------------------------------------
+
+data GHeatMapPlot v n a = forall s. GHeatMapPlot
+  { sData :: s
+  , sFold :: Fold s a
+  , sPos  :: a -> Point v n
+  , sHeat :: [P2 n] -> [[n]]
+  , sGrid :: Bool
+-- change P2 n to Point v n 
+-- Look at Histogram.hs for more details
+-- Extend Bool
+  } deriving Typeable
+
+type instance V (GHeatMapPlot v n a) = v
+type instance N (GHeatMapPlot v n a) = n
+
+instance (Metric v, OrderedField n) => Enveloped (GHeatMapPlot v n a) where
+  getEnvelope GHeatMapPlot {..} = foldMapOf (sFold . to sPos) getEnvelope sData
+
+instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+    => Plotable (GHeatMapPlot V2 n a) b where
+  renderPlotable s HeatMapPlot {..} pp =
+      F.foldMap mk ps
+        # transform t
+        # lwO 0.01
+        # lc grey
+        # withEnvelope (getEnvelope hm)
+    where
+      mk z@(V2 i j) =
+        square 1 # fcA (pp ^. plotColourMap . ixColour (toRational $ normise n))
+                 -- # translate (2*x')
+                 # moveTo p
+        where
+          n  = hmFunction i j
+          p  = hmStart .+^ (hmSize * x' + 0.5)
+          x' = fromIntegral <$> z
+          -- p = transform t $ sPos a
+      ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
+      V2 x y = hmExtent
+      t = s ^. specTrans
+      -- p0 = apply t $ hmStart ^. _Point
+      V2 vMin vMax = minmaxOf each (map (\(V2 i j) -> hmFunction i j) ps)
+      normise v = (v - vMin) / (vMax - vMin)
+
+  defLegendPic HeatMapPlot {..} pp
+      = square 5 # applyBarStyle pp
+
+------------------------------------------------------------------------
+-- HeatMap Plot
+------------------------------------------------------------------------
+
+type HeatMapPlot v n = GHeatMapPlot v n (Point v n)
+
+mkHeatMapPlot :: (PointLike v n p, F.Foldable f, Ord n, Floating n, Enum n, Num n)
+              => f p -> HeatMapPlot v n
+mkHeatMapPlot = mkHeatMapPlotOf folded
+
+
+mkHeatMapPlotOf :: (PointLike v n p, Ord n, Floating n, Enum n, Num n)
+                => Fold s p -> s -> HeatMapPlot v n
+mkHeatMapPlotOf f a = GHeatMapPlot
+  { sData = a
+  , sFold = f . unpointLike
+  , sPos  = id
+  , sHEat = genHeatMap
+  , sGrid = True 
+  }
+  
+_HeatMapPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
+                   => Prism' (Plot b v n) (HeatMapPlot v n)
+_HeatMapPlot = _Plot
+
+-----------------------------------------------------------------------------
 
 -- | Indexed traversal over the values of a heat map.
 -- heatPoints :: IndexedTraversal' (V2 Int) (HeatMap n) Double
