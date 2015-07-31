@@ -20,7 +20,7 @@ module Plots.Types.Density
   , mkDensityPlotOf
   , mkDensityPlot
 
-  , densityY1
+  , densityY
   , fillArea
 
   ) where
@@ -94,7 +94,7 @@ mkDensityPlotOf f a = GDensityPlot
   { dData = a
   , dFold = f . unpointLike
   , dPos  = id
-  , dFunc = densityY1
+  , dFunc = densityY
   , dFill = False 
   }
 
@@ -104,11 +104,24 @@ _DensityPlot = _Plot
 
 ---------- add more of this function - one for mean other for sum --
 
-densityY1 :: (Ord n, Floating n, Enum n) => [P2 n] -> Located (Trail' Line V2 n)
-densityY1 xs = fromVertices (map p2 [(1.0,0.5), (2.0,1.0), (3.0,2.1), (4.0, 5.0), (4.5,3.2), (5.1,1.4)])
+densityY :: (Ord n, Floating n, Enum n) => [P2 n] -> Located (Trail' Line V2 n)
+densityY xs = cubicSpline False (map p2 (zip xpts ypts))
+              where xmin = fst (maximumBy (compare `on` fst) (map unp2 xs))
+                    xmax = fst (minimumBy (compare `on` fst) (map unp2 xs))
+                    xpts = [xmin, (xmin + w) .. xmax]
+                    ypts = [bin1D xs (xpt, (xpt + w)) | xpt <- xpts]
+                    w    = (xmax - xmin)/ 10.0
+
+bin1D xs (a,b) = mean [y | (x,y) <- (map unp2 xs), x > b, x < a]
+
+mean :: (Num a, Fractional a) => [a] -> a
+mean [] = 0.0
+mean xs = (sum xs)/ fromIntegral (length xs)
 
 fillDensity :: (Ord n, Fractional n, Enum n) => Located (Trail' Line V2 n) -> Located (Trail' Loop V2 n)
 fillDensity dd = dd # mapLoc closeLine
+
+-- Isnt working properly need some work with it 
 
 ----------------------------------------------------------------------------
 -- Density Lenses
