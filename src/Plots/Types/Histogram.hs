@@ -94,7 +94,7 @@ mkHistogramPlotOf f a = GHistogramPlot
   { hData = a
   , hFold = f . unpointLike
   , hPos  = id
-  , hFunc = binY1
+  , hFunc = binY
   , hBin  = 10 
   }
   
@@ -108,11 +108,20 @@ _HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
 _HistogramPlot = _Plot
 
 ---------- add more of this function - one for mean other for sum --
-binY1 :: (Ord n, Fractional n, Enum n) => Int -> [P2 n] -> [P2 n]
-binY1 b xs = map p2 (zip [(xmin+(w/2)), (xmin+(3*w/2)) .. (xmax-(w/2))] [0.5, 1..])
-             where xmin = fst (head (sortBy (compare `on` fst) (map unp2 xs)))
-                   xmax = fst (last (sortBy (compare `on` fst) (map unp2 xs)))
-                   w  = ( xmax - xmin )/ fromIntegral b
+
+binY :: (Ord n, Fractional n, Enum n) => Int -> [P2 n] -> [P2 n]
+binY b xs =  map p2 (zip xpts ypts)
+              where xmin = fst (maximumBy (compare `on` fst) (map unp2 xs))
+                    xmax = fst (minimumBy (compare `on` fst) (map unp2 xs))
+                    xpts = [xmin, (xmin + w) .. xmax]
+                    ypts = [bin1D xs (xpt, (xpt + w)) | xpt <- xpts]
+                    w    = (xmax - xmin)/ fromIntegral b
+
+bin1D xs (a,b) = mean [y | (x,y) <- (map unp2 xs), x > b, x < a]
+
+mean :: (Num a, Fractional a) => [a] -> a
+mean [] = 0.0
+mean xs = (sum xs)/ fromIntegral (length xs)
 ----------------------------------------------------------------------------
 -- Histogram Lenses
 ----------------------------------------------------------------------------
