@@ -227,9 +227,28 @@ module Plots
    , module Plots.Types.Smooth
    , module Plots.Types.Density
    , module Plots.Types.Boxplot
+   
    , smoothPlot
+   , smoothPlot'
+   , smoothPlotL
+   , smoothPlotOf
+   , smoothPlotOf'
+   , smoothPlotOfL
+   
+   , densityPlot
    , densityPlot'
+   , densityPlotL
+   , densityPlotOf
+   , densityPlotOf'
+   , densityPlotOfL
+   
    , boxPlot
+   , boxPlot'
+   , boxPlotL
+   , boxPlotOf
+   , boxPlotOf'
+   , boxPlotOfL
+
     -- ** Bar plot
     -- | Bar plot
   -- , addBarPlot
@@ -552,9 +571,66 @@ boxPlot
   => f p -> m ()
 boxPlot d = addPlotable (mkBoxPlot d)
 
+boxPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (BoxPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => f p -> PlotState (BoxPlot v n) b -> m ()
+boxPlot' d = addPlotable' (mkBoxPlot d)
+
+boxPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (BoxPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => String -> f p  -> m ()
+boxPlotL l d = addPlotableL l (mkBoxPlot d)
+
+boxPlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (BoxPlot v n) b,
+      Enum n, TypeableFloat n)
+  => Fold s p -> s -> m ()
+boxPlotOf f s = addPlotable (mkBoxPlotOf f s)
+
+boxPlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (BoxPlot v n) b,
+      Enum n, TypeableFloat n)
+  => Fold s p -> s -> PlotState (BoxPlot v n) b -> m ()
+boxPlotOf' f s = addPlotable' (mkBoxPlotOf f s)
+
+boxPlotOfL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (BoxPlot v n) b,
+      Enum n, TypeableFloat n)
+  => String -> Fold s p -> s -> m ()
+boxPlotOfL l f s = addPlotableL l (mkBoxPlotOf f s)
+
 ------------------------------------------------------------------------
 -- Density Plot
 ------------------------------------------------------------------------
+
+densityPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (DensityPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => f p -> m ()
+densityPlot d = addPlotable (mkDensityPlot d)
 
 densityPlot'
   :: (v ~ BaseSpace c,
@@ -565,6 +641,43 @@ densityPlot'
       Enum n, TypeableFloat n)
   => f p -> PlotState (DensityPlot v n) b -> m ()
 densityPlot' d = addPlotable' (mkDensityPlot d)
+
+densityPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (DensityPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => String -> f p  -> m ()
+densityPlotL l d = addPlotableL l (mkDensityPlot d)
+
+densityPlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (DensityPlot v n) b,
+      Enum n, TypeableFloat n)
+  => Fold s p -> s -> m ()
+densityPlotOf f s = addPlotable (mkDensityPlotOf f s)
+
+densityPlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (DensityPlot v n) b,
+      Enum n, TypeableFloat n)
+  => Fold s p -> s -> PlotState (DensityPlot v n) b -> m ()
+densityPlotOf' f s = addPlotable' (mkDensityPlotOf f s)
+
+densityPlotOfL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (DensityPlot v n) b,
+      Enum n, TypeableFloat n)
+  => String -> Fold s p -> s -> m ()
+densityPlotOfL l f s = addPlotableL l (mkDensityPlotOf f s)
 
 ------------------------------------------------------------------------
 -- Smooth Plot
@@ -579,6 +692,53 @@ smoothPlot
       Enum n, TypeableFloat n)
   => f p -> m ()
 smoothPlot d = addPlotable (mkSmoothPlot d)
+
+smoothPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => f p -> PlotState (SmoothPlot v n) b -> m ()
+smoothPlot' d = addPlotable' (mkSmoothPlot d)
+
+smoothPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => String -> f p  -> m ()
+smoothPlotL l d = addPlotableL l (mkSmoothPlot d)
+
+smoothPlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      Enum n, TypeableFloat n)
+  => Fold s p -> s -> m ()
+smoothPlotOf f s = addPlotable (mkSmoothPlotOf f s)
+
+smoothPlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      Enum n, TypeableFloat n)
+  => Fold s p -> s -> PlotState (SmoothPlot v n) b -> m ()
+smoothPlotOf' f s = addPlotable' (mkSmoothPlotOf f s)
+
+smoothPlotOfL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      Enum n, TypeableFloat n)
+  => String -> Fold s p -> s -> m ()
+smoothPlotOfL l f s = addPlotableL l (mkSmoothPlotOf f s)
 
 ------------------------------------------------------------------------
 -- Vector Plot
@@ -691,6 +851,10 @@ parametricRangePlotL
   => String -> (n -> p) -> (n ,n) -> m ()
 parametricRangePlotL l f d = addPlotableL l (mkParametricRangePlot f d)
 
+-------------------------------------------------------------------------------
+-- Line
+-------------------------------------------------------------------------------
+
 abLinePlot
   :: (v ~ BaseSpace c,
       PointLike v n (P2 n),
@@ -740,6 +904,7 @@ vLinePlot intercept d = addPlotable (mkParametricRangePlot (createVLine intercep
 --   myaxis = r2Axis ~&
 --     scatterPlot data1
 -- @
+
 scatterPlot
   :: (v ~ BaseSpace c,
       PointLike v n p,
