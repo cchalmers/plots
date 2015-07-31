@@ -115,8 +115,8 @@ _BoxPlot = _Plot
 boxplotstat :: (Ord n, Floating n, Enum n, n ~ Double) => [P2 n] -> BP
 boxplotstat ps = BP
    { bppoint = meanXY
-   , bpw  = maxX * 0.3
-   , bph1 = maxY * 0.5
+   , bpw  = maxX * 0.5
+   , bph1 = maxY * 0.3
    , bph2 = maxY * 0.8
    }
    where 
