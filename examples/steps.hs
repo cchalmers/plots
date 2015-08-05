@@ -1,12 +1,13 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+module Steps where
+
 import Plots
 import Plots.Axis
 import Plots.Types hiding (B)
 
 import Data.List
 
-import Dataset
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
 
@@ -16,12 +17,12 @@ mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-             stepPlot  mydata1
-             stepPlot' mydata2 $ do
-               addLegendEntry "data 1"
-               plotColor .= black
-               dotsonPoint .= True
-             axisPlots . each . _LinePlot' . dotsonPoint .= False
+  stepPlot  mydata1
+  stepPlot' mydata2 $ do
+    addLegendEntry "data 1"
+    plotColor .= black
+    dotsonPoint .= True
+  axisPlots . each . _LinePlot' . dotsonPoint .= False
 
 _LinePlot' :: Plotable (LinePlot v n) b => Traversal' (Plot' b v n) (LinePlot v n)
 _LinePlot' = _Plot'
