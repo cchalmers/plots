@@ -48,11 +48,11 @@ import           Plots.Types
 -- heat maps of functions. Maybe we need two primitives.
 
 type ColourRange = (Colour Double, Colour Double)
-   
+
 data HeatPlot n = HeatPlot
-  { hData      =    [[n]]
-    hColorMap  =    ColourRange
-    hGrid      =    Bool
+  { hData      ::   [[n]]
+  , hColorMap  ::    ColourRange
+  , hGrid      ::    Bool
   }
 type instance V (HeatMap n) = V2
 type instance N (HeatMap n) = n
@@ -60,7 +60,7 @@ type instance N (HeatMap n) = n
 instance OrderedField n => Enveloped (HeatPlot n) where
   getEnvelope HeatMap {..} = getEnvelope $
     boundingBox (fromVertices [(p2 (0.5,0.5)), (p2 (0.5, ymax)), (p2 (xmax, ymax)), (p2 (ymax, 0.5))])
-    where 
+    where
       ymax = (length hmata) + 0.5
       xmax = (max [length x | x <- hData]) + 0.5
 
@@ -127,8 +127,8 @@ mkHeatPlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> Para
 mkParametricPlot f
   = HeatPlot
         { hData      =    [[n]]
-          hColorMap  =    ColourRange
-          hGrid      =    False
+        , hColorMap  =    ColourRange
+        , hGrid      =    False
         }
 
 ------------------------------------------------------------------------
@@ -151,7 +151,7 @@ instance HasVector (PropertiedPlot (HeatPlot v n) b) v n where
   heat = _pp
 
 ------------------------------------------------------------------------
--- Heatmap 
+-- Heatmap
 ------------------------------------------------------------------------
 
 data GHeatMapPlot v n a = forall s. GHeatMapPlot
@@ -160,7 +160,7 @@ data GHeatMapPlot v n a = forall s. GHeatMapPlot
   , sPos  :: a -> Point v n
   , sHeat :: [P2 n] -> [[n]]
   , sGrid :: Bool
--- change P2 n to Point v n 
+-- change P2 n to Point v n
 -- Look at Histogram.hs for more details
 -- Extend Bool
   } deriving Typeable
@@ -217,9 +217,9 @@ mkHeatMapPlotOf f a = GHeatMapPlot
   , sFold = f . unpointLike
   , sPos  = id
   , sHEat = genHeatMap
-  , sGrid = True 
+  , sGrid = True
   }
-  
+
 _HeatMapPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
                    => Prism' (Plot b v n) (HeatMapPlot v n)
 _HeatMapPlot = _Plot

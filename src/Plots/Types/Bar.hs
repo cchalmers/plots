@@ -11,9 +11,9 @@
 module Plots.Types.Bar
   ( GBarPlot (..)
   , createbardata
-  , _BarPlot 
+  , _BarPlot
 
-  , BarPlot (..)
+  -- , BarPlot (..)
   , mkBarPlot
 --    BarPlot (..)
 --  , simpleBarPlot
@@ -29,41 +29,42 @@ module Plots.Types.Bar
 
 import Control.Lens     hiding (transform, ( # ), none)
 
-import Data.Maybe
-import Data.Default
+-- import Data.Maybe
+-- import Data.Default
 import Data.Typeable
-import qualified Data.Foldable as F (Foldable, foldMap, toList)
+-- import qualified Data.Foldable as F (Foldable, foldMap, toList)
 
 import Diagrams.Prelude
-import           Diagrams.Coordinates.Isomorphic
+-- import           Diagrams.Coordinates.Isomorphic
 
-import Plots.Utils
+-- import Plots.Utils
 import Plots.Themes
 import Plots.Types
 
 
-data GBarPlot = GBarPlot 
-  { barData :: (Double, Double)
-  , barWidth :: Double
+data GBarPlot n = GBarPlot
+  { barData :: (n, n)
+  , barWidth :: n
   } deriving Typeable
 
-type instance V GBarPlot = V2
---type instance N (GBarPlot n a) = n
+type instance V (GBarPlot n) = V2
+type instance N (GBarPlot n) = n
 
 makeLenses ''GBarPlot
 
-instance Enveloped GBarPlot where
-  getEnvelope GBarPlot {..} = getEnvelope (fromVertices (createbardata a b))
+instance OrderedField n => Enveloped (GBarPlot n) where
+  getEnvelope GBarPlot {..} = getEnvelope $ createbardata a b
     where a = barData
           b = barWidth
 
+createbardata :: Floating n => (n, n) -> n -> [P2 n]
 createbardata (x, y) w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
         where xmax =  x + (w/2)
               xmin =  x - (w/2)
 
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 N) b)
-    => Plotable GBarPlot b where
+instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+    => Plotable (GBarPlot n) b where
   renderPlotable s GBarPlot {..} pp =
       fromVertices ps
         # mapLoc closeLine
@@ -81,21 +82,20 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 N) b)
     where
       ps = createbardata barData barWidth
       t  = s ^. specTrans
-      ls = s ^. specScale
+      -- ls = s ^. specScale
 
   defLegendPic GBarPlot {..} pp
       = square 5 # applyBarStyle pp
 
-_BarPlot :: (Plotable GBarPlot b, Typeable b)
-             => Prism' (Plot b v n) GBarPlot
+_BarPlot :: (Plotable (GBarPlot n) b, Typeable b)
+             => Prism' (Plot b V2 n) (GBarPlot n)
 _BarPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Bar Plot
 ------------------------------------------------------------------------
 
-mkBarPlot :: (Num n)
-                => (Double, Double) -> Double -> GBarPlot
+mkBarPlot :: (n, n) -> n -> GBarPlot n
 mkBarPlot a w = GBarPlot
   { barData = a
   , barWidth = w

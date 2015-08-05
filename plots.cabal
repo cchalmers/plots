@@ -35,8 +35,9 @@ Library
     Plots.Types.Bar
     Plots.Types.Line
     Plots.Types.Function
-    Plots.Types.Heatmap
+    -- Plots.Types.Heatmap
     Plots.Types.Scatter
+    Plots.Types.Ribbon
     Plots.Utils
     Diagrams.Coordinates.Isomorphic
     Diagrams.Coordinates.Polar
