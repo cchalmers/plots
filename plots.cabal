@@ -68,8 +68,7 @@ Library
     time,
     vector,
     profunctors,
-    intervals,
-    diagrams-pgf
+    intervals
 
   Ghc-options:         -Wall
 
