@@ -556,7 +556,7 @@ renderPolarAxis a = frame 15
               <> plots
   where
     -- plots    = foldMap (uncurry $ renderPlotable (AxisSpec xs t (a^.axisScale))) plots'
-    plots    = foldMap (uncurry $ renderPlotable (AxisSpec (pure (-10, 10)) mempty (pure LinearAxis))) plots'
+    plots    = foldMap (uncurry $ renderPlotable (AxisSpec (pure (-10, 10)) mempty (pure LinearAxis))) plots' # scale 10
 
     -- drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --
