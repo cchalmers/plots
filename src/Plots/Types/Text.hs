@@ -68,8 +68,8 @@ instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n)
     => Plotable (TextPlot n) b where
   renderPlotable s v pp = alignedText a b str # fontSize (local fsze) 
                           # applyTextStyle pp
-                          # transform (s^.specTrans) <> circle 1
-                          # translateX x
+                          # transform (s^.specTrans)
+                          # moveTo (p2 (x, y)) <> circle 1 # fc red
                           where
                              (x, y)   = (v ^. textPoint)
                              str      = v ^. tString
