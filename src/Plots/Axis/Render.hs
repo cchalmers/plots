@@ -556,17 +556,17 @@ renderPolarAxis a = frame 15
               <> plots
   where
     -- plots    = foldMap (uncurry $ renderPlotable (AxisSpec xs t (a^.axisScale))) plots'
-    plots    = foldMap (uncurry $ renderPlotable (AxisSpec (pure (-10, 10)) mempty (pure LinearAxis))) plots' # scale 10
+    plots    = foldMap (uncurry $ renderPlotable (AxisSpec (pure (-10, 10)) mempty (pure LinearAxis))) plots' # scale 6
 
     -- drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --
-    rAxis = (rline <> rticks) # scale 10
+    rAxis = (rline <> rticks) # scale 6
 
     rline = origin ~~ (10 *^ unitX) # lwO 2
     rticks = foldMap moveTo (map (\x -> mkP2 x 0) [1..9]) tick # lwO 1
     tick = unit_Y ~~ unitY & scale 0.2
     --
-    circles = foldMap circle [1,3..9] # lwO 1 # lc grey # scale 10
+    circles = foldMap circle [1,3..9] # lwO 1 # lc grey # scale 6 # opacity 0.5
     --
     -- (xs, tv, t') = workOutScale a
     -- t = tv <> t'

@@ -18,6 +18,8 @@ module Plots
   , module Plots.Types.Density
   , module Plots.Types.Smooth
   , module Plots.Types.Text
+  , module Plots.Types.Pie
+  , module Plots.Types.Points
 
   , module Plots.API
   , module Plots.API.Scatter
@@ -51,6 +53,8 @@ import           Plots.Types.Boxplot
 import           Plots.Types.Density
 import           Plots.Types.Smooth
 import           Plots.Types.Text
+import           Plots.Types.Pie
+import           Plots.Types.Points
 
 import           Plots.API
 import           Plots.API.Scatter
