@@ -46,8 +46,8 @@ data TextOptions n = TextOptions
 
 instance (Fractional n) => Default (TextOptions n) where
   def = TextOptions
-   {  _optalignment      = (1.0, 1.0)
-    , _optfontSize       = 0.2
+   {  _optalignment      = (0.0, 0.0)
+    , _optfontSize       = 0.4
     , _optfontSlant      = FontSlantNormal
     , _optfontWeight     = FontWeightNormal
    }
@@ -66,12 +66,12 @@ instance (Fractional n, OrderedField n, TypeableFloat n, Enum n) => Enveloped (T
 -- #fsze #fslant #fwght
 instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
     => Plotable (TextPlot n) b where
-  renderPlotable s v pp = alignedText a b str # fontSize (local fsze)
+  renderPlotable s v pp = alignedText a b str # fontSize (local fsze) 
                           # applyTextStyle pp
-                          # transform (s^.specTrans)
-                          # translateX 10.0
+                          # transform (s^.specTrans) <> circle 1
+                          # translateX x
                           where
-                             pt1      = r2 (v ^. textPoint)
+                             (x, y)   = (v ^. textPoint)
                              str      = v ^. tString
                              (a, b)   = v ^. textOptions ^. optalignment
                              fsze     = v ^. textOptions ^. optfontSize
