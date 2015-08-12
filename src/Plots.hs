@@ -17,6 +17,7 @@ module Plots
   , module Plots.Types.Boxplot
   , module Plots.Types.Density
   , module Plots.Types.Smooth
+  , module Plots.Types.Text
 
   , module Plots.API
   , module Plots.API.Scatter
@@ -28,6 +29,7 @@ module Plots
   , module Plots.API.Density
   , module Plots.API.Smooth
   , module Plots.API.Others
+  , module Plots.API.Text
   ) where
 
 import           Plots.Axis
@@ -48,6 +50,7 @@ import           Plots.Types.Function
 import           Plots.Types.Boxplot
 import           Plots.Types.Density
 import           Plots.Types.Smooth
+import           Plots.Types.Text
 
 import           Plots.API
 import           Plots.API.Scatter
@@ -59,4 +62,5 @@ import           Plots.API.Boxplot
 import           Plots.API.Density
 import           Plots.API.Smooth
 import           Plots.API.Others
+import           Plots.API.Text
 
