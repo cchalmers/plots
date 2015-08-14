@@ -57,31 +57,33 @@ import           Plots.API
 --
 -- @
 -- * 'dotsonPoint' :: 'Lens'' ('LinePlot' v n) 'Bool' - False
--- * 'lineStyle': 'Maybe' ('Point' v n -> 'Style' 'V2' n) - Nothing
+-- * 'lineStyle'   :: 'Maybe' ('Point' v n -> 'Style' 'V2' n) - Nothing
 -- @
 --
-
 -- | Add a 'LinePlot' to the 'AxisState' from a data set.
 --
 -- @
 --   myaxis = r2Axis ~&
 --     linePlot data1
 -- @
-
-linePlot''
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      R2Backend b n,
-      Plotable (Path v n) b,
-      F.Foldable f)
-  => f p -> m ()
-linePlot'' d = addPlotable (mkPath $ Identity d)
-
-pathPlot'' :: (R2Backend b n, MonadState (Axis b V2 n) m) => Path V2 n -> m ()
-pathPlot'' = addPlotable
-
---------------------------------------------------------------------------
+-- === __Example__
+--
+-- <<plots/line.png#diagram=line&width=300>>
+--
+-- @
+--
+-- myaxis :: Axis B V2 Double
+-- myaxis = r2Axis &~ do
+--          linePlot  mydata1 
+--          linePlot' mydata2 $ do
+--               addLegendEntry "data 2"
+--               plotColor .= black
+--               dotsonPoint .= False
+--          linePlotL "data 3" mydata3
+--
+--          axisPlots . each . _LinePlot' . dotsonPoint .= True
+--
+-- @
 
 linePlot
   :: (v ~ BaseSpace c,
@@ -119,6 +121,22 @@ linePlotL
       F.Foldable f)
   => String -> f p -> m ()
 linePlotL l d = addPlotableL l (mkLinePlot d)
+
+
+-- | mkTrail version of line plot
+
+linePlot''
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      R2Backend b n,
+      Plotable (Path v n) b,
+      F.Foldable f)
+  => f p -> m ()
+linePlot'' d = addPlotable (mkPath $ Identity d)
+
+pathPlot'' :: (R2Backend b n, MonadState (Axis b V2 n) m) => Path V2 n -> m ()
+pathPlot'' = addPlotable
 
 -- Fold variants
 

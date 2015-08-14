@@ -157,14 +157,6 @@ module Plots.API
   , ColourMap
   -- , C
   , showColourBar
-  , wedgePlot
-  , wedgePlotFrom
-  , annularWedgePlot
-  , annularWedgePlotFrom
-  , annularWedgePlotFrom'
-  , wedgePlotFrom'
-  , pointsPlot
-  , pointsPlot'
   ) where
 
 import           Control.Lens                    hiding (( # ))
@@ -190,86 +182,6 @@ import           Plots.Axis.ColourBar
 
 import           Plots.Types
 import           Plots.Themes
-
--- to remove
-import           Plots.Types.Pie
-import           Plots.Types.Points
--- to remove
-
-------------------------------------------------------------------------
--- to remove
-------------------------------------------------------------------------
-pointsPlot'
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPointsPlot n) b,
-      RealFloat n)
-  => [(n,Angle n)] -> PlotState (GPointsPlot n) b -> m ()
-pointsPlot' ds = addPlotable' (mkPointsPlot ds)
-
-pointsPlot
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPointsPlot n) b,
-      RealFloat n)
-  => [(n,Angle n)] -> m ()
-pointsPlot ds = addPlotable (mkPointsPlot ds)
-
-wedgePlot
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> Angle n -> m ()
-wedgePlot r a = addPlotable (mkWedgePlot r a)
-
-wedgePlotFrom
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> Direction V2 n -> Angle n -> m ()
-wedgePlotFrom r d a = addPlotable (mkWedgePlotFrom r d a)
-
-wedgePlotFrom'
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> Direction V2 n -> Angle n -> PlotState (GPiePlot n) b  -> m ()
-wedgePlotFrom' r d a = addPlotable' (mkWedgePlotFrom r d a)
-
-annularWedgePlot
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> n -> Angle n -> m ()
-annularWedgePlot r1 r2 a = addPlotable (mkAnnularWedgePlot r1 r2 a)
-
-annularWedgePlotFrom
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> n -> Direction V2 n -> Angle n -> m ()
-annularWedgePlotFrom r1 r2 d a = addPlotable (mkAnnularWedgePlotFrom r1 r2 d a)
-
-annularWedgePlotFrom'
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> n -> Direction V2 n -> Angle n -> PlotState (GPiePlot n) b -> m ()
-annularWedgePlotFrom' r1 r2 d a = addPlotable' (mkAnnularWedgePlotFrom r1 r2 d a)
 
 -- import Plots.Types.Bar
 

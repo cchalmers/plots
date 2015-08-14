@@ -106,8 +106,12 @@ module Plots
     -- | API using multiple types.
   , module Plots.API.Others
 
-  -- , module Plots.API.Pie
-  -- , module Plots.API.Points
+    -- | API for wedge, annular wegde and pie.
+  , module Plots.API.Pie
+
+    -- | API for polar scatter plot.
+  , module Plots.API.Points
+
   -- , module Plots.API.Heatmap
   ) where
 
@@ -145,7 +149,7 @@ import           Plots.API.Density
 import           Plots.API.Smooth
 import           Plots.API.Others
 import           Plots.API.Text
+import           Plots.API.Pie
+import           Plots.API.Points
 -- import           Plots.API.Heatmap
--- import           Plots.API.Pie
--- import           Plots.API.Points
 

@@ -5,42 +5,50 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE AllowAmbiguousTypes          #-}
 
-
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.API.Ribbon
-  ( ribbonPlot
+  ( -- * Ribbon plot
+    ribbonPlot
   , ribbonPlot'
   , ribbonPlotL
+  
+    -- * Fold variation ribbon plot
   , ribbonPlotOf
   , ribbonPlotOf'
   , ribbonPlotLOf
 
+    -- * Area plot
   , makeribbon
   , makearea
   , makearea'
   , makeareagroup'
 
+    -- * Single barplot
   , barPlot
   , barPlot'
   , barPlotL
 
+    -- * Barplot normal
   , barPlotNormal
   , barPlotNormalC
   , barPlotNormalCL
   , barPlotNormalMulti
   , barPlotNormalMultiC
 
+    -- * Barplot stacked
   , barPlotStacked
   , barPlotStackedC
   , barPlotStackedCL
   , barPlotStackedMultiC
 
+    -- * Barplot split
   , barPlotSplit
   , barPlotSplitC
   , barPlotSplitCL
   , barPlotSplitMultiC
 
+    -- * Barplot ratio
   , barPlotRatio
   , barPlotRatioC
   , barPlotRatioCL
@@ -49,6 +57,7 @@ module Plots.API.Ribbon
 
 import           Control.Lens                    hiding (( # ))
 import           Control.Monad.State.Lazy
+
 import           Data.Typeable
 import qualified Data.Foldable as F
 import           Data.List
@@ -58,16 +67,15 @@ import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
 
 import           Plots.Axis
-
 import           Plots.Types
 import           Plots.Themes
-
 import           Plots.Types.Ribbon
 import           Plots.API
 
 ------------------------------------------------------------------------
 -- Ribbon
 ------------------------------------------------------------------------
+
 ribbonPlot
   :: (v ~ BaseSpace c,
       PointLike v n p,
@@ -145,9 +153,6 @@ makearea' :: (Typeable b, Renderable (Path V2 Double) b,
 makearea' sd string = ribbonPlot' (sd ++ reverse (zeroY sd)) $ do
                                  addLegendEntry string
 
--- makeareagroup xs ys ds = makeareagroup' (creategroupdata (zip xs ys) ds)
--- error when using group
-
 makeareagroup' :: (Typeable b, Renderable (Path V2 Double) b,
                    MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                   m ([(Double, Double)], String) -> m ()
@@ -182,7 +187,7 @@ barPlotL x w string colour = ribbonPlot' (createBarData x w) $ do
                                 addLegendEntry string
 
 ------------------------------------------------------------------------
--- Normal Bar --figure out a way to loop and use sort
+-- Normal Bar
 ------------------------------------------------------------------------
 barPlotNormal :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>

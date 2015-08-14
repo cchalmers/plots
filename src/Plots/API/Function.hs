@@ -9,27 +9,27 @@
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.API.Function
-  ( parametricPlot
+  ( -- * Parametric plot
+    parametricPlot
   , parametricRangePlot
-  -- ** Parametric plot
-
   , parametricPlot'
   , parametricRangePlot'
-
   , parametricPlotL
   , parametricRangePlotL
 
+    -- * Line functions
   , abLinePlot
   , hLinePlot
   , vLinePlot
 
+    -- * Vectors
   , vectorPlot
   , vectorPointPlot
   , vectorPointPlot'
   , vectorPointPlot''
   , vectorPointPlotL
   , vectorFieldPlot
-  -- ** Mesh plot
+
   -- , meshPlot
   -- , surfacePlot
   ) where
@@ -42,11 +42,69 @@ import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
 
 import           Plots.Axis
-
 import           Plots.Types
-
 import           Plots.Types.Function
 import           Plots.API
+
+------------------------------------------------------------------------
+-- Parametric Plot
+------------------------------------------------------------------------
+
+parametricPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => (n -> p) -> m ()
+parametricPlot f = addPlotable (mkParametricPlot f)
+
+parametricPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => (n -> p) -> PlotState (ParametricPlot v n) b -> m ()
+parametricPlot' f = addPlotable' (mkParametricPlot f)
+
+parametricPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => String -> (n -> p) -> m ()
+parametricPlotL l f = addPlotableL l (mkParametricPlot f)
+
+-- range variant
+
+parametricRangePlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => (n -> p) -> (n ,n) -> m ()
+parametricRangePlot f d = addPlotable (mkParametricRangePlot f d)
+
+parametricRangePlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => (n -> p) -> (n ,n) -> PlotState (ParametricPlot v n) b -> m ()
+parametricRangePlot' f d = addPlotable' (mkParametricRangePlot f d)
+
+parametricRangePlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (ParametricPlot v n) b,
+      Additive v, TypeableFloat n)
+  => String -> (n -> p) -> (n ,n) -> m ()
+parametricRangePlotL l f d = addPlotableL l (mkParametricRangePlot f d)
 
 ------------------------------------------------------------------------
 -- Vector Plot
@@ -100,64 +158,6 @@ vectorFieldPlot
       Additive v, TypeableFloat n)
   =>  [v n] -> [(n, n)] -> ArrowOpts n -> m ()
 vectorFieldPlot vs ps opts = F.for_ (zip vs ps) $ \x -> vectorPointPlot'' (fst x) (snd x) opts
-
-------------------------------------------------------------------------
--- Parametric Plot
-------------------------------------------------------------------------
-
-parametricPlot
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
-  => (n -> p) -> m ()
-parametricPlot f = addPlotable (mkParametricPlot f)
-
-parametricRangePlot
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
-  => (n -> p) -> (n ,n) -> m ()
-parametricRangePlot f d = addPlotable (mkParametricRangePlot f d)
-
-parametricPlot'
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
-  => (n -> p) -> PlotState (ParametricPlot v n) b -> m ()
-parametricPlot' f = addPlotable' (mkParametricPlot f)
-
-parametricRangePlot'
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
-  => (n -> p) -> (n ,n) -> PlotState (ParametricPlot v n) b -> m ()
-parametricRangePlot' f d = addPlotable' (mkParametricRangePlot f d)
-
-parametricPlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
-  => String -> (n -> p) -> m ()
-parametricPlotL l f = addPlotableL l (mkParametricPlot f)
-
-parametricRangePlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
-  => String -> (n -> p) -> (n ,n) -> m ()
-parametricRangePlotL l f d = addPlotableL l (mkParametricRangePlot f d)
 
 -------------------------------------------------------------------------------
 -- Line

@@ -5,22 +5,24 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE AllowAmbiguousTypes          #-}
 
-
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.API.Scatter
-  (      -- ** Scatter plot
+  ( -- ** Scatter plot
     ScatterPlot
   , scatterPlot
   , scatterPlot'
   , scatterPlotL
+    -- ** Fold variant scatter plot
   , scatterPlotOf
   , scatterPlotOf'
   , scatterPlotLOf
-
+    
+    -- ** General scatter plot
   , gscatterPlot
   , gscatterPlot'
   , gscatterPlotL
+
   -- **fold variant
   --, gscatterPlotOf
   --, gscatterPlotOf'
@@ -29,16 +31,15 @@ module Plots.API.Scatter
 
 import           Control.Lens                    hiding (( # ))
 import           Control.Monad.State.Lazy
+
 import qualified Data.Foldable as F
 
 import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Axis
-
 import           Plots.Types
-
-import           Plots.Types.Scatter
 import           Plots.API
+import           Plots.Types.Scatter
 
 ------------------------------------------------------------------------
 -- Scatter plot
@@ -97,6 +98,7 @@ scatterPlot d = addPlotable (mkScatterPlot d)
 --       connectingLine .= True
 --       addLegendEntry "data 1"
 -- @
+
 scatterPlot'
   :: (v ~ BaseSpace c,
       PointLike v n p,
@@ -113,6 +115,26 @@ scatterPlot' d = addPlotable' (mkScatterPlot d)
 --     scatterPlotL "blue team" pointData1
 --     scatterPlotL "red team" pointData2
 -- @
+--
+-- === __Example__
+--
+-- <<plots/scatter-2.png#diagram=scatter&width=300>>
+--
+-- @
+-- mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
+-- mydata2 = mydata1 & each . _1 *~ 0.5
+-- mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
+--
+-- myaxis :: Axis B V2 Double
+-- myaxis = r2Axis &~ do
+--    scatterPlot' mydata1 $ do
+--      addLegendEntry "data 1"
+--      plotColor .= purple
+--      plotMarker %= scale 2
+--    scatterPlotL "data 2" mydata2
+--    scatterPlotL "data 3" mydata3
+-- @
+
 scatterPlotL
   :: (v ~ BaseSpace c,
       PointLike v n p,
@@ -149,7 +171,7 @@ scatterPlotLOf
 scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 
 ------------------------------------------------------------------------
--- Bubble plot -- ??
+-- Bubble plot -- 
 ------------------------------------------------------------------------
 
 -- $ bubble
@@ -165,7 +187,7 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 -- bubblePlot' d s = axisPlots <>= [P.Plot (execState s $ P.mkBubblePlot d) def]
 
 ------------------------------------------------------------------------
--- GScatterPlot
+-- General scatter plot
 ------------------------------------------------------------------------
 
 gscatterPlot
@@ -185,7 +207,6 @@ gscatterPlot'
       F.Foldable f)
   => f a -> (a -> p) -> PlotState (GScatterPlot v n a) b -> m ()
 gscatterPlot' d pf = addPlotable' (mkGScatterPlot d pf)
-
 
 gscatterPlotL
   :: (v ~ BaseSpace c,

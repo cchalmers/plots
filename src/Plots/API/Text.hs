@@ -9,12 +9,14 @@
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.API.Text
-  ( textPlot
+  ( -- * Text plot
+    textPlot
   , textPlot'
   , textPlotL
   ) where
 
 import           Control.Monad.State.Lazy
+
 import           Data.Typeable
 import qualified Data.Foldable as F
 
@@ -22,12 +24,13 @@ import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
 
 import           Plots.Axis
-
 import           Plots.Types
-
 import           Plots.Types.Text
 import           Plots.API
 
+------------------------------------------------------------------------
+-- Boxplot
+------------------------------------------------------------------------
 
 textPlot
   :: (v ~ BaseSpace c,

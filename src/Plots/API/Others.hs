@@ -9,30 +9,37 @@
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.API.Others
-  ( createlinerangev
+  ( -- * Vertical line range
+    createlinerangev
   , linerangevPlot
   , linerangevPlot'
   , linerangevPlotL
   , linerangevPlotwithPoint
 
+    -- * Horizontal line range
   , createlinerangeh
   , linerangehPlot
   , linerangehPlot'
   , linerangehPlotL
   , linerangehPlotwithPoint
 
+    -- * Vertical errorbar
   , errorbarvPlot
   , errorbarvPlotwithPoint
 
+    -- * Horizontal errorbar
   , errorbarhPlot
   , errorbarhPlotwithPoint
 
+    -- * Vertical crossbar
   , crossbarvPlot
   , crossbarvPlotwithPoint
 
+    -- * Horizontal crossbar
   , crossbarhPlot
   , crossbarhPlotwithPoint
 
+    -- * Boxplot
   , boxplotvPlot
   , boxplothPlot
   ) where
@@ -44,10 +51,8 @@ import           Data.Typeable
 import           Diagrams.Prelude
 
 import           Plots.Axis
-
 import           Plots.Types
 import           Plots.Themes
-
 import           Plots.API.Line
 import           Plots.API.Scatter
 import           Plots.API
@@ -84,9 +89,6 @@ linerangevPlotwithPoint a s = do
         plotColor .= purple
         plotMarker %= scale 2
 
--- add more api with option for colour
--- add group for line step, linerange
-
 ------------------------------------------------------------------------
 -- Linerange Horizontal
 ------------------------------------------------------------------------
@@ -119,12 +121,9 @@ linerangehPlotwithPoint a s = do
         plotColor .= purple
         plotMarker %= scale 2
 
--- add more api with option for colour
-
 ------------------------------------------------------------------------
 -- Errorbar Vertical
 ------------------------------------------------------------------------
--- figure out way to use same plotcolour
 
 errorbarvPlot :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
@@ -261,7 +260,7 @@ crossbarhPlotwithPoint (a,b) s h = do
                  plotColor .= blue
 
 ------------------------------------------------------------------------
--- Boxplot Vertical --fillalso
+-- Boxplot Vertical
 ------------------------------------------------------------------------
 
 boxplotvPlot :: (Typeable b, Renderable (Path V2 Double) b,
@@ -276,7 +275,7 @@ boxplotvPlot (a,b) s1 s2 h = do
 
 
 ------------------------------------------------------------------------
--- Boxplot Horizontal --fillalso
+-- Boxplot Horizontal
 ------------------------------------------------------------------------
 
 boxplothPlot :: (Typeable b, Renderable (Path V2 Double) b,
@@ -293,7 +292,6 @@ boxplothPlot (a,b) s h1 h2= do
                                   hmean = h2-h1
 
 
--- @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 ------------------------------------------------------------------------
 -- Bar Plot
 ------------------------------------------------------------------------
