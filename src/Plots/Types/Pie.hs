@@ -3,34 +3,47 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE FunctionalDependencies    #-}
+
 {-# LANGUAGE UndecidableInstances      #-}
 
+{-# LANGUAGE StandaloneDeriving        #-}
+
 module Plots.Types.Pie
-  (  GPiePlot
+  (  -- * General pie plot
+     GPiePlot
+
+     -- * Wedge plot
    , mkWedgePlot
    , mkWedgePlotFrom
+
+     -- * Annular wedge plot
    , mkAnnularWedgePlotFrom
    , mkAnnularWedgePlot
+
+     -- * Lenses
    , strokeArc
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
--- import qualified Data.Foldable                   as F
-import           Data.Typeable
 
-import           Diagrams.Prelude hiding (r2)
+import           Data.Typeable
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Coordinates.Polar
+import           Diagrams.Prelude hiding (r2)
 
 import           Plots.Themes
 import           Plots.Types
+
+------------------------------------------------------------------------
+-- General pie plot
+------------------------------------------------------------------------
 
 data GPiePlot n = GPiePlot
   { sLargeRadius :: n
@@ -62,6 +75,11 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   defLegendPic GPiePlot {..} pp
       = square 5 # applyBarStyle pp
 
+------------------------------------------------------------------------
+-- Wedge plot
+------------------------------------------------------------------------
+
+-- | Plot a wedge given radius and angle with direction xDir.
 mkWedgePlot :: (RealFloat n, PointLike v n (Polar n), Num n)
                 => n -> Angle n -> GPiePlot n
 mkWedgePlot r a = GPiePlot
@@ -72,6 +90,7 @@ mkWedgePlot r a = GPiePlot
   , sArc            = False
   }
 
+-- | Plot a wedge given radius, angle and direction.
 mkWedgePlotFrom :: (RealFloat n, PointLike v n (Polar n), Num n)
                 => n -> Direction V2 n -> Angle n -> GPiePlot n
 mkWedgePlotFrom  r d a = GPiePlot
@@ -81,7 +100,12 @@ mkWedgePlotFrom  r d a = GPiePlot
   , sAngle       = a
   , sArc         = False
   }
--- cannot use 0 as scale by 0
+
+------------------------------------------------------------------------
+-- Annular wedge plot
+------------------------------------------------------------------------
+
+-- | Plot a annular wedge given radius and angle with direction xDir.
 mkAnnularWedgePlot :: (RealFloat n, PointLike v n (Polar n), Num n)
                 => n -> n -> Angle n -> GPiePlot n
 mkAnnularWedgePlot r2 r1 a = GPiePlot
@@ -92,6 +116,7 @@ mkAnnularWedgePlot r2 r1 a = GPiePlot
   , sArc            = False
   }
 
+-- | Plot a annular wedge given radius, angle and direction.
 mkAnnularWedgePlotFrom :: (RealFloat n, PointLike v n (Polar n), Num n)
                 => n -> n -> Direction V2 n -> Angle n -> GPiePlot n
 mkAnnularWedgePlotFrom  r2 r1 d a = GPiePlot

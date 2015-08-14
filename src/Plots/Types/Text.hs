@@ -12,31 +12,37 @@
 {-# LANGUAGE UndecidableInstances      #-}
 
 module Plots.Types.Text
-  ( TextPlot
+  ( -- * Text plot
+    TextPlot
   , TextOptions
   , mkTextPlot
+
+    -- * Text lenses
   , setOptions
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
--- import qualified Data.Foldable                   as F
+
 import           Data.Typeable
 
 import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 
--- import           Diagrams.Coordinates.Isomorphic
-
 import           Plots.Themes
 import           Plots.Types
 
+------------------------------------------------------------------------
+-- Text data  & options
+------------------------------------------------------------------------
+
 data TextPlot n = TextPlot
    { _tString        :: String
-   , _textPoint     :: (n,n)
-   , _textOptions   :: TextOptions n
+   , _textPoint      :: (n,n)
+   , _textOptions    :: TextOptions n
    }
 
+-- | Text alignment, font size, slant and weight
 data TextOptions n = TextOptions
    {  _optalignment      :: (n, n)
     , _optfontSize       :: n
@@ -44,6 +50,8 @@ data TextOptions n = TextOptions
     , _optfontWeight     :: FontWeight
    }
 
+-- need to implement an option for fonts
+ 
 instance (Fractional n) => Default (TextOptions n) where
   def = TextOptions
    {  _optalignment      = (0.0, 0.0)
@@ -51,8 +59,6 @@ instance (Fractional n) => Default (TextOptions n) where
     , _optfontSlant      = FontSlantNormal
     , _optfontWeight     = FontWeightNormal
    }
-
---     _font           = Font
 
 makeLenses ''TextPlot
 makeLenses ''TextOptions
@@ -63,25 +69,35 @@ type instance N (TextPlot n) = n
 instance (Fractional n, OrderedField n, TypeableFloat n, Enum n) => Enveloped (TextPlot n) where
   getEnvelope = const mempty
 
--- #fsze #fslant #fwght
+
 instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
     => Plotable (TextPlot n) b where
   renderPlotable s v pp = alignedText a b str # fontSize (local fsze)
                           # applyTextStyle pp
                           # transform (s^.specTrans)
-                          # moveTo (p2 (x, y)) <> circle 1 # fc red
+
                           where
                              (x, y)   = (v ^. textPoint)
                              str      = v ^. tString
                              (a, b)   = v ^. textOptions ^. optalignment
                              fsze     = v ^. textOptions ^. optfontSize
-                             -- fslant   = v ^. textOptions ^. optfontSlant
-                             -- fwght    = v ^. textOptions ^. optfontWeight
+
+-- # moveTo (p2 (x, y)) <> circle 1 # fc red
+-- fslant   = v ^. textOptions ^. optfontSlant
+-- fwght    = v ^. textOptions ^. optfontWeight
+-- need to find a method to move text string to
+-- a point in plot, translate and move doesnt work.
+-- Implement a font slant and font weight.
 
   defLegendPic TextPlot {..} pp
       = (p2 (-10,0) ~~ p2 (10,0))
           # applyLineStyle pp
 
+------------------------------------------------------------------------
+-- Text plot
+------------------------------------------------------------------------
+
+-- | Draw a given string at a given point.
 mkTextPlot :: (TypeableFloat n, Fractional n) => (n,n) -> String -> TextPlot n
 mkTextPlot p1 f
   = TextPlot

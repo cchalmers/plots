@@ -11,30 +11,38 @@
 {-# LANGUAGE UndecidableInstances      #-}
 
 module Plots.Types.Points
-  (  GPointsPlot
+  (  -- * Polar scatter plot  
+     GPointsPlot
    , mkPointsPlot
+
+     -- * Lenses
    , doFill
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
--- import qualified Data.Foldable                   as F
+
 import           Data.Typeable
 
 import           Diagrams.Prelude
-
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Coordinates.Polar
 
 import           Plots.Themes
 import           Plots.Types
 
+------------------------------------------------------------------------
+-- GPoints plot
+------------------------------------------------------------------------
+
 data GPointsPlot n = GPointsPlot
   { sPoints      :: [(n, Angle n)]
   , sFill         :: Bool
   } deriving Typeable
 
--- add style and transform
+-- options for style and transform.
+-- lenses for style and transform,
+-- scatter plot for example.
 
 type instance V (GPointsPlot n)  = V2
 type instance N (GPointsPlot n)  = n
@@ -58,12 +66,18 @@ instance (v ~ V2, Typeable b, TypeableFloat n, Renderable (Path v n) b)
       = pp ^. plotMarker
          & applyMarkerStyle pp
 
+------------------------------------------------------------------------
+-- Points plot
+------------------------------------------------------------------------
+
+-- | Plot a polar scatter plot given a list of radius and angle.
 mkPointsPlot :: (RealFloat n, PointLike V2 n (Polar n), Num n)
                 => [(n, Angle n)] -> GPointsPlot n
 mkPointsPlot ds = GPointsPlot
   { sPoints      =  ds
   , sFill        =  False
   }
+
 ------------------------------------------------------------------------
 -- Points lenses
 ------------------------------------------------------------------------

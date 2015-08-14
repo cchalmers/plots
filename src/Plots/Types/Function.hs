@@ -1,81 +1,97 @@
-{-# LANGUAGE DeriveDataTypeable     #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE CPP                       #-}
+{-# LANGUAGE DeriveDataTypeable        #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE RankNTypes                #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE FunctionalDependencies    #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans   #-}
+{-# LANGUAGE TemplateHaskell           #-}
+{-# LANGUAGE UndecidableInstances      #-}
+
+{-# LANGUAGE StandaloneDeriving        #-}
 
 module Plots.Types.Function
-  (
+  ( -- * Function plot options
     FunctionPlotOptions
-  --, functionPlotSmooth
   , functionPlotNumPoints
-  --, functionPlotDiscontinuous
---   , mkFunctionPlot
-    -- * Prism
---   , _FunctionPlot
---   , mkFunctionPlot
 
+  -- , functionPlotSmooth
+  -- , functionPlotDiscontinuous
+  -- , mkFunctionPlot
+  -- , _FunctionPlot
+  -- , mkFunctionPlot
 
-    -- * Lenses
   -- , functionPlotFunction
   -- , functionPlotNumPoints
   -- , functionPlotSmooth
   -- , functionPlotDiscontinuous
 
+  -- , MeshPlot (..)
+  -- , mkMeshPlot
+
+  -- * Parametric plot
   , ParametricPlot (..)
   , mkParametricPlot
   , parametricDomain
   , mkParametricRangePlot
 
-  -- mesh
-  -- , MeshPlot (..)
-  -- , mkMeshPlot
+  -- * Create line
   ,createABLine
   ,createHLine
   ,createVLine
 
+  -- * Vector plot
   , VectorPlot (..)
   , mkVectorPlot
   , mkVectorPointPlot
+ 
+  -- * Vector plot lenses
   , setArrowOpts 
+
   ) where
 
 import           Control.Lens                    hiding (lmap, transform, ( # ))
+
 import           Data.Default
--- import           Data.Foldable
 import           Data.Typeable
--- import           Diagrams.BoundingBox
+
 import           Diagrams.Coordinates.Isomorphic
--- import           Diagrams.LinearMap
 import           Diagrams.Prelude                hiding (view)
--- import           Linear.V3
+
 import           Plots.Themes
 import           Plots.Types
+
 -- import           Data.Traversable  as T
+-- import           Data.Foldable
+-- import           Diagrams.BoundingBox
+-- import           Diagrams.LinearMap
+-- import           Linear.V3
 -- import           Plots.Utils
 
--- Options
+------------------------------------------------------------------------
+-- Function plot options
+------------------------------------------------------------------------
 
 data FunctionPlotOptions n = FunctionPlotOpts
   { _functionPlotNumPoints     :: Int
+  } deriving Typeable
+
 --  , _functionPlotSmooth        :: Bool
 --  , _functionPlotDiscontinuous :: Maybe n
-  } deriving Typeable
 
 makeClassy ''FunctionPlotOptions
 
 instance Default (FunctionPlotOptions n) where
   def = FunctionPlotOpts
           { _functionPlotNumPoints     = 100
+          }
+
 --          , _functionPlotSmooth        = False
 --          , _functionPlotDiscontinuous = Nothing
-          }
 
 ------------------------------------------------------------------------
 -- Parametric plot
@@ -123,6 +139,7 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
 pathFromVertices :: (Metric v, OrderedField n, Fractional (v n)) => [Point v n] -> Path v n
 pathFromVertices = cubicSpline False
 
+-- | Create a parametric plot given a function on range (0,5).
 mkParametricPlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> ParametricPlot v n
 mkParametricPlot f
   = ParametricPlot
@@ -131,6 +148,7 @@ mkParametricPlot f
       , _parametricPlotOptions = def
       }
 
+-- | Create a parametric plot given a function and a range.
 mkParametricRangePlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> (n, n)-> ParametricPlot v n
 mkParametricRangePlot f d
   = ParametricPlot
@@ -139,11 +157,13 @@ mkParametricRangePlot f d
       , _parametricPlotOptions = def
       }
 
+-- | Functions to create ab, vertical and horizontal lines.
 createABLine slope intercept x = p2 (x ,(slope*x) +  intercept)
 createHLine intercept x = p2 (x, intercept)
 createVLine intercept x = p2 (intercept, x)
+
 ------------------------------------------------------------------------
--- Vectors
+-- Vector Plot
 ------------------------------------------------------------------------
 
 data VectorPlot v n = VectorPlot
@@ -175,6 +195,7 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
       = (p2 (-10,0) ~~ p2 (10,0))
           # applyLineStyle pp
 
+-- | Plot a given vector at (0,0). 
 mkVectorPlot :: (Additive v, TypeableFloat n) => v n -> VectorPlot v n
 mkVectorPlot f
   = VectorPlot
@@ -183,6 +204,7 @@ mkVectorPlot f
       , _vectorArrows  = def
       }
 
+-- | Plot a given vector at a given point.
 mkVectorPointPlot :: (Additive v, TypeableFloat n) => v n -> (n, n) ->VectorPlot v n
 mkVectorPointPlot f d
   = VectorPlot
@@ -192,7 +214,7 @@ mkVectorPointPlot f d
       }
 
 ------------------------------------------------------------------------
--- Vector Lenses
+-- Vector plot lenses
 ------------------------------------------------------------------------
 class HasVector a v n | a -> v n where
   vector :: Lens' a (VectorPlot v n)
@@ -206,10 +228,7 @@ instance HasVector (VectorPlot v n) v n where
 instance HasVector (PropertiedPlot (VectorPlot v n) b) v n where
   vector = _pp
 
-
--- ------------------------------------------------------------------------
--- -- Function plot
--- ------------------------------------------------------------------------
+------------------------------------------------------------------------
 
 -- data FunctionPlot n = FunctionPlot
 --   { _functionPlotFunction :: n -> n

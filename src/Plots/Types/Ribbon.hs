@@ -10,38 +10,42 @@
 {-# LANGUAGE TypeFamilies              #-}
 
 module Plots.Types.Ribbon
-  (
-
--- * GRibbonPlot plot
+  (  -- * GRibbonPlot plot
      GRibbonPlot
   , _RibbonPlot
 
+    -- * Ribbon plot
   , RibbonPlot
   , mkRibbonPlotOf
   , mkRibbonPlot
 
+    -- * Helper functions
   , createBarData
   , zeroY
 
---  , BarPlot
---  , mkBarPlotOf
---  , mkBarPlot
---  , createbardata
-
+    -- * Lenses
   , strokeEdge
 
+  --  , BarPlot
+  --  , mkBarPlotOf
+  --  , mkBarPlot
+  --  , createbardata
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
 import qualified Data.Foldable                   as F
 import           Data.Typeable
-import           Diagrams.Prelude
 
+import           Diagrams.Prelude
 import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Themes
 import           Plots.Types
+
+------------------------------------------------------------------------
+-- GPoints plot
+------------------------------------------------------------------------
 
 data GRibbonPlot v n a = forall s. GRibbonPlot
   { sData :: s
@@ -106,33 +110,17 @@ mkRibbonPlotOf f a = GRibbonPlot
   , sLine = True
   }
 
+------------------------------------------------------------------------
+-- Helper functions 
+------------------------------------------------------------------------
+
 zeroY :: [(Double, Double)] -> [(Double, Double)]
 zeroY xs = [(a,0) | (a,_) <- xs]
 
 createBarData (x, y) w = [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
         where xmax =  x + (w/2)
               xmin =  x - (w/2)
-----------------------------------------------------------------------------
-{-
-type BarPlot v n = GRibbonPlot v n (Point v n)
 
--- | Make a line plot.
-mkBarPlot = mkBarPlotOf folded
-
--- | Make a line plot using the given fold.
-mkBarPlotOf :: (PointLike v n p, Num n)
-                => Fold [(Double, Double)] p -> (Double, Double) -> Double -> BarPlot v n
-mkBarPlotOf f bdata width = GRibbonPlot
-  { sData = a
-  , sFold = f . unpointLike
-  , sPos  = id
-  , sLine = True
-  }  where a = createbardata bdata width
-
-createbardata (x, y) w = [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
-        where xmax =  x + (w/2)
-              xmin =  x - (w/2)
--}
 ------------------------------------------------------------------------
 -- Ribbon lenses
 ------------------------------------------------------------------------
@@ -148,4 +136,22 @@ instance HasRibbon (GRibbonPlot v n d) v n d where
 
 instance HasRibbon (PropertiedPlot (GRibbonPlot v n d) b) v n d where
   ribbon = _pp
+
+
+-- type BarPlot v n = GRibbonPlot v n (Point v n)
+
+-- mkBarPlot = mkBarPlotOf folded
+
+-- mkBarPlotOf :: (PointLike v n p, Num n)
+--                => Fold [(Double, Double)] p -> (Double, Double) -> Double -> BarPlot v n
+-- mkBarPlotOf f bdata width = GRibbonPlot
+--  { sData = a
+--  , sFold = f . unpointLike
+--  , sPos  = id
+--  , sLine = True
+--  }  where a = createbardata bdata width
+
+-- createbardata (x, y) w = [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
+--        where xmax =  x + (w/2)
+--              xmin =  x - (w/2)
 

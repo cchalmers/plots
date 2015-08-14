@@ -21,7 +21,6 @@ module Plots.API
   , R2Backend
 
     -- * Plotable
-    -- $plotable
   , addPlotable
   , addPlotable'
   , addPlotableL
@@ -42,7 +41,7 @@ module Plots.API
 
   -- , ticks
 
-    -- ** Grid lines
+    -- Grid lines
 
   -- , recentProps
   , cartesianLabels
@@ -52,7 +51,7 @@ module Plots.API
     -- * Legend
   , addLegendEntry
 
-    -- * Themes
+    --  Themes
   -- , corperateTheme
   -- , blackAndWhiteTheme
 
@@ -170,15 +169,16 @@ module Plots.API
 
 import           Control.Lens                    hiding (( # ))
 import           Control.Monad.State.Lazy
+
 import           Data.Default
 import           Data.Monoid.Recommend
 import           Data.Typeable
--- import qualified Data.Foldable as F
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Coordinates.Polar
 import           Diagrams.Prelude                hiding (r2)
 import           Diagrams.TwoD.Text
+
 import           Linear
 
 import           Plots.Axis
@@ -191,9 +191,14 @@ import           Plots.Axis.ColourBar
 import           Plots.Types
 import           Plots.Themes
 
+-- to remove
 import           Plots.Types.Pie
 import           Plots.Types.Points
+-- to remove
 
+------------------------------------------------------------------------
+-- to remove
+------------------------------------------------------------------------
 pointsPlot'
   :: (v ~ BaseSpace c, v ~ V2,
       PointLike v n (Polar n),

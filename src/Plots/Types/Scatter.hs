@@ -35,8 +35,10 @@ module Plots.Types.Scatter
   ) where
 
 import           Control.Lens                    hiding (lmap, transform, ( # ))
+
 import qualified Data.Foldable as F
 import           Data.Typeable
+
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude                hiding (view)
 
@@ -166,9 +168,9 @@ class HasScatter a v n d | a -> v n, a -> d where
   -- mybubbleplot & scatterStyle     ?~ mkAttr . transparency
   --              & scatterTransform .~ Nothing
   -- @@@
+
   scatterStyle :: Lens' a (Maybe (d -> Style V2 n))
   scatterStyle = scatter . lens sSty (\sp sty -> sp {sSty = sty})
-
 
   connectingLine :: Lens' a Bool
   connectingLine = scatter . lens cLine (\s b -> (s {cLine = b}))

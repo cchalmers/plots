@@ -1,64 +1,60 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE ConstraintKinds       #-}
-
-{-# OPTIONS_GHC -fno-warn-orphans       #-}
-
 {-# LANGUAGE CPP                       #-}
+{-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FunctionalDependencies    #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE FunctionalDependencies    #-}
+
+{-# LANGUAGE UndecidableInstances      #-}
+{-# LANGUAGE ConstraintKinds           #-}
 
 {-# LANGUAGE StandaloneDeriving        #-}
-
--- Orphans: Plotable (Path V2 n)
 
 module Plots.Types.Line
   ( -- * Trail plot
     mkTrail
   , mkTrailOf
-
+    
+    -- * Path plot
   , mkPath
   , mkPathOf
 
     -- * GLinePlot plot
   , GLinePlot
   , _LinePlot
+  , mkGLinePlotOf
+  , mkGLinePlot
 
+    -- * Line plot
   , LinePlot
   , mkLinePlotOf
   , mkLinePlot
 
+    -- * Helper functions
   , createStepData
-
-  --, StepPlot
-  --, mkStepPlotOf
-  --, mkStepPlot
-  --
-
-  , mkGLinePlotOf
-  , mkGLinePlot
-
+  
+  -- * Lenses
   , dotsonPoint
   , pathStyle
   ) where
 
 import           Control.Lens     hiding (transform, ( # ), lmap)
+
 import qualified Data.Foldable    as F
 import           Data.Typeable
+
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude  hiding (view)
 
-import Plots.Themes
-import Plots.Types
+import           Plots.Themes
+import           Plots.Types
 
 ------------------------------------------------------------------------
--- mkTrail and mkPath
+-- Trail and path
 ------------------------------------------------------------------------
 
 mkTrail :: (PointLike v n p, OrderedField n, F.Foldable f) => f p -> Located (Trail v n)
@@ -84,12 +80,8 @@ instance (TypeableFloat n, Renderable (Path V2 n) b) => Plotable (Path V2 n) b w
         # applyLineStyle pp
 
 ------------------------------------------------------------------------
--- Sample
+-- GLine plot
 ------------------------------------------------------------------------
-
--- kernalDensity :: Int -> Fold s n -> s -> LinePlot V2 n
--- kernalDensity n f as =
------------------------------------------------------------------------
 
 data GLinePlot v n a = forall s. GLinePlot
   { sData :: s
@@ -152,34 +144,42 @@ mkLinePlotOf f a = GLinePlot
   }
 
 ------------------------------------------------------------------------
--- Step plot -- use fold here rather than api
+-- Helper functions
 ------------------------------------------------------------------------
+
+-- | Create a data for step plots.
 createStepData :: [(a,a)] -> [(a,a)]
 createStepData [] = []
 createStepData (x1:[]) = x1:[]
 createStepData (x1:x2:xs) = (x1):(fst x1, snd x2):(x2):(createStepData (x2:xs))
 
-{-
-type StepPlot v n = GLinePlot v n (Point v n)
 
-mkStepPlotOf :: (PointLike v n p, Fractional n)
-               => Fold s p -> s -> StepPlot v n
-mkStepPlotOf f a = GLinePlot
-  { sData = a
-  , sFold = f . unpointLike
-  , sPos  = id
-  , sSty  = Nothing
-  , cPnt  = False
-  }
+-- type StepPlot v n = GLinePlot v n (Point v n)
 
-mkStepPlot :: (PointLike v n p, F.Foldable f, Fractional n)
-             => f p -> StepPlot v n
-mkStepPlot = mkStepPlotOf folded
--}
+-- mkStepPlotOf :: (PointLike v n p, Fractional n)
+--                => Fold s p -> s -> StepPlot v n
+-- mkStepPlotOf f a = GLinePlot
+--   { sData = a
+--   , sFold = f . unpointLike
+--   , sPos  = id
+--   , sSty  = Nothing
+--   , cPnt  = False
+--   }
+
+-- mkStepPlot :: (PointLike v n p, F.Foldable f, Fractional n)
+--              => f p -> StepPlot v n
+-- mkStepPlot = mkStepPlotOf folded
+
 ------------------------------------------------------------------------
 -- General Line Plot
 ------------------------------------------------------------------------
 
+-- | Plot a general line plot.
+mkGLinePlot :: (PointLike v n p, F.Foldable f, Fractional n)
+               => f a -> (a -> p) -> GLinePlot v n a
+mkGLinePlot = mkGLinePlotOf folded
+
+-- | Plot a general line plot give a fold
 mkGLinePlotOf :: (PointLike v n p, Fractional n)
                  => Fold s a -> s -> (a -> p) -> GLinePlot v n a
 mkGLinePlotOf f a pf = GLinePlot
@@ -190,9 +190,6 @@ mkGLinePlotOf f a pf = GLinePlot
   , cPnt = False
   }
 
-mkGLinePlot :: (PointLike v n p, F.Foldable f, Fractional n)
-               => f a -> (a -> p) -> GLinePlot v n a
-mkGLinePlot = mkGLinePlotOf folded
 
 ------------------------------------------------------------------------
 -- Line plot lenses
@@ -203,7 +200,6 @@ class HasPath a v n d | a -> v n, a -> d where
 
   pathStyle :: Lens' a (Maybe (d -> Style V2 n))
   pathStyle  = line . lens sSty (\sp sty -> sp {sSty = sty})
-
 
   dotsonPoint :: Lens' a Bool
   dotsonPoint = line . lens cPnt (\s b -> (s {cPnt = b}))

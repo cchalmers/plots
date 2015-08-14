@@ -10,19 +10,18 @@
 {-# LANGUAGE TypeFamilies              #-}
 
 module Plots.Types.Smooth
-  (
-
--- * GSmoothPlot plot
+  (  -- * General smooth plot
      GSmoothPlot
   , _SmoothPlot
 
+    -- * Smooth plot
   , SmoothPlot
   , mkSmoothPlotOf
   , mkSmoothPlot
-
+    
+    -- * Helper functions
   , drawTrail
   , testXY
-
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
@@ -31,11 +30,14 @@ import qualified Data.Foldable                   as F
 import           Data.Typeable
 
 import           Diagrams.Prelude
-
 import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Themes
 import           Plots.Types
+
+------------------------------------------------------------------------
+-- GPoints plot
+------------------------------------------------------------------------
 
 data GSmoothPlot v n a = forall s. GSmoothPlot
   { sData :: s
@@ -43,10 +45,10 @@ data GSmoothPlot v n a = forall s. GSmoothPlot
   , sPos  :: a -> Point v n
   , sMeth :: [P2 n] -> (Located (Trail' Loop V2 n) ,Located (Trail' Line V2 n))
   , sLine :: Bool
--- change P2 n to Point v n
--- Look at Histogram.hs for more details
--- Extend Bool
   } deriving Typeable
+
+-- Change P2 n to Point v n.
+-- Implement sExtend :: Bool.
 
 type instance V (GSmoothPlot v n a) = v
 type instance N (GSmoothPlot v n a) = n
@@ -64,9 +66,9 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
                   # transform t
             <> if sLine
                 then ln # transform t # stroke
---                        # applyLineStyle pp -- dont know why doesnt work
---                        add easy options for linesize colour dashing opacity; same for fill
                 else mempty
+--  # applyLineStyle pp
+--  ln :: Located (Trail' Loop V2 n)
           where
             ps             = toListOf (sFold . to sPos . to (logPoint ls)) sData
             (lp, ln)       = sMeth ps
@@ -76,17 +78,22 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   defLegendPic GSmoothPlot {..} pp
       = square 5 # applyBarStyle pp
 
+_SmoothPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
+                   => Prism' (Plot b v n) (SmoothPlot v n)
+_SmoothPlot = _Plot 
+
 ------------------------------------------------------------------------
--- Simple Smooth Plot
+-- Simple smooth plot
 ------------------------------------------------------------------------
 
 type SmoothPlot v n = GSmoothPlot v n (Point v n)
 
+-- | Plot a smooth function given data.
 mkSmoothPlot :: (PointLike v n p, F.Foldable f, Ord n, Floating n, Enum n, Num n)
               => f p -> SmoothPlot v n
 mkSmoothPlot = mkSmoothPlotOf folded
 
-
+-- | Smooth plot with a given fold.
 mkSmoothPlotOf :: (PointLike v n p, Ord n, Floating n, Enum n, Num n)
                 => Fold s p -> s -> SmoothPlot v n
 mkSmoothPlotOf f a = GSmoothPlot
@@ -97,22 +104,17 @@ mkSmoothPlotOf f a = GSmoothPlot
   , sLine = True
   }
 
-_SmoothPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (SmoothPlot v n)
-_SmoothPlot = _Plot
-
----------- add more of this function - one for mean other for sum --
--- lm ---
+------------------------------------------------------------------------
+-- Helper functions
+------------------------------------------------------------------------
 
 testXY :: (Ord n, Floating n, Enum n) => [P2 n] -> (Located (Trail' Loop V2 n) ,Located (Trail' Line V2 n))
 testXY ps = (lp, ln)
   where
     xpts = map fst (map unp2 ps)
     ypts = map snd (map unp2 ps)
-    -- xmean = mean xpts
     ymean = mean ypts
     xmin = minimum xpts
-    -- ymin = minimum ypts
     xmax = maximum xpts
     ymax = maximum ypts
     h    = 0.3 * (ymax - ymean)
@@ -122,6 +124,8 @@ testXY ps = (lp, ln)
     lp   = (fromVertices (map p2 [(xmin, y1-h),(xmax, y2-h),(xmax, y2+h),(xmin, y1+h)])) #mapLoc closeLine
     ln   = fromVertices (map p2 [(xmin, y1),(xmax, y2)])
 
+-- add more functions for smooth,
+-- lm, rlm, density and so on.
 
 mean :: (Fractional a) => [a] -> a
 mean xs = sum(xs) / fromIntegral (length xs)

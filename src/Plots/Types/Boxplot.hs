@@ -10,18 +10,17 @@
 {-# LANGUAGE TypeFamilies              #-}
 
 module Plots.Types.Boxplot
-  (
-
--- * GDensitylot plot
+  (   -- * General boxplot
      GBoxPlot
   , _BoxPlot
 
+    -- * Box plot
   , BoxPlot
   , mkBoxPlotOf
   , mkBoxPlot
 
+    -- * Lenses
   , fillBox
-
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
@@ -31,11 +30,14 @@ import           Data.Typeable
 import           Data.List
 
 import           Diagrams.Prelude
-
 import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Themes
 import           Plots.Types
+
+------------------------------------------------------------------------
+-- Boxplot data
+------------------------------------------------------------------------
 
 data BP = BP
    { bppoint :: (Double, Double)
@@ -44,8 +46,13 @@ data BP = BP
    , bph2    :: Double
    }
 
--- need to change this part so that it have colour variable width at each point
--- also can be uneven at different part so we can make errorbar, crossbar, 2-boxplot etc..
+-- need to change this part so that it have variable colour,
+-- width at each point, if done properly this can be a base for
+-- errorbar, crossbar, 2-boxplot and so on.
+
+------------------------------------------------------------------------
+-- General boxplot
+------------------------------------------------------------------------
 
 data GBoxPlot v n a = forall s. GBoxPlot
   { bData  :: s
@@ -84,16 +91,22 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
   defLegendPic GBoxPlot {..} pp
       = square 5 # applyBarStyle pp
 
+_BoxPlot :: (Plotable (BoxPlot v n) b, Typeable b)
+                   => Prism' (Plot b v n) (BoxPlot v n)
+_BoxPlot = _Plot
+
 ------------------------------------------------------------------------
--- Simple Density Plot
+-- Boxplot
 ------------------------------------------------------------------------
 
 type BoxPlot v n = GBoxPlot v n (Point v n)
 
+-- | Draw a boxplot with the given data.
 mkBoxPlot :: (PointLike v n p, F.Foldable f, Ord n, Floating n, Enum n, Num n)
               => f p -> BoxPlot v n
 mkBoxPlot = mkBoxPlotOf folded
 
+-- | Create a boxplot using a fold and given data.
 mkBoxPlotOf :: (PointLike v n p, Ord n, Floating n, Enum n, Num n)
                 => Fold s p -> s -> BoxPlot v n
 mkBoxPlotOf f a = GBoxPlot
@@ -104,11 +117,9 @@ mkBoxPlotOf f a = GBoxPlot
   , bFill = True
   }
 
-_BoxPlot :: (Plotable (BoxPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (BoxPlot v n)
-_BoxPlot = _Plot
-
----------- add more of this function - one for mean other for sum --
+------------------------------------------------------------------------
+-- Helper functions
+------------------------------------------------------------------------
 
 boxplotstat :: (Ord n, Floating n, Enum n, n ~ Double) => [P2 n] -> BP
 boxplotstat ps = BP
@@ -149,12 +160,10 @@ makeRect  (BP (x,y) w h1 _h2) =
     xmin  = x - w/2
     xmax  = x + w/2
     y1min = y - h1
-    -- y2min = y - h2
     y1max = y + h1
-    -- y2max = y + h2
 
 ----------------------------------------------------------------------------
--- Density Lenses
+-- Box plot lenses
 ----------------------------------------------------------------------------
 
 class HasBox a v n d | a -> v n, a -> d where

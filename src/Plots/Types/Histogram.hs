@@ -3,26 +3,29 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE FunctionalDependencies    #-}
+
+{-# LANGUAGE StandaloneDeriving        #-}
 
 module Plots.Types.Histogram
-  (
-
--- * GHistogramPlot plot
+  (  -- * GHistogramPlot plot
      GHistogramPlot
   , _HistogramPlot
 
+    -- * Histogram plot
   , HistogramPlot
   , mkHistogramPlotOf
   , mkHistogramPlot
-
+   
+    -- * Helper functions
   , createBarData'
-  , setBin
 
+    -- * Histogram lenses
+  , setBin
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
@@ -33,22 +36,26 @@ import           Data.List
 import           Data.Function
 
 import           Diagrams.Prelude
-
 import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Themes
 import           Plots.Types
+
+------------------------------------------------------------------------
+-- GHistogram plot
+------------------------------------------------------------------------
 
 data GHistogramPlot v n a = forall s. GHistogramPlot
   { hData :: s
   , hFold :: Fold s a
   , hPos  :: a -> Point v n
   , hFunc :: Int -> [P2 n] -> [P2 n]
--- change P2 n to Point v n
--- need to add v ~ V2 every where, both in mkHistogramPlot and BinY1
--- also change in some places in Plots.hs
   , hBin  :: Int 
   } deriving Typeable
+
+-- change P2 n to Point v n.
+-- need to add v ~ V2, both in mkHistogramPlot and BinY1.
+-- also change the same in api.
 
 type instance V (GHistogramPlot v n a) = v
 type instance N (GHistogramPlot v n a) = n
@@ -77,17 +84,22 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   defLegendPic GHistogramPlot {..} pp
       = square 5 # applyBarStyle pp
 
+_HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
+                   => Prism' (Plot b v n) (HistogramPlot v n)
+_HistogramPlot = _Plot
+
 ------------------------------------------------------------------------
--- Simple Histogram Plot
+-- Simple histogram plot
 ------------------------------------------------------------------------
 
 type HistogramPlot v n = GHistogramPlot v n (Point v n)
 
+-- | Plot a histogram by averaging x data with y bin = 0. 
 mkHistogramPlot :: (PointLike v n p, F.Foldable f, Ord n, Fractional n, Enum n, Num n)
               => f p -> HistogramPlot v n
 mkHistogramPlot = mkHistogramPlotOf folded
 
-
+-- | Plot a histogram using a given fold.
 mkHistogramPlotOf :: (PointLike v n p, Ord n, Fractional n, Enum n, Num n)
                 => Fold s p -> s -> HistogramPlot v n
 mkHistogramPlotOf f a = GHistogramPlot
@@ -97,17 +109,10 @@ mkHistogramPlotOf f a = GHistogramPlot
   , hFunc = binY
   , hBin  = 10 
   }
-  
-createBarData' z w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
-        where xmax =  x + (w/2)
-              xmin =  x - (w/2)
-              (x, y) = unp2 z
 
-_HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (HistogramPlot v n)
-_HistogramPlot = _Plot
-
----------- add more of this function - one for mean other for sum --
+------------------------------------------------------------------------
+-- Helper functions
+------------------------------------------------------------------------
 
 binY :: (Ord n, Fractional n, Enum n) => Int -> [P2 n] -> [P2 n]
 binY b xs =  map p2 (zip xpts ypts)
@@ -119,9 +124,15 @@ binY b xs =  map p2 (zip xpts ypts)
 
 bin1D xs (a,b) = mean [y | (x,y) <- (map unp2 xs), x > b, x < a]
 
+createBarData' z w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
+        where xmax =  x + (w/2)
+              xmin =  x - (w/2)
+              (x, y) = unp2 z
+
 mean :: (Num a, Fractional a) => [a] -> a
 mean [] = 0.0
 mean xs = (sum xs)/ fromIntegral (length xs)
+
 ----------------------------------------------------------------------------
 -- Histogram Lenses
 ----------------------------------------------------------------------------
