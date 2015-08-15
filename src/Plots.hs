@@ -1,6 +1,5 @@
 module Plots
-  ( 
-    -- * Core Library
+  ( -- * Core Library
 
     -- | Definitions of bounds, axis scale, orientation,
     -- legend, generic plot ,plot spec and so on.
@@ -9,6 +8,13 @@ module Plots
     -- | Definitions of theme, plots style, common themes,
     -- marker shapes, colour maps and sample maps.
   , module Plots.Themes
+
+    -- * API
+    
+    -- | Data types and classes, definitions of
+    -- plotable, bounds, axis labels, legends, 
+    -- diagram essentials and so on.
+  , module Plots.API
 
     -- * Axis Library
 
@@ -35,84 +41,53 @@ module Plots
     -- * Plot Types
 
     -- | Scatter and bubble.
+    -- Scatter and bubble plot api.
   , module Plots.Types.Scatter
     
     -- | Line, trail and path.
+    -- Line plot, steps plot api & api for trail and path.
   , module Plots.Types.Line
 
     -- | Ribbon and area.
+    -- Ribbon and area plot api.
   , module Plots.Types.Ribbon
   
     -- | Histogram.
+    -- API for histogram.
   , module Plots.Types.Histogram
 
     -- | Parametric functions and vectors.
+    -- Parametric plot and vectors api.
   , module Plots.Types.Function
 
     -- | Boxplot.
+    -- Boxplot api.
   , module Plots.Types.Boxplot
 
     -- | Density fucntion.
+    -- Density plot api.
   , module Plots.Types.Density
 
     -- | Smooth.
+    -- Smooth plot api.
   , module Plots.Types.Smooth
 
     -- | Text.
+    -- API for text plot.
   , module Plots.Types.Text
 
     -- | Wedge and annular wedge.
+    -- API for wedge, annular wegde and pie.
   , module Plots.Types.Pie
 
     -- | Scatter plot for polar co-ordinates.
+    -- API for polar scatter plot.
   , module Plots.Types.Points
 
-  -- , module Plots.Types.Heatmap
-
-    -- * API
-    
-    -- | Data types and classes, definitions of
-    -- plotable, bounds, axis labels, legends, 
-    -- diagram essentials and so on.
-  , module Plots.API
-
-    -- | Scatter and bubble plot api.
-  , module Plots.API.Scatter
-
-    -- | Line plot, steps plot api & api for trail and path.
-  , module Plots.API.Line
-
-    -- | Ribbon and area plot api.
-  , module Plots.API.Ribbon
-
-    -- | API for histogram.
-  , module Plots.API.Histogram
-
-    -- | Parametric plot and vectors api.
-  , module Plots.API.Function
-
-    -- | Boxplot api.
-  , module Plots.API.Boxplot
-
-    -- | Density plot api.
-  , module Plots.API.Density
-
-    -- | Smooth plot api.
-  , module Plots.API.Smooth
-
-    -- | API for text plot.
-  , module Plots.API.Text
-
     -- | API using multiple types.
-  , module Plots.API.Others
+  , module Plots.Types.Others
 
-    -- | API for wedge, annular wegde and pie.
-  , module Plots.API.Pie
-
-    -- | API for polar scatter plot.
-  , module Plots.API.Points
-
-  -- , module Plots.API.Heatmap
+  -- , module Plots.Types.Heatmap
   ) where
 
 import           Plots.Axis
@@ -124,6 +99,7 @@ import           Plots.Axis.ColourBar
 
 import           Plots.Types
 import           Plots.Themes
+import           Plots.API
 
 import           Plots.Types.Scatter
 import           Plots.Types.Line
@@ -136,20 +112,7 @@ import           Plots.Types.Smooth
 import           Plots.Types.Text
 import           Plots.Types.Pie
 import           Plots.Types.Points
+import           Plots.Types.Others
 -- import          Plots.Types.Heatmap
 
-import           Plots.API
-import           Plots.API.Scatter
-import           Plots.API.Line
-import           Plots.API.Ribbon
-import           Plots.API.Histogram
-import           Plots.API.Function
-import           Plots.API.Boxplot
-import           Plots.API.Density
-import           Plots.API.Smooth
-import           Plots.API.Others
-import           Plots.API.Text
-import           Plots.API.Pie
-import           Plots.API.Points
--- import           Plots.API.Heatmap
 

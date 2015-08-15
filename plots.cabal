@@ -33,12 +33,16 @@ library
     Plots.Name
     Plots.Themes
     Plots.Types
-    Plots.Types.Bar
+    Plots.Types.Histogram
     Plots.Types.Line
     Plots.Types.Function
-    -- Plots.Types.Heatmap
     Plots.Types.Scatter
     Plots.Types.Ribbon
+    Plots.Types.Others
+    Plots.Types.Points
+    Plots.Types.Pie
+    Plots.Types.Smooth
+    Plots.Types.Text
     Plots.Utils
     Diagrams.Coordinates.Isomorphic
     Diagrams.Coordinates.Polar
