@@ -19,11 +19,17 @@ module Plots.Types.Text
 
     -- * Text lenses
   , setOptions
+
+  -- * Text plot
+  , textPlot
+  , textPlot'
+  , textPlotL
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
 
+import qualified Data.Foldable                   as F
 import           Data.Typeable
 
 import           Diagrams.Prelude
@@ -31,6 +37,9 @@ import           Diagrams.TwoD.Text
 
 import           Plots.Themes
 import           Plots.Types
+import           Plots.API
+import           Control.Monad.State.Lazy
+import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- Text data  & options
@@ -121,3 +130,40 @@ instance HasText (TextPlot n) n where
 
 instance HasText (PropertiedPlot (TextPlot n) b) n where
   txt = _pp
+
+------------------------------------------------------------------------
+-- Textplot
+------------------------------------------------------------------------
+
+textPlot
+  :: (v ~ BaseSpace c,
+      RealFloat n,
+      Typeable n,
+      PointLike v n (V2 n),
+      MonadState (Axis b c n) m,
+      Plotable (TextPlot n) b,
+      v ~ V2)
+  => (n,n) -> String -> m ()
+textPlot pt a = addPlotable (mkTextPlot pt a)
+
+textPlot'
+  :: (v ~ BaseSpace c,
+      RealFloat n,
+      Typeable n,
+      PointLike v n (V2 n),
+      MonadState (Axis b c n) m,
+      Plotable (TextPlot n) b,
+      v ~ V2)
+  => (n,n) -> String -> PlotState (TextPlot n) b -> m ()
+textPlot' pt a = addPlotable' (mkTextPlot pt a)
+
+textPlotL
+  :: (v ~ BaseSpace c,
+      RealFloat n,
+      Typeable n,
+      PointLike v n (V2 n),
+      MonadState (Axis b c n) m,
+      Plotable (TextPlot n) b,
+      v ~ V2)
+  => String -> (n,n) -> String -> m ()
+textPlotL l pt a = addPlotableL l (mkTextPlot pt a)
