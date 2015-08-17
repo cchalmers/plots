@@ -27,6 +27,8 @@ module Plots.API
   , addPlotableL
   , addPlotableL'
 
+  , diagramPlot
+
     -- ** Bounds
   , xMin, xMax
   , yMin, yMax
@@ -171,13 +173,11 @@ import           Control.Monad.State.Lazy
 import           Data.Default
 import           Data.Monoid.Recommend
 import           Data.Typeable
-import qualified Data.Foldable as F
-import           Data.List
-import           Data.Function
+-- import qualified Data.Foldable as F
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Coordinates.Polar
-import           Diagrams.Prelude
+import           Diagrams.Prelude                hiding (r2)
 import           Diagrams.TwoD.Text
 import           Linear
 

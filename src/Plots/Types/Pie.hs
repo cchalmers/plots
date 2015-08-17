@@ -21,12 +21,11 @@ module Plots.Types.Pie
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
-import qualified Data.Foldable                   as F
+-- import qualified Data.Foldable                   as F
 import           Data.Typeable
 
-import           Diagrams.Prelude
+import           Diagrams.Prelude hiding (r2)
 
-import           Diagrams.TwoD.Arc
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Coordinates.Polar
 
@@ -49,7 +48,7 @@ instance (OrderedField n) => Enveloped (GPiePlot n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GPiePlot n) b where
-  renderPlotable s GPiePlot {..} pp =
+  renderPlotable _s GPiePlot {..} pp =
       annularWedge sLargeRadius sSmallRadius sDirection sAngle
         # lw none
         # applyBarStyle pp
@@ -77,7 +76,7 @@ mkWedgePlotFrom :: (RealFloat n, PointLike v n (Polar n), Num n)
                 => n -> Direction V2 n -> Angle n -> GPiePlot n
 mkWedgePlotFrom  r d a = GPiePlot
   { sLargeRadius = r
-  , sSmallRadius = 0.01 
+  , sSmallRadius = 0.01
   , sDirection   = d
   , sAngle       = a
   , sArc         = False

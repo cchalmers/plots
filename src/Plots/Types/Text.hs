@@ -20,20 +20,20 @@ module Plots.Types.Text
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
-import qualified Data.Foldable                   as F
+-- import qualified Data.Foldable                   as F
 import           Data.Typeable
 
 import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 
-import           Diagrams.Coordinates.Isomorphic
+-- import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Themes
 import           Plots.Types
 
 data TextPlot n = TextPlot
    { _tString        :: String
-   , _textPoint     :: (n,n) 
+   , _textPoint     :: (n,n)
    , _textOptions   :: TextOptions n
    }
 
@@ -66,7 +66,7 @@ instance (Fractional n, OrderedField n, TypeableFloat n, Enum n) => Enveloped (T
 -- #fsze #fslant #fwght
 instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
     => Plotable (TextPlot n) b where
-  renderPlotable s v pp = alignedText a b str # fontSize (local fsze) 
+  renderPlotable s v pp = alignedText a b str # fontSize (local fsze)
                           # applyTextStyle pp
                           # transform (s^.specTrans)
                           # moveTo (p2 (x, y)) <> circle 1 # fc red
@@ -75,8 +75,8 @@ instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n)
                              str      = v ^. tString
                              (a, b)   = v ^. textOptions ^. optalignment
                              fsze     = v ^. textOptions ^. optfontSize
-                             fslant   = v ^. textOptions ^. optfontSlant
-                             fwght    = v ^. textOptions ^. optfontWeight
+                             -- fslant   = v ^. textOptions ^. optfontSlant
+                             -- fwght    = v ^. textOptions ^. optfontWeight
 
   defLegendPic TextPlot {..} pp
       = (p2 (-10,0) ~~ p2 (10,0))
@@ -86,7 +86,7 @@ mkTextPlot :: (TypeableFloat n, Fractional n) => (n,n) -> String -> TextPlot n
 mkTextPlot p1 f
   = TextPlot
    { _tString       = f
-   , _textPoint     = p1  
+   , _textPoint     = p1
    , _textOptions   = def
    }
 

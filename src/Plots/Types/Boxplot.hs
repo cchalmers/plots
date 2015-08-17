@@ -29,10 +29,8 @@ import           Control.Lens                    hiding (lmap, none, transform,
 import qualified Data.Foldable                   as F
 import           Data.Typeable
 import           Data.List
-import           Data.Function
 
 import           Diagrams.Prelude
-import           Diagrams.Trail
 
 import           Diagrams.Coordinates.Isomorphic
 
@@ -65,8 +63,8 @@ instance (Metric v, OrderedField n) => Enveloped (GBoxPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n, n ~ Double)
     => Plotable (GBoxPlot V2 n a) b where
-  renderPlotable s GBoxPlot {..} pp = 
-               if bFill 
+  renderPlotable s GBoxPlot {..} pp =
+               if bFill
                 then mconcat ([ draw' d | d <-(drawBoxPlot dd)] ++ [foo])
                else mconcat [ draw' d | d <-(drawBoxPlot dd)]
           where
@@ -80,8 +78,8 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
             t              = s ^. specTrans
             ls             = s ^. specScale
             draw' d        = d # transform t
-                               # stroke 
-                               
+                               # stroke
+
 
   defLegendPic GBoxPlot {..} pp
       = square 5 # applyBarStyle pp
@@ -103,7 +101,7 @@ mkBoxPlotOf f a = GBoxPlot
   , bFold = f . unpointLike
   , bPos  = id
   , bBox  = boxplotstat
-  , bFill = True 
+  , bFill = True
   }
 
 _BoxPlot :: (Plotable (BoxPlot v n) b, Typeable b)
@@ -119,7 +117,7 @@ boxplotstat ps = BP
    , bph1 = maxY * 0.3
    , bph2 = maxY * 0.8
    }
-   where 
+   where
      xs     = [fst (unp2 p) | p <- ps]
      ys     = [snd (unp2 p) | p <- ps]
      meanXY = ((mean xs), (mean ys))
@@ -131,28 +129,30 @@ mean xs = realToFrac (sum xs)/ genericLength xs
 
 drawBoxPlot :: BP -> [Located (Trail' Line V2 Double)]
 drawBoxPlot (BP (x,y) w h1 h2) = [a, b ,c ,d ,e]
-                                 where
-                                   xmin  = x - w/2
-                                   xmax  = x + w/2
-                                   y1min = y - h1
-                                   y2min = y - h2
-                                   y1max = y + h1
-                                   y2max = y + h2 
-                                   a     = fromVertices (map p2 [(xmin,y1max),(xmax,y1max),(xmax,y1min),(xmin,y1min)])
-                                   b     = fromVertices (map p2 [(xmin,y1max),(xmin,y1min)])
-                                   c     = fromVertices (map p2 [(xmin,y),(xmax,y)])
-                                   d     = fromVertices (map p2 [(x,y1min),(x,y2min)])
-                                   e     = fromVertices (map p2 [(x,y1max),(x,y2max)])
+  where
+    xmin  = x - w/2
+    xmax  = x + w/2
+    y1min = y - h1
+    y2min = y - h2
+    y1max = y + h1
+    y2max = y + h2
+    a     = fromVertices (map p2 [(xmin,y1max),(xmax,y1max),(xmax,y1min),(xmin,y1min)])
+    b     = fromVertices (map p2 [(xmin,y1max),(xmin,y1min)])
+    c     = fromVertices (map p2 [(xmin,y),(xmax,y)])
+    d     = fromVertices (map p2 [(x,y1min),(x,y2min)])
+    e     = fromVertices (map p2 [(x,y1max),(x,y2max)])
 
 makeRect :: BP -> Located (Trail' Line V2 Double)
-makeRect  (BP (x,y) w h1 h2) = fromVertices (map p2 [(xmin,y1max),(xmax,y1max),(xmax,y1min),(xmin,y1min)])
-                                 where
-                                   xmin  = x - w/2
-                                   xmax  = x + w/2
-                                   y1min = y - h1
-                                   y2min = y - h2
-                                   y1max = y + h1
-                                   y2max = y + h2
+makeRect  (BP (x,y) w h1 _h2) =
+  fromVertices (map p2 [(xmin,y1max),(xmax,y1max),(xmax,y1min),(xmin,y1min)])
+  where
+    xmin  = x - w/2
+    xmax  = x + w/2
+    y1min = y - h1
+    -- y2min = y - h2
+    y1max = y + h1
+    -- y2max = y + h2
+
 ----------------------------------------------------------------------------
 -- Density Lenses
 ----------------------------------------------------------------------------

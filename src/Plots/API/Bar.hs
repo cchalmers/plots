@@ -11,7 +11,7 @@
 module Plots.Types.Bar
   ( GBarPlot (..)
   , createbardata
-  , _BarPlot 
+  , _BarPlot
 
   , BarPlot (..)
   , mkBarPlot
@@ -42,7 +42,7 @@ import Plots.Themes
 import Plots.Types
 
 
-data GBarPlot = GBarPlot 
+data GBarPlot = GBarPlot
   { barData :: (Double, Double)
   , barWidth :: Double
   } deriving Typeable
@@ -62,7 +62,7 @@ createbardata (x, y) w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
               xmin =  x - (w/2)
 
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 N) b)
+instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable GBarPlot b where
   renderPlotable s GBarPlot {..} pp =
       fromVertices ps

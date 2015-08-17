@@ -18,12 +18,11 @@ module Plots.Types.Points
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
-import qualified Data.Foldable                   as F
+-- import qualified Data.Foldable                   as F
 import           Data.Typeable
 
 import           Diagrams.Prelude
 
-import           Diagrams.TwoD.Arc
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Coordinates.Polar
 

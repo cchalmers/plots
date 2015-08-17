@@ -33,7 +33,7 @@ import           Data.List
 import           Data.Function
 
 import           Diagrams.Prelude
-import           Diagrams.Trail
+-- import           Diagrams.Trail
 
 import           Diagrams.Coordinates.Isomorphic
 
@@ -56,12 +56,12 @@ instance (Metric v, OrderedField n) => Enveloped (GDensityPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n)
     => Plotable (GDensityPlot V2 n a) b where
-  renderPlotable s GDensityPlot {..} pp = 
+  renderPlotable s GDensityPlot {..} pp =
                dd # transform t
                   # stroke
 --                  check smooth for more details
---                  # applyLineStyle pp  
-            <> if dFill 
+--                  # applyLineStyle pp
+            <> if dFill
                 then (fillDensity dd) # stroke
                                       # lw none
                                       # applyBarStyle pp
@@ -95,7 +95,7 @@ mkDensityPlotOf f a = GDensityPlot
   , dFold = f . unpointLike
   , dPos  = id
   , dFunc = densityY
-  , dFill = False 
+  , dFill = False
   }
 
 _DensityPlot :: (Plotable (DensityPlot v n) b, Typeable b)
@@ -106,13 +106,14 @@ _DensityPlot = _Plot
 
 densityY :: (Ord n, Floating n, Enum n) => [P2 n] -> Located (Trail' Line V2 n)
 densityY xs = cubicSpline False (map p2 (zip xpts ypts))
-              where xmin = fst (maximumBy (compare `on` fst) (map unp2 xs))
-                    xmax = fst (minimumBy (compare `on` fst) (map unp2 xs))
-                    xpts = [xmin, (xmin + w) .. xmax]
-                    ypts = [bin1D xs (xpt, (xpt + w)) | xpt <- xpts]
-                    w    = (xmax - xmin)/ 10.0
+  where
+    xmin = fst (maximumBy (compare `on` fst) (map unp2 xs))
+    xmax = fst (minimumBy (compare `on` fst) (map unp2 xs))
+    xpts = [xmin, (xmin + w) .. xmax]
+    ypts = [bin1D xs (xpt, (xpt + w)) | xpt <- xpts]
+    w    = (xmax - xmin)/ 10.0
 
-bin1D xs (a,b) = mean [y | (x,y) <- (map unp2 xs), x > b, x < a]
+    bin1D as (a,b) = mean [y | (x,y) <- (map unp2 as), x > b, x < a]
 
 mean :: (Num a, Fractional a) => [a] -> a
 mean [] = 0.0
@@ -121,7 +122,7 @@ mean xs = (sum xs)/ fromIntegral (length xs)
 fillDensity :: (Ord n, Fractional n, Enum n) => Located (Trail' Line V2 n) -> Located (Trail' Loop V2 n)
 fillDensity dd = dd # mapLoc closeLine
 
--- Isnt working properly need some work with it 
+-- Isnt working properly need some work with it
 
 ----------------------------------------------------------------------------
 -- Density Lenses
