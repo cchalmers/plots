@@ -4,7 +4,6 @@ synopsis:            Diagrams based plotting library.
 homepage:            http://github.com/cchalmers/plots
 license:             BSD3
 license-file:        LICENSE
-extra-source-files:  README.md, CHANGES.markdown
 author:              Christopher Chalmers
 maintainer:          c.chalmers@me.com
 bug-reports:         http://github.com/cchalmers/plots
