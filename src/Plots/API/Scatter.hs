@@ -76,6 +76,22 @@ import           Plots.API
 --   myaxis = r2Axis ~&
 --     scatterPlot data1
 -- @
+--
+-- === __Example__
+--
+-- <<plots/scatter.png#diagram=scatter&width=300>>
+--
+-- @
+-- mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
+-- mydata2 = mydata1 & each . _1 *~ 0.5
+-- mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
+--
+-- myaxis :: Axis B V2 Double
+-- myaxis = r2Axis &~ do
+--   scatterPlotL "data 1" mydata1
+--   scatterPlotL "data 2" mydata2
+--   scatterPlotL "data 3" mydata3
+-- @
 
 scatterPlot
   :: (v ~ BaseSpace c,
