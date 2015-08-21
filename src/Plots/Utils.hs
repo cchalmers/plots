@@ -7,69 +7,17 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Plots.Utils
-    ( zeroy
-    , multiply'
-    , append'
-    , makepoint
-    , createdata
-    , foobarsingle
-    , foobarmulti
-    , oneindexing
-    , oneeach
-    , onefolded
-    , folded'
-    , liftRecommend
-    , fromCommit
-    , pathFromVertices
-    , minmaxOf
-    , enumFromToN
-    ) where
+  ( liftRecommend
+  , fromCommit
+  , pathFromVertices
+  , minmaxOf
+  , enumFromToN
+  ) where
 
-import qualified Data.Foldable as F
 import           Control.Lens
-import           Control.Lens.Internal
-import           Control.Lens.Internal.Fold
-import           Data.List
 import           Data.Monoid.Recommend
-import           Data.Profunctor.Unsafe
 import           Diagrams.Prelude           hiding (diff)
-import           Data.Functor.Classes
 
-
-
-------------------------------------------------------------------------
--- support function
-zeroy :: [(Double, Double)] -> [(Double, Double)]
-zeroy xs = [(a,0) | (a,_) <- xs]
-
-multiply' :: Num a => a -> a -> a
-multiply' x y = x*y
-
-append' :: [a] -> [a] -> [a]
-append' a b = a ++ (reverse b)
-
--- maker' x y = map p2 (zip x y)
-
-makepoint :: (n,n) -> P2 n
-makepoint (x,y) = p2 (x,y)
-
-createdata :: [String] -> [Double]
-createdata xs = [(relate x (zip ds [1.0..]))/fromIntegral  ((length ds)+ 1)| x<-xs]
-                where ds = nub xs
-
-relate :: Eq a => a -> [(a, b)] -> b
-relate c = snd.head.dropWhile ((/=c).fst)
-
--- creategroupdata :: [(Double, Double)] -> [String] -> [([(Double,Double)],String)]
--- creategroupdata xs ys = foobarmulti (zip xs ys) (nub ys)
-
-foobarsingle :: Eq t => [(t1, t)] -> t -> ([t1], t)
-foobarsingle xs string = ([fst x | x <- xs, snd x == string ], string)
-
-foobarmulti :: Eq t => [(t1, t)] -> [t] -> [([t1], t)]
-foobarmulti xs ds = [foobarsingle xs d | d <- ds]
-
-------------------------------------------------------------------------
 -- | @enumFromToN a b n@ calculates a list from @a@ to @b@ in @n@ steps.
 enumFromToN :: Fractional n => n -> n -> Int -> [n]
 enumFromToN a b n = step n a
@@ -78,55 +26,17 @@ enumFromToN a b n = step n a
                | otherwise = x : step (i - 1) (x + diff)
     diff = (b - a) / fromIntegral n
 
-------------------------------------------------------------------------
--- Lens
-------------------------------------------------------------------------
-
--- Index an optic, starting from 1.
-oneindexing :: Indexable Int p => ((a -> Indexing f b) -> s -> Indexing f t) -> p a (f b) -> s -> f t
-oneindexing l iafb s = snd $ runIndexing (l (\a -> Indexing (\i -> i `seq` (i + 1, indexed iafb i a))) s) 1
-{-# INLINE oneindexing #-}
-
-oneeach :: Each s t a b => IndexedTraversal Int s t a b
-oneeach = conjoined each (indexing each)
-{-# INLINE oneeach #-}
-
-onefolded :: F.Foldable f => IndexedFold Int (f a) a
-onefolded = conjoined folded' (indexing folded')
-{-# INLINE onefolded #-}
-
-folded' :: F.Foldable f => Fold (f a) a
-folded' f = coerce . getFolding . F.foldMap (Folding #. f)
-{-# INLINE folded' #-}
-
-------------------------------------------------------------------------
--- Recommend
-------------------------------------------------------------------------
-
+-- | Apply a function over two recommends or two commits. If only one of
+--   the values is a commit, the commit is used without applying the
+--   function.
 liftRecommend :: (a -> a -> a) -> Recommend a -> Recommend a -> Recommend a
 liftRecommend _ (Commit a) (Recommend _)    = Commit a
 liftRecommend _ (Recommend _) (Commit b)    = Commit b
 liftRecommend f (Recommend a) (Recommend b) = Recommend (f a b)
 liftRecommend f (Commit a) (Commit b)       = Commit (f a b)
 
--- recommend :: Lens' (Recommend a) a
--- recommend = lens getRecommend setRecommend
---   where
---     setRecommend (Recommend _) a = Recommend a
---     setRecommend (Commit _   ) a = Commit a
-
--- _Recommend :: Prism' (Recommend a) a
--- _Recommend = prism' Recommend getRec
---   where
---     getRec (Recommend a) = Just a
---     getRec _             = Nothing
-
--- _Commit :: Prism' (Recommend a) a
--- _Commit = prism' Commit getCommit
---   where
---     getCommit (Commit a) = Just a
---     getCommit _          = Nothing
-
+-- | Extract a commit value, defaulting to the provided value when it is
+--   a recommend.
 fromCommit :: a -> Recommend a -> a
 fromCommit _ (Commit a) = a
 fromCommit a _          = a
@@ -135,39 +45,16 @@ fromCommit a _          = a
 -- Diagrams
 ------------------------------------------------------------------------
 
+-- | Type specialised version of 'fromVertices'.
 pathFromVertices :: (Metric v, OrderedField n) => [Point v n] -> Path v n
 pathFromVertices = fromVertices
+{-# INLINE pathFromVertices #-}
 
--- -- | The @themeEntry@ lens goes though recommend, so @set themeEntry myTheme
--- --   myPlot@ won't give a committed theme entry (so theme from axis will
--- --   override). Use commitTheme to make sure theme is committed.
--- commitTheme :: HasPlotProperties a => ThemeEntry (B a) (N a) -> a -> a
--- commitTheme = set plotThemeEntry . Commit
---
--- -- | Make the current theme a committed theme. See @commitTheme@.
--- commitCurrentTheme :: HasPlotProperties a => a -> a
--- commitCurrentTheme = over plotThemeEntry makeCommitted
---   where
---     makeCommitted (Recommend a) = Commit a
---     makeCommitted c             = c
-
--- | 'V2 min max'
+-- | Minmax of a getter in the form @V2 min max@. Returns @(V2
+--   (-Infinity) Infinity)@ for empty folds.
 minmaxOf :: (Fractional a, Ord a) => Getting (Endo (Endo (V2 a))) s a -> s -> V2 a
 minmaxOf l = foldlOf' l (\(V2 mn mx) a -> V2 (min mn a) (max mx a)) (V2 (1/0) (-1/0))
       -- (\acc a -> acc <**> V2 min max ?? a)
 -- V2 is used instead of a tuple because V2 is strict.
 {-# INLINE minmaxOf #-}
-
--- | Turn a containers of a tuple into an indexed container.
-newtype TIndexed f i a = TIndexed { unindex :: f (i, a) }
-
-instance (Show1 f, Show i, Show a) => Show (TIndexed f i a) where
-  showsPrec p (TIndexed f) = showParen (p > 10) $
-    showString "TIndexed " . showsPrec1 11 f
-
-instance F.Foldable f => F.Foldable (TIndexed f i) where
-  foldMap f = F.foldMap (f . snd) . unindex
-
-instance F.Foldable f => FoldableWithIndex i (TIndexed f i) where
-  ifoldMap f = F.foldMap (uncurry f) . unindex
 

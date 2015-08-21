@@ -24,7 +24,6 @@ module Plots.Types.Ribbon
 
     -- * Helper functions
   , createBarData
-  , zeroY
 
     -- * Lenses
   , strokeEdge
