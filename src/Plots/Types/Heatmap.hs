@@ -35,18 +35,6 @@ import           Plots.Themes
 import           Plots.Utils
 import           Plots.Types
 
--- data HeatMap n = HeatMap
---   { hmFunction :: Int -> Int -> Double
---   , hmExtent   :: V2 Int  -- total x and y boxes
---   , hmStart    :: P2 n
---   , hmSize     :: V2 n    -- width and height of each box
---   } deriving Typeable
-
--- I'm still unsure of the "right" way to do this. On the one hand, by
--- restricting it to int users can read off data from an array without
--- any problems. On the other hand it's not an ideal representation for
--- heat maps of functions. Maybe we need two primitives.
-
 type ColourRange = (Colour Double, Colour Double)
 
 data HeatPlot n = HeatPlot
@@ -64,44 +52,76 @@ instance OrderedField n => Enveloped (HeatPlot n) where
       ymax = (length hmata) + 0.5
       xmax = (max [length x | x <- hData]) + 0.5
 
--- diagrams really needs a prim to deal with multiple objects like this.
-
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (HeatPlot n) b where
-  renderPlotable s HeatPlot {..} pp =
-      F.foldMap mk ps
+    => Plotable (HeatMap n) b where
+  renderPlotable s HeatMap {..} pp =
+      mconcat [rect' i j | i <- [1 .. (max [length x | x <- hData])], j<- [1 .. (length hmata)]]
         # transform t
-        # lwO 0.01
-        # lc grey
-        # withEnvelope (getEnvelope hm)
+   <> if hGrid
+        then mconcat ([drawgridh] ++ [drawgridv])
+               # transform t
+        else mempty
     where
-      mk z@(V2 i j) =
-        square 1 # fcA (pp ^. plotColourMap . ixColour (toRational $ normise n))
-                 -- # translate (2*x')
-                 # moveTo p
-        where
-          n  = hmFunction i j
-          p  = hmStart .+^ (hmSize * x' + 0.5)
-          x' = fromIntegral <$> z
-          -- p = transform t $ sPos a
-      ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
-      V2 x y = hmExtent
-      t = s ^. specTrans
-      -- p0 = apply t $ hmStart ^. _Point
-      V2 vMin vMax = minmaxOf each (map (\(V2 i j) -> hmFunction i j) ps)
-      normise v = (v - vMin) / (vMax - vMin)
-
+      drawgridh =  [fromVertices [p2 (x1, 0.5), p2 (x1, ymax)] #stroke | x1 <- [0.5, 1.5 .. ymax]]
+      drawgridv =  [fromVertices [p2 (0.5, y1), p2 (xmax, y1)] #stroke | y1 <- [0.5, 1.5 .. ymax]] 
+      ymax = (length hmata) + 0.5
+      xmax = (max [length x | x <- hData]) + 0.5
+      t  = s ^. specTrans
+      ls = s ^. specScale
+      rect' i j = fromVertices [p2 (imin, jmin), p2 (imin ,jmax), p2 (imax, jmax), p2 (imax, jmin)] # mapLoc closeLine # stroke # lw none # fc (colr (i,j))
+                  where imin = (fromIntegral i) - 0.5
+                        imax = (fromIntegral i) + 0.5
+                        jmin = (fromIntegral j) - 0.5
+                        jmax = (fromIntegral j) + 0.5
+      colr (i,j) = createColour hColorMap (clnd !! i !! j)
+      clnd = hData
+      fromVertices ps
+        # mapLoc closeLine
+        # stroke
+        # lw none
+        # applyBarStyle pp
+        # transform t
   defLegendPic HeatMap {..} pp
       = square 5 # applyBarStyle pp
+
+createColour (sRGB24 x y z,sRGB24 a b c) -1 = none
+createColour (sRGB24 x y z,sRGB24 a b c) n  = sRGB24 (x+(n*(a-x))) (y+(n*(b-y))) (z+(n*(c-z)))  
+
+
+mkHeatMap :: (Num n, GV.Vector v a)
+  => v a -> (Int,Int) -> (a -> Style V2 n) -> GHeatMap v a n
+mkHeatMap v (w,h) f
+  = GHeatMap
+      { _heatMapVector   = v
+      , _heatMapExtent   = V2 w h
+      , _heatMapStart    = origin
+      , _heatMapSize     = V2 1 1
+      , _heatMapStyleMap = f
+      }
 
 {-
 myCircle = rect 1 3 #fillTexture gradient #lw none
 
 gradient = mkLinearGradient stops ((-1) ^& (-1)) (1 ^& 1) GradPad
 stops =  mkStops [(teal, 0, 1),(orange, 1, 1)]
--}
+
 -- | Squares for heat map. Since some renderers leave gaps for adjacent
 --   blocks, squares are overlapped to avoid this.
+
+
+------------------------------------------------------------------------------
+
+-- data HeatMap n = HeatMap
+--   { hmFunction :: Int -> Int -> Double
+--   , hmExtent   :: V2 Int  -- total x and y boxes
+--   , hmStart    :: P2 n
+--   , hmSize     :: V2 n    -- width and height of each box
+--   } deriving Typeable
+
+-- I'm still unsure of the "right" way to do this. On the one hand, by
+-- restricting it to int users can read off data from an array without
+-- any problems. On the other hand it's not an ideal representation for
+-- heat maps of functions. Maybe we need two primitives.
 
 heatSquares :: (TypeableFloat n, Renderable (Path V2 n) b) => n -> ColourRange -> QDiagram b V2 n Any
 heatSquares (V2 x y) f =
@@ -309,3 +329,4 @@ _HeatMapPlot = _Plot
 --       where
 --         x' = fromIntegral x
 --         y' = fromIntegral y
+-}

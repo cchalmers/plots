@@ -1,25 +1,26 @@
-Name:                plots
-Version:             0.1.0.0
-Synopsis:            Diagrams based plotting library.
-Homepage:            http://github.com/cchalmers/plots
-License:             BSD3
-License-file:        LICENSE
-Extra-source-files:  README.md, CHANGES.markdown
-Author:              Christopher Chalmers
-Maintainer:          c.chalmers@me.com
-Bug-reports:         http://github.com/cchalmers/plots
-Stability:           Experimental
-Category:            Graphics
-Build-type:          Simple
-Cabal-version:       >=1.10
-Description:         Diagrams based plotting library.
+name:                plots
+version:             0.1.0.0
+synopsis:            Diagrams based plotting library.
+homepage:            http://github.com/cchalmers/plots
+license:             BSD3
+license-file:        LICENSE
+author:              Christopher Chalmers
+maintainer:          c.chalmers@me.com
+bug-reports:         http://github.com/cchalmers/plots
+stability:           Experimental
+category:            Graphics
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md plots/*.png
+extra-doc-files:     plots/*.png
+description:         Diagrams based plotting library.
 
-Source-repository head
+source-repository head
  type:     git
  location: http://github.com/cchalmers/plots
 
-Library
-  Exposed-modules:
+library
+  exposed-modules:
     Plots
     Plots.Axis
     Plots.Axis.ColourBar
@@ -32,17 +33,21 @@ Library
     Plots.Name
     Plots.Themes
     Plots.Types
-    Plots.Types.Bar
+    Plots.Types.Histogram
     Plots.Types.Line
     Plots.Types.Function
-    -- Plots.Types.Heatmap
     Plots.Types.Scatter
     Plots.Types.Ribbon
+    Plots.Types.Others
+    Plots.Types.Points
+    Plots.Types.Pie
+    Plots.Types.Smooth
+    Plots.Types.Text
     Plots.Utils
     Diagrams.Coordinates.Isomorphic
     Diagrams.Coordinates.Polar
-  Hs-source-dirs:      src
-  Build-depends:
+  hs-source-dirs:      src
+  build-depends:
     base          >= 4.3 && < 5.0,
     adjunctions,
     colour,
@@ -69,9 +74,8 @@ Library
     time,
     vector,
     profunctors,
-    intervals,
-    diagrams-pgf
+    intervals
 
-  Ghc-options:         -Wall
+  ghc-options:         -Wall
 
-  Default-language:  Haskell2010
+  default-language:  Haskell2010

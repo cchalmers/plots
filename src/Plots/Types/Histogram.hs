@@ -3,52 +3,76 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE FunctionalDependencies    #-}
+
+{-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE AllowAmbiguousTypes       #-}
+
+{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.Types.Histogram
-  (
-
--- * GHistogramPlot plot
+  (  -- * GHistogramPlot plot
      GHistogramPlot
   , _HistogramPlot
 
+    -- * Histogram plot
   , HistogramPlot
   , mkHistogramPlotOf
   , mkHistogramPlot
-
+   
+    -- * Helper functions
   , createBarData'
+
+    -- * Histogram lenses
   , setBin
 
+    -- * Histogram
+  , histogramPlot
+  , histogramPlot'
+  , histogramPlotL
+
+    -- * Fold variant histogram
+  , histogramPlotOf
+  , histogramPlotOf'
+  , histogramPlotLOf
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
+import           Control.Monad.State.Lazy
+
 import qualified Data.Foldable                   as F
 import           Data.Typeable
 import           Data.List
 import           Data.Function
 
 import           Diagrams.Prelude
-
 import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Themes
 import           Plots.Types
+import           Plots.API
+import           Plots.Axis
+
+------------------------------------------------------------------------
+-- GHistogram plot
+------------------------------------------------------------------------
 
 data GHistogramPlot v n a = forall s. GHistogramPlot
   { hData :: s
   , hFold :: Fold s a
   , hPos  :: a -> Point v n
   , hFunc :: Int -> [P2 n] -> [P2 n]
--- change P2 n to Point v n
--- need to add v ~ V2 every where, both in mkHistogramPlot and BinY1
--- also change in some places in Plots.hs
   , hBin  :: Int 
   } deriving Typeable
+
+-- change P2 n to Point v n.
+-- need to add v ~ V2, both in mkHistogramPlot and BinY1.
+-- also change the same in api.
 
 type instance V (GHistogramPlot v n a) = v
 type instance N (GHistogramPlot v n a) = n
@@ -77,17 +101,22 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   defLegendPic GHistogramPlot {..} pp
       = square 5 # applyBarStyle pp
 
+_HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
+                   => Prism' (Plot b v n) (HistogramPlot v n)
+_HistogramPlot = _Plot
+
 ------------------------------------------------------------------------
--- Simple Histogram Plot
+-- Simple histogram plot
 ------------------------------------------------------------------------
 
 type HistogramPlot v n = GHistogramPlot v n (Point v n)
 
+-- | Plot a histogram by averaging x data with y bin = 0. 
 mkHistogramPlot :: (PointLike v n p, F.Foldable f, Ord n, Fractional n, Enum n, Num n)
               => f p -> HistogramPlot v n
 mkHistogramPlot = mkHistogramPlotOf folded
 
-
+-- | Plot a histogram using a given fold.
 mkHistogramPlotOf :: (PointLike v n p, Ord n, Fractional n, Enum n, Num n)
                 => Fold s p -> s -> HistogramPlot v n
 mkHistogramPlotOf f a = GHistogramPlot
@@ -97,17 +126,10 @@ mkHistogramPlotOf f a = GHistogramPlot
   , hFunc = binY
   , hBin  = 10 
   }
-  
-createBarData' z w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
-        where xmax =  x + (w/2)
-              xmin =  x - (w/2)
-              (x, y) = unp2 z
 
-_HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (HistogramPlot v n)
-_HistogramPlot = _Plot
-
----------- add more of this function - one for mean other for sum --
+------------------------------------------------------------------------
+-- Helper functions
+------------------------------------------------------------------------
 
 binY :: (Ord n, Fractional n, Enum n) => Int -> [P2 n] -> [P2 n]
 binY b xs =  map p2 (zip xpts ypts)
@@ -119,9 +141,15 @@ binY b xs =  map p2 (zip xpts ypts)
 
 bin1D xs (a,b) = mean [y | (x,y) <- (map unp2 xs), x > b, x < a]
 
+createBarData' z w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
+        where xmax =  x + (w/2)
+              xmin =  x - (w/2)
+              (x, y) = unp2 z
+
 mean :: (Num a, Fractional a) => [a] -> a
 mean [] = 0.0
 mean xs = (sum xs)/ fromIntegral (length xs)
+
 ----------------------------------------------------------------------------
 -- Histogram Lenses
 ----------------------------------------------------------------------------
@@ -137,4 +165,109 @@ instance HasHistogram (GHistogramPlot v n d) v n d where
 
 instance HasHistogram (PropertiedPlot (GHistogramPlot v n d) b) v n d where
   histogram = _pp
+
+------------------------------------------------------------------------
+-- Histogram
+------------------------------------------------------------------------
+
+-- $ histogram
+-- Histograms display data as barplot of x data, bin y data.
+-- Box plots have the following lenses:
+--
+-- @
+-- * 'setBin' :: 'Lens'' ('BoxPlot' v n) 'Double' - 10
+-- @
+
+-- | Add a 'HistogramPlot' to the 'AxisState' from a data set.
+--
+-- @
+--   myaxis = r2Axis ~&
+--     histogramPlot data1
+-- @
+--
+-- === __Example__
+--
+-- <<plots/histogram.png#diagram=histogram&width=300>>
+--
+-- @
+-- fillOpacity = barStyle . mapped . _opacity
+--
+-- myaxis :: Axis B V2 Double
+-- myaxis = r2Axis &~ do
+--  histogramPlot' mydata1 $ do 
+--     addLegendEntry "histogram"
+--     plotColor .= blue
+--     fillOpacity .= 0.5
+-- @
+
+histogramPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b,
+      F.Foldable f, Enum n)
+  => f p -> m ()
+histogramPlot d = addPlotable (mkHistogramPlot d)
+
+-- | Make a 'HistogramPlot' and take a 'State' on the plot to alter it's
+--   options
+--
+-- @
+--   myaxis = r2Axis &~ do
+--     histogramPlot' pointData1 $ do
+--       setBin .= 30
+--       addLegendEntry "data 1"
+-- @
+
+histogramPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b,
+      F.Foldable f, Enum n)
+  => f p -> PlotState (HistogramPlot v n) b -> m ()
+histogramPlot' d = addPlotable' (mkHistogramPlot d)
+
+-- | Add a 'HistogramPlot' with the given name for the legend entry.
+--
+-- @
+--   myaxis = r2Axis &~ do
+--     histogramPlotL "blue team" pointData1
+--     histogramPlotL "red team" pointData2
+-- @
+
+histogramPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b,
+      F.Foldable f, Enum n)
+  => String -> f p -> m ()
+histogramPlotL l d = addPlotableL l (mkHistogramPlot d)
+
+-- Fold variants
+
+histogramPlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b, Enum n)
+  => Fold s p -> s -> m ()
+histogramPlotOf f s = addPlotable (mkHistogramPlotOf f s)
+
+histogramPlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b, Enum n)
+  => Fold s p -> s -> PlotState (HistogramPlot v n) b -> m ()
+histogramPlotOf' f s = addPlotable' (mkHistogramPlotOf f s)
+
+histogramPlotLOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (HistogramPlot v n) b, Enum n)
+  => String -> Fold s p -> s -> m ()
+histogramPlotLOf l f s = addPlotableL l (mkHistogramPlotOf f s)
 

@@ -8,37 +8,52 @@
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE AllowAmbiguousTypes          #-}
+
+
+{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.Types.Smooth
-  (
-
--- * GSmoothPlot plot
+  (  -- * General smooth plot
      GSmoothPlot
   , _SmoothPlot
 
+    -- * Smooth plot
   , SmoothPlot
   , mkSmoothPlotOf
   , mkSmoothPlot
-
+    
+    -- * Helper functions
   , drawTrail
   , testXY
 
+     -- * Smooth Plot
+   , smoothPlot
+   , smoothPlot'
+   , smoothPlotL
+     -- * Fold variant smooth plot
+   , smoothPlotOf
+   , smoothPlotOf'
+   , smoothPlotOfL
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
+import           Control.Monad.State.Lazy
 import qualified Data.Foldable                   as F
 import           Data.Typeable
-import           Data.List
-import           Data.Function
 
 import           Diagrams.Prelude
-import           Diagrams.Trail
-
 import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Themes
 import           Plots.Types
+import           Plots.API
+import           Plots.Axis
+
+------------------------------------------------------------------------
+-- GPoints plot
+------------------------------------------------------------------------
 
 data GSmoothPlot v n a = forall s. GSmoothPlot
   { sData :: s
@@ -46,10 +61,10 @@ data GSmoothPlot v n a = forall s. GSmoothPlot
   , sPos  :: a -> Point v n
   , sMeth :: [P2 n] -> (Located (Trail' Loop V2 n) ,Located (Trail' Line V2 n))
   , sLine :: Bool
--- change P2 n to Point v n 
--- Look at Histogram.hs for more details
--- Extend Bool
   } deriving Typeable
+
+-- Change P2 n to Point v n.
+-- Implement sExtend :: Bool.
 
 type instance V (GSmoothPlot v n a) = v
 type instance N (GSmoothPlot v n a) = n
@@ -59,17 +74,17 @@ instance (Metric v, OrderedField n) => Enveloped (GSmoothPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GSmoothPlot V2 n a) b where
-  renderPlotable s GSmoothPlot {..} pp = 
+  renderPlotable s GSmoothPlot {..} pp =
                lp # stroke
                   # lw none
                   # applyBarStyle pp
                   # opacity 0.7
                   # transform t
-            <> if sLine 
+            <> if sLine
                 then ln # transform t # stroke
---                        # applyLineStyle pp -- dont know why doesnt work 
---                        add easy options for linesize colour dashing opacity; same for fill
                 else mempty
+--  # applyLineStyle pp
+--  ln :: Located (Trail' Loop V2 n)
           where
             ps             = toListOf (sFold . to sPos . to (logPoint ls)) sData
             (lp, ln)       = sMeth ps
@@ -79,17 +94,22 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   defLegendPic GSmoothPlot {..} pp
       = square 5 # applyBarStyle pp
 
+_SmoothPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
+                   => Prism' (Plot b v n) (SmoothPlot v n)
+_SmoothPlot = _Plot 
+
 ------------------------------------------------------------------------
--- Simple Smooth Plot
+-- Simple smooth plot
 ------------------------------------------------------------------------
 
 type SmoothPlot v n = GSmoothPlot v n (Point v n)
 
+-- | Plot a smooth function given data.
 mkSmoothPlot :: (PointLike v n p, F.Foldable f, Ord n, Floating n, Enum n, Num n)
               => f p -> SmoothPlot v n
 mkSmoothPlot = mkSmoothPlotOf folded
 
-
+-- | Smooth plot with a given fold.
 mkSmoothPlotOf :: (PointLike v n p, Ord n, Floating n, Enum n, Num n)
                 => Fold s p -> s -> SmoothPlot v n
 mkSmoothPlotOf f a = GSmoothPlot
@@ -97,68 +117,65 @@ mkSmoothPlotOf f a = GSmoothPlot
   , sFold = f . unpointLike
   , sPos  = id
   , sMeth = testXY
-  , sLine = True 
+  , sLine = True
   }
-  
-_SmoothPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (SmoothPlot v n)
-_SmoothPlot = _Plot
 
----------- add more of this function - one for mean other for sum --
--- lm ---
+------------------------------------------------------------------------
+-- Helper functions
+------------------------------------------------------------------------
 
 testXY :: (Ord n, Floating n, Enum n) => [P2 n] -> (Located (Trail' Loop V2 n) ,Located (Trail' Line V2 n))
-testXY ps = (lp, ln) 
-            where 
-            xpts = map fst (map unp2 ps)
-            ypts = map snd (map unp2 ps)
-            xmean = mean xpts
-            ymean = mean ypts
-            xmin = minimum xpts
-            ymin = minimum ypts
-            xmax = maximum xpts
-            ymax = maximum ypts
-            h    = 0.3 * (ymax - ymean)
-            (m, b) = simpleLinear (map unp2 ps)
-            y1   = predict xmin (m, b)
-            y2   = predict xmax (m, b)
-            lp   = (fromVertices (map p2 [(xmin, y1-h),(xmax, y2-h),(xmax, y2+h),(xmin, y1+h)])) #mapLoc closeLine
-            ln   = fromVertices (map p2 [(xmin, y1),(xmax, y2)])
-                                      
-                                                                                
-mean :: (Fractional a) => [a] -> a                                              
-mean xs = sum(xs) / fromIntegral (length xs)                                    
-                                                                                
-meanOfPoints :: (Fractional a) => [(a, a)] -> (a, a)                            
-meanOfPoints x = let (a, b) = unzip x                                           
-                 in (mean a, mean b)                                            
-                                                                                
-correlation :: (Floating a) => [(a, a)] -> a                                    
-correlation xs = xy / sqrt (xx * yy)                                            
-                 where xy = sum $ map (\x -> fst x * snd x) xs                  
-                       xx = sum $ map (\x -> fst x ^ 2) xs                      
-                       yy = sum $ map (\x -> snd x ^ 2) xs                      
-                                                                                
-stdDev :: Floating a => [a] -> a                                                
-stdDev xs = sqrt $ sum (xMinusMean xs) / lengthList                             
-            where mu = mean xs                                                  
-                  xMinusMean = map (\x -> (x - mu) ^ 2)                         
-                  lengthList = fromIntegral (length xs)                         
-                                                                                
-stdDevOfPoints :: (Floating a) => [(a, a)] -> (a, a)                            
-stdDevOfPoints x = let (a, b) = unzip x                                         
-                   in (stdDev a, stdDev b)                                      
-                                                                                
-simpleLinear :: (Ord n, Floating n, Enum n) => [(n , n)] -> (n, n)                            
-simpleLinear xs = (m, b)                                                      
-                  where r = correlation xs                                      
-                        (sx, sy) = stdDevOfPoints xs                            
-                        (mx, my) = meanOfPoints xs                              
-                        m = r * sy / sx                                         
-                        b = my - m * mx                                         
-                                                                                
-predict :: (Ord n, Floating n, Enum n) => n -> (n, n) -> n                                   
-predict x (m, b) = b + m * x  
+testXY ps = (lp, ln)
+  where
+    xpts = map fst (map unp2 ps)
+    ypts = map snd (map unp2 ps)
+    ymean = mean ypts
+    xmin = minimum xpts
+    xmax = maximum xpts
+    ymax = maximum ypts
+    h    = 0.3 * (ymax - ymean)
+    (m, b) = simpleLinear (map unp2 ps)
+    y1   = predict xmin (m, b)
+    y2   = predict xmax (m, b)
+    lp   = (fromVertices (map p2 [(xmin, y1-h),(xmax, y2-h),(xmax, y2+h),(xmin, y1+h)])) #mapLoc closeLine
+    ln   = fromVertices (map p2 [(xmin, y1),(xmax, y2)])
+
+-- add more functions for smooth,
+-- lm, rlm, density and so on.
+
+mean :: (Fractional a) => [a] -> a
+mean xs = sum(xs) / fromIntegral (length xs)
+
+meanOfPoints :: (Fractional a) => [(a, a)] -> (a, a)
+meanOfPoints x = let (a, b) = unzip x
+                 in (mean a, mean b)
+
+correlation :: (Floating a) => [(a, a)] -> a
+correlation xs = xy / sqrt (xx * yy)
+                 where xy = sum $ map (\x -> fst x * snd x) xs
+                       xx = sum $ map (\x -> fst x ^ 2) xs
+                       yy = sum $ map (\x -> snd x ^ 2) xs
+
+stdDev :: Floating a => [a] -> a
+stdDev xs = sqrt $ sum (xMinusMean xs) / lengthList
+            where mu = mean xs
+                  xMinusMean = map (\x -> (x - mu) ^ 2)
+                  lengthList = fromIntegral (length xs)
+
+stdDevOfPoints :: (Floating a) => [(a, a)] -> (a, a)
+stdDevOfPoints x = let (a, b) = unzip x
+                   in (stdDev a, stdDev b)
+
+simpleLinear :: (Ord n, Floating n, Enum n) => [(n , n)] -> (n, n)
+simpleLinear xs = (m, b)
+                  where r = correlation xs
+                        (sx, sy) = stdDevOfPoints xs
+                        (mx, my) = meanOfPoints xs
+                        m = r * sy / sx
+                        b = my - m * mx
+
+predict :: (Ord n, Floating n, Enum n) => n -> (n, n) -> n
+predict x (m, b) = b + m * x
 
 ----------------------------------------------------------------------------
 -- Smooth Lenses
@@ -176,3 +193,111 @@ instance HasSmooth (GSmoothPlot v n d) v n d where
 instance HasSmooth (PropertiedPlot (GSmoothPlot v n d) b) v n d where
   smooth = _pp
 
+------------------------------------------------------------------------
+-- Smooth Plot
+------------------------------------------------------------------------
+
+-- $ smoothplot
+-- smooth plots display data as various functions. There are
+-- several representations for smooth plots for extra parameters.
+-- Smooth plots have the following lenses:
+--
+-- @
+-- * 'sLine' :: 'Lens'' ('BoxPlot' v n) 'Bool' - False
+-- @
+
+-- | Add a 'SmoothPlot' to the 'AxisState' from a data set.
+--
+-- @
+--   myaxis = r2Axis ~&
+--     smoothPlot data1
+-- @
+--
+-- === __Example__
+--
+-- <<plots/smoothsimple.png#diagram=smoothsimple&width=300>>
+--
+-- @
+-- myaxis :: Axis B V2 Double
+-- myaxis = r2Axis &~ do
+--    smoothPlot mydata1
+--    smoothPlot mydata2
+--    smoothPlot mydata3
+-- @
+
+smoothPlot
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => f p -> m ()
+smoothPlot d = addPlotable (mkSmoothPlot d)
+
+-- | Make a 'SmoothPlot' and take a 'State' on the plot to alter it's
+--   options
+--
+-- @
+--   myaxis = r2Axis &~ do
+--     smoothPlot' pointData1 $ do
+--       sLine .= False
+--       addLegendEntry "data 1"
+-- @
+
+smoothPlot'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => f p -> PlotState (SmoothPlot v n) b -> m ()
+smoothPlot' d = addPlotable' (mkSmoothPlot d)
+
+-- | Add a 'SmoothPlot' with the given name for the legend entry.
+--
+-- @
+--   myaxis = r2Axis &~ do
+--     smoothPlotL "blue team" pointData1
+--     smoothPlotL "red team" pointData2
+-- @
+
+smoothPlotL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      F.Foldable f ,
+      Enum n, TypeableFloat n)
+  => String -> f p  -> m ()
+smoothPlotL l d = addPlotableL l (mkSmoothPlot d)
+
+-- fold variant
+
+smoothPlotOf
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      Enum n, TypeableFloat n)
+  => Fold s p -> s -> m ()
+smoothPlotOf f s = addPlotable (mkSmoothPlotOf f s)
+
+smoothPlotOf'
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      Enum n, TypeableFloat n)
+  => Fold s p -> s -> PlotState (SmoothPlot v n) b -> m ()
+smoothPlotOf' f s = addPlotable' (mkSmoothPlotOf f s)
+
+smoothPlotOfL
+  :: (v ~ BaseSpace c,
+      PointLike v n p,
+      MonadState (Axis b c n) m,
+      Plotable (SmoothPlot v n) b,
+      Enum n, TypeableFloat n)
+  => String -> Fold s p -> s -> m ()
+smoothPlotOfL l f s = addPlotableL l (mkSmoothPlotOf f s)

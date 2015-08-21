@@ -22,6 +22,7 @@ module Plots.Themes
   , applyLineStyle
   , applyMarkerStyle
   , applyBarStyle
+  , applyTextStyle
 
     -- * Common themes
   , coolTheme
@@ -76,16 +77,17 @@ data PlotStyle b v n = PlotStyle
   , _lineStyle   :: Colour Double -> Style v n
   , _markerStyle :: Colour Double -> Style v n
   , _barStyle    :: Colour Double -> Style v n
+  , _textStyle   :: Colour Double -> Style v n
   , _plotMarker  :: QDiagram b v n Any
   } deriving Typeable
 
 instance (Metric v, Typeable n, OrderedField n) => Semigroup (PlotStyle b v n) where
-  PlotStyle c ls1 ms1 bs1 m1 <> PlotStyle _ ls2 ms2 bs2 m2
-    = PlotStyle c (ls1 <> ls2) (ms1 <> ms2) (bs1 <> bs2) (m1 <> m2)
+  PlotStyle c ls1 ms1 bs1 ts1 m1 <> PlotStyle _ ls2 ms2 bs2 ts2 m2
+    = PlotStyle c (ls1 <> ls2) (ms1 <> ms2) (bs1 <> bs2) (ts1 <> ts2) (m1 <> m2)
 
 instance (Metric v, Typeable n, OrderedField n) => Monoid (PlotStyle b v n) where
   mappend = (<>)
-  mempty  = PlotStyle black mempty mempty mempty mempty
+  mempty  = PlotStyle black mempty mempty mempty mempty mempty
 
 type instance V (PlotStyle b v n) = v
 type instance N (PlotStyle b v n) = n
@@ -106,6 +108,9 @@ class HasPlotStyle a b | a -> b where
   barStyle :: Lens' a (Colour Double -> Style (V a) (N a))
   barStyle = plotStyle . lens _barStyle (\p f -> p {_barStyle = f})
 
+  textStyle :: Lens' a (Colour Double -> Style (V a) (N a))
+  textStyle = plotStyle . lens _textStyle (\p f -> p {_textStyle = f})
+
   plotMarker :: Lens' a (QDiagram b (V a) (N a) Any)
   plotMarker = plotStyle . lens _plotMarker (\p f -> p {_plotMarker = f})
 
@@ -124,6 +129,9 @@ applyMarkerStyle a = applyStyle $ (a ^. markerStyle) (a ^. plotColor)
 applyBarStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
 applyBarStyle a = applyStyle $ (a ^. barStyle) (a ^. plotColor)
 
+applyTextStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
+applyTextStyle a = applyStyle $ (a ^. textStyle) (a ^. plotColor)
+
 plotStyles :: HasPlotStyle a b => Traversal' a (Colour Double -> Style (V a) (N a))
 plotStyles = plotStyle . t
   where
@@ -132,6 +140,7 @@ plotStyles = plotStyle . t
       <*> f _lineStyle
       <*> f _markerStyle
       <*> f _barStyle
+      <*> f _textStyle
       <*> pure _plotMarker
 
 instance (Metric v, Traversable v, OrderedField n) => Transformable (PlotStyle b v n) where
@@ -156,6 +165,7 @@ data ThemeContructor v n = ThemeContructor
   , _constructLineStyle   :: Colour Double -> Style v n
   , _constructMarkerStyle :: Colour Double -> Style v n
   , _constructFillStyle   :: Colour Double -> Style v n
+  , _constructTextStyle   :: Colour Double -> Style v n
   , _markerPaths          :: [Path v n]
   }
 
@@ -180,6 +190,7 @@ constructTheme tc = zipWith
                      (tc ^. constructLineStyle)
                      (tc ^. constructMarkerStyle)
                      (tc ^. constructFillStyle)
+                     (tc ^. constructTextStyle)
                      s) (tc ^. constructorColours) (map stroke $ tc ^. markerPaths)
 
 coolThemeConstructor :: TypeableFloat n => ThemeContructor V2 n
@@ -191,6 +202,9 @@ coolThemeConstructor = ThemeContructor
                                     # lc c
                                     # fc (blend 0.9 c white)
   , _constructFillStyle   = \c -> mempty
+                                    # lc c
+                                    # fc (blend 0.9 c white)
+  , _constructTextStyle   = \c -> mempty
                                     # lc c
                                     # fc (blend 0.9 c white)
   , _markerPaths          = filledMarkers # scale 5
