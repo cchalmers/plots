@@ -51,9 +51,9 @@ module Plots.Types.Function
   , VectorPlot (..)
   , mkVectorPlot
   , mkVectorPointPlot
- 
+
   -- * Vector plot lenses
-  , setArrowOpts 
+  , setArrowOpts
 
  -- * Parametric plot
   , parametricPlot
@@ -94,7 +94,6 @@ import           Diagrams.Prelude                hiding (view)
 import           Plots.Themes
 import           Plots.Types
 import           Plots.API
-import           Plots.Axis
 
 -- import           Data.Traversable  as T
 -- import           Data.Foldable
@@ -143,8 +142,8 @@ instance HasFunctionPlotOptions (ParametricPlot v n) n where
   functionPlotOptions = parametricPlotOptions
 
 instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (ParametricPlot v n) where
-  getEnvelope pa = getEnvelope p 
-                   where 
+  getEnvelope pa = getEnvelope p
+                   where
                      p = map f [a, a + 1 / (pa ^. functionPlotNumPoints . to fromIntegral) .. b]
                      f = pa ^. parametricFunction
                      a = pa ^. parametricDomain . _1
@@ -189,8 +188,14 @@ mkParametricRangePlot f d
       }
 
 -- | Functions to create ab, vertical and horizontal lines.
+
+createABLine :: Num n => n -> n -> n -> P2 n
 createABLine slope intercept x = p2 (x ,(slope*x) +  intercept)
+
+createHLine :: n -> n -> P2 n
 createHLine intercept x = p2 (x, intercept)
+
+createVLine :: n -> n -> P2 n
 createVLine intercept x = p2 (intercept, x)
 
 ------------------------------------------------------------------------
@@ -199,7 +204,7 @@ createVLine intercept x = p2 (intercept, x)
 
 data VectorPlot v n = VectorPlot
    { _vectorV        :: v n
-   , _vectorPoint   :: (n,n) 
+   , _vectorPoint   :: (n,n)
    , _vectorArrows  :: ArrowOpts n
    }
 
@@ -213,7 +218,7 @@ instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (Vecto
 
 instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
     => Plotable (VectorPlot V2 n) b where
-  renderPlotable s v pp = arrowAt' opts pt1 (V2 q r) 
+  renderPlotable s v _pp = arrowAt' opts pt1 (V2 q r)
                           # transform (s^.specTrans)
                           # translate (r2 (x, y))
                           where
@@ -226,12 +231,12 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
       = (p2 (-10,0) ~~ p2 (10,0))
           # applyLineStyle pp
 
--- | Plot a given vector at (0,0). 
+-- | Plot a given vector at (0,0).
 mkVectorPlot :: (Additive v, TypeableFloat n) => v n -> VectorPlot v n
 mkVectorPlot f
   = VectorPlot
       { _vectorV       = f
-      , _vectorPoint   = (0,0) 
+      , _vectorPoint   = (0,0)
       , _vectorArrows  = def
       }
 

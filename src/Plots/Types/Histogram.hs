@@ -23,7 +23,7 @@ module Plots.Types.Histogram
   , HistogramPlot
   , mkHistogramPlotOf
   , mkHistogramPlot
-   
+
     -- * Helper functions
   , createBarData'
 
@@ -56,7 +56,6 @@ import           Diagrams.Coordinates.Isomorphic
 import           Plots.Themes
 import           Plots.Types
 import           Plots.API
-import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- GHistogram plot
@@ -67,7 +66,7 @@ data GHistogramPlot v n a = forall s. GHistogramPlot
   , hFold :: Fold s a
   , hPos  :: a -> Point v n
   , hFunc :: Int -> [P2 n] -> [P2 n]
-  , hBin  :: Int 
+  , hBin  :: Int
   } deriving Typeable
 
 -- change P2 n to Point v n.
@@ -111,7 +110,7 @@ _HistogramPlot = _Plot
 
 type HistogramPlot v n = GHistogramPlot v n (Point v n)
 
--- | Plot a histogram by averaging x data with y bin = 0. 
+-- | Plot a histogram by averaging x data with y bin = 0.
 mkHistogramPlot :: (PointLike v n p, F.Foldable f, Ord n, Fractional n, Enum n, Num n)
               => f p -> HistogramPlot v n
 mkHistogramPlot = mkHistogramPlotOf folded
@@ -124,7 +123,7 @@ mkHistogramPlotOf f a = GHistogramPlot
   , hFold = f . unpointLike
   , hPos  = id
   , hFunc = binY
-  , hBin  = 10 
+  , hBin  = 10
   }
 
 ------------------------------------------------------------------------
@@ -139,8 +138,11 @@ binY b xs =  map p2 (zip xpts ypts)
                     ypts = [bin1D xs (xpt, (xpt + w)) | xpt <- xpts]
                     w    = (xmax - xmin)/ fromIntegral b
 
+bin1D :: (Fractional a, Ord a) => [P2 a] -> (a, a) -> a
 bin1D xs (a,b) = mean [y | (x,y) <- (map unp2 xs), x > b, x < a]
 
+
+createBarData' :: Fractional n => P2 n -> n -> [P2 n]
 createBarData' z w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
         where xmax =  x + (w/2)
               xmin =  x - (w/2)
@@ -194,7 +196,7 @@ instance HasHistogram (PropertiedPlot (GHistogramPlot v n d) b) v n d where
 --
 -- myaxis :: Axis B V2 Double
 -- myaxis = r2Axis &~ do
---  histogramPlot' mydata1 $ do 
+--  histogramPlot' mydata1 $ do
 --     addLegendEntry "histogram"
 --     plotColor .= blue
 --     fillOpacity .= 0.5

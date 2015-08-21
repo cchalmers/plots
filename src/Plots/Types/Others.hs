@@ -56,18 +56,18 @@ import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
 import           Control.Monad.State.Lazy
 
-import qualified Data.Foldable                   as F
+-- import qualified Data.Foldable                   as F
 import           Data.Typeable
-import           Data.List
-import           Data.Function
+-- import           Data.List
+-- import           Data.Function
 
 import           Diagrams.Prelude
-import           Diagrams.Coordinates.Isomorphic
+-- import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Themes
 import           Plots.Types
 import           Plots.API
-import           Plots.Axis
+-- import           Plots.Axis
 import           Plots.Types.Line
 import           Plots.Types.Scatter
 

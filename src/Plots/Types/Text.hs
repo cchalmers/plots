@@ -24,12 +24,21 @@ module Plots.Types.Text
   , textPlot
   , textPlot'
   , textPlotL
+
+  , tString
+  , textPoint
+  , textOptions
+
+  , optalignment
+  , optfontSize
+  , optfontSlant
+  , optfontWeight
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
                                                   ( # ))
 
-import qualified Data.Foldable                   as F
+-- import qualified Data.Foldable                   as F
 import           Data.Typeable
 
 import           Diagrams.Prelude
@@ -39,7 +48,6 @@ import           Plots.Themes
 import           Plots.Types
 import           Plots.API
 import           Control.Monad.State.Lazy
-import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- Text data  & options
@@ -60,7 +68,7 @@ data TextOptions n = TextOptions
    }
 
 -- need to implement an option for fonts
- 
+
 instance (Fractional n) => Default (TextOptions n) where
   def = TextOptions
    {  _optalignment      = (0.0, 0.0)
@@ -86,7 +94,7 @@ instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n)
                           # transform (s^.specTrans)
 
                           where
-                             (x, y)   = (v ^. textPoint)
+                             -- (x, y)   = (v ^. textPoint)
                              str      = v ^. tString
                              (a, b)   = v ^. textOptions ^. optalignment
                              fsze     = v ^. textOptions ^. optfontSize

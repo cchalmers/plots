@@ -38,7 +38,7 @@ module Plots.Types.Ribbon
   , ribbonPlot
   , ribbonPlot'
   , ribbonPlotL
-  
+
     -- * Fold variation ribbon plot
   , ribbonPlotOf
   , ribbonPlotOf'
@@ -96,7 +96,6 @@ import           Diagrams.Coordinates.Isomorphic
 import           Plots.Themes
 import           Plots.Types
 import           Plots.API
-import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- GPoints plot
@@ -166,12 +165,13 @@ mkRibbonPlotOf f a = GRibbonPlot
   }
 
 ------------------------------------------------------------------------
--- Helper functions 
+-- Helper functions
 ------------------------------------------------------------------------
 
 zeroY :: [(Double, Double)] -> [(Double, Double)]
 zeroY xs = [(a,0) | (a,_) <- xs]
 
+createBarData :: (Fractional t, Num t) => (t, t) -> t -> [(t, t)]
 createBarData (x, y) w = [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
         where xmax =  x + (w/2)
               xmin =  x - (w/2)
@@ -344,8 +344,11 @@ barPlotNormalCL :: (Typeable b, Renderable (Path V2 Double) b,
                  Int -> [Double] -> [Colour Double] -> [String]-> Double -> m ()
 barPlotNormalCL y xs cs ls w = F.for_ (sortBy (compare `on` fstof3)(zip3 xs cs ls)) $ \x -> barPlotL ((fromIntegral y), fstof3 x) w (trdof3 x) (sndof3 x)
 
+fstof3 :: (t, t1, t2) -> t
 fstof3 (a, _, _) = a
+sndof3 :: (t, t1, t2) -> t1
 sndof3 (_, a, _) = a
+trdof3 :: (t, t1, t2) -> t2
 trdof3 (_, _, a) = a
 
 barPlotNormalMulti :: (Typeable b, Renderable (Path V2 Double) b,
@@ -356,8 +359,8 @@ barPlotNormalMulti xs w = F.for_ [1 .. length xs] $ \x -> barPlotNormal x (xs!!(
 barPlotNormalMultiC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                   [[Double]] -> [Colour Double] -> [String] -> Double -> m ()
-barPlotNormalMultiC xs colormap names w = do
-                                          barPlotNormalCL 1 (xs!!0) colormap names w
+barPlotNormalMultiC xs colormap nms w = do
+                                          barPlotNormalCL 1 (xs!!0) colormap nms w
                                           F.for_ [2 .. length xs] $ \x -> barPlotNormalC x (xs!!(x-1)) colormap w
 
 ------------------------------------------------------------------------
@@ -375,6 +378,7 @@ additive (x:xs) = x:(additive (addtofst x xs))
 
 addtofst :: Double -> [Double] -> [Double]
 addtofst a (x:xs) = (a+x):xs
+addtofst _ []     = []
 
 barPlotStackedC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
@@ -390,8 +394,8 @@ barPlotStackedCL y xs cs ls w = F.for_ (sortBy (compare `on` fstof3)(zip3 (addit
 barPlotStackedMultiC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                   [[Double]] -> [Colour Double]-> [String] -> Double -> m ()
-barPlotStackedMultiC xs colormap names w = do
-                                          barPlotStackedCL 1 (xs!!0) colormap names w
+barPlotStackedMultiC xs colormap nms w = do
+                                          barPlotStackedCL 1 (xs!!0) colormap nms w
                                           F.for_ [2 .. length xs] $ \x -> barPlotStackedC x (xs!!(x-1)) colormap w
 
 ------------------------------------------------------------------------
@@ -429,8 +433,8 @@ barPlotSplitCL y xs cs ls w = F.for_ (zip3 (zip (createsplitdata y len w) xs) cs
 barPlotSplitMultiC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                   [[Double]] -> [Colour Double]-> [String] -> Double -> m ()
-barPlotSplitMultiC xs colormap names w = do
-                                         barPlotSplitCL 1 (xs!!0) colormap names w
+barPlotSplitMultiC xs colormap nms w = do
+                                         barPlotSplitCL 1 (xs!!0) colormap nms w
                                          F.for_ [2 .. length xs] $ \x -> barPlotSplitC x (xs!!(x-1)) colormap w
 ------------------------------------------------------------------------
 -- Ratio Bar
@@ -453,13 +457,13 @@ barPlotRatioCL :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                  Int -> [Double] -> [Colour Double]
                      -> [String]-> Double -> m ()
-barPlotRatioCL t xs colormap names w = do
-                                       barPlotStackedCL t [x/tot | x <- xs] colormap names w
+barPlotRatioCL t xs colormap nms w = do
+                                       barPlotStackedCL t [x/tot | x <- xs] colormap nms w
                                        where tot = sum xs
 
 barPlotRatioMultiC :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                   [[Double]] -> [Colour Double] -> [String] -> Double -> m ()
-barPlotRatioMultiC xs colormap names w = do
-                                         barPlotRatioCL 1 (xs!!0) colormap names w
+barPlotRatioMultiC xs colormap nms w = do
+                                         barPlotRatioCL 1 (xs!!0) colormap nms w
                                          F.for_ [2 .. length xs] $ \x -> barPlotRatioC x (xs!!(x-1)) colormap w

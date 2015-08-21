@@ -52,7 +52,6 @@ import           Diagrams.Prelude hiding (r2)
 import           Plots.Themes
 import           Plots.Types
 import           Plots.API
-import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- General pie plot

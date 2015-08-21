@@ -167,7 +167,6 @@ import           Data.Monoid.Recommend
 import           Data.Typeable
 
 import           Diagrams.Coordinates.Isomorphic
-import           Diagrams.Coordinates.Polar
 import           Diagrams.Prelude                hiding (r2)
 import           Diagrams.TwoD.Text
 

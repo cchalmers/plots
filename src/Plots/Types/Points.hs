@@ -14,7 +14,7 @@
 {-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.Types.Points
-  (  -- * Polar scatter plot  
+  (  -- * Polar scatter plot
      GPointsPlot
    , mkPointsPlot
 
@@ -39,7 +39,6 @@ import           Diagrams.Coordinates.Polar
 import           Plots.Themes
 import           Plots.Types
 import           Plots.API
-import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- GPoints plot

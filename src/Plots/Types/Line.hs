@@ -14,11 +14,13 @@
 
 {-# LANGUAGE StandaloneDeriving        #-}
 
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Plots.Types.Line
   ( -- * Trail plot
     mkTrail
   , mkTrailOf
-    
+
     -- * Path plot
   , mkPath
   , mkPathOf
@@ -36,7 +38,7 @@ module Plots.Types.Line
 
     -- * Helper functions
   , createStepData
-  
+
     -- * Lenses
   , dotsonPoint
   , pathStyle
@@ -76,7 +78,6 @@ import           Diagrams.Prelude  hiding (view)
 import           Plots.Themes
 import           Plots.Types
 import           Plots.API
-import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- Trail and path
@@ -263,7 +264,7 @@ instance HasPath (PropertiedPlot (GLinePlot v n d) b) v n d where
 --
 -- myaxis :: Axis B V2 Double
 -- myaxis = r2Axis &~ do
---          linePlot  mydata1 
+--          linePlot  mydata1
 --          linePlot' mydata2 $ do
 --               addLegendEntry "data 2"
 --               plotColor .= black

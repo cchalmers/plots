@@ -22,7 +22,7 @@ module Plots.Types.Smooth
   , SmoothPlot
   , mkSmoothPlotOf
   , mkSmoothPlot
-    
+
     -- * Helper functions
   , drawTrail
   , testXY
@@ -49,7 +49,6 @@ import           Diagrams.Coordinates.Isomorphic
 import           Plots.Themes
 import           Plots.Types
 import           Plots.API
-import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- GPoints plot
@@ -96,7 +95,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
 
 _SmoothPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
                    => Prism' (Plot b v n) (SmoothPlot v n)
-_SmoothPlot = _Plot 
+_SmoothPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Simple smooth plot
@@ -150,16 +149,19 @@ meanOfPoints :: (Fractional a) => [(a, a)] -> (a, a)
 meanOfPoints x = let (a, b) = unzip x
                  in (mean a, mean b)
 
+sq :: Num a => a -> a
+sq x = x * x
+
 correlation :: (Floating a) => [(a, a)] -> a
 correlation xs = xy / sqrt (xx * yy)
                  where xy = sum $ map (\x -> fst x * snd x) xs
-                       xx = sum $ map (\x -> fst x ^ 2) xs
-                       yy = sum $ map (\x -> snd x ^ 2) xs
+                       xx = sum $ map (\x -> sq (fst x)) xs
+                       yy = sum $ map (\x -> sq (snd x)) xs
 
 stdDev :: Floating a => [a] -> a
 stdDev xs = sqrt $ sum (xMinusMean xs) / lengthList
             where mu = mean xs
-                  xMinusMean = map (\x -> (x - mu) ^ 2)
+                  xMinusMean = map (\x -> sq (x - mu))
                   lengthList = fromIntegral (length xs)
 
 stdDevOfPoints :: (Floating a) => [(a, a)] -> (a, a)
