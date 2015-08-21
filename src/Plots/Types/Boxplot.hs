@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -8,15 +7,21 @@
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE AllowAmbiguousTypes       #-}
 
-{-# LANGUAGE StandaloneDeriving        #-}
-
-{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.Types.Boxplot
-  (   -- * General boxplot
-     GBoxPlot
+  ( -- * Adding box plots
+    boxPlot
+  , boxPlot'
+  , boxPlotL
+
+    -- * Fold variant boxplot
+  , boxPlotOf
+  , boxPlotOf'
+  , boxPlotOfL
+
+     -- * Boxplot type
+  , GBoxPlot
   , _BoxPlot
 
     -- * Box plot
@@ -26,16 +31,7 @@ module Plots.Types.Boxplot
 
     -- * Lenses
   , fillBox
-  
-    -- * Boxplot
-  , boxPlot
-  , boxPlot'
-  , boxPlotL
 
-    -- * Fold variant boxplot
-  , boxPlotOf
-  , boxPlotOf'
-  , boxPlotOfL
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
@@ -89,22 +85,22 @@ instance (Metric v, OrderedField n) => Enveloped (GBoxPlot v n a) where
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n, n ~ Double)
     => Plotable (GBoxPlot V2 n a) b where
   renderPlotable s GBoxPlot {..} pp =
-               if bFill
-                then mconcat ([ draw' d | d <-(drawBoxPlot dd)] ++ [foo])
-               else mconcat [ draw' d | d <-(drawBoxPlot dd)]
-          where
-            ps             = toListOf (bFold . to bPos . to (logPoint ls)) bData
-            dd             = bBox ps
-            foo            = (makeRect dd) # mapLoc closeLine
-                                           # stroke
-                                           # lw none
-                                           # applyBarStyle pp
-                                           # transform t
-            t              = s ^. specTrans
-            ls             = s ^. specScale
-            draw' d        = d # transform t
-                               # stroke
-
+    if bFill
+      then mconcat ([ draw' d | d <-(drawBoxPlot dd)] ++ [foo])
+      else mconcat [ draw' d | d <-(drawBoxPlot dd)]
+    where
+      ps      = toListOf (bFold . to bPos . to (logPoint ls)) bData
+      dd      = bBox ps
+      foo     = makeRect dd
+                  # mapLoc closeLine
+                  # stroke
+                  # lw none
+                  # applyBarStyle pp
+                  # transform t
+      t       = s ^. specTrans
+      ls      = s ^. specScale
+      draw' d = d # transform t
+                  # stroke
 
   defLegendPic GBoxPlot {..} pp
       = square 5 # applyBarStyle pp
@@ -202,8 +198,8 @@ instance HasBox (PropertiedPlot (GBoxPlot v n d) b) v n d where
 
 -- $ boxplot
 -- Box plots display data as boxplot. There are several representations
--- for boxplot plots for extra parameters. Box plots have the
--- following lenses:
+-- for boxplot plots for extra parameters. Box plots have the following
+-- lenses:
 --
 -- @
 -- * 'fillBox' :: 'Lens'' ('BoxPlot' v n) 'Bool' - False
@@ -212,7 +208,7 @@ instance HasBox (PropertiedPlot (GBoxPlot v n d) b) v n d where
 -- | Add a 'BoxPlot' to the 'AxisState' from a data set.
 --
 -- @
---   myaxis = r2Axis ~&
+--   myaxis = r2Axis &~
 --     boxPlot data1
 -- @
 --
@@ -231,7 +227,6 @@ instance HasBox (PropertiedPlot (GBoxPlot v n d) b) v n d where
 --    boxPlot mydata2
 --    boxPlot mydata3
 -- @
-
 boxPlot
   :: (v ~ BaseSpace c,
       PointLike v n p,
@@ -242,7 +237,7 @@ boxPlot
   => f p -> m ()
 boxPlot d = addPlotable (mkBoxPlot d)
 
--- | Make a 'BoxPlot' and take a 'State' on the plot to alter it's
+-- | Make a 'BoxPlot' and take a 'State' on the plot to alter its
 --   options
 --
 -- @
@@ -251,7 +246,6 @@ boxPlot d = addPlotable (mkBoxPlot d)
 --       fillBox .= True
 --       addLegendEntry "data 1"
 -- @
-
 boxPlot'
   :: (v ~ BaseSpace c,
       PointLike v n p,
@@ -269,8 +263,6 @@ boxPlot' d = addPlotable' (mkBoxPlot d)
 --     boxPlotL "blue team" pointData1
 --     boxPlotL "red team" pointData2
 -- @
-
-
 boxPlotL
   :: (v ~ BaseSpace c,
       PointLike v n p,
@@ -280,8 +272,6 @@ boxPlotL
       Enum n, TypeableFloat n)
   => String -> f p  -> m ()
 boxPlotL l d = addPlotableL l (mkBoxPlot d)
-
-
 
 -- Fold variants
 
@@ -311,3 +301,4 @@ boxPlotOfL
       Enum n, TypeableFloat n)
   => String -> Fold s p -> s -> m ()
 boxPlotOfL l f s = addPlotableL l (mkBoxPlotOf f s)
+
