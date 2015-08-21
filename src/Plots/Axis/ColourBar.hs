@@ -1,5 +1,17 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell  #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Axis.ColourBar
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Low level module defining type for the axis colour bar.
+--
+----------------------------------------------------------------------------
 module Plots.Axis.ColourBar where
 
 import Diagrams.Prelude
@@ -73,10 +85,4 @@ addColourBar bb cbo cm a b
     cbAnchor = orient (cbo^.cbOrientation) AnchorTop AnchorLeft
     v        = (cbo^.cbGap) *^ orient (cbo^.cbOrientation) unit_Y unitX
     cb       = drawColourBar cbo cm a b
-
-
-
-
--- make :: Diagram PGF -> IO ()
--- make = renderPGF "examples/heatplot.pdf" (mkWidth 500) . (strutX 10 |||) . frame 30
 

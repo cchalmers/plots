@@ -2,28 +2,40 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiWayIf            #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
-{-# LANGUAGE MultiWayIf            #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Axis.Render
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Low level module containing functions for rendering different types
+-- of axis.
+--
+----------------------------------------------------------------------------
 module Plots.Axis.Render where
 
-import           Control.Lens          hiding (lmap, transform, ( # ))
-import           Control.Lens.Extras   (is)
-import           Data.Typeable
+import           Control.Lens               hiding (lmap, transform, ( # ))
+import           Control.Lens.Extras        (is)
 import           Data.Distributive
 import           Data.Foldable
 import           Data.Monoid.Recommend
+import           Data.Typeable
 
-import           Linear                hiding (translation)
 import           Diagrams.BoundingBox
+import           Diagrams.Prelude           as D hiding (under, view)
 import           Diagrams.TwoD.Text
-import           Diagrams.Prelude      as D hiding (under, view)
+import           Linear                     hiding (translation)
 
-import Diagrams.Coordinates.Polar
+import           Diagrams.Coordinates.Polar
 
 import           Plots.Axis
 import           Plots.Axis.ColourBar
@@ -31,9 +43,9 @@ import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
 import           Plots.Legend
+import           Plots.Themes
 import           Plots.Types
 import           Plots.Utils
-import           Plots.Themes
 
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b (BaseSpace v) n Any
@@ -128,8 +140,6 @@ data LabelPosition
 
 --         mkline y = pathFromVertices
 --          $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
-
-
 
 axisOnBasis
   :: forall b v n. (v ~ V2, TypeableFloat n, HasLinearMap v, Metric v,

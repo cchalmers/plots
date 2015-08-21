@@ -3,6 +3,18 @@
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE RankNTypes         #-}
 {-# LANGUAGE FlexibleContexts   #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Axis.Ticks
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Low level module defining type for axis ticks.
+--
+----------------------------------------------------------------------------
 module Plots.Axis.Ticks where
 
 import Control.Lens  hiding (transform, ( # ))

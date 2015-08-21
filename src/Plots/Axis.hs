@@ -6,15 +6,27 @@
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Axis
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Low level module defining the axis type along with other
+-- miscellaneous axis features.
+--
+----------------------------------------------------------------------------
 module Plots.Axis where
 
-import           Control.Lens          hiding (lmap, transform, ( # ))
 import           Data.Default
 import           Data.Monoid.Recommend
 import           Data.Typeable
 
-import           Diagrams.Prelude      as D hiding (under, view)
+import           Diagrams.Coordinates.Polar
+import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 
 import           Plots.Axis.ColourBar
@@ -25,7 +37,6 @@ import           Plots.Legend
 import           Plots.Themes
 import           Plots.Types
 
-import Diagrams.Coordinates.Polar
 
 -- | Where axis line for coordinate should be drawn.
 data AxisLineType

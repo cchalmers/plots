@@ -1,20 +1,31 @@
-{-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE UndecidableInstances   #-}
-{-# LANGUAGE FlexibleInstances   #-}
-{-# LANGUAGE DeriveDataTypeable     #-}
-
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Axis.Labels
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Low level module defining types for axis labels and tick labels.
+--
+----------------------------------------------------------------------------
 module Plots.Axis.Labels where
 
-import Control.Lens  hiding (( # ))
-import Data.Default
-import Data.Data
+import           Control.Lens       hiding (( # ))
+import           Data.Data
+import           Data.Default
 
-import Diagrams.Prelude   hiding (view)
-import Diagrams.TwoD.Text
-import Plots.Types
+import           Diagrams.Prelude   hiding (view)
+import           Diagrams.TwoD.Text
+import           Plots.Types
 
 -- | Function to render the axis label from a string. This is very basic
 --   now and will be replace by a more sophisticated system.
@@ -77,10 +88,10 @@ type AxisLabels b v n = v (AxisLabel b (BaseSpace v) n)
 type TickLabelFunction n = [n] -> (n,n) -> [(n, String)]
 
 data TickLabels b v n = TickLabels
-  { _tickLabelFun      :: TickLabelFunction n
-  , _tickLabelTextFun  :: TextFunction b v n
-  , _tickLabelStyle    :: Style v n
-  , _tickGap           :: n
+  { _tickLabelFun     :: TickLabelFunction n
+  , _tickLabelTextFun :: TextFunction b v n
+  , _tickLabelStyle   :: Style v n
+  , _tickGap          :: n
   } deriving Typeable
 
 makeLenses ''TickLabels
@@ -107,7 +118,7 @@ atMajorTicks :: (n -> String) -> TickLabelFunction n
 atMajorTicks f ticks _ = map ((,) <*> f) ticks
 
 -- | Use the list of strings as the labels for the axis, starting at 1
--- and going to 2, 3, 4 ...
+--   and going to 2, 3, 4 ... .
 stringLabels :: Num n => [String] -> TickLabelFunction n
 stringLabels nms _ _ = imap (\i l -> (fromIntegral (i + 1), l)) nms
 

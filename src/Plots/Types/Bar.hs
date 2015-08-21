@@ -28,18 +28,12 @@ module Plots.Types.Bar
   ) where
 
 import Control.Lens     hiding (transform, ( # ), none)
-
--- import Data.Maybe
--- import Data.Default
 import Data.Typeable
--- import qualified Data.Foldable as F (Foldable, foldMap, toList)
 
-import Diagrams.Prelude
--- import           Diagrams.Coordinates.Isomorphic
-
--- import Plots.Utils
 import Plots.Themes
 import Plots.Types
+
+import Diagrams.Prelude
 
 
 data GBarPlot n = GBarPlot
@@ -59,8 +53,8 @@ instance OrderedField n => Enveloped (GBarPlot n) where
 
 createbardata :: Floating n => (n, n) -> n -> [P2 n]
 createbardata (x, y) w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
-        where xmax =  x + (w/2)
-              xmin =  x - (w/2)
+  where xmax =  x + (w/2)
+        xmin =  x - (w/2)
 
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)

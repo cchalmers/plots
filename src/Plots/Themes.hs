@@ -4,11 +4,24 @@
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
-{-# LANGUAGE RankNTypes  #-}
+{-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Themes
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- This module defines the theme type along with different colour schemes.
+-- Themes are used to provide default colours and shapes for a plot.
+--
+----------------------------------------------------------------------------
 
 module Plots.Themes
   ( -- * Theme
@@ -63,10 +76,10 @@ module Plots.Themes
 
 import           Control.Lens     hiding (transform, ( # ))
 import           Data.Colour.SRGB
+import qualified Data.Map         as M
 import           Data.Typeable
 import           Diagrams.Prelude
-import qualified Data.Map as M
-import Linear
+import           Linear
 
 -- | A plot style is made up of separate styles for the line, marker and
 --   fill aspects of a plot. It also contains a marker in the form of a
