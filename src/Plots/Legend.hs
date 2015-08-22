@@ -150,7 +150,7 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
           , _legendStyle       = mempty
           , _legendTextF       = mkText (BoxAlignedText 0 0.5)
           , _legendTextStyle   = mempty & fontSize (output 8)
-          , _legendOrientation = Verticle
+          , _legendOrientation = Vertical
           }
 
 instance TypeableFloat n => HasStyle (Legend b n) where
@@ -187,4 +187,3 @@ drawLegend bb l ps = alignTo (l ^. legendPosition)
 wrapPic :: RealFloat n => V2 n -> QDiagram b V2 n Any -> QDiagram b V2 n Any
 wrapPic ((^/ 2) -> v) d
   = d # sizedAs (fromCorners (origin .-^ v) (origin .+^ v))
-

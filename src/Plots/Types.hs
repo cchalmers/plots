@@ -51,7 +51,7 @@ module Plots.Types
   , LegendPic (..)
   , legendPic
   , legendText
-  , legendPrecidence
+  , legendPrecedence
 
   -- * Generic plot
   , PlotProperties
@@ -102,7 +102,7 @@ import           Linear
 import           Plots.Themes
 import           Plots.Utils
 
--- | This family is used we can say (Axis Polar) but use V2 for the
+-- | This family is used so that we can say (Axis Polar) but use V2 for the
 --   underlying diagram.
 type family BaseSpace (c :: * -> *) :: * -> *
 
@@ -112,8 +112,8 @@ type instance BaseSpace V3    = V3
 
 -- Bounds
 
--- | A 'Bound' allows you to 'Commit' a an upper or lower bound while having a
---   fallback 'Reccommend' value.
+-- | A 'Bound' allows you to 'Commit' an upper or lower bound while having a
+--   fallback 'Recommend' value.
 data Bound n = Bound
   { _lowerBound :: Recommend n
   , _upperBound :: Recommend n
@@ -194,12 +194,12 @@ instance Default AxisScale where
 
 -- Orientation ---------------------------------------------------------
 
-data Orientation = Horizontal | Verticle
+data Orientation = Horizontal | Vertical
 
 -- Take two functions for each outcome for an orientation.
 orient :: Orientation -> a -> a -> a
 orient Horizontal h _ = h
-orient Verticle   _ v = v
+orient Vertical   _ v = v
 
 -- Legends
 
@@ -212,7 +212,7 @@ instance Default (LegendPic b v n) where
 data LegendEntry b v n = LegendEntry
   { _legendPic        :: LegendPic b v n
   , _legendText       :: String
-  , _legendPrecidence :: n
+  , _legendPrecedence :: n
   } deriving Typeable
 
 makeLenses ''LegendEntry
@@ -248,7 +248,7 @@ type instance N (PlotProperties b v n) = n
 
 type BaseV t = BaseSpace (V t)
 
--- | Class that gives a lens onto a 'plotProperties'. All 'Plot's must impliment
+-- | Class that gives a lens onto a 'plotProperties'. All 'Plot's must implement
 --   this class.
 class HasPlotProperties t b | t -> b where
 
@@ -303,8 +303,8 @@ instance HasPlotProperties (PlotProperties b v n) b where
   {-# INLINE plotProperties #-}
 
 -- Some orphan overlapping instances. Should be alright as long as these
--- instances arn't defined for anything with HasPlotProperties elsewhere. The
--- alternative is to have this all these instances defined for each plot or
+-- instances aren't defined for anything with HasPlotProperties elsewhere. The
+-- alternative is to have all these instances defined for each plot or
 -- rewrite lenses specific to HasPlotProperties.
 
 instance (HasLinearMap v, Num n) => Transformable (PlotProperties b v n) where
@@ -356,7 +356,7 @@ makeLenses ''AxisSpec
 type instance V (AxisSpec v n) = v
 type instance N (AxisSpec v n) = n
 
--- | Scale a number by log10-ing it and linearly scaleing it so it's
+-- | Scale a number by log10-ing it and linearly scaling it so it's
 --    within the same range.
 scaleNum :: Floating n => (n, n) -> AxisScale -> n -> n
 scaleNum (a,b) s x = case s of
@@ -364,7 +364,7 @@ scaleNum (a,b) s x = case s of
   LogAxis    -> subtract a $ (b / logBase 10 d) * (logBase 10 x)
     where d = b - a
 
--- | Apply log scalling and the transform to a point.
+-- | Apply log scaling and the transform to a point.
 specPoint :: (Applicative v, Additive v, Floating n) => AxisSpec v n -> Point v n -> Point v n
 specPoint (AxisSpec bs tr ss) p =
   papply tr $ over _Point (scaleNum <$> bs <*> ss <*>) p
