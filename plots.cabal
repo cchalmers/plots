@@ -38,6 +38,7 @@ library
     Plots.Types.Function
     Plots.Types.Scatter
     Plots.Types.Ribbon
+    Plots.Types.Boxplot
     Plots.Types.Others
     Plots.Types.Points
     Plots.Types.Pie
