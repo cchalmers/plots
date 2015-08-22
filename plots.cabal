@@ -74,7 +74,8 @@ library
     time,
     vector,
     profunctors,
-    intervals
+    intervals,
+    base-orphans
 
   ghc-options:         -Wall
 

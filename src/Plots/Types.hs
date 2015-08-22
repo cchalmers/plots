@@ -88,6 +88,7 @@ module Plots.Types
 
 import           Data.Functor.Rep
 import           Data.Monoid.Recommend
+import           Data.Orphans               ()
 import           Data.Typeable
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude           as D hiding (view)
@@ -381,8 +382,6 @@ class (Typeable a, Enveloped a) => Plotable a b where
   defLegendPic :: (InSpace v n a, OrderedField n)
     => a -> PlotProperties b v n -> QDiagram b V2 n Any
   defLegendPic = mempty
-
-deriving instance Typeable Any
 
 instance (Typeable b, Typeable v, Metric v, Typeable n, OrderedField n)
   => Plotable (QDiagram b v n Any) b where
