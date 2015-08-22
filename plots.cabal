@@ -39,6 +39,7 @@ library
     Plots.Types.Scatter
     Plots.Types.Ribbon
     Plots.Types.Boxplot
+    Plots.Types.Density
     Plots.Types.Others
     Plots.Types.Points
     Plots.Types.Pie
