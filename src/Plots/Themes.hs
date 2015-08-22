@@ -19,7 +19,8 @@
 -- Portability :  non-portable
 --
 -- This module defines the theme type along with different colour schemes.
--- Themes are used to provide default colours and shapes for a plot.
+-- Themes are used to provide default colours and shapes for the plots
+-- of an axis.
 --
 ----------------------------------------------------------------------------
 

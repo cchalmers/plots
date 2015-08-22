@@ -7,7 +7,20 @@
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE ViewPatterns            #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Diagrams.Coordinates.Isomorphic
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- This module defines a class for coordinates that are (loosely)
+-- isomorphic to the standard spaces ('V2' and 'V3'). This allows plots
+-- to accept more data types for plot data.
+--
+----------------------------------------------------------------------------
 module Diagrams.Coordinates.Isomorphic
   ( -- * Type constraints
     HasIndexedBasis, Euclidean

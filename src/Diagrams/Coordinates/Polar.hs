@@ -7,7 +7,19 @@
 {-# LANGUAGE MultiParamTypeClasses      #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Diagrams.Coordinates.Spherical
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- This module defines a polar coordinate data type. This type can be
+-- used as an axis space for polar plots.
+--
+----------------------------------------------------------------------------
 module Diagrams.Coordinates.Polar
   ( -- * Polar type
     Polar (..)
