@@ -57,7 +57,7 @@ data TextPlot n = TextPlot
    { _tString        :: String
    , _textPoint      :: (n,n)
    , _textOptions    :: TextOptions n
-   }
+   } deriving Typeable
 
 -- | Text alignment, font size, slant and weight
 data TextOptions n = TextOptions

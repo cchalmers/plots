@@ -206,7 +206,7 @@ data VectorPlot v n = VectorPlot
    { _vectorV        :: v n
    , _vectorPoint   :: (n,n)
    , _vectorArrows  :: ArrowOpts n
-   }
+   } deriving Typeable
 
 makeLenses ''VectorPlot
 
@@ -371,7 +371,7 @@ vectorPointPlotL l f d = addPlotableL l (mkVectorPointPlot f d)
 
 vectorFieldPlot
   :: (v ~ BaseSpace c,
-      MonadState (Axis b c n) m,
+      Applicative m, MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
       Additive v, TypeableFloat n)
   =>  [v n] -> [(n, n)] -> ArrowOpts n -> m ()
@@ -548,5 +548,3 @@ vLinePlot intercept d = addPlotable (mkParametricRangePlot (createVLine intercep
 
 -- mkMeshPlot :: (TypeableFloat n) => (n -> n -> n) -> MeshPlot n
 -- mkMeshPlot f = def & meshFunction .~ f
-
-
