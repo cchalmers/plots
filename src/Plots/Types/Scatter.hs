@@ -3,16 +3,11 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE FunctionalDependencies    #-}
-
-{-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE AllowAmbiguousTypes       #-}
-
-{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.Types.Scatter
   ( -- * Scatter plot
@@ -37,7 +32,6 @@ module Plots.Types.Scatter
   , connectingLine
 
     -- ** Scatter plot
-  , ScatterPlot
   , scatterPlot
   , scatterPlot'
   , scatterPlotL
@@ -45,7 +39,10 @@ module Plots.Types.Scatter
   , scatterPlotOf
   , scatterPlotOf'
   , scatterPlotLOf
-    
+
+  , bubblePlot
+  , bubblePlot'
+
     -- ** General scatter plot
   , gscatterPlot
   , gscatterPlot'
@@ -60,17 +57,14 @@ module Plots.Types.Scatter
 import           Control.Lens                    hiding (lmap, transform, ( # ))
 import           Control.Monad.State.Lazy
 
-import qualified Data.Foldable as F
+import qualified Data.Foldable                   as F
 import           Data.Typeable
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude                hiding (view)
 
-import           Plots.Themes
-import           Plots.Types
-import           Plots.Axis
 import           Plots.API
-
+import           Plots.Types
 
 ------------------------------------------------------------------------
 -- General scatter plot
@@ -340,20 +334,24 @@ scatterPlotLOf
 scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 
 ------------------------------------------------------------------------
--- Bubble plot -- 
+-- Bubble plot --
 ------------------------------------------------------------------------
 
 -- $ bubble
 -- Scatter plots with extra numeric parameter. By default the extra
 -- parameter is the scale of the marker but this can be changed.
 
--- bubblePlot :: (PointLike (BaseSpace v) n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
---             => f (n,p) -> AxisState b v n
--- bubblePlot d = axisPlots <>= [P.Plot (P.mkBubblePlot d) def]
+bubblePlot :: (v ~ BaseSpace c, Fractional n, Foldable f, PointLike v n p,
+               MonadState (Axis b c n) m,
+               Plotable (BubblePlot v n) b) =>
+              f (n, p) -> m ()
+bubblePlot d = addPlotable (mkBubblePlot d)
 
--- bubblePlot' :: (PointLike (BaseSpace v) n p, R2Backend b n, Plotable (P.ScatterPlot v n) b, F.Foldable f)
---             => f (n,p) -> AxisState b v n
--- bubblePlot' d s = axisPlots <>= [P.Plot (execState s $ P.mkBubblePlot d) def]
+bubblePlot' :: (v ~ BaseSpace c, Fractional n, Foldable f, PointLike v n p,
+                MonadState (Axis b c n) m,
+                Plotable (BubblePlot v n) b) =>
+               f (n, p) -> PlotState (BubblePlot v n) b -> m ()
+bubblePlot' d = addPlotable' (mkBubblePlot d)
 
 ------------------------------------------------------------------------
 -- General scatter plot
