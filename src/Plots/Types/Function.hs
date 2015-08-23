@@ -371,11 +371,11 @@ vectorPointPlotL l f d = addPlotableL l (mkVectorPointPlot f d)
 
 vectorFieldPlot
   :: (v ~ BaseSpace c,
-      Applicative m, MonadState (Axis b c n) m,
+      MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
       Additive v, TypeableFloat n)
   =>  [v n] -> [(n, n)] -> ArrowOpts n -> m ()
-vectorFieldPlot vs ps opts = F.for_ (zip vs ps) $ \x -> vectorPointPlot'' (fst x) (snd x) opts
+vectorFieldPlot vs ps opts = F.forM_ (zip vs ps) $ \x -> vectorPointPlot'' (fst x) (snd x) opts
 
 -------------------------------------------------------------------------------
 -- Line
