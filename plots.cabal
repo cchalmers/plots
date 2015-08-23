@@ -28,6 +28,7 @@ library
     Plots.Axis.Labels
     Plots.Axis.Render
     Plots.Axis.Ticks
+    Plots.API
     Plots.CmdLine
     Plots.Legend
     Plots.Name
