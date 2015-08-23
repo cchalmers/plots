@@ -38,7 +38,7 @@ data ColourBarOpts b n = ColourBarOpts
 defColourBar :: (Renderable (Text n) b, Renderable (Path V2 n) b, TypeableFloat n, Enum n)
              => ColourBarOpts b n
 defColourBar = ColourBarOpts
-  { _cbOrientation = Verticle
+  { _cbOrientation = Vertical
   , _cbShow        = False
   , _cbTextFun     = mkText
   , _cbTickFun     = linearMajorTicks 3
@@ -85,4 +85,3 @@ addColourBar bb cbo cm a b
     cbAnchor = orient (cbo^.cbOrientation) AnchorTop AnchorLeft
     v        = (cbo^.cbGap) *^ orient (cbo^.cbOrientation) unit_Y unitX
     cb       = drawColourBar cbo cm a b
-
