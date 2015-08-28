@@ -70,6 +70,8 @@ import           Plots.Types
 -- General scatter plot
 ------------------------------------------------------------------------
 
+-- | A general data type for scatter plots. Allows storing different
+--   types of data as well as allowing transforms depending on the data.
 data GScatterPlot v n a = forall s. GScatterPlot
   { sData :: s
   , sFold :: Fold s a
@@ -114,6 +116,7 @@ _ScatterPlot = _Plot
 -- Scatter plot
 ------------------------------------------------------------------------
 
+-- | A plan scatter plot with no transformations depending on the data.
 type ScatterPlot v n = GScatterPlot v n (Point v n)
 
 -- | Make a scatter plot.
@@ -137,6 +140,8 @@ mkScatterPlotOf f a = GScatterPlot
 -- Bubble plot
 ------------------------------------------------------------------------
 
+-- | A scatter plot with a transform depending on an extra numerical
+--   parameter.
 type BubblePlot v n = GScatterPlot v n (n, Point v n)
 
 mkBubblePlotOf :: (PointLike v n p, Fractional n)
@@ -180,10 +185,10 @@ mkGScatterPlot = mkGScatterPlotOf folded
 class HasScatter a v n d | a -> v n, a -> d where
   scatter :: Lens' a (GScatterPlot v n d)
 
+  -- | Lens onto the transform depending on the scatter plot data.
   scatterTransform :: Lens' a (Maybe (d -> T2 n))
   scatterTransform = scatter . lens sTr (\sp t -> sp {sTr = t})
 
-  --
   -- | Change the style for a scatter plot, given the data entry.
   --
   -- @
@@ -191,10 +196,11 @@ class HasScatter a v n d | a -> v n, a -> d where
   --              & scatterTransform .~ Nothing
   -- @
   --
-
   scatterStyle :: Lens' a (Maybe (d -> Style V2 n))
   scatterStyle = scatter . lens sSty (\sp sty -> sp {sSty = sty})
 
+  -- | Lens onto whether the scatter plot should have a connecting line
+  --   between points.
   connectingLine :: Lens' a Bool
   connectingLine = scatter . lens cLine (\s b -> (s {cLine = b}))
 
