@@ -68,11 +68,8 @@ module Plots.Types
   -- * Plot / Plotable
   , Plotable (..)
   , Plot (..)
-  , _Plot
+  -- , _Plot
 
-  -- , plotLineStyle
-  -- , plotMarkerStyle
-  -- , plotFillStyle
   , _recommend
   , _Recommend
   , _Commit
@@ -80,10 +77,11 @@ module Plots.Types
   , PropertiedPlot (..)
   , _pp
 
-  , Plot' (..)
-  , _Plot'
-  , unPlot'
-  , appPlot'
+  , ModifiedPlot (..)
+  , _Plot
+  , modifyPlot
+  , properties
+  -- , appPlot'
   ) where
 
 import           Data.Functor.Rep
@@ -203,12 +201,16 @@ orient Vertical   _ v = v
 
 -- Legends
 
-data LegendPic b v n = DefaultLegendPic
-                     | CustomLegendPic (PlotStyle b v n -> QDiagram b v n Any)
+-- | Type allowing use of the default legend picture (depending on the
+--   plot) or a custom legend picture with access to the 'PlotStyle'.
+data LegendPic b v n
+  = DefaultLegendPic
+  | CustomLegendPic (PlotStyle b v n -> QDiagram b v n Any)
 
 instance Default (LegendPic b v n) where
   def = DefaultLegendPic
 
+-- | Data type for holding a legend entry.
 data LegendEntry b v n = LegendEntry
   { _legendPic        :: LegendPic b v n
   , _legendText       :: String
@@ -220,6 +222,8 @@ makeLenses ''LegendEntry
 type instance V (LegendEntry b v n) = v
 type instance N (LegendEntry b v n) = n
 
+-- | Make a legend entry with a default 'legendPic' and
+--   'legendPrecedence' 0 using the string as the 'legendText'.
 mkLegendEntry :: Num n => String -> LegendEntry b v n
 mkLegendEntry x = LegendEntry DefaultLegendPic x 0
 
@@ -329,23 +333,22 @@ zeroInt = zero
 instance (TypeableFloat n, Renderable (Path V2 n) b, Metric v)
     => Default (PlotProperties b v n) where
   def = PlotProperties
-          { _plotTransform   = mempty
-          , _plotBounds      = Bounds $ def <$ zeroInt
-          , _clipPlot        = True
-          , _legendEntries   = []
-          , _plotName        = mempty
-          , _plotColourMap   = hot
-          , _plotStyle       = mempty
-          , _plotBoundingBox = emptyBox
-          }
+    { _plotTransform   = mempty
+    , _plotBounds      = Bounds $ def <$ zeroInt
+    , _clipPlot        = True
+    , _legendEntries   = []
+    , _plotName        = mempty
+    , _plotColourMap   = hot
+    , _plotStyle       = mempty
+    , _plotBoundingBox = emptyBox
+    }
 
 ------------------------------------------------------------------------
 -- Plotable
 ------------------------------------------------------------------------
 
--- | Data given to a 'Plotable' before rendering.
+-- | Size information give to a 'Plotable' before rendering.
 data AxisSpec v n = AxisSpec
-  -- I need to get better an naming things.
   { _specBounds :: v (n, n)
   , _specTrans  :: Transformation v n
   , _specScale  :: v AxisScale
@@ -357,7 +360,7 @@ type instance V (AxisSpec v n) = v
 type instance N (AxisSpec v n) = n
 
 -- | Scale a number by log10-ing it and linearly scaling it so it's
---    within the same range.
+--   within the same range.
 scaleNum :: Floating n => (n, n) -> AxisScale -> n -> n
 scaleNum (a,b) s x = case s of
   LinearAxis -> x
@@ -372,6 +375,8 @@ specPoint (AxisSpec bs tr ss) p =
 -- | General class for something that can be wrapped in 'Plot'. The 'plot'
 --   function is rarely used by the end user.
 class (Typeable a, Enveloped a) => Plotable a b where
+  -- | Render a plot using the 'AxisSpec' to properly position and scale
+  --   the plot and 'PlotProperties' for style aspects.
   renderPlotable
     :: InSpace v n a
     => AxisSpec v n
@@ -379,6 +384,8 @@ class (Typeable a, Enveloped a) => Plotable a b where
     -> PlotProperties b v n
     -> QDiagram b v n Any
 
+  -- | The default legened picture when the 'LegendPic' is
+  --   'DefaultLegendPic'.
   defLegendPic :: (InSpace v n a, OrderedField n)
     => a -> PlotProperties b v n -> QDiagram b V2 n Any
   defLegendPic = mempty
@@ -391,14 +398,11 @@ instance (Typeable b, Typeable v, Metric v, Typeable n, OrderedField n)
 -- Plot wrapper
 ------------------------------------------------------------------------
 
--- | Existential wrapper for something plotable.
--- data Plot b v n = forall a. (V a ~ v, N a ~ n, Plotable a b) => Plot a (PlotProperties b v n)
---   deriving Typeable
-
+-- | Existential wrapper for something plotable. This only contains the
+--   raw infomation for the plot, not the 'PlotProperties'.
 data Plot b v n where
-  Plot :: (V a ~ v, N a ~ n, Plotable a b)
-       => a -> Plot b v n
-  deriving (Typeable)
+  Plot :: (V a ~ v, N a ~ n, Plotable a b) => a -> Plot b v n
+  deriving Typeable
 
 type instance V (Plot b v n) = v
 type instance N (Plot b v n) = n
@@ -432,6 +436,7 @@ _Plot = prism' Plot (\(Plot a) -> cast a)
 -- both the plot its self and the plots properites.
 data PropertiedPlot p b = PP p (PlotProperties b (V p) (N p))
 
+-- | Lens onto the plot inside a 'PropertiedPlot'.
 _pp :: (V p ~ V p', N p ~ N p') => Lens (PropertiedPlot p b) (PropertiedPlot p' b) p p'
 _pp = lens (\(PP a _) -> a) (\(PP _ p) a -> PP a p)
 
@@ -441,31 +446,39 @@ type instance N (PropertiedPlot p b) = N p
 instance HasPlotProperties (PropertiedPlot p b) b where
   plotProperties = lens (\(PP _ pp) -> pp) (\(PP a _) pp -> PP a pp)
 
--- | Internal type for storing plots in an axis.
-data Plot' b v n where
-  Plot' :: (V a ~ v, N a ~ n, Plotable a b)
-       => a -> Endo (PropertiedPlot a b) -> Plot' b v n
+-- | Internal type for storing plots in an axis. Using an 'Endo' of the
+--   'PropertiedPlot' allows more flexibility.
+data ModifiedPlot b v n where
+  ModifiedPlot :: (V a ~ v, N a ~ n, Plotable a b)
+       => a -> Endo (PropertiedPlot a b) -> ModifiedPlot b v n
   deriving Typeable
 
+type instance V (ModifiedPlot b v n) = v
+type instance N (ModifiedPlot b v n) = n
 
-_Plot' :: forall a b v n. Plotable a b => Traversal' (Plot' b v n) a
-_Plot' f p@(Plot' a e) =
+-- | Traversal over the plot of a modified plot.
+_ModifiedPlot :: forall a b v n. Plotable a b => Traversal' (ModifiedPlot b v n) a
+_ModifiedPlot f p@(ModifiedPlot a e) =
   case eq a of
-    Just Refl -> f a <&> \b' -> Plot' b' e
+    Just Refl -> f a <&> \b' -> ModifiedPlot b' e
     Nothing   -> pure p
   where
   eq :: Typeable a' => a' -> Maybe (a :~: a')
   eq _ = eqT
 
-unPlot' :: Plot' b v n -> PlotProperties b v n -> (Plot b v n, PlotProperties b v n)
-unPlot' (Plot' a (Endo pf)) pp = (Plot a', pp')
+modifyPlot :: ModifiedPlot b v n -> PlotProperties b v n -> (Plot b v n, PlotProperties b v n)
+modifyPlot (ModifiedPlot a (Endo pf)) pp = (Plot a', pp')
   where
     PP a' pp' = pf $ PP a pp
 
+-- | Setter over the plot properties.
+properties :: Setter' (ModifiedPlot b v n) (PlotProperties b v n)
+properties = sets $ \f -> appPlot' $ \(PP a pp) -> PP a (f pp) -- g
+
 appPlot' :: (forall a. (V a ~ v, N a ~ n, Plotable a b) =>
              PropertiedPlot a b -> PropertiedPlot a b)
-         -> Plot' b v n -> Plot' b v n
-appPlot' f (Plot' a pf) = Plot' a (pf <> Endo f)
+         -> ModifiedPlot b v n -> ModifiedPlot b v n
+appPlot' f (ModifiedPlot a pf) = ModifiedPlot a (pf <> Endo f)
 
 instance (HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
   transform = over plotTransform . transform
@@ -482,3 +495,7 @@ instance BaseV p ~ V p => HasPlotStyle (PropertiedPlot p b) b where
 
 instance Qualifiable (PropertiedPlot p b) where
   n .>> p = over plotName (n .>>) p
+
+instance (Metric v, OrderedField n) => Enveloped (ModifiedPlot b v n) where
+  getEnvelope (ModifiedPlot p _) = getEnvelope p
+

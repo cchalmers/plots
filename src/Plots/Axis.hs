@@ -122,7 +122,7 @@ data Axis b v n = Axis
   , _axisLabels     :: AxisLabels b v n
   , _axisLegend     :: Legend b n
   , _axisLines      :: AxisLines v n
-  , _axisPlots      :: [Plot' b (BaseSpace v) n]
+  , _axisPlots      :: [ModifiedPlot b (BaseSpace v) n]
   , _axisScaling    :: AxisScaling v n
   , _axisSize       :: SizeSpec (BaseSpace v) n
   , _axisTheme      :: Theme b (BaseSpace v) n

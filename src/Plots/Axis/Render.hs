@@ -111,7 +111,7 @@ renderR2Axis a = frame 15
     --
     pp = a ^. plotProperties
     preparePlots =
-      zipWith (\theme p' -> (unPlot' (appPlot' (set plotStyle theme) p') pp))
+      zipWith (\theme p' -> modifyPlot (p' & properties . plotStyle .~ theme) pp)
               (a ^. axisTheme)
     --
     cbo = a ^. axisColourBar
@@ -119,8 +119,6 @@ renderR2Axis a = frame 15
     ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
     colourBar = addColourBar bb cbo (pp ^. plotColourMap) 0 1
     --
-    -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))
-    --                      (a ^. axisPlots)
     plots'     = a ^. axisPlots . to preparePlots
 
 data LabelPosition
@@ -130,16 +128,6 @@ data LabelPosition
   | RightLabels
   | UpperLabels
   deriving (Show, Eq, Typeable)
-
--- drawR2Axis :: Axis b V2 n -> Path V2 n
--- drawR2Axis a =
---   -- when axis lines' ends meet, we want them to be connected
---   case a ^. axisLines . column axisLineType of
---     V2 BoxAxisLine BoxAxisLine   -> rect w h
---     _                            ->
-
---         mkline y = pathFromVertices
---          $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
 
 axisOnBasis
   :: forall b v n. (v ~ V2, TypeableFloat n, HasLinearMap v, Metric v,
@@ -152,7 +140,6 @@ axisOnBasis
   -> E v              -- direction of axis
   -> E v              -- orthogonal direction of axis
   -> LabelPosition    -- where (if at all) should labels be placed?
-  -- -> AxisLineType     -- type of the axis line
   -> QDiagram b V2 n Any   -- resulting axis
 axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
   where
@@ -351,8 +338,7 @@ workOutScale a = (enlargedBounds, aspectScaling, specScaling)
     --
     spec     = a ^. axisSize
     aScaling = a ^. axisScaling
-    -- bb       = a ^. axisPlots . folded . plotBoundingBox
-    bb       = a ^. axisPlots . folded . to (\(Plot' p _) -> boundingBox p)
+    bb       = a ^. axisPlots . folded . to boundingBox
     bnd      = a ^. bounds
 
 -- messy tempory fix while stuff is getting worked out
@@ -586,7 +572,7 @@ renderPolarAxis a = frame 15
     --
     pp = a ^. plotProperties
     preparePlots =
-      zipWith (\theme p' -> (unPlot' (appPlot' (set plotStyle theme) p') pp))
+      zipWith (\theme p' -> modifyPlot (p' & properties . plotStyle .~ theme) pp)
               (a ^. axisTheme)
     --
     cbo = a ^. axisColourBar
@@ -594,7 +580,5 @@ renderPolarAxis a = frame 15
     ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
     colourBar = addColourBar bb cbo (pp ^. plotColourMap) 0 1
     --
-    -- plots' = zipWith (\(p,pf) pp -> (p, pf pp))
-    --                      (a ^. axisPlots)
     plots'     = a ^. axisPlots . to preparePlots
 

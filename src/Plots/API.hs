@@ -291,12 +291,12 @@ type PlotState a b  = PlotStateM a b ()
 -- addPlotable :: (InSpace (BaseSpace v) n a, MoPlotable a b) => a -> AxisState b v n
 addPlotable :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
             => a -> m ()
-addPlotable a = axisPlots %= flip snoc (Plot' a mempty)
+addPlotable a = axisPlots %= flip snoc (ModifiedPlot a mempty)
 
 -- | Add something 'Plotable' and modify the 'PlotState' of that plot.
 addPlotable' :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
              => a -> PlotState a b -> m ()
-addPlotable' a s = axisPlots <>= [Plot' a (Endo $ execState s)]
+addPlotable' a s = axisPlots <>= [ModifiedPlot a (Endo $ execState s)]
 
 -- | Add something 'Plotable' with given legend entry.
 addPlotableL :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
