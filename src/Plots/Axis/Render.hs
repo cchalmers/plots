@@ -50,6 +50,7 @@ import           Plots.Utils
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b (BaseSpace v) n Any
 
+
 -- instance (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
 --     => RenderAxis b V3 n where
 --   renderAxis = renderR3Axis

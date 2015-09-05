@@ -23,6 +23,9 @@ module Plots
     --   shapes, colour maps and sample maps.
   , module Plots.Themes
 
+    -- | Generate a command line tool to make a plot.
+  , module Plots.CmdLine
+
     --------------------------------------------------------------------
     -- * Plot Types
     --------------------------------------------------------------------
@@ -131,6 +134,7 @@ import           Plots.Axis.ColourBar
 import           Plots.Types
 import           Plots.Themes
 import           Plots.API
+import           Plots.CmdLine
 
 import           Plots.Types.Scatter
 import           Plots.Types.Line
