@@ -193,6 +193,7 @@ instance Default AxisScale where
 -- Orientation ---------------------------------------------------------
 
 data Orientation = Horizontal | Vertical
+  deriving (Show, Eq, Ord, Typeable)
 
 -- Take two functions for each outcome for an orientation.
 orient :: Orientation -> a -> a -> a
