@@ -7,174 +7,193 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE DeriveFunctor         #-}
 
 module Plots.Types.Bar
-  ( GBarPlot (..)
-  , createbardata
-  , _BarPlot
+  (
+    -- * BarPlot
+    BarPlot (..)
 
-  -- , BarPlot (..)
-  , mkBarPlot
---    BarPlot (..)
---  , simpleBarPlot
-    -- * Prism
---  , _BarPlot
+    -- ** Options
 
-    -- * Lenses
---  , barWidth
---  , barSpacing
---  , verticleBars
---  , stacked
+  , BarPlotOpts (..)
+
+    -- Low level constructors
+  , mkUniformBars
+  , mkMultiAdjacent
+  , mkMultiStacked
+  , mkMultiStackedLimit
+
+  -- * Internal bar type
+  , Bar (..)
+
   ) where
 
-import Control.Lens     hiding (transform, ( # ), none)
+import Control.Lens     hiding (transform, ( # ), none, at)
 import Data.Typeable
 
 import Plots.Themes
 import Plots.Types
 
+import qualified Data.List as List
+import Diagrams.Core.Transform (fromSymmetric)
+import Linear.V2 (_yx)
+
 import Diagrams.Prelude
 
+-- Single bar ----------------------------------------------------------
 
-data GBarPlot n = GBarPlot
-  { barData :: (n, n)
-  , barWidth :: n
-  } deriving Typeable
+-- | Data for a single bar. The bar is drawn as
+--
+-- @
+-- fromCorners (V2 barPos (fst barBounds))) (V2 (barPos + barWidth) (snd barBounds))
+-- @
+--
+--   for 'Horizontal' bars, flipped for 'Vertical'. This is a low level
+--   representation of a bar and is not intended to be used directly.
+data Bar n = Bar
+  { barPos    :: n     -- ^ distance from origin along orientation
+  , barBounds :: (n,n) -- ^ start and finish of data
+  , barWidth  :: n     -- ^ width of bar
+  } deriving (Show, Typeable, Functor)
 
-type instance V (GBarPlot n) = V2
-type instance N (GBarPlot n) = n
+-- | Construct a rectangle of size v with the bottom centre at point p.
+rectB :: (InSpace V2 n t, TrailLike t) => Point V2 n -> V2 n -> t
+rectB p (V2 x y) =
+  trailLike $ fromOffsets [V2 x 0, V2 0 y, V2 (-x) 0] # closeTrail `at` p .-^ V2 (x/2) 0
 
-makeLenses ''GBarPlot
+-- | Draw a single vertical bar. Use 'reflectXY' to make it a horizontal
+--   bar.
+drawBar :: (InSpace V2 n t, TrailLike t) => Bar n -> t
+drawBar Bar {..}   =
+  rectB (mkP2 barPos   (uncurry min barBounds))
+        (V2   barWidth (abs $ uncurry (-) barBounds))
 
-instance OrderedField n => Enveloped (GBarPlot n) where
-  getEnvelope GBarPlot {..} = getEnvelope $ createbardata a b
-    where a = barData
-          b = barWidth
+-- Multiple bars -------------------------------------------------------
 
-createbardata :: Floating n => (n, n) -> n -> [P2 n]
-createbardata (x, y) w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
-  where xmax =  x + (w/2)
-        xmin =  x - (w/2)
+-- | A bar plot for a single set of bars. Multi-bar plots are acheived
+--   by having multiple 'BarPlot's. Each bar plot corresponds to a
+--   single legend entry. To get multiple bar entries/colours, use
+--   multiple 'BarPlots'
 
-
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (GBarPlot n) b where
-  renderPlotable s GBarPlot {..} pp =
-      fromVertices ps
-        # mapLoc closeLine
-        # stroke
-        # lw none
-        # applyBarStyle pp
-        # transform t
-
-   <> fromVertices ps
-        # mapLoc closeLine
-        # stroke
-        # transform t
-        # applyLineStyle pp
-
-    where
-      ps = createbardata barData barWidth
-      t  = s ^. specTrans
-      -- ls = s ^. specScale
-
-  defLegendPic GBarPlot {..} pp
-      = square 5 # applyBarStyle pp
-
-_BarPlot :: (Plotable (GBarPlot n) b, Typeable b)
-             => Prism' (Plot b V2 n) (GBarPlot n)
-_BarPlot = _Plot
-
-------------------------------------------------------------------------
--- Bar Plot
-------------------------------------------------------------------------
-
-mkBarPlot :: (n, n) -> n -> GBarPlot n
-mkBarPlot a w = GBarPlot
-  { barData = a
-  , barWidth = w
-  }
-
-{-
+--   A 'BarPlot' is not intended to be constructed directly, instead use
+--   one of the helper functions.
 data BarPlot n = BarPlot
-  { _barData       :: [(n,[n])] -- data for bars
-  , _barWidth     :: n         -- total width of bars for one 'bit'
-  , _barSpacing   :: n         -- gap between multibars in same value
-  , _verticleBars :: Bool    -- whether the bars are verticle
-  , _stacked      :: Bool    -- whether the bars stacked (or side by side)
-  } deriving Typeable
+  { bData   :: [Bar n]
+  , bOrient :: Orientation
+  } deriving (Typeable, Functor)
 
 type instance V (BarPlot n) = V2
 type instance N (BarPlot n) = n
 
-makeLenses ''BarPlot
-
 instance OrderedField n => Enveloped (BarPlot n) where
-  getEnvelope bp
-    | nullOf barData bp = mempty
-    | otherwise         = getEnvelope $ fromCorners (mkP2 xmin 0) (mkP2 xmax ymax)
-    where
-      ymax = fromMaybe 0 $ maximumOf (barData . each . _2 . each) bp
-      V2 xmin xmax = minmaxOf (barData . each . _1) bp
+  getEnvelope BarPlot {..} =
+    orient bOrient id _reflectXY . getEnvelope . (id :: Path v n -> Path v n) $
+      foldMap drawBar bData
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
-  renderPlotable s d pp =
-    drawBarPlot d
-      # transform (s^.specTrans)
+  renderPlotable s BarPlot {..} pp =
+    foldMap drawBar bData
       # applyBarStyle pp
+      # transform (view specTrans s <> orient bOrient mempty _reflectionXY)
 
-instance Fractional n => Default (BarPlot n) where
-  def = BarPlot
-          { _barData       = []
-          , _barWidth     = 0.5
-          , _barSpacing   = 0.1
-          , _verticleBars = True
-          , _stacked      = False
-          }
+  defLegendPic BarPlot {..} pp
+    = centerXY
+    . applyBarStyle pp'
+    . orient bOrient id _reflectXY
+    $ d
+    where
+      -- Multiple bars get two bars next to each other for the legend. A
+      -- single bar only gets one bar.
+      d | has (ix 1) bData = alignB (rect 4 7) ||| strutX 3 ||| alignB (rect 4 10)
+        | otherwise        = rect 4 10
 
--- TODO: work out a nice way to get different colours for multi-bar plots.
+      -- The legend bars don't look right if the line width is too big so we limit it
+      pp' = pp & barStyle . mapped . _lw %~ atMost (local 0.8)
 
-drawBarPlot :: (TypeableFloat n, Renderable (Path V2 n) b) => BarPlot n -> QDiagram b V2 n Any
-drawBarPlot bp = F.foldMap makeBar (_barData bp)
+-- Options -------------------------------------------------------------
+
+-- The low level versions aren't constrained by these options, but
+-- having these options is useful for the higher level functions.
+
+-- | Options for simple bar plots.
+data BarPlotOpts n = BarPlotOpts
+  { barOrientation :: Orientation
+  , barOptsWidth   :: n
+  , barSpacing     :: n
+  , barOptsStart   :: n
+    -- Extra options for grouped bars?
+  }
+
+instance Fractional n => Default (BarPlotOpts n) where
+  def = BarPlotOpts
+    { barOrientation = Vertical
+    , barOptsWidth   = 0.8
+    , barSpacing     = 1
+    , barOptsStart   = 1
+    }
+
+-- Helper functions ----------------------------------------------------
+
+-- | Create equidistant bars using the values.
+mkUniformBars
+  :: Num n
+  => BarPlotOpts n
+  -> [(n,n)] -- ^ values
+  -> BarPlot n
+mkUniformBars BarPlotOpts {..} ys
+  = BarPlot (imap mkBar ys) barOrientation
+  where mkBar i y = Bar (barOptsStart + fromIntegral i * barSpacing) y barOptsWidth
+
+-- | Create uniform bars from groups of data, placing one group after
+--   the other.
+mkMultiAdjacent
+  :: Num n
+  => BarPlotOpts n
+  -> [[(n,n)]] -- values
+  -> [BarPlot n]
+mkMultiAdjacent bo = snd . foldr f (barOptsStart bo, [])
   where
-    tW = bp^.barWidth
-    δ  = bp^.barSpacing
-    --
-    makeBar (_,[]) = mempty
-    makeBar (x,bs) = ifoldMap mkBar bs
-      where
-        mkBar i h = rect w h
-                      # alignB
-                      # translateX (x + fromIntegral i * (δ + w))
-        n = fromIntegral $ length bs
-        w = recip n * (tW - δ * (n - 1))
+    f d (x, bs) = (x + dx, mkUniformBars bo {barOptsStart = x} d : bs)
+      where dx = barSpacing bo * fromIntegral (length d)
 
--- instance (Typeable b, Renderable (Path R2) b) => Plotable (BarPlot b) b R2 where
---   plot _r _ t = transform t . drawBarPlot
-
-simpleBarPlot :: (TypeableFloat n, F.Foldable f) => f n -> BarPlot n
-simpleBarPlot (F.toList -> xs) = def { _barData = imap f xs }
+-- | Create uniform bars from groups of data, placing one on top of the
+--   other. The first list will be the same as @mkUniformBars opts (map
+--   (0,) ys)@, subsequent lists will be placed on top.
+mkMultiStacked
+  :: Num n
+  => BarPlotOpts n
+  -> [[n]] -- values
+  -> [BarPlot n]
+mkMultiStacked bo = snd . List.mapAccumR f (repeat 0)
   where
-    f i h = (fromIntegral i + 1, [h])
+    -- y0s are the base values for this set of bars, these accumulate
+    -- for each set of data
+    f y0s ys = (y1s, mkUniformBars bo (zip y0s y1s))
+      where y1s = zipWith (+) y0s ys
 
+-- | Similar to 'mkMultiStacked' but stack has the same height.
+mkMultiStackedLimit
+  :: Fractional n
+  => n     -- ^ value each bar reaches
+  -> BarPlotOpts n
+  -> [[n]] -- ^ values
+  -> [BarPlot n]
+mkMultiStackedLimit yM bo yss = mkMultiStacked bo yss'
+  where
+    -- Multiplier for each bar to reach the desired height.
+    ms = map (\ys -> yM / sum ys) $ List.transpose yss
 
-_BarPlot :: Plotable (BarPlot n) b => Prism' (Plot b V2 n) (BarPlot n)
-_BarPlot = _Plot
--}
-------------------------------------------------------------------------
--- Histogram
-------------------------------------------------------------------------
+    -- Normalise each data set by multiplying it with the normalising
+    -- factor.
+    yss' = map (zipWith (*) ms) yss
 
+-- temporary functions that will be in next lib release
 
--- data Histogram n a = forall s. Histogram
---   { histogramData  :: s
---   , histogramFold  :: Fold s a
---   , histogramLowerLimit :: Maybe n
---   , histogramUpperLimit :: Maybe n
---   }
---
--- mkHistogramOf :: Fold s n -> s -> BarPlot n
--- mkHistogramOf f as =
+_reflectionXY :: (Additive v, R2 v, Num n) => Transformation v n
+_reflectionXY = fromSymmetric $ (_xy %~ view _yx) <-> (_xy %~ view _yx)
 
+_reflectXY :: (InSpace v n t, R2 v, Transformable t) => t -> t
+_reflectXY = transform _reflectionXY
 
