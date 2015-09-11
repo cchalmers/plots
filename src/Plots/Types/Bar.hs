@@ -1,13 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE ViewPatterns          #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TupleSections         #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE DeriveFunctor         #-}
 
 module Plots.Types.Bar
   (
@@ -23,23 +23,24 @@ module Plots.Types.Bar
   , mkMultiAdjacent
   , mkMultiStacked
   , mkMultiStackedLimit
+  , mkGrouped
 
   -- * Internal bar type
   , Bar (..)
 
   ) where
 
-import Control.Lens     hiding (transform, ( # ), none, at)
-import Data.Typeable
+import           Control.Lens            hiding (at, none, transform, ( # ))
+import           Data.Typeable
 
-import Plots.Themes
-import Plots.Types
+import           Plots.Themes
+import           Plots.Types
 
-import qualified Data.List as List
-import Diagrams.Core.Transform (fromSymmetric)
-import Linear.V2 (_yx)
+import qualified Data.List               as List
+import           Diagrams.Core.Transform (fromSymmetric)
+import           Linear.V2               (_yx)
 
-import Diagrams.Prelude
+import           Diagrams.Prelude
 
 -- Single bar ----------------------------------------------------------
 
@@ -189,6 +190,28 @@ mkMultiStackedLimit yM bo yss = mkMultiStacked bo yss'
     -- factor.
     yss' = map (zipWith (*) ms) yss
 
+-- | Make bars that are grouped together. Each group of bars is treated
+--   as a single bar when using the 'BarPlotsOpts'. There is an addition
+--   parameter to adjust the width of each individual bar.
+mkGrouped
+  :: Fractional n
+  => n -- ^ multiplier for each single bar width, so 1 the bars in a group are touching.
+  -> BarPlotOpts n
+  -> [[n]]
+  -> [BarPlot n]
+mkGrouped m bo xs =
+  flip imap xs $ \i ns ->
+    mkUniformBars
+      bo { barOptsStart = start' + width' * fromIntegral i
+         , barOptsWidth = width' * m
+         }
+      (map (0,) ns)
+  where
+    n = fromIntegral $ length xs
+    -- start' is such that middle of the middle bar is now at
+    -- barOptsStart bo
+    start' = barOptsStart bo - (n - 1) * width' / 2
+    width' = barOptsWidth bo / n
 -- temporary functions that will be in next lib release
 
 _reflectionXY :: (Additive v, R2 v, Num n) => Transformation v n
