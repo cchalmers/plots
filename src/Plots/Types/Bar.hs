@@ -88,7 +88,7 @@ type instance N (BarPlot n) = n
 
 instance OrderedField n => Enveloped (BarPlot n) where
   getEnvelope BarPlot {..} =
-    orient bOrient id _reflectXY . getEnvelope . (id :: Path v n -> Path v n) $
+    orient bOrient _reflectXY id . getEnvelope . (id :: Path v n -> Path v n) $
       foldMap drawBar bData
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
@@ -96,12 +96,12 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   renderPlotable s BarPlot {..} pp =
     foldMap drawBar bData
       # applyBarStyle pp
-      # transform (view specTrans s <> orient bOrient mempty _reflectionXY)
+      # transform (view specTrans s <> orient bOrient _reflectionXY mempty)
 
   defLegendPic BarPlot {..} pp
     = centerXY
     . applyBarStyle pp'
-    . orient bOrient id _reflectXY
+    . orient bOrient _reflectXY id
     $ d
     where
       -- Multiple bars get two bars next to each other for the legend. A
