@@ -171,7 +171,7 @@ mkMultiStacked bo = snd . List.mapAccumR f (repeat 0)
     -- y0s are the base values for this set of bars, these accumulate
     -- for each set of data
     f y0s ys = (y1s, mkUniformBars bo (zip y0s y1s))
-      where y1s = zipWith (+) y0s ys
+      where y1s = liftU2 (+) y0s ys
 
 -- | Similar to 'mkMultiStacked' but stack has the same height.
 mkMultiStackedLimit
