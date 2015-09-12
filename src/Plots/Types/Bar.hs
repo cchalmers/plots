@@ -16,7 +16,10 @@ module Plots.Types.Bar
 
     -- ** Options
 
-  , BarPlotOpts (..)
+  , BarOptions
+  , barWidth
+  , barSpacing
+  , barStart
 
     -- Low level constructors
   , mkUniformBars
@@ -26,7 +29,7 @@ module Plots.Types.Bar
   , mkGrouped
 
   -- * Internal bar type
-  , Bar (..)
+  , ABar (..)
 
   ) where
 
@@ -52,10 +55,10 @@ import           Diagrams.Prelude
 --
 --   for 'Horizontal' bars, flipped for 'Vertical'. This is a low level
 --   representation of a bar and is not intended to be used directly.
-data Bar n = Bar
-  { barPos    :: n     -- ^ distance from origin along orientation
-  , barBounds :: (n,n) -- ^ start and finish of data
-  , barWidth  :: n     -- ^ width of bar
+data ABar n = ABar
+  { aBarPos    :: n     -- ^ distance from origin along orientation
+  , aBarBounds :: (n,n) -- ^ start and finish of data
+  , aBarWidth  :: n     -- ^ width of bar
   } deriving (Show, Typeable, Functor)
 
 -- | Construct a rectangle of size v with the bottom centre at point p.
@@ -65,10 +68,10 @@ rectB p (V2 x y) =
 
 -- | Draw a single vertical bar. Use 'reflectXY' to make it a horizontal
 --   bar.
-drawBar :: (InSpace V2 n t, TrailLike t) => Bar n -> t
-drawBar Bar {..}   =
-  rectB (mkP2 barPos   (uncurry min barBounds))
-        (V2   barWidth (abs $ uncurry (-) barBounds))
+drawBar :: (InSpace V2 n t, TrailLike t) => ABar n -> t
+drawBar ABar {..}   =
+  rectB (mkP2 aBarPos   (uncurry min aBarBounds))
+        (V2   aBarWidth (abs $ uncurry (-) aBarBounds))
 
 -- Multiple bars -------------------------------------------------------
 
@@ -80,7 +83,7 @@ drawBar Bar {..}   =
 --   A 'BarPlot' is not intended to be constructed directly, instead use
 --   one of the helper functions.
 data BarPlot n = BarPlot
-  { bData   :: [Bar n]
+  { bData   :: [ABar n]
   , bOrient :: Orientation
   } deriving (Typeable, Functor)
 
@@ -115,59 +118,91 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
 
 -- Options -------------------------------------------------------------
 
--- The low level versions aren't constrained by these options, but
--- having these options is useful for the higher level functions.
-
--- | Options for simple bar plots.
-data BarPlotOpts n = BarPlotOpts
-  { barOrientation :: Orientation
-  , barOptsWidth   :: n
-  , barSpacing     :: n
-  , barOptsStart   :: n
+-- | Options for simple bar plots. The following lenses can be used to
+-- adjust 'BarOptions':
+--
+--   * @'orientation' : 'Orientation'@ - direction of bars
+--   * @'barWidth'    : n@ - width of each bar
+--   * @'barSpacing'  : n@ - spacing of bars
+--   * @'barStart'    : n@ - starting position for bars
+data BarOptions n = BarOptions
+  { barOptsOrientation :: Orientation
+  , barOptsWidth       :: n
+  , barOptsSpacing     :: n
+  , barOptsStart       :: n
     -- Extra options for grouped bars?
   }
 
-instance Fractional n => Default (BarPlotOpts n) where
-  def = BarPlotOpts
-    { barOrientation = Vertical
-    , barOptsWidth   = 0.8
-    , barSpacing     = 1
-    , barOptsStart   = 1
+type instance N (BarOptions n) = n
+
+instance Fractional n => Default (BarOptions n) where
+  def = BarOptions
+    { barOptsOrientation = Vertical
+    , barOptsWidth       = 0.8
+    , barOptsSpacing     = 1
+    , barOptsStart       = 1
     }
 
-instance HasOrientation (BarPlotOpts n) where
-  orientation = lens barOrientation (\opts o -> opts {barOrientation = o})
+instance HasOrientation (BarOptions n) where
+  orientation = lens barOptsOrientation (\opts o -> opts {barOptsOrientation = o})
+
+-- | Class of things that can change the 'BarOptions'
+class HasOrientation a => HasBarOptions a where
+  -- | Options for how the bars of a bar plot should be drawn.
+  barOptions :: Lens' a (BarOptions (N a))
+
+instance HasBarOptions (BarOptions n) where
+  barOptions = id
+
+-- | The width bar for single / stacked bars or the width of a group
+--   for grouped bar plot.
+--
+--   Default is @0.8@
+barWidth :: HasBarOptions a => Lens' a (N a)
+barWidth = barOptions . lens barOptsWidth (\bo w -> bo {barOptsWidth = w})
+
+-- | The spacing between each bar or group of bars.
+--
+--   Default is @1@
+barSpacing :: HasBarOptions a => Lens' a (N a)
+barSpacing = barOptions . lens barOptsSpacing (\bo w -> bo {barOptsSpacing = w})
+
+-- | The distance from the axis to centre of the first bar.
+--
+--   Default is @1@
+barStart :: HasBarOptions a => Lens' a (N a)
+barStart = barOptions . lens barOptsStart (\bo x -> bo {barOptsStart = x})
 
 -- Helper functions ----------------------------------------------------
 
 -- | Create equidistant bars using the values.
 mkUniformBars
   :: Num n
-  => BarPlotOpts n
+  => BarOptions n
   -> [(n,n)] -- ^ values
   -> BarPlot n
-mkUniformBars BarPlotOpts {..} ys
-  = BarPlot (imap mkBar ys) barOrientation
-  where mkBar i y = Bar (barOptsStart + fromIntegral i * barSpacing) y barOptsWidth
+mkUniformBars BarOptions {..} ys
+  = BarPlot (imap mkBar ys) barOptsOrientation
+  where mkBar i y = ABar (barOptsStart + fromIntegral i * barOptsSpacing) y barOptsWidth
 
 -- | Create uniform bars from groups of data, placing one group after
 --   the other.
 mkMultiAdjacent
   :: Num n
-  => BarPlotOpts n
+  => BarOptions n
   -> [[(n,n)]] -- values
   -> [BarPlot n]
 mkMultiAdjacent bo = snd . foldr f (barOptsStart bo, [])
   where
     f d (x, bs) = (x + dx, mkUniformBars bo {barOptsStart = x} d : bs)
-      where dx = barSpacing bo * fromIntegral (length d)
+      where dx = barOptsSpacing bo * fromIntegral (length d)
 
 -- | Create uniform bars from groups of data, placing one on top of the
 --   other. The first list will be the same as @mkUniformBars opts (map
 --   (0,) ys)@, subsequent lists will be placed on top.
 mkMultiStacked
   :: Num n
-  => BarPlotOpts n
+  => BarOptions n
   -> [[n]] -- values
   -> [BarPlot n]
 mkMultiStacked bo = snd . List.mapAccumR f (repeat 0)
@@ -182,7 +217,7 @@ mkMultiStacked bo = snd . List.mapAccumR f (repeat 0)
 mkMultiStackedEqual
   :: Fractional n
   => n     -- ^ value each bar reaches
-  -> BarPlotOpts n
+  -> BarOptions n
   -> [[n]] -- ^ values
   -> [BarPlot n]
 mkMultiStackedEqual yM bo yss = mkMultiStacked bo yss'
@@ -200,7 +235,7 @@ mkMultiStackedEqual yM bo yss = mkMultiStacked bo yss'
 mkGrouped
   :: Fractional n
   => n -- ^ multiplier for each single bar width, so 1 the bars in a group are touching.
-  -> BarPlotOpts n
+  -> BarOptions n
   -> [[n]]
   -> [BarPlot n]
 mkGrouped m bo xs =
