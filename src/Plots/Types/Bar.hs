@@ -174,8 +174,9 @@ mkMultiStacked bo = snd . List.mapAccumR f (repeat 0)
   where
     -- y0s are the base values for this set of bars, these accumulate
     -- for each set of data
-    f y0s ys = (y1s, mkUniformBars bo (zip y0s y1s))
-      where y1s = liftU2 (+) y0s ys
+    f y0s ys = (y1s, mkUniformBars bo ds)
+      where y1s  = liftU2 (+) y0s ys
+            ds   = zipWith (\y0 y -> (y0, y0 + y)) y0s ys
 
 -- | Similar to 'mkMultiStacked' but stack has the same height.
 mkMultiStackedEqual
@@ -215,6 +216,7 @@ mkGrouped m bo xs =
     -- barOptsStart bo
     start' = barOptsStart bo - (n - 1) * width' / 2
     width' = barOptsWidth bo / n
+
 -- temporary functions that will be in next lib release
 
 _reflectionXY :: (Additive v, R2 v, Num n) => Transformation v n
