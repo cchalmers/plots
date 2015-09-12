@@ -43,7 +43,10 @@ module Plots.Types
 
   -- * Orientation
   , Orientation (..)
+  , HasOrientation (..)
   , orient
+  , horizontal
+  , vertical
 
   -- * Legend
   , mkLegendEntry
@@ -84,12 +87,13 @@ module Plots.Types
   -- , appPlot'
   ) where
 
+import           Data.Bool
 import           Data.Functor.Rep
 import           Data.Monoid.Recommend
 import           Data.Orphans               ()
 import           Data.Typeable
 import           Diagrams.BoundingBox
-import           Diagrams.Prelude           as D hiding (view)
+import           Diagrams.Prelude           as D
 
 #if __GLASGOW_HASKELL__ < 710
 import           Data.Foldable           (Foldable)
@@ -196,9 +200,27 @@ data Orientation = Horizontal | Vertical
   deriving (Show, Eq, Ord, Typeable)
 
 -- Take two functions for each outcome for an orientation.
-orient :: Orientation -> a -> a -> a
-orient Horizontal h _ = h
-orient Vertical   _ v = v
+orient :: HasOrientation o => o -> a -> a -> a
+orient o h v =
+  case view orientation o of
+    Horizontal -> h
+    Vertical   -> v
+
+-- | Class of things that have an orientation.
+class HasOrientation a where
+  -- | Lens onto the orientation of an object.
+  orientation :: Lens' a Orientation
+
+instance HasOrientation Orientation where
+  orientation = id
+
+-- | Lens onto whether an object's orientation is horizontal.
+horizontal :: HasOrientation a => Lens' a Bool
+horizontal = orientation . iso (==Horizontal) (bool Vertical Horizontal)
+
+-- | Lens onto whether an object's orientation is vertical.
+vertical :: HasOrientation a => Lens' a Bool
+vertical = horizontal . involuted not
 
 -- Legends
 

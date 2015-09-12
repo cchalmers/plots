@@ -156,6 +156,9 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
 instance TypeableFloat n => HasStyle (Legend b n) where
   applyStyle sty = over legendStyle (applyStyle sty)
 
+instance HasOrientation (Legend b n) where
+  orientation = legendOrientation
+
 drawLegend :: (TypeableFloat n, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
            => BoundingBox V2 n
            -> Legend b n

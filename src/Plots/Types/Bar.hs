@@ -22,7 +22,7 @@ module Plots.Types.Bar
   , mkUniformBars
   , mkMultiAdjacent
   , mkMultiStacked
-  , mkMultiStackedLimit
+  , mkMultiStackedEqual
   , mkGrouped
 
   -- * Internal bar type
@@ -135,6 +135,9 @@ instance Fractional n => Default (BarPlotOpts n) where
     , barOptsStart   = 1
     }
 
+instance HasOrientation (BarPlotOpts n) where
+  orientation = lens barOrientation (\opts o -> opts {barOrientation = o})
+
 -- Helper functions ----------------------------------------------------
 
 -- | Create equidistant bars using the values.
@@ -175,13 +178,13 @@ mkMultiStacked bo = snd . List.mapAccumR f (repeat 0)
       where y1s = liftU2 (+) y0s ys
 
 -- | Similar to 'mkMultiStacked' but stack has the same height.
-mkMultiStackedLimit
+mkMultiStackedEqual
   :: Fractional n
   => n     -- ^ value each bar reaches
   -> BarPlotOpts n
   -> [[n]] -- ^ values
   -> [BarPlot n]
-mkMultiStackedLimit yM bo yss = mkMultiStacked bo yss'
+mkMultiStackedEqual yM bo yss = mkMultiStacked bo yss'
   where
     -- Multiplier for each bar to reach the desired height.
     ms = map (\ys -> yM / sum ys) $ List.transpose yss
