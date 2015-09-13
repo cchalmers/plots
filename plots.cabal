@@ -34,16 +34,17 @@ library
     Plots.Name
     Plots.Themes
     Plots.Types
-    Plots.Types.Histogram
-    Plots.Types.Line
-    Plots.Types.Function
-    Plots.Types.Scatter
-    Plots.Types.Ribbon
+    Plots.Types.Bar
     Plots.Types.Boxplot
     Plots.Types.Density
+    Plots.Types.Function
+    Plots.Types.Histogram
+    Plots.Types.Line
     Plots.Types.Others
-    Plots.Types.Points
     Plots.Types.Pie
+    Plots.Types.Points
+    Plots.Types.Ribbon
+    Plots.Types.Scatter
     Plots.Types.Smooth
     Plots.Types.Text
     Plots.Utils
