@@ -47,6 +47,12 @@ instance (Typeable b,
 
   mainRender opts = mainRender opts . renderAxis
 
+instance ToResult (Axis b v n) where
+  type Args (Axis b v n) = ()
+  type ResultOf (Axis b v n) = Axis b v n
+
+  toResult d _ = d
+
 -- | 'mainWith' specialised to a 2D Axis.
 r2AxisMain :: (Parseable (MainOpts (QDiagram b V2 Double Any)), Mainable (Axis b V2 Double)) => Axis b V2 Double -> IO ()
 r2AxisMain = mainWith
