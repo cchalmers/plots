@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE ViewPatterns          #-}
 {-# LANGUAGE DeriveFunctor         #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -14,30 +15,56 @@ module Plots.Types.Bar
     -- * BarPlot
     BarPlot (..)
 
+    -- * Helpers
+  , bars
+  , bars'
+  , barRunning
+  , barRunning'
+  , barStacked
+  , barStacked'
+  , barGrouped
+  , barGrouped'
+  , barStackedEqual
+  , barStackedEqual'
+
+    -- * Bar state
+  , labelBars
+
+    -- ** Multi-bar plots
+  , modifyBars
+
     -- ** Options
 
   , BarOptions
   , barWidth
   , barSpacing
   , barStart
+  , barIndividualWidth
 
-    -- Low level constructors
+    -- * Low level constructors
   , mkUniformBars
-  , mkMultiAdjacent
+  , mkMultiRunning
   , mkMultiStacked
   , mkMultiStackedEqual
   , mkGrouped
+  , barAxisLabels
 
-  -- * Internal bar type
+  -- * Internals
   , ABar (..)
+  , HasLabels (..)
+  , HasBarOptions (..)
 
   ) where
 
 import           Control.Lens            hiding (at, none, transform, ( # ))
+import           Control.Monad.State
 import           Data.Typeable
+import qualified Data.Foldable as F
 
 import           Plots.Themes
 import           Plots.Types
+import Plots.Axis
+import Plots.API
 
 import qualified Data.List               as List
 import           Diagrams.Core.Transform (fromSymmetric)
@@ -130,6 +157,7 @@ data BarOptions n = BarOptions
   , barOptsWidth       :: n
   , barOptsSpacing     :: n
   , barOptsStart       :: n
+  , barOptsIndividualWidth :: Rational
     -- Extra options for grouped bars?
   }
 
@@ -141,6 +169,7 @@ instance Fractional n => Default (BarOptions n) where
     , barOptsWidth       = 0.8
     , barOptsSpacing     = 1
     , barOptsStart       = 1
+    , barOptsIndividualWidth = 1
     }
 
 instance HasOrientation (BarOptions n) where
@@ -173,6 +202,12 @@ barSpacing = barOptions . lens barOptsSpacing (\bo w -> bo {barOptsSpacing = w})
 barStart :: HasBarOptions a => Lens' a (N a)
 barStart = barOptions . lens barOptsStart (\bo x -> bo {barOptsStart = x})
 
+-- | Width multiplier for individual bars in group bar plots.
+barIndividualWidth :: HasBarOptions a => Lens' a Rational
+barIndividualWidth = barOptions
+                   . lens barOptsIndividualWidth
+                          (\bo x -> bo {barOptsIndividualWidth = x})
+
 -- Helper functions ----------------------------------------------------
 
 -- | Create equidistant bars using the values.
@@ -187,12 +222,12 @@ mkUniformBars BarOptions {..} ys
 
 -- | Create uniform bars from groups of data, placing one group after
 --   the other.
-mkMultiAdjacent
+mkMultiRunning
   :: Num n
   => BarOptions n
   -> [[(n,n)]] -- values
   -> [BarPlot n]
-mkMultiAdjacent bo = snd . foldr f (barOptsStart bo, [])
+mkMultiRunning bo = snd . foldr f (barOptsStart bo, [])
   where
     f d (x, bs) = (x + dx, mkUniformBars bo {barOptsStart = x} d : bs)
       where dx = barOptsSpacing bo * fromIntegral (length d)
@@ -234,15 +269,14 @@ mkMultiStackedEqual yM bo yss = mkMultiStacked bo yss'
 --   parameter to adjust the width of each individual bar.
 mkGrouped
   :: Fractional n
-  => n -- ^ multiplier for each single bar width, so 1 the bars in a group are touching.
-  -> BarOptions n
+  => BarOptions n
   -> [[n]]
   -> [BarPlot n]
-mkGrouped m bo xs =
+mkGrouped bo xs =
   flip imap xs $ \i ns ->
     mkUniformBars
       bo { barOptsStart = start' + width' * fromIntegral i
-         , barOptsWidth = width' * m
+         , barOptsWidth = width' * fromRational (barOptsIndividualWidth bo)
          }
       (map (0,) ns)
   where
@@ -259,4 +293,276 @@ _reflectionXY = fromSymmetric $ (_xy %~ view _yx) <-> (_xy %~ view _yx)
 
 _reflectXY :: (InSpace v n t, R2 v, Transformable t) => t -> t
 _reflectXY = transform _reflectionXY
+
+
+----------------------------------------------------------------------------------
+-- State API
+----------------------------------------------------------------------------------
+
+-- This is an experimental api to help with typical bar charts. The
+-- implementation is quite complicated and probably over engineered. In
+-- the future more options like values on top bars / error bars etc
+-- could be added to this setup.
+
+-- Bar state -----------------------------------------------------------
+
+data MultiBarState b n a = MultiBarState
+  { mbsOptions :: BarOptions n
+      -- options used to draw the bars
+  , mbsData    :: [(a, Endo (PlotProperties b V2 n))]
+      -- the data along with an adjustment to the plot properties
+  , mbsLabels  :: [String]
+      -- labels to be placed at the bottom of each bar
+  }
+
+type instance N (MultiBarState b n a) = n
+
+instance HasOrientation (MultiBarState b n a) where
+  orientation = barOptions . orientation
+
+instance HasBarOptions (MultiBarState b n a) where
+  barOptions = lens mbsOptions (\mbs o -> mbs {mbsOptions = o})
+
+class HasLabels a where
+  labels :: Lens' a [String]
+
+instance HasLabels (MultiBarState b n a) where
+  labels = lens mbsLabels (\mbs ls -> mbs {mbsLabels = ls})
+
+-- | Labels to use for each bar (or group of bars) along the axis.
+labelBars :: HasLabels a => [String] -> State a ()
+labelBars xs = labels .= xs
+
+-- | Given the data for the bar, modify the properties for the bar that
+--   uses that data.
+modifyBars :: (a -> State (PlotProperties b V2 n) ()) -> State (MultiBarState b n a) ()
+modifyBars f =
+  _mbsData . mapped %= \(a, endo) -> (a, endo <> Endo (execState (f a)))
+    where
+      _mbsData = lens mbsData (\bs d -> bs {mbsData = d})
+
+-- Compiling bar charts ------------------------------------------------
+
+data BarState b n = BarState
+  { bsOptions :: BarOptions n
+  , bsEndo    :: Endo (PlotProperties b V2 n)
+  , bsLabels  :: [String]
+  }
+
+type instance N (BarState b n) = n
+
+instance HasOrientation (BarState b n) where
+  orientation = barOptions . orientation
+
+instance HasBarOptions (BarState b n) where
+  barOptions = lens bsOptions (\bs o -> bs {bsOptions = o})
+
+instance HasLabels (BarState b n) where
+  labels = lens bsLabels (\bs ls -> bs {bsLabels = ls})
+
+-- | Bar plot for bars starting at 0.
+bars
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      TypeableFloat n)
+  => f n
+  -> m ()
+bars ns = bars' ns (return ())
+
+-- | Bar plot for bars starting at 0 with the ability to change the bar
+--   options.
+bars'
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      TypeableFloat n)
+  => f n
+  -> State (BarState b n) ()
+  -> m ()
+bars' (F.toList -> ns) = barsRanged' (map (0,) ns)
+
+-- | Bar plot for ranged bars with the ability to change the bar
+--   options.
+barsRanged'
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      TypeableFloat n)
+  => f (n,n)
+  -> State (BarState b n) ()
+  -> m ()
+barsRanged' (F.toList -> ns) st = do
+  addPlotable' b $ plotProperties %= appEndo (bsEndo bs)
+  barAxisLabels (bs ^. barOptions) (bsLabels bs)
+    where
+      b = mkUniformBars (bs ^. barOptions) ns
+      bs  = execState st bs0
+      bs0 = BarState def mempty []
+
+-- | Generic function used to build other multi bar functions.
+barMultiHelper
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => (BarOptions n -> [[n]] -> [BarPlot n]) -- ^ low level bar plot function
+  -> f a -- ^ foldable container over custom data @a@
+  -> (a -> g n) -- ^ function to extract data from @a@
+  -> State (MultiBarState b n a) () -- ^ MultiBarState modifier
+  -> m ()
+barMultiHelper barF (F.toList -> as0) f st = do
+  F.forM_ propertiedBars $ \(b,endo) ->
+    addPlotable' b $ plotProperties %= appEndo endo
+
+  barAxisLabels (bs ^. barOptions) (bs ^. labels)
+  where
+
+    -- bars
+    propertiedBars = zip barPlots endos
+    barPlots = barF (bs ^. barOptions) $ map (F.toList . f) as
+
+    -- data and modifiers
+    (as, endos) = unzip $ mbsData bs
+
+    -- bar state
+    bs  = execState st bs0
+    bs0 = MultiBarState
+      { mbsOptions = def
+      , mbsData    = map (\a -> (a, mempty)) as0
+      , mbsLabels  = []
+      }
+
+-- | Place labels under the centre of each bar using the 'BarOptions'.
+barAxisLabels
+  :: (MonadState (Axis b V2 n) m, Fractional n)
+  => BarOptions n -> [String] -> m ()
+barAxisLabels bo ls =
+  unless (null ls) $ do
+    axisTicks . orient bo _y _x . majorTicksFun . mapped .= xs
+    axisTickLabels . orient bo _y _x . tickLabelFun .= \_ _ -> zip xs ls
+  where
+    xs = map ((+ view barStart bo) . (* view barSpacing bo) . fromIntegral)
+             [0 .. length ls - 1]
+
+-- Grouped -------------------------------------------------------------
+
+-- | Make a grouped bar plot from groups of lists of values.
+barGrouped
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => f (g n)
+  -> m ()
+barGrouped nss = barGrouped' nss id (return ())
+
+-- | Make a grouped bar plot from a set of data, a way to extract the
+--   values from the data and a state modifier for the bars.
+barGrouped'
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => f a
+  -> (a -> g n)
+  -> State (MultiBarState b n a) ()
+  -> m ()
+barGrouped' = barMultiHelper mkGrouped
+
+-- Running -------------------------------------------------------------
+
+-- | Make a grouped bar plot from groups of lists of values.
+barRunning
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => f (g n)
+  -> m ()
+barRunning nss = barRunning' nss id (return ())
+
+-- | Make a grouped bar plot from a set of data, a way to extract the
+--   values from the data and a state modifier for the bars.
+barRunning'
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => f a
+  -> (a -> g n)
+  -> State (MultiBarState b n a) ()
+  -> m ()
+barRunning' = barMultiHelper (\bo nss -> mkMultiRunning bo (map (map (0,)) nss))
+
+-- Stacked -------------------------------------------------------------
+
+-- | Make a grouped bar plot from groups of lists of values.
+barStacked
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => f (g n)
+  -> m ()
+barStacked nss = barStacked' nss id (return ())
+
+-- | Make a grouped bar plot from a set of data, a way to extract the
+--   values from the data and a state modifier for the bars.
+barStacked'
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => f a
+  -> (a -> g n)
+  -> State (MultiBarState b n a) ()
+  -> m ()
+barStacked' = barMultiHelper mkMultiStacked
+
+-- | Make a grouped bar plot from groups of lists of values.
+barStackedEqual
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => n
+  -> f (g n)
+  -> m ()
+barStackedEqual l nss = barStackedEqual' l nss id (return ())
+
+-- | Make a grouped bar plot from a set of data, a way to extract the
+--   values from the data and a state modifier for the bars.
+barStackedEqual'
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      Foldable g,
+      TypeableFloat n)
+  => n
+  -> f a
+  -> (a -> g n)
+  -> State (MultiBarState b n a) ()
+  -> m ()
+barStackedEqual' l = barMultiHelper (mkMultiStackedEqual l)
 
