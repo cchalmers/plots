@@ -519,6 +519,9 @@ instance BaseV p ~ V p => HasPlotStyle (PropertiedPlot p b) b where
 instance Qualifiable (PropertiedPlot p b) where
   n .>> p = over plotName (n .>>) p
 
+instance HasOrientation p => HasOrientation (PropertiedPlot p b) where
+  orientation = _pp . orientation
+
 instance (Metric v, OrderedField n) => Enveloped (ModifiedPlot b v n) where
   getEnvelope (ModifiedPlot p _) = getEnvelope p
 
