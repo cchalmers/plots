@@ -91,7 +91,7 @@ import qualified Data.Foldable as F
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude                hiding (view)
 
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Types
 import           Plots.API
 

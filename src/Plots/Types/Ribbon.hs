@@ -88,7 +88,7 @@ import           Data.Function
 import           Diagrams.Prelude
 import           Diagrams.Coordinates.Isomorphic
 
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Types
 import           Plots.API
 

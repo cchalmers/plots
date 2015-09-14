@@ -37,7 +37,7 @@ import           Diagrams.TwoD.Text
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude hiding (view)
 
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Types
 
 data Position

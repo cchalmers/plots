@@ -19,7 +19,7 @@ import Diagrams.TwoD.Text
 import Plots.Types (Orientation (..), orient)
 import Plots.Axis.Ticks
 import Plots.Axis.Labels
-import Plots.Themes
+import Plots.Style
 import Plots.Legend
 
 data ColourBarOpts b n = ColourBarOpts

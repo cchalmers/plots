@@ -51,10 +51,6 @@ module Plots.API
     -- * Legend
   , addLegendEntry
 
-    --  Themes
-  -- , corperateTheme
-  -- , blackAndWhiteTheme
-
     -- * Diagrams essentials
   , (#)
   , Diagram, V2 (..), V3 (..)
@@ -145,12 +141,12 @@ module Plots.API
   , centerAxisTicks
   , insideAxisTicks
 
-    -- ** Axis theme
+    -- ** Axis style
   , PlotStyle
   , plotColor
   , plotMarker
   , axisStyle
-  , module Plots.Themes
+  , module Plots.Style
 
     -- *** Colour bar
   , ColourBarOpts
@@ -180,7 +176,7 @@ import           Plots.Axis.Ticks
 import           Plots.Axis.ColourBar
 
 import           Plots.Types
-import           Plots.Themes
+import           Plots.Style
 
 -- import Plots.Types.Bar
 
@@ -572,7 +568,7 @@ insideAxisTicks =
 -- $style
 -- Styles are a key part of a plot. It defines properties like colours
 -- and markers for each plot. The default way a plot gets it's style is
--- from the axis theme. This is a list of plot styles that is zipped
+-- from the axis style. This is a list of plot styles that is zipped
 -- with the plots when the axis is rendered.
 
 ------------------------------------------------------------------------

@@ -11,25 +11,25 @@
 {-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Plots.Themes
+-- Module      :  Plots.Style
 -- Copyright   :  (C) 2015 Christopher Chalmers
 -- License     :  BSD-style (see the file LICENSE)
 -- Maintainer  :  Christopher Chalmers
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- This module defines the theme type along with different colour schemes.
--- Themes are used to provide default colours and shapes for the plots
--- of an axis.
+-- This module defines the 'AxisStyle' type along with different colour
+-- schemes. 'AxisStyle's are used to provide default colours and shapes
+-- for the plots of an axis.
 --
 ----------------------------------------------------------------------------
 
-module Plots.Themes
-  ( -- * Theme
+module Plots.Style
+  ( -- * The axis style
     AxisStyle
   , axisStyles
 
-    -- ** Predefined themes
+    -- ** Predefined styles
   , fadedColours
   , vividColours
   , blackAndWhite

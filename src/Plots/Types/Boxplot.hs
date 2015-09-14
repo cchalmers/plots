@@ -44,7 +44,7 @@ import           Data.List
 import           Diagrams.Prelude
 import           Diagrams.Coordinates.Isomorphic
 
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Types
 import           Plots.Axis
 import           Plots.API

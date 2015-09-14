@@ -44,7 +44,7 @@ import           Data.Typeable
 import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Types
 import           Plots.API
 import           Control.Monad.State.Lazy

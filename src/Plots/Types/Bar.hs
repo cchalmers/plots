@@ -61,7 +61,7 @@ import           Control.Monad.State
 import           Data.Typeable
 import qualified Data.Foldable as F
 
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Types
 import Plots.Axis
 import Plots.API

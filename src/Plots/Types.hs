@@ -102,7 +102,7 @@ import           Data.Foldable           (Foldable)
 
 import           Diagrams.Coordinates.Polar
 import           Linear
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Utils
 
 -- | This family is used so that we can say (Axis Polar) but use V2 for the
@@ -288,7 +288,7 @@ class HasPlotProperties t b | t -> b where
   clipPlot = plotProperties . lens _clipPlot (\g a -> g { _clipPlot = a})
   {-# INLINE clipPlot #-}
 
-  -- | The theme entry to be used for the current plot.
+  -- | The plot style to be used for the current plot.
   plotPropertiesStyle :: Lens' t (PlotStyle b (V t) (N t))
   plotPropertiesStyle = plotProperties . lens _plotStyle (\g a -> g { _plotStyle = a})
   {-# INLINE plotPropertiesStyle #-}

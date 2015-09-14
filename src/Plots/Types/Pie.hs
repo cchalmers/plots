@@ -49,7 +49,7 @@ import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Coordinates.Polar
 import           Diagrams.Prelude hiding (r2)
 
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Types
 import           Plots.API
 

@@ -31,7 +31,7 @@ import qualified Data.Foldable as F
 
 import           Diagrams.Prelude
 
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Utils
 import           Plots.Types
 
@@ -63,7 +63,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         else mempty
     where
       drawgridh =  [fromVertices [p2 (x1, 0.5), p2 (x1, ymax)] #stroke | x1 <- [0.5, 1.5 .. ymax]]
-      drawgridv =  [fromVertices [p2 (0.5, y1), p2 (xmax, y1)] #stroke | y1 <- [0.5, 1.5 .. ymax]] 
+      drawgridv =  [fromVertices [p2 (0.5, y1), p2 (xmax, y1)] #stroke | y1 <- [0.5, 1.5 .. ymax]]
       ymax = (length hmata) + 0.5
       xmax = (max [length x | x <- hData]) + 0.5
       t  = s ^. specTrans
@@ -85,7 +85,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       = square 5 # applyBarStyle pp
 
 createColour (sRGB24 x y z,sRGB24 a b c) -1 = none
-createColour (sRGB24 x y z,sRGB24 a b c) n  = sRGB24 (x+(n*(a-x))) (y+(n*(b-y))) (z+(n*(c-z)))  
+createColour (sRGB24 x y z,sRGB24 a b c) n  = sRGB24 (x+(n*(a-x))) (y+(n*(b-y))) (z+(n*(c-z)))
 
 
 mkHeatMap :: (Num n, GV.Vector v a)

@@ -52,7 +52,7 @@ import               Data.Function
 import               Diagrams.Coordinates.Isomorphic
 import               Diagrams.Prelude
 
-import               Plots.Themes
+import               Plots.Style
 import               Plots.Types
 import               Plots.Axis
 import               Plots.API

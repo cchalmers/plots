@@ -43,7 +43,7 @@ import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
 import           Plots.Legend
-import           Plots.Themes
+import           Plots.Style
 import           Plots.Types
 import           Plots.Utils
 

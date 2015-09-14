@@ -19,9 +19,9 @@ module Plots
     --   labels, legends, diagram essentials and so on.
     module Plots.API
 
-    -- | Definitions of theme, plots style, common themes, marker
-    --   shapes, colour maps and sample maps.
-  , module Plots.Themes
+    -- | 'AxisStyle's are used to provide default colours and shapes
+    -- for the plots of an axis.
+  , module Plots.Style
 
     -- | Generate a command line tool to make a plot.
   , module Plots.CmdLine
@@ -132,7 +132,7 @@ import           Plots.Axis.Ticks
 import           Plots.Axis.ColourBar
 
 import           Plots.Types
-import           Plots.Themes
+import           Plots.Style
 import           Plots.API
 import           Plots.CmdLine
 
