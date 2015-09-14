@@ -44,12 +44,12 @@ import           Diagrams.Prelude
 type HasIndexedBasis v = (HasBasis v, TraversableWithIndex (E v) v)
 
 -- | Umbrella class giving everything needed for working in the space. This is
---   basically a @V*@ from "linear".
+--   basically 'V2' or 'V3' from "linear".
 type Euclidean v = (HasLinearMap v, HasIndexedBasis v, Metric v)
 
 -- vector like ---------------------------------------------------------
 
--- | Provides an 'Iso\'' between @a@ and @v n@. This is normally used to
+-- | Provides an 'Iso'' between @a@ and @v n@. This is normally used to
 --   convert between the data type you're already using, @a@, and diagram's
 --   native form, @v n@.
 class (Euclidean v, Typeable v) => VectorLike v n a | a -> v n where
@@ -94,11 +94,11 @@ instance (n ~ m, m ~ o) => VectorLike V3 n (n, m, o) where
 
 -- point like ----------------------------------------------------------
 
--- | Provides an 'Iso\'' between @a@ and @Point v n@. This is normally used to
+-- | Provides an 'Iso'' between @a@ and @'Point' v n@. This is normally used to
 --   convert between the data type you're already using, @a@, and diagram's
---   native form, @Point v n@.
+--   native form, @'Point' v n@.
 class (Euclidean v, Typeable v) => PointLike v n a | a -> v n where
-  -- | Isomorphism from @Point v n@ to something 'PointLike' @a@.
+  -- | Isomorphism from @'Point' v n@ to something 'PointLike' @a@.
   --
   -- >>> mkP2 3 5 ^. pointLike :: (Int, Int)
   -- (3,5)

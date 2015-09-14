@@ -116,7 +116,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         # mapLoc closeLine
         # stroke
         # lw none
-        # applyBarStyle pp
+        # applyAreaStyle pp
         # transform t
 
    <> if sLine
@@ -132,7 +132,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       ls = s ^. specScale
 
   defLegendPic GRibbonPlot {..} pp
-      = square 5 # applyBarStyle pp
+      = square 5 # applyAreaStyle pp
 
 _RibbonPlot :: (Plotable (RibbonPlot v n) b, Typeable b)
              => Prism' (Plot b v n) (RibbonPlot v n)

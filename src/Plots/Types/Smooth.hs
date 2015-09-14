@@ -76,7 +76,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   renderPlotable s GSmoothPlot {..} pp =
                lp # stroke
                   # lw none
-                  # applyBarStyle pp
+                  # applyAreaStyle pp
                   # opacity 0.7
                   # transform t
             <> if sLine
@@ -91,7 +91,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
             ls             = s ^. specScale
 
   defLegendPic GSmoothPlot {..} pp
-      = square 5 # applyBarStyle pp
+      = square 5 # applyAreaStyle pp
 
 _SmoothPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
                    => Prism' (Plot b v n) (SmoothPlot v n)

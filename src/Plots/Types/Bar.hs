@@ -102,7 +102,7 @@ drawBar ABar {..}   =
 
 -- Multiple bars -------------------------------------------------------
 
--- | A bar plot for a single set of bars. Multi-bar plots are acheived
+-- | A bar plot for a single set of bars. Multi-bar plots are achieved
 --   by having multiple 'BarPlot's. Each bar plot corresponds to a
 --   single legend entry. To get multiple bar entries/colours, use
 --   multiple 'BarPlots'
@@ -126,12 +126,12 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
   renderPlotable s BarPlot {..} pp =
     foldMap drawBar bData
-      # applyBarStyle pp
+      # applyAreaStyle pp
       # transform (view specTrans s <> orient bOrient _reflectionXY mempty)
 
   defLegendPic BarPlot {..} pp
     = centerXY
-    . applyBarStyle pp'
+    . applyAreaStyle pp'
     . orient bOrient _reflectXY id
     $ d
     where
@@ -141,7 +141,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         | otherwise        = rect 4 10
 
       -- The legend bars don't look right if the line width is too big so we limit it
-      pp' = pp & barStyle . mapped . _lw %~ atMost (local 0.8)
+      pp' = pp & areaStyle . mapped . _lw %~ atMost (local 0.8)
 
 -- Options -------------------------------------------------------------
 

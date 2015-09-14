@@ -59,6 +59,7 @@ module Plots.Types
   -- * Generic plot
   , PlotProperties
   , HasPlotProperties (..)
+  , startingProperties
 
   -- * Plot spec
   , AxisSpec (..)
@@ -353,18 +354,21 @@ instance Qualifiable (PlotProperties b v n) where
 zeroInt :: Additive v => v Int
 zeroInt = zero
 
-instance (TypeableFloat n, Renderable (Path V2 n) b, Metric v)
-    => Default (PlotProperties b v n) where
-  def = PlotProperties
-    { _plotTransform   = mempty
-    , _plotBounds      = Bounds $ def <$ zeroInt
-    , _clipPlot        = True
-    , _legendEntries   = []
-    , _plotName        = mempty
-    , _plotColourMap   = hot
-    , _plotStyle       = mempty
-    , _plotBoundingBox = emptyBox
-    }
+-- instance (TypeableFloat n, Renderable (Path V2 n) b, Metric v)
+--     => Default (PlotProperties b v n) where
+
+startingProperties :: (Metric v, TypeableFloat n)
+                   => PlotStyle b v n -> PlotProperties b v n
+startingProperties sty = PlotProperties
+  { _plotTransform   = mempty
+  , _plotBounds      = Bounds $ def <$ zeroInt
+  , _clipPlot        = True
+  , _legendEntries   = []
+  , _plotName        = mempty
+  , _plotColourMap   = hot
+  , _plotStyle       = sty
+  , _plotBoundingBox = emptyBox
+  }
 
 ------------------------------------------------------------------------
 -- Plotable

@@ -95,7 +95,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
                   # mapLoc closeLine
                   # stroke
                   # lw none
-                  # applyBarStyle pp
+                  # applyAreaStyle pp
                   # transform t
       t       = s ^. specTrans
       ls      = s ^. specScale
@@ -103,7 +103,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
                   # stroke
 
   defLegendPic GBoxPlot {..} pp
-      = square 5 # applyBarStyle pp
+      = square 5 # applyAreaStyle pp
 
 _BoxPlot :: (Plotable (BoxPlot v n) b, Typeable b)
                    => Prism' (Plot b v n) (BoxPlot v n)

@@ -149,7 +149,7 @@ module Plots.API
   , PlotStyle
   , plotColor
   , plotMarker
-  , axisTheme
+  , axisStyle
   , module Plots.Themes
 
     -- *** Colour bar

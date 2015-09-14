@@ -69,7 +69,7 @@ instance (v ~ V2, Typeable b, TypeableFloat n, Renderable (Path v n) b)
       where
        marker = pp ^. plotMarker
        doline = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # applyLineStyle pp
-       doarea = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # lw none # applyBarStyle pp
+       doarea = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # lw none # applyAreaStyle pp
 
   defLegendPic GPointsPlot {..} pp
       = pp ^. plotMarker

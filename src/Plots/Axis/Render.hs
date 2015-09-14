@@ -38,7 +38,7 @@ import           Linear                     hiding (translation)
 import           Diagrams.Coordinates.Polar
 
 import           Plots.Axis
-import           Plots.Axis.ColourBar
+-- import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
@@ -96,7 +96,7 @@ renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 15
                $ legend
-              <> colourBar
+              -- <> colourBar
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LeftLabels
               <> plots
@@ -110,16 +110,19 @@ renderR2Axis a = frame 15
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     legend = drawLegend bb (a ^. axisLegend) (toList plots')
     --
-    pp = a ^. plotProperties
+
+    -- The colour bar
+    -- cbo = a ^. axisColourBar
+    --         & cbExtent .~ ex'
+    -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
+    -- colourBar = undefined -- addColourBar bb cbo (pp ^. plotColourMap) 0 1
+    --
+
+    -- render the plots
+    -- preparePlots :: [ModifiedPlot b v n] -> [(Plot b v n, PlotProperties b v n)]
     preparePlots =
-      zipWith (\theme p' -> modifyPlot (p' & properties . plotStyle .~ theme) pp)
-              (a ^. axisTheme)
-    --
-    cbo = a ^. axisColourBar
-            & cbExtent .~ ex'
-    ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
-    colourBar = addColourBar bb cbo (pp ^. plotColourMap) 0 1
-    --
+      zipWith (\theme p' -> modifyPlot p' (startingProperties theme))
+              (a ^.. axisStyle . axisStyles)
     plots'     = a ^. axisPlots . to preparePlots
 
 data LabelPosition
@@ -547,7 +550,7 @@ renderPolarAxis
   => Axis b Polar n -> QDiagram b V2 n Any
 renderPolarAxis a = frame 15
                $ legend
-              <> colourBar
+              -- <> colourBar
               <> circles
               <> rAxis
               <> plots
@@ -571,15 +574,21 @@ renderPolarAxis a = frame 15
     bb = fromCorners (p2 (-10,-10)) (p2 (10,10)) -- (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     legend = drawLegend bb (a ^. axisLegend) (toList plots')
     --
-    pp = a ^. plotProperties
+    -- pp = a ^. plotProperties
+    -- preparePlots =
+    --   zipWith (\theme p' -> modifyPlot (p' & properties . plotStyle .~ theme) pp)
+    --           (a ^.. axisStyle . axisStyles)
+
+    -- The colour bar
+    -- cbo = a ^. axisColourBar
+    --         & cbExtent .~ ex'
+    -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
+    -- colourBar = undefined -- addColourBar bb cbo (pp ^. plotColourMap) 0 1
+
+    -- Rendering plots
+    -- preparePlots :: [ModifiedPlot b v n] -> [(Plot b v n, PlotProperties b v n)]
     preparePlots =
-      zipWith (\theme p' -> modifyPlot (p' & properties . plotStyle .~ theme) pp)
-              (a ^. axisTheme)
-    --
-    cbo = a ^. axisColourBar
-            & cbExtent .~ ex'
-    ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
-    colourBar = addColourBar bb cbo (pp ^. plotColourMap) 0 1
-    --
+      zipWith (\theme p' -> modifyPlot p' (startingProperties theme))
+              (a ^.. axisStyle . axisStyles)
     plots'     = a ^. axisPlots . to preparePlots
 

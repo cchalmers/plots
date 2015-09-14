@@ -76,7 +76,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   renderPlotable _s GPiePlot {..} pp =
       annularWedge sLargeRadius sSmallRadius sDirection sAngle
         # lw none
-        # applyBarStyle pp
+        # applyAreaStyle pp
    <> if sArc
         then arc' sLargeRadius sDirection sAngle
                # applyLineStyle pp
@@ -85,7 +85,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         else mempty
 
   defLegendPic GPiePlot {..} pp
-      = square 5 # applyBarStyle pp
+      = square 5 # applyAreaStyle pp
 
 ------------------------------------------------------------------------
 -- Wedge plot

@@ -114,7 +114,7 @@ type PropertyAdjust b v n = PlotProperties b v n -> PlotProperties b v n
 data Axis b v n = Axis
   { -- These lenses are not being exported, they're just here for instances.
     _axisAxisBounds :: Bounds v n
-  , _axisPP         :: PlotProperties b (BaseSpace v) n
+  -- , _axisPP         :: PlotProperties b (BaseSpace v) n
 
   -- These lenses are exported.
   , _axisColourBar  :: ColourBarOpts b n
@@ -125,7 +125,7 @@ data Axis b v n = Axis
   , _axisPlots      :: [ModifiedPlot b (BaseSpace v) n]
   , _axisScaling    :: AxisScaling v n
   , _axisSize       :: SizeSpec (BaseSpace v) n
-  , _axisTheme      :: Theme b (BaseSpace v) n
+  , _axisStyle      :: AxisStyle b (BaseSpace v) n
   , _axisTickLabels :: AxisTickLabels b v n
   , _axisTicks      :: AxisTicks v n
   , _axisTitle      :: Maybe String
@@ -153,7 +153,7 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
     , _axisPlots      = []
     , _axisLegend     = def
     , _axisColourBar  = defColourBar
-    , _axisTheme      = coolTheme
+    , _axisStyle      = fadedColours
     , _axisAxisBounds = Bounds $ pure def
     , _axisGridLines  = pure def
     , _axisLabels     = V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4))
@@ -163,12 +163,12 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
     , _axisTicks      = pure def
     , _axisLines      = pure def
     , _axisScale      = pure def
-    , _axisPP         = def
+    -- , _axisPP         = def
     }
 
-instance HasPlotProperties (Axis b v n) b where
-  plotProperties = axisPP
-  {-# INLINE plotProperties #-}
+-- instance HasPlotProperties (Axis b v n) b where
+--   plotProperties = axisPP
+--   {-# INLINE plotProperties #-}
 
 -- R3 Axis
 
@@ -199,7 +199,7 @@ polarAxis = Axis
   , _axisPlots      = []
   , _axisLegend     = def
   , _axisColourBar  = defColourBar
-  , _axisTheme      = coolTheme
+  , _axisStyle      = fadedColours
   , _axisAxisBounds = Bounds $ pure def
   , _axisGridLines  = pure def
   , _axisLabels     = Polar $ V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4))
@@ -210,6 +210,6 @@ polarAxis = Axis
   , _axisTicks      = pure def
   , _axisLines      = pure def
   , _axisScale      = pure def
-  , _axisPP         = def
+  -- , _axisPP         = def
   }
 

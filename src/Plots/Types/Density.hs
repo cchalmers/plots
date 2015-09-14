@@ -23,7 +23,7 @@ module Plots.Types.Density
   , DensityPlot
   , mkDensityPlotOf
   , mkDensityPlot
-    
+
     -- * Helper funtions
   , densityY
 
@@ -83,7 +83,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
             <> if dFill
                 then (fillDensity dd) # stroke
                                       # lw none
-                                      # applyBarStyle pp
+                                      # applyAreaStyle pp
                                       # transform t
                 else mempty
           where
@@ -250,7 +250,7 @@ densityPlotL
   => String -> f p  -> m ()
 densityPlotL l d = addPlotableL l (mkDensityPlot d)
 
--- fold variant 
+-- fold variant
 
 densityPlotOf
   :: (v ~ BaseSpace c,

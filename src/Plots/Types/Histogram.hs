@@ -94,11 +94,11 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       drawbar barpts = fromVertices barpts
                          # mapLoc closeLine
                          # stroke
-                         # applyBarStyle pp
+                         # applyAreaStyle pp
                          # transform t
 
   defLegendPic GHistogramPlot {..} pp
-      = square 5 # applyBarStyle pp
+      = square 5 # applyAreaStyle pp
 
 _HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
                    => Prism' (Plot b v n) (HistogramPlot v n)
