@@ -114,21 +114,23 @@ type PropertyAdjust b v n = PlotProperties b v n -> PlotProperties b v n
 data Axis b v n = Axis
   { -- These lenses are not being exported, they're just here for instances.
     _axisAxisBounds :: Bounds v n
+  , _axisAxisStyle  :: AxisStyle b (BaseSpace v) n
+  , _axisColourBar  :: ColourBar b n
   -- , _axisPP         :: PlotProperties b (BaseSpace v) n
 
-  -- These lenses are exported.
-  , _axisColourBar  :: ColourBarOpts b n
+
+  , _axisLegend     :: Legend b n
+  , _axisPlots      :: [ModifiedPlot b (BaseSpace v) n]
+  , _axisTitle      :: Maybe String
+
+    -- v-wrapped
   , _axisGridLines  :: AxisGridLines v n
   , _axisLabels     :: AxisLabels b v n
-  , _axisLegend     :: Legend b n
   , _axisLines      :: AxisLines v n
-  , _axisPlots      :: [ModifiedPlot b (BaseSpace v) n]
   , _axisScaling    :: AxisScaling v n
   , _axisSize       :: SizeSpec (BaseSpace v) n
-  , _axisStyle      :: AxisStyle b (BaseSpace v) n
   , _axisTickLabels :: AxisTickLabels b v n
   , _axisTicks      :: AxisTicks v n
-  , _axisTitle      :: Maybe String
   , _axisScale      :: v AxisScale
   } deriving Typeable
 
@@ -143,6 +145,12 @@ axisLine (E l) = axisLines . l
 instance HasBounds (Axis b v n) v where
   bounds = axisAxisBounds
 
+instance HasAxisStyle (Axis b v n) b where
+  axisStyle = axisAxisStyle
+
+instance HasColourBar (Axis b v n) b where
+  colourBar = axisColourBar
+
 -- R2 axis
 
 instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
@@ -153,7 +161,7 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n)
     , _axisPlots      = []
     , _axisLegend     = def
     , _axisColourBar  = defColourBar
-    , _axisStyle      = fadedColours
+    , _axisAxisStyle  = fadedColours
     , _axisAxisBounds = Bounds $ pure def
     , _axisGridLines  = pure def
     , _axisLabels     = V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4))
@@ -199,7 +207,7 @@ polarAxis = Axis
   , _axisPlots      = []
   , _axisLegend     = def
   , _axisColourBar  = defColourBar
-  , _axisStyle      = fadedColours
+  , _axisAxisStyle  = fadedColours
   , _axisAxisBounds = Bounds $ pure def
   , _axisGridLines  = pure def
   , _axisLabels     = Polar $ V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4))

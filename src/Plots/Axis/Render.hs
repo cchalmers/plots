@@ -44,6 +44,7 @@ import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Style
+import           Plots.Axis.ColourBar
 import           Plots.Types
 import           Plots.Utils
 
@@ -96,12 +97,13 @@ renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 15
                $ legend
-              -- <> colourBar
+              <> cBar
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LeftLabels
               <> plots
   where
-    plots    = foldMap (uncurry $ renderPlotable (AxisSpec xs t (a^.axisScale))) plots'
+    spec = AxisSpec xs t (a^.axisScale) (a ^. axisColourMap)
+    plots    = foldMap (uncurry $ renderPlotable spec) plots'
     drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --
     (xs, tv, t') = workOutScale a
@@ -112,10 +114,9 @@ renderR2Axis a = frame 15
     --
 
     -- The colour bar
-    -- cbo = a ^. axisColourBar
     --         & cbExtent .~ ex'
     -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
-    -- colourBar = undefined -- addColourBar bb cbo (pp ^. plotColourMap) 0 1
+    cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
     --
 
     -- render the plots
@@ -555,8 +556,9 @@ renderPolarAxis a = frame 15
               <> rAxis
               <> plots
   where
+    spec = AxisSpec (pure (-10, 10)) mempty (pure LinearAxis) (a ^. axisColourMap)
     -- plots    = foldMap (uncurry $ renderPlotable (AxisSpec xs t (a^.axisScale))) plots'
-    plots    = foldMap (uncurry $ renderPlotable (AxisSpec (pure (-10, 10)) mempty (pure LinearAxis))) plots' # scale 6
+    plots    = foldMap (uncurry $ renderPlotable spec) plots' # scale 6
 
     -- drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --

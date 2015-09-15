@@ -68,6 +68,7 @@ module Plots.Types
   , specScale
   , scaleNum
   , specPoint
+  , specColourMap
 
   -- * Plot / Plotable
   , Plotable (..)
@@ -379,6 +380,7 @@ data AxisSpec v n = AxisSpec
   { _specBounds :: v (n, n)
   , _specTrans  :: Transformation v n
   , _specScale  :: v AxisScale
+  , _specColourMap :: ColourMap
   }
 
 makeLenses ''AxisSpec
@@ -396,7 +398,7 @@ scaleNum (a,b) s x = case s of
 
 -- | Apply log scaling and the transform to a point.
 specPoint :: (Applicative v, Additive v, Floating n) => AxisSpec v n -> Point v n -> Point v n
-specPoint (AxisSpec bs tr ss) p =
+specPoint (AxisSpec bs tr ss _) p =
   papply tr $ over _Point (scaleNum <$> bs <*> ss <*>) p
 
 -- | General class for something that can be wrapped in 'Plot'. The 'plot'

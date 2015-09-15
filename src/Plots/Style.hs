@@ -27,7 +27,8 @@
 module Plots.Style
   ( -- * The axis style
     AxisStyle
-  , axisStyles
+  , HasAxisStyle (..)
+  -- , axisStyles
 
     -- ** Predefined styles
   , fadedColours
@@ -37,12 +38,6 @@ module Plots.Style
     -- * Plot Style
   , PlotStyle
   , HasPlotStyle (..)
-  , plotColour
-  , plotColor
-  , markerStyle
-  , areaStyle
-  , textStyle
-  , plotMarker
 
   -- ** Applying Plot styles
   , applyLineStyle
@@ -102,64 +97,64 @@ data PlotStyle b v n = PlotStyle
 type instance V (PlotStyle b v n) = v
 type instance N (PlotStyle b v n) = n
 
--- | Internal class for objects that contain a 'PlotStyle'.
+-- | Class for objects that contain a 'PlotStyle'.
 class HasPlotStyle a b | a -> b where
   -- | Lens onto the 'PlotStyle'.
   plotStyle :: Lens' a (PlotStyle b (V a) (N a))
 
+  -- | The 'plotColor' is the overall colour of the plot. This is passed
+  --   to the other styles ('lineStyle', 'markerStyle' etc.) to give an
+  --   overall colour for the plot.
+  plotColour :: Lens' a (Colour Double)
+  plotColour = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
+
+  -- | Alias for 'plotColour'.
+  plotColor :: Lens' a (Colour Double)
+  plotColor = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
+
+  -- | This style is applied to any plots made up of lines only (like
+  --   'Path' plots). The colour recieved is the 'plotColour' of the
+  --   'PlotStyle'.
+  lineStyle :: Lens' a (Colour Double -> Style (V a) (N a))
+  lineStyle = plotStyle . lens _lineStyle (\p f -> p {_lineStyle = f})
+
+  -- | This style is applied to any markers in the plot. The colour
+  --   recieved is the 'plotColour' of the 'PlotStyle'.
+  markerStyle :: Lens' a (Colour Double -> Style (V a) (N a))
+  markerStyle = plotStyle . lens _markerStyle (\p f -> p {_markerStyle = f})
+
+  -- | This style is applied to any filled areas in a plot (like
+  --   'Plots.Types.Bar' or 'Plots.Styles.Ribbon'). The colour recieved is
+  --   the 'plotColour' of the 'PlotStyle'.
+  areaStyle :: Lens' a (Colour Double -> Style (V a) (N a))
+  areaStyle = plotStyle . lens _areaStyle (\p f -> p {_areaStyle = f})
+
+  -- | This style is applied to text plots. The colour recieved is
+  --   the 'plotColour' of the 'PlotStyle'.
+  textStyle :: Lens' a (Colour Double -> Style (V a) (N a))
+  textStyle = plotStyle . lens _textStyle (\p f -> p {_textStyle = f})
+
+  -- | This diagram is used as any markers in a plot (like
+  --   'Plots.Types.Scatter'). The 'markerStyle' will be applied to this
+  --   marker when the plot gets rendered.
+  plotMarker :: Lens' a (QDiagram b (V a) (N a) Any)
+  plotMarker = plotStyle . lens _plotMarker (\p f -> p {_plotMarker = f})
+
+  -- | A traversal over all the styles ('lineStyle', 'markerStyle',
+  --  'areaStyle' and 'textStyle') of a 'PlotStyle'.
+  plotStyles :: Traversal' a (Colour Double -> Style (V a) (N a))
+  plotStyles = plotStyle . t
+    where
+      t f PlotStyle {..} = PlotStyle
+        <$> pure _plotColor
+        <*> f _lineStyle
+        <*> f _markerStyle
+        <*> f _areaStyle
+        <*> f _textStyle
+        <*> pure _plotMarker
+
 instance HasPlotStyle (PlotStyle b v n) b where
   plotStyle = id
-
--- | The 'plotColor' is the overall colour of the plot. This is passed
---   to the other styles ('lineStyle', 'markerStyle' etc.) to give an
---   overall colour for the plot.
-plotColour :: HasPlotStyle a b => Lens' a (Colour Double)
-plotColour = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
-
--- | Alias for 'plotColour'.
-plotColor :: HasPlotStyle a b => Lens' a (Colour Double)
-plotColor = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
-
--- | This style is applied to any plots made up of lines only (like
---   'Path' plots). The colour recieved is the 'plotColour' of the
---   'PlotStyle'.
-lineStyle :: HasPlotStyle a b => Lens' a (Colour Double -> Style (V a) (N a))
-lineStyle = plotStyle . lens _lineStyle (\p f -> p {_lineStyle = f})
-
--- | This style is applied to any markers in the plot. The colour
---   recieved is the 'plotColour' of the 'PlotStyle'.
-markerStyle :: HasPlotStyle a b => Lens' a (Colour Double -> Style (V a) (N a))
-markerStyle = plotStyle . lens _markerStyle (\p f -> p {_markerStyle = f})
-
--- | This style is applied to any filled areas in a plot (like
---   'Plots.Types.Bar' or 'Plots.Styles.Ribbon'). The colour recieved is
---   the 'plotColour' of the 'PlotStyle'.
-areaStyle :: HasPlotStyle a b => Lens' a (Colour Double -> Style (V a) (N a))
-areaStyle = plotStyle . lens _areaStyle (\p f -> p {_areaStyle = f})
-
--- | This style is applied to text plots. The colour recieved is
---   the 'plotColour' of the 'PlotStyle'.
-textStyle :: HasPlotStyle a b => Lens' a (Colour Double -> Style (V a) (N a))
-textStyle = plotStyle . lens _textStyle (\p f -> p {_textStyle = f})
-
--- | This diagram is used as any markers in a plot (like
---   'Plots.Types.Scatter'). The 'markerStyle' will be applied to this
---   marker when the plot gets rendered.
-plotMarker :: HasPlotStyle a b => Lens' a (QDiagram b (V a) (N a) Any)
-plotMarker = plotStyle . lens _plotMarker (\p f -> p {_plotMarker = f})
-
--- | A traversal over all the styles ('lineStyle', 'markerStyle',
---  'areaStyle' and 'textStyle') of a 'PlotStyle'.
-plotStyles :: HasPlotStyle a b => Traversal' a (Colour Double -> Style (V a) (N a))
-plotStyles = plotStyle . t
-  where
-    t f PlotStyle {..} = PlotStyle
-      <$> pure _plotColor
-      <*> f _lineStyle
-      <*> f _markerStyle
-      <*> f _areaStyle
-      <*> f _textStyle
-      <*> pure _plotMarker
 
 -- Applying styles -----------------------------------------------------
 
@@ -171,7 +166,7 @@ applyLineStyle a = applyStyle $ (a ^. lineStyle) (a ^. plotColour)
 applyMarkerStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
 applyMarkerStyle a = applyStyle $ (a ^. markerStyle) (a ^. plotColour)
 
--- | Apply the 'fillStyle' from a 'PlotStyle'.
+-- | Apply the 'areaStyle from a 'PlotStyle'.
 applyAreaStyle :: (SameSpace a t, HasPlotStyle a b, HasStyle t) => a -> t -> t
 applyAreaStyle a = applyStyle $ (a ^. areaStyle) (a ^. plotColour)
 
@@ -188,12 +183,30 @@ instance (Metric v, Traversable v, OrderedField n) => Transformable (PlotStyle b
 
 -- | The 'AxisStyle' determines the 'Style's of the plots in an axis.
 --   There are various predifined styles to change the look of the plot.
-newtype AxisStyle b v n = AxisStyle [PlotStyle b v n]
+data AxisStyle b v n = AxisStyle ColourMap [PlotStyle b v n]
 
--- | Traversal over the 'PlotStyle's in an 'AxisStyle'. There are always
---   an infinite number of 'PlotStyle's in an 'AxisStyle'.
-axisStyles :: IndexedTraversal' Int (AxisStyle b v n) (PlotStyle b v n)
-axisStyles = iso (\(AxisStyle a) -> a) AxisStyle . traversed
+type instance V (AxisStyle b v n) = v
+type instance N (AxisStyle b v n) = n
+
+-- | Class of things that have an 'AxisStyle'.
+class HasAxisStyle a b | a -> b where
+  -- | Lens onto the 'AxisStyle'.
+  axisStyle :: Lens' a (AxisStyle b (V a) (N a))
+
+  -- | The 'ColourMap' is used to draw the 'Plots.Axis.ColourBar' and
+  --   render plots like 'Plots.HeatMap'.
+  axisColourMap :: Lens' a ColourMap
+  axisColourMap = axisStyle . cm
+    where cm f (AxisStyle c ss) = f c <&> \c' -> AxisStyle c' ss
+
+  -- | Traversal over the 'PlotStyle's in an 'AxisStyle'. There are always
+  --   an infinite number of 'PlotStyle's in an 'AxisStyle'.
+  axisStyles :: IndexedTraversal' Int a (PlotStyle b (V a) (N a))
+  axisStyles = axisStyle . stys . traversed
+    where stys f (AxisStyle c ss) = f ss <&> \ss' -> AxisStyle c ss'
+
+instance HasAxisStyle (AxisStyle b v n) b where
+  axisStyle = id
 
 ------------------------------------------------------------------------
 -- Predefined themes
@@ -207,7 +220,7 @@ axisStyles = iso (\(AxisStyle a) -> a) AxisStyle . traversed
 --
 -- <<plots/faded-colours.svg#diagram=black-and-white&width=300>>
 fadedColours :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
-fadedColours = AxisStyle $
+fadedColours = AxisStyle hot $
   zipWith mkStyle (cycle colours1) (cycle $ map stroke filledMarkers)
   where
     mkStyle c = PlotStyle c lineS fadeS fadeS fillS
@@ -215,11 +228,11 @@ fadedColours = AxisStyle $
     fadeS c = mempty # fc (blend 0.1 white c) # lc c # lwL 2
     fillS c = mempty # fc c # lw none
 
--- | Theme using 'funColours' with no lines on 'fillStyle'.
+-- | Theme using 'funColours' with no lines on 'areaStyle.
 --
 -- <<plots/vivid-colours.svg#diagram=black-and-white&width=300>>
 vividColours :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
-vividColours = AxisStyle $
+vividColours = AxisStyle hot $
   zipWith mkStyle (cycle colours2) (cycle $ map (scale 1.2 . stroke) filledMarkers)
   where
     mkStyle c = PlotStyle c lineS markS fillS fillS
@@ -231,7 +244,7 @@ vividColours = AxisStyle $
 --
 -- <<plots/black-and-white.svg#diagram=black-and-white&width=300>>
 blackAndWhite :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
-blackAndWhite = AxisStyle $
+blackAndWhite = AxisStyle greys $
   zipWith3 mkStyle (cycle colours) (cycle lineStyles) (cycle $ map stroke filledMarkers)
   where
     mkStyle c ls = PlotStyle c ls markerS (mk fc) (mk fc)
@@ -354,16 +367,18 @@ star' x = trailLike . (`at` mkP2 (-x/6) (x/6))
 newtype ColourMap = ColourMap (M.Map Rational (AlphaColour Double))
   deriving Show
 
-makeWrapped ''ColourMap
 
 type instance V ColourMap = V1
 type instance N ColourMap = Rational
 
--- instance t ~ V1 b => Rewrapped (V1 a) t
--- instance Wrapped (V1 a) where
---   type Unwrapped (V1 a) = a
---   _Wrapped' = iso (\(V1 a) -> a) V1
---   {-# INLINE _Wrapped' #-}
+-- makeWrapped ''ColourMap
+-- manually write instance to avoid template haskell splitting the
+-- module up
+instance Rewrapped ColourMap ColourMap
+instance Wrapped ColourMap where
+  type Unwrapped ColourMap = M.Map Rational (AlphaColour Double)
+  _Wrapped' = iso (\(ColourMap a) -> a) ColourMap
+  {-# INLINE _Wrapped' #-}
 
 p1apply :: Num a => Transformation V1 a -> a -> a
 p1apply t a = papply t (P (V1 a)) ^. _x
@@ -378,7 +393,7 @@ instance AsEmpty ColourMap where
   _Empty = nearly (ColourMap M.empty) (allOf each (==transparent))
 
 instance Each ColourMap ColourMap (AlphaColour Double) (AlphaColour Double) where
-  each = _Wrapped . each
+  each = _Wrapped' . each
 
 instance Ixed ColourMap where
   ix = ixColour
@@ -432,4 +447,7 @@ toStops = map (\(x,c) -> GradientStop (SomeColor c) (fromRational x))
 
 hot :: ColourMap
 hot = colourMap [(0, red), (1, yellow), (2, blue), (3, grey)]
+
+greys :: ColourMap
+greys = colourMap [(0, white), (1, black), (2, blue), (3, grey)]
 
