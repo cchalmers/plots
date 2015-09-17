@@ -41,6 +41,9 @@ module Plots.Types
   , logPoint
   , logDeform
 
+  -- * Visibility
+  , HasVisibility (..)
+
   -- * Orientation
   , Orientation (..)
   , HasOrientation (..)
@@ -423,6 +426,20 @@ class (Typeable a, Enveloped a) => Plotable a b where
 instance (Typeable b, Typeable v, Metric v, Typeable n, OrderedField n)
   => Plotable (QDiagram b v n Any) b where
   renderPlotable s dia _ = dia # transform (s^.specTrans)
+
+------------------------------------------------------------------------
+-- Visibility
+------------------------------------------------------------------------
+
+-- | Class of objects that can be hidden.
+class HasVisibility a where
+  -- | Lens onto whether an object should be visible when rendered.
+  visible :: Lens' a Bool
+
+  -- | The opposite of 'visible'.
+  hidden :: Lens' a Bool
+  hidden = visible . involuted not
+  {-# INLINE hidden #-}
 
 ------------------------------------------------------------------------
 -- Plot wrapper

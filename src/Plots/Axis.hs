@@ -54,16 +54,21 @@ instance Default AxisLineType where
 data AxisLine n = AxisLine
   { _axisLineType  :: AxisLineType
   , _axisArrowOpts :: Maybe (ArrowOpts n)
+  , _axisLineVisible :: Bool
   } deriving Typeable
 
 makeLenses ''AxisLine
 
 type AxisLines v n = v (AxisLine n)
 
+instance HasVisibility (AxisLine n) where
+  visible = axisLineVisible
+
 instance Default (AxisLine n) where
   def = AxisLine
           { _axisLineType  = def
           , _axisArrowOpts = def
+          , _axisLineVisible = True
           }
 
 -- Scaling

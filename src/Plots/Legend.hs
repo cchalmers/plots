@@ -133,6 +133,7 @@ data Legend b n = Legend
   , _legendTextF       :: String -> QDiagram b V2 n Any
   , _legendTextStyle   :: Style V2 n
   , _legendOrientation :: Orientation
+  , _legendVisible     :: Bool
   } deriving Typeable
 
 type instance V (Legend b n) = V2
@@ -151,7 +152,11 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
           , _legendTextF       = mkText (BoxAlignedText 0 0.5)
           , _legendTextStyle   = mempty & fontSize (output 8)
           , _legendOrientation = Vertical
+          , _legendVisible     = True
           }
+
+instance HasVisibility (Legend b n) where
+  visible = legendVisible
 
 instance TypeableFloat n => HasStyle (Legend b n) where
   applyStyle sty = over legendStyle (applyStyle sty)
@@ -164,11 +169,13 @@ drawLegend :: (TypeableFloat n, Typeable b, Renderable (Path V2 n) b, Renderable
            -> Legend b n
            -> [(Plot b V2 n, PlotProperties b V2 n)]
            -> QDiagram b V2 n Any
-drawLegend bb l ps = alignTo (l ^. legendPosition)
-                             bb
-                             (l ^. legendAnchor)
-                             (l ^. legendGap)
-                             ledge
+drawLegend bb l ps
+  | l ^. hidden = mempty
+  | otherwise   = alignTo (l ^. legendPosition)
+                          bb
+                          (l ^. legendAnchor)
+                          (l ^. legendGap)
+                          ledge
   where
     w = l ^. legendTextWidth
     h = l ^. legendSpacing

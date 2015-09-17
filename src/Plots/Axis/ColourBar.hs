@@ -113,6 +113,9 @@ instance HasOrientation (ColourBar b n) where
 instance Typeable n => HasStyle (ColourBar b n) where
   applyStyle sty = colourBarStyle %~ applyStyle sty
 
+instance HasVisibility (ColourBar b n) where
+  visible = colourBarVisible
+
 -- | Draw a standalone colour bar.
 drawColourBar
   :: (TypeableFloat n, Renderable (Path V2 n) b)
@@ -120,7 +123,9 @@ drawColourBar
   -> ColourMap           -- ^ colours to use
   -> (n,n)               -- ^ bounds for colour bar tick labels
   -> QDiagram b V2 n Any -- ^ resulting colour bar
-drawColourBar cbo cm (a,b) = centerY $ bar ||| strutX 5 ||| labels
+drawColourBar cbo cm (a,b)
+  | cbo ^. hidden = mempty
+  | otherwise     = centerY $ bar ||| strutX 5 ||| labels
   where
     bar  = square 1 # fillTexture tx
                     # scaleX x

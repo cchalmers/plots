@@ -53,6 +53,7 @@ data AxisLabel b v n = AxisLabel
   , _axisLabelGap       :: n
   , _axisLabelPos       :: AxisLabelPosition
   , _axisLabelPlacement :: AxisLabelPlacement
+  , _axisLabelVisible   :: Bool
   }
 
 makeLenses ''AxisLabel
@@ -63,6 +64,9 @@ type instance N (AxisLabel b v n) = n
 instance Typeable n => HasStyle (AxisLabel b v n) where
   applyStyle = over axisLabelStyle . applyStyle
 
+instance HasVisibility (AxisLabel b v n) where
+  visible = axisLabelVisible
+
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (AxisLabel b V2 n) where
   def = AxisLabel
@@ -72,6 +76,7 @@ instance (TypeableFloat n, Renderable (Text n) b)
     , _axisLabelGap       = 20
     , _axisLabelPos       = MiddleAxisLabel
     , _axisLabelPlacement = OutsideAxisLabel
+    , _axisLabelVisible   = True
     }
 
 type AxisLabels b v n = v (AxisLabel b (BaseSpace v) n)
@@ -92,6 +97,7 @@ data TickLabels b v n = TickLabels
   , _tickLabelTextFun :: TextFunction b v n
   , _tickLabelStyle   :: Style v n
   , _tickGap          :: n
+  , _tickLabelVisible :: Bool
   } deriving Typeable
 
 makeLenses ''TickLabels
@@ -105,7 +111,11 @@ instance (TypeableFloat n, Renderable (Text n) b)
     , _tickLabelTextFun = mkText
     , _tickLabelStyle   = mempty & fontSize (output 8)
     , _tickGap          = 8
+    , _tickLabelVisible = True
     }
+
+instance HasVisibility (TickLabels b v n) where
+  visible = tickLabelVisible
 
 -- | Numbers are shown as 'Float's to reduce the chance of numbers like
 --   1.30000000008. (This is not an idea solution.)

@@ -151,7 +151,7 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
     tStroke = stroke . transform t
 
     -- axis labels (x,y etc.)
-    axLabels = if null txt || lp == NoLabels
+    axLabels = if null txt || lp == NoLabels || axLabelD ^. hidden
                  then mempty
                  else (axLabelD ^. axisLabelFunction) txtAlign txt
                          # moveTo p'
@@ -173,7 +173,7 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
 
     -- tick labels
     tickLabels
-      | lp == NoLabels = mempty
+      | lp == NoLabels || tickLabelsD ^. hidden = mempty
       | otherwise = foldMap drawLabels (map snd $ take 1 ys)
                       # applyStyle (tickLabelsD ^. tickLabelStyle)
       where
@@ -245,7 +245,9 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
                    # transform t
 
     -- axis lines
-    line = foldMap mkline (map snd ys) -- merge with ticks?
+    line
+      | a ^. axisLines . el e . hidden = mempty
+      | otherwise = foldMap mkline (map snd ys) -- merge with ticks?
              # transform t
              # stroke
              # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
