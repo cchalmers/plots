@@ -149,7 +149,7 @@ module Plots.API
   , module Plots.Style
 
     -- *** Colour bar
-  , ColourBarOpts
+  , ColourBar
   , ColourMap
   -- , C
   , showColourBar
@@ -582,7 +582,7 @@ insideAxisTicks =
 -- 'showColorBar'.
 
 showColourBar :: MonadState (Axis b v n) m => m ()
-showColourBar = axisColourBar . cbShow .= True
+showColourBar = axisColourBar . colourBarVisible .= True
 
 
 {-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}
