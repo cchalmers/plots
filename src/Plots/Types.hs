@@ -83,6 +83,7 @@ module Plots.Types
   , _pp
 
   , ModifiedPlot (..)
+  , _ModifiedPlot
   , _Plot
   , modifyPlot
   , properties
@@ -486,7 +487,8 @@ type instance V (ModifiedPlot b v n) = v
 type instance N (ModifiedPlot b v n) = n
 
 -- | Traversal over the plot of a modified plot.
-_ModifiedPlot :: forall a b v n. Plotable a b => Traversal' (ModifiedPlot b v n) a
+_ModifiedPlot :: forall a b v n. Plotable a b
+              => Traversal' (ModifiedPlot b v n) a
 _ModifiedPlot f p@(ModifiedPlot a e) =
   case eq a of
     Just Refl -> f a <&> \b' -> ModifiedPlot b' e
@@ -495,7 +497,9 @@ _ModifiedPlot f p@(ModifiedPlot a e) =
   eq :: Typeable a' => a' -> Maybe (a :~: a')
   eq _ = eqT
 
-modifyPlot :: ModifiedPlot b v n -> PlotProperties b v n -> (Plot b v n, PlotProperties b v n)
+modifyPlot :: ModifiedPlot b v n
+           -> PlotProperties b v n
+           -> (Plot b v n, PlotProperties b v n)
 modifyPlot (ModifiedPlot a (Endo pf)) pp = (Plot a', pp')
   where
     PP a' pp' = pf $ PP a pp
