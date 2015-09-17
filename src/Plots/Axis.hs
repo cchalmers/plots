@@ -104,8 +104,6 @@ instance Fractional n => Default (Scaling n) where
     , _enlargeAxisLimits = Just $ Recommend 0.1
     }
 
-type PropertyAdjust b v n = PlotProperties b v n -> PlotProperties b v n
-
 -- axis data type
 
 -- | Axis is the data type that holds all the nessessary information to render
