@@ -95,7 +95,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
 renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
                  Renderable (Text n) b)
   => Axis b V2 n -> QDiagram b V2 n Any
-renderR2Axis a = frame 15
+renderR2Axis a = frame 40
                $ legend
               <> cBar
               <> drawAxis ex ey LowerLabels
@@ -106,7 +106,7 @@ renderR2Axis a = frame 15
     plots    = foldMap (uncurry $ renderPlotable spec) plots'
     drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --
-    (xs, tv, t') = workOutScale a
+    (xs, tv, t') = workOutScale (boundingBox $ map fst plots') a
     t = tv <> t'
     --
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
@@ -317,9 +317,9 @@ primStroke path =
 --
 
 workOutScale :: (v ~ BaseSpace v, HasLinearMap v, V (v n) ~ v, Distributive v, OrderedField n, Applicative v, Metric v)
-  => Axis b v n
+  => BoundingBox v n -> Axis b v n
   -> (BaseSpace v (n,n), Transformation (BaseSpace v) n, Transformation (BaseSpace v) n)
-workOutScale a = (enlargedBounds, aspectScaling, specScaling)
+workOutScale bb a = (enlargedBounds, aspectScaling, specScaling)
  where
     enlargedBounds = workOutUsedBounds
                        aScaling
@@ -343,7 +343,7 @@ workOutScale a = (enlargedBounds, aspectScaling, specScaling)
     --
     spec     = a ^. axisSize
     aScaling = a ^. axisScaling
-    bb       = a ^. axisPlots . folded . to boundingBox
+    -- bb       = a ^. axisPlots . folded . to boundingBox
     bnd      = a ^. bounds
 
 -- messy tempory fix while stuff is getting worked out
