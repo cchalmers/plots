@@ -224,8 +224,8 @@ fadedColours = AxisStyle hot $
   zipWith mkStyle (cycle colours1) (cycle $ map stroke filledMarkers)
   where
     mkStyle c = PlotStyle c lineS fadeS fadeS fillS
-    lineS c = mempty # lc c # lwL 2 --  normal
-    fadeS c = mempty # fc (blend 0.1 white c) # lc c # lwL 2
+    lineS c = mempty # lc c # lwO 3 --  normal
+    fadeS c = mempty # fc (blend 0.1 white c) # lc c # lwO 1
     fillS c = mempty # fc c # lw none
 
 -- | Theme using 'funColours' with no lines on 'areaStyle.
@@ -236,8 +236,8 @@ vividColours = AxisStyle hot $
   zipWith mkStyle (cycle colours2) (cycle $ map (scale 1.2 . stroke) filledMarkers)
   where
     mkStyle c = PlotStyle c lineS markS fillS fillS
-    lineS c = mempty # lc c # lwL 2 -- normal
-    markS c = mempty # fc c # lwL 0.8 # lc white
+    lineS c = mempty # lc c # lwO 3 -- normal
+    markS c = mempty # fc c # lwO 1 # lc white
     fillS c = mempty # fc c # lw none
 
 -- | Theme without any colours, useful for black and white documents.
