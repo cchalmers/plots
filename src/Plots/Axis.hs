@@ -174,13 +174,13 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b)
     , saScale      = def
     }
 
-instance HasTicks (SingleAxis b v n) where
+instance Functor f => HasTicks f (SingleAxis b v n) where
   bothTicks = lens saTicks (\sa ticks -> sa {saTicks = ticks})
 
-instance HasMajorTicks (SingleAxis b v n) where
+instance Functor f => HasMajorTicks f (SingleAxis b v n) where
   majorTicks = bothTicks . majorTicks
 
-instance HasMinorTicks (SingleAxis b v n) where
+instance Functor f => HasMinorTicks f (SingleAxis b v n) where
   minorTicks = bothTicks . minorTicks
 
 instance Functor f => HasAxisLabel f (SingleAxis b v n) b where
@@ -231,6 +231,15 @@ makeLenses ''Axis
 
 type instance V (Axis b v n) = BaseSpace v
 type instance N (Axis b v n) = n
+
+instance (Applicative f, Traversable c) => HasTicks f (Axis b c n) where
+  bothTicks = axes . traverse . bothTicks
+
+instance (Applicative f, Traversable c) => HasMajorTicks f (Axis b c n) where
+  majorTicks = axes . traverse . majorTicks
+
+instance (Applicative f, Traversable c) => HasMinorTicks f (Axis b c n) where
+  minorTicks = axes . traverse . minorTicks
 
 instance (Applicative f, Traversable c) => HasGridLines f (Axis b c n) where
   gridLines = axes . traverse . gridLines
