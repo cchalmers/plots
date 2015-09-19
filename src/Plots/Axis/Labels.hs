@@ -153,30 +153,38 @@ data TickLabels b v n = TickLabels
 type instance V (TickLabels b v n) = v
 type instance N (TickLabels b v n) = n
 
-class HasTickLabels a b | a -> b where
-  tickLabel :: Lens' a (TickLabels b (V a) (N a))
+class HasTickLabels f a b | a -> b where
+  -- | The options for the label of ticks. This can be used on various
+  --   levels of the axis:
+  --
+  -- @
+  -- 'tickLabel' :: 'Traversal'' ('Tick' b c n)       ('TickLabel' ('BaseSpace' c) n)
+  -- 'tickLabel' :: 'Lens''      ('SingleAxis' b v n) ('TickLabel' v n)
+  -- 'tickLabel' :: 'Lens''      ('TickLabel' v n)    ('TickLabel' v n)
+  -- @
+  tickLabel :: LensLike' f a (TickLabels b (V a) (N a))
 
   -- | The 'TextFunction' to render the text.
-  tickLabelTextFunction :: Lens' a (TextFunction b (V a) (N a))
+  tickLabelTextFunction :: Functor f => LensLike' f a (TextFunction b (V a) (N a))
   tickLabelTextFunction = tickLabel . lens tlTextFun (\tl f -> tl {tlTextFun = f})
 
   -- | The 'TextFunction' to render the text.
-  tickLabelFunction :: Lens' a (TickLabelFunction (N a))
+  tickLabelFunction :: Functor f => LensLike' f a (TickLabelFunction (N a))
   tickLabelFunction = tickLabel . lens tlFun (\tl f -> tl {tlFun = f})
 
   -- | The 'Style' to use on the rendered text.
-  tickLabelStyle :: Lens' a (Style (V a) (N a))
+  tickLabelStyle :: Functor f => LensLike' f a (Style (V a) (N a))
   tickLabelStyle = tickLabel . lens tlStyle (\tl sty -> tl {tlStyle = sty})
 
   -- | The gap between the axis and the tick labels.
-  tickLabelGap :: Lens' a (N a)
+  tickLabelGap :: Functor f => LensLike' f a (N a)
   tickLabelGap = tickLabel . lens tlGap (\tl n -> tl {tlGap = n})
 
   -- | Whether the axis label should be visible.
-  tickLabelVisible :: Lens' a Bool
+  tickLabelVisible :: Functor f => LensLike' f a Bool
   tickLabelVisible = tickLabel . lens tlVisible (\tl b -> tl {tlVisible = b})
 
-instance HasTickLabels (TickLabels b v n) b where
+instance HasTickLabels f (TickLabels b v n) b where
   tickLabel = id
 
 instance (TypeableFloat n, Renderable (Text n) b)

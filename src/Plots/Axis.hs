@@ -250,7 +250,7 @@ instance HasMinorTicks (SingleAxis b v n) where
 instance Functor f => HasAxisLabel f (SingleAxis b v n) b where
   axisLabel = lens saLabel (\sa l -> sa {saLabel = l})
 
-instance HasTickLabels (SingleAxis b v n) b where
+instance Functor f => HasTickLabels f (SingleAxis b v n) b where
   tickLabel = lens saTickLabel (\sa tl -> sa {saTickLabel = tl})
 
 instance HasAxisScaling (SingleAxis b v n) where
@@ -291,14 +291,19 @@ data Axis b c n = Axis
 
 makeLenses ''Axis
 
+-- Axis instances ------------------------------------------------------
+
+type instance V (Axis b v n) = BaseSpace v
+type instance N (Axis b v n) = n
+
 instance (Applicative f, Traversable c) => HasGridLines f (Axis b c n) where
   gridLines = axes . traverse . gridLines
 
 instance (Applicative f, Traversable c) => HasAxisLabel f (Axis b c n) b where
   axisLabel = axes . traverse . axisLabel
 
-type instance V (Axis b v n) = BaseSpace v
-type instance N (Axis b v n) = n
+instance (Applicative f, Traversable c) => HasTickLabels f (Axis b c n) b where
+  tickLabel = axes . traverse . tickLabel
 
 axisSize :: (Representable c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
 axisSize = axes . column singleAxisSize . iso mkSizeSpec getSpec
