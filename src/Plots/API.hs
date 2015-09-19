@@ -41,8 +41,6 @@ module Plots.API
 
   -- , ticks
 
-    -- Grid lines
-
   -- , recentProps
   -- , cartesianLabels
 
@@ -117,19 +115,6 @@ module Plots.API
     -- * Axis Tick Labels
   , module Plots.Axis.Labels
 
-    -- ** Axis Grid
-  -- , noGridLines
-  -- , noGridLine
-  -- , setMajorGridLines
-  -- , setMajorGridLine
-  -- , noMajorGridLines
-  -- , noMajorGridLine
-  -- , setMinorGridLines
-  -- , setMinorGridLine
-  -- , noMinorGridLines
-  -- , noMinorGridLine
-  -- , allGridLines
-
     -- ** Axis Lines
   -- , middleAxisLines
   -- , boxAxisLines
@@ -169,7 +154,6 @@ import           Diagrams.TwoD.Text
 import           Linear
 
 import           Plots.Axis
-import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Render
 import           Plots.Axis.Ticks
@@ -412,58 +396,6 @@ r2Axis = def
 -- | Make each axis have the same unit length.
 -- equalAxis :: (MonadState (Axis b v n) m, Functor v, Num n) => m ()
 -- equalAxis = axisScaling . mapped . aspectRatio .= Commit 1
-
-------------------------------------------------------------------------
--- Grid lines
-------------------------------------------------------------------------
-
--- | Set no major or minor grid lines for all axes.
--- noGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
--- noGridLines = noMajorGridLines >> noMinorGridLines
-
--- | Set no major or minor grid lines for given axes.
--- noGridLine :: MonadState (Axis b v n) m => E v -> m ()
--- noGridLine e = noMajorGridLine e >> noMinorGridLine e
-
--- Majors
-
--- | Add major grid lines for all axes.
--- setMajorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
--- setMajorGridLines = axisGridLines . mapped . majorGridF .= tickGridF
-
--- | Add major grid lines for given axis.
--- setMajorGridLine :: MonadState (Axis b v n) m => E v -> m ()
--- setMajorGridLine (E e) = axisGridLines . e . majorGridF .= tickGridF
-
--- | Set no major grid lines for all axes.
--- noMajorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
--- noMajorGridLines = axisGridLines . mapped . majorGridF .= noGridF
-
--- | Set no major grid lines for given axis.
--- noMajorGridLine :: MonadState (Axis b v n) m => E v -> m ()
--- noMajorGridLine (E l) = axisGridLines . l . majorGridF .= noGridF
-
--- Minors
-
--- | Add minor grid lines for all axes.
--- setMinorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
--- setMinorGridLines = axisGridLines . mapped . minorGridF .= tickGridF
-
--- | Add minor grid lines for given axis.
--- setMinorGridLine :: MonadState (Axis b v n) m => E v -> m ()
--- setMinorGridLine (E l) = axisGridLines . l . minorGridF .= tickGridF
-
--- | Set no minor grid lines for all axes.
--- noMinorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
--- noMinorGridLines = axisGridLines . mapped . minorGridF .= noGridF
-
--- | Set no minor grid lines for given axis.
--- noMinorGridLine :: MonadState (Axis b v n) m => E v -> m ()
--- noMinorGridLine (E l) = axisGridLines . l . minorGridF .= noGridF
-
--- | Traversal over both major and minor grid lines for all axes.
--- allGridLines :: Traversable v => Traversal' (Axis b v n) (GridLines v n)
--- allGridLines = axisGridLines . traverse
 
 ------------------------------------------------------------------------
 -- Bounds

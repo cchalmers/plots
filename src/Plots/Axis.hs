@@ -251,7 +251,7 @@ instance HasAxisScaling (SingleAxis b v n) where
 instance HasAxisLine (SingleAxis b v n) where
   axisLine = lens saLine (\sa l -> sa {saLine = l})
 
-instance HasGridLines (SingleAxis b v n) where
+instance Functor f => HasGridLines f (SingleAxis b v n) where
   gridLines = lens saGridLines (\sa l -> sa {saGridLines = l})
 
 singleAxisScale :: Lens' (SingleAxis b v n) AxisScale
@@ -282,6 +282,9 @@ data Axis b c n = Axis
   } deriving Typeable
 
 makeLenses ''Axis
+
+instance (Applicative f, Traversable c) => HasGridLines f (Axis b c n) where
+  gridLines = axes . traverse . gridLines
 
 type instance V (Axis b v n) = BaseSpace v
 type instance N (Axis b v n) = n

@@ -196,15 +196,19 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
     -- grid
     grid = majorLines <> minorLines
       where
-        majorLines = foldMap mkGridLine majorGridXs
-                       # tStroke
-                       # applyStyle (a ^. majorGridLinesStyle)
-        majorGridXs = view majorGridLinesFunction a majorTickXs' b
+        majorLines
+          | a ^. majorGridLineVisible . to not = mempty
+          | otherwise = foldMap mkGridLine majorGridXs
+                          # tStroke
+                          # applyStyle (a ^. majorGridLineStyle)
+        majorGridXs = view majorGridLineFunction a majorTickXs' b
         --
-        minorLines = foldMap mkGridLine minorGridXs
+        minorLines
+          | a ^. majorGridLineVisible . to not = mempty
+          | otherwise = foldMap mkGridLine minorGridXs
                        # tStroke
-                       # applyStyle (a ^. minorGridLinesStyle)
-        minorGridXs = view minorGridLinesFunction a minorTickXs' b
+                       # applyStyle (a ^. minorGridLineStyle)
+        minorGridXs = view minorGridLineFunction a minorTickXs' b
         -- --
         mkGridLine x = pathFromVertices [f y0, f y1]
           where f y = over lensP ((el e .~ x) . (el eO .~ y)) p
