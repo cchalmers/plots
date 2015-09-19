@@ -26,6 +26,7 @@ library
     Plots.Axis.ColourBar
     Plots.Axis.Grid
     Plots.Axis.Labels
+    Plots.Axis.Line
     Plots.Axis.Render
     Plots.Axis.Ticks
     Plots.API

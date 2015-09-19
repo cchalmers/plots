@@ -68,77 +68,13 @@ import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
+import           Plots.Axis.Line
 import           Plots.Legend
 import           Plots.Style
 import           Plots.Types
 
 import Linear
 
-
--- | Where axis line for coordinate should be drawn.
-data AxisLineType
-  = BoxAxisLine
-  | LeftAxisLine
-  | MiddleAxisLine
-  | RightAxisLine
-  | NoAxisLine
-  deriving (Show, Eq, Typeable)
-
-instance Default AxisLineType where
-  def = BoxAxisLine
-
--- | Information about position and style of axis lines.
-data AxisLine v n = AxisLine
-  { alType  :: AxisLineType
-  , alArrowOpts :: Maybe (ArrowOpts n)
-  , alVisible :: Bool
-  , alStyle :: Style v n
-  } deriving Typeable
-
-type instance V (AxisLine v n) = v
-type instance N (AxisLine v n) = n
-
--- | Class of object that have an 'AxisLine'.
-class HasAxisLine a where
-  -- | Lens onto the 'AxisLine'.
-  axisLine :: Lens' a (AxisLine (V a) (N a))
-
-  -- | The position of the axis line around the axis.
-  axisLineType :: Lens' a AxisLineType
-  axisLineType = axisLine . lens alType (\al sty -> al {alType = sty})
-
-  -- | The options for if you want the axis line to have arrows at the
-  --   end.
-  axisLineArrowOpts :: Lens' a (Maybe (ArrowOpts (N a)))
-  axisLineArrowOpts = axisLine . lens alArrowOpts (\al sty -> al {alArrowOpts = sty})
-
-  -- | Whether the axis line should be visible.
-  --
-  --   Note this is different from 'NoAxisLine'. Other parts that are
-  --   tied to the axis line will still be present when
-  --   'axisLineVisible' is 'False'. But if 'NoAxisLine' is set, there
-  --   never any line for those things to attach to, so they don't
-  --   exist.
-  axisLineVisible :: Lens' a Bool
-  axisLineVisible = axisLine . lens alVisible (\al b -> al {alVisible = b})
-
-  -- | The 'Style' applied to the axis line
-  axisLineStyle :: Lens' a (Style (V a) (N a))
-  axisLineStyle = axisLine . lens alStyle (\al sty -> al {alStyle = sty})
-
-instance HasAxisLine (AxisLine v n) where
-  axisLine = id
-
-instance HasVisibility (AxisLine v n) where
-  visible = axisLineVisible
-
-instance Typeable n => Default (AxisLine v n) where
-  def = AxisLine
-    { alType  = def
-    , alArrowOpts = def
-    , alVisible = True
-    , alStyle = mempty
-    }
 
 ------------------------------------------------------------------------
 -- Axis scale
@@ -256,7 +192,7 @@ instance Functor f => HasTickLabels f (SingleAxis b v n) b where
 instance HasAxisScaling (SingleAxis b v n) where
   axisScaling = lens saScaling (\sa tl -> sa {saScaling = tl})
 
-instance HasAxisLine (SingleAxis b v n) where
+instance Functor f => HasAxisLine f (SingleAxis b v n) where
   axisLine = lens saLine (\sa l -> sa {saLine = l})
 
 instance Functor f => HasGridLines f (SingleAxis b v n) where
