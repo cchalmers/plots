@@ -45,6 +45,14 @@ module Plots.Axis
   , ScaleMode (..)
   , UniformScaleStrategy (..)
 
+    -- * Specific axes
+    -- ** x-axis
+  , xAxis
+  , xAxisLabel
+
+    -- ** y-axis
+  , yAxis
+  , yAxisLabel
   ) where
 
 import           Data.Default
@@ -239,7 +247,7 @@ instance HasMajorTicks (SingleAxis b v n) where
 instance HasMinorTicks (SingleAxis b v n) where
   minorTicks = bothTicks . minorTicks
 
-instance HasAxisLabel (SingleAxis b v n) b where
+instance Functor f => HasAxisLabel f (SingleAxis b v n) b where
   axisLabel = lens saLabel (\sa l -> sa {saLabel = l})
 
 instance HasTickLabels (SingleAxis b v n) b where
@@ -286,6 +294,9 @@ makeLenses ''Axis
 instance (Applicative f, Traversable c) => HasGridLines f (Axis b c n) where
   gridLines = axes . traverse . gridLines
 
+instance (Applicative f, Traversable c) => HasAxisLabel f (Axis b c n) b where
+  axisLabel = axes . traverse . axisLabel
+
 type instance V (Axis b v n) = BaseSpace v
 type instance N (Axis b v n) = n
 
@@ -310,7 +321,9 @@ instance HasAxisStyle (Axis b v n) b where
 instance HasColourBar (Axis b v n) b where
   colourBar = axisColourBar
 
--- R2 axis
+------------------------------------------------------------------------
+-- R2 Axis
+------------------------------------------------------------------------
 
 instance (TypeableFloat n,
           Enum n,
@@ -326,6 +339,23 @@ instance (TypeableFloat n,
 
     , _axes = pure def
     }
+
+-- The x-axis ----------------------------------------------------------
+
+-- | Lens onto the x-axis of an 'Axis'.
+xAxis :: R1 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+xAxis = axes . _x
+
+xAxisLabel :: R1 c => Lens' (Axis b c n) String
+xAxisLabel = xAxis . axisLabelText
+
+-- The x-axis ----------------------------------------------------------
+
+yAxis :: R2 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+yAxis = axes . _y
+
+yAxisLabel :: R2 c => Lens' (Axis b c n) String
+yAxisLabel = yAxis . axisLabelText
 
 
 

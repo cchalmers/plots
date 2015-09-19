@@ -13,7 +13,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- The colour bar is a way of visualising the 'ColourMap'.
+-- XXX This module in unfinished and features in it may not work.
 --
 ----------------------------------------------------------------------------
 module Plots.Axis.ColourBar where
@@ -127,7 +127,7 @@ drawColourBar
   -> QDiagram b V2 n Any -- ^ resulting colour bar
 drawColourBar cbo cm (_a,_b)
   | cbo ^. hidden = mempty
-  | otherwise     = centerY $ bar -- ||| strutX 5 ||| labels
+  | otherwise     = centerY $ bar -- -- ||| strutX 5 ||| labels
   where
     bar  = square 1 # fillTexture tx
                     # scaleX x

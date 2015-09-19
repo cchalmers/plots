@@ -69,40 +69,48 @@ data AxisLabel b v n = AxisLabel
 type instance V (AxisLabel b v n) = v
 type instance N (AxisLabel b v n) = n
 
-class HasAxisLabel a b | a -> b where
-  axisLabel :: Lens' a (AxisLabel b (V a) (N a))
+class HasAxisLabel f a b | a -> b where
+  -- | The options for the label of the axis. This can be used on
+  --   various levels of the axis:
+  --
+  -- @
+  -- 'axisLabel' :: 'Traversal'' ('Axis' b c n)       ('AxisLabel' ('BaseSpace' c) n)
+  -- 'axisLabel' :: 'Lens''      ('SingleAxis' b v n) ('AxisLabel' v n)
+  -- 'axisLabel' :: 'Lens''      ('AxisLabel' v n)    ('AxisLabel' v n)
+  -- @
+  axisLabel :: LensLike' f a (AxisLabel b (V a) (N a))
 
   -- | The text to use when labeling the axis.
-  axisLabelText :: Lens' a String
+  axisLabelText :: Functor f => LensLike' f a String
   axisLabelText = axisLabel . lens alText (\al txt -> al {alText = txt})
 
   -- | The 'TextFunction' to render the text of the axis label.
-  axisLabelTextFunction :: Lens' a (TextFunction b (V a) (N a))
+  axisLabelTextFunction :: Functor f => LensLike' f a (TextFunction b (V a) (N a))
   axisLabelTextFunction = axisLabel . lens alFun (\al f -> al {alFun = f})
 
   -- | The gap between the axis and the labels, in the direction
   --   corresponding to the 'axisLabelPosition'.
-  axisLabelGap :: Lens' a (N a)
+  axisLabelGap :: Functor f => LensLike' f a (N a)
   axisLabelGap = axisLabel . lens alGap (\al sty -> al {alGap = sty})
 
   -- | The 'Style' to use on the rendered text.
-  axisLabelStyle :: Lens' a (Style (V a) (N a))
+  axisLabelStyle :: Functor f => LensLike' f a (Style (V a) (N a))
   axisLabelStyle = axisLabel . lens alStyle (\al sty -> al {alStyle = sty})
 
   -- | The position the label will be placed parallel the axis.
-  axisLabelPosition :: Lens' a AxisLabelPosition
+  axisLabelPosition :: Functor f => LensLike' f a AxisLabelPosition
   axisLabelPosition = axisLabel . lens alPos (\al sty -> al {alPos = sty})
 
   -- | Whether the axis label should be placed inside or outside the
   --   axis.
-  axisLabelPlacement :: Lens' a AxisLabelPosition
+  axisLabelPlacement :: Functor f => LensLike' f a AxisLabelPosition
   axisLabelPlacement = axisLabel . lens alPos (\al sty -> al {alPos = sty})
 
   -- | Whether the axis label should be visible.
-  axisLabelVisible :: Lens' a Bool
+  axisLabelVisible :: Functor f => LensLike' f a Bool
   axisLabelVisible = axisLabel . lens alVisible (\al b -> al {alVisible = b})
 
-instance HasAxisLabel (AxisLabel b v n) b where
+instance HasAxisLabel f (AxisLabel b v n) b where
   axisLabel = id
 
 instance Typeable n => HasStyle (AxisLabel b v n) where

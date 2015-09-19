@@ -64,7 +64,6 @@ import Diagrams.Prelude
 data TickAlign
   = TickSpec !Rational !Rational
   | AutoTick -- center tick for middle axis, outside tick otherwise
-  -- | NoTick
   deriving (Show, Eq)
 
 -- | Set the tick type depending on the axis line position. 'centreTick'
