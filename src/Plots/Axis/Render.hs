@@ -104,7 +104,7 @@ renderR2Axis a = frame 40
   where
     spec = AxisSpec xs t (a^.axisScale) (a ^. axisColourMap)
     plots    = foldMap (uncurry $ renderPlotable spec) plots'
-    drawAxis = axisOnBasis origin xs a (a^.axisScale) t
+    drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axisScale) t ll ll2
     --
     (xs, tv, t') = workOutScale (boundingBox $ map fst plots') a
     t = tv <> t'
@@ -139,7 +139,7 @@ axisOnBasis
                     Renderable (Path V2 n) b, n ~ N (v n), v ~ V (v n), OrderedField n)
   => Point v n        -- start of axis
   -> v (n, n)         -- calculated bounds
-  -> Axis b v n       -- axis data
+  -> SingleAxis b v n -- axis data
   -> v AxisScale      -- log scale?
   -> T2 n             -- transformation to apply to positions of things
   -> E v              -- direction of axis
@@ -151,11 +151,12 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
     tStroke = stroke . transform t
 
     -- axis labels (x,y etc.)
-    axLabels = if null txt || lp == NoLabels || axLabelD ^. hidden
-                 then mempty
-                 else (axLabelD ^. axisLabelFunction) txtAlign txt
-                         # moveTo p'
-                         # applyStyle (axLabelD ^. axisLabelStyle)
+    axLabels
+      | null txt || lp == NoLabels || a ^. axisLabelVisible . to not
+                  = mempty
+      | otherwise = (a ^. axisLabelTextFunction) txtAlign txt
+                      # moveTo p'
+                      # applyStyle (a ^. axisLabelStyle)
       where
         p' = p & ep e  .~ x
                & ep eO .~ y0
@@ -163,67 +164,68 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
                & coscale
                & papply t
                & ep eO +~ negate' labelGap
-        labelGap = axLabelD ^. axisLabelGap
-        txt      = axLabelD ^. axisLabelText
-        x = case axLabelD ^. axisLabelPos of
+        labelGap = a ^. axisLabelGap
+        txt      = a ^. axisLabelText
+        x = case a ^. axisLabelPosition of
               MiddleAxisLabel -> (x0 + x1) / 2
               LowerAxisLabel  -> x0
               UpperAxisLabel  -> x1
-        axLabelD = a ^. axisLabels . el e
+        -- axLabelD = a ^. axisLabels . el e
 
     -- tick labels
     tickLabels
-      | lp == NoLabels || tickLabelsD ^. hidden = mempty
+      | lp == NoLabels || a ^. tickLabelVisible . to not = mempty
       | otherwise = foldMap drawLabels (map snd $ take 1 ys)
-                      # applyStyle (tickLabelsD ^. tickLabelStyle)
+                      # applyStyle (a ^. tickLabelStyle)
       where
-        tickLabelsD  = a ^. axisTickLabels . el e
-        labelFun     = tickLabelsD ^. tickLabelFun
+        -- tickLabelsD  = a ^. axisTickLabels . el e
+        labelFun     = a ^. tickLabelFunction
         drawLabels y = foldMap f (labelFun majorTickXs b)
           where
             f (x, l) = place dia p'
               where
-                dia = view tickLabelTextFun tickLabelsD txtAlign l
+                dia = view tickLabelTextFunction a txtAlign l
                 p' = p & ep e  .~ x
                        & ep eO .~ y
                        -- & logPoint ls
                        & coscale
                        & papply t
-                       & ep eO +~ negate' (tickLabelsD ^. tickGap)
+                       & ep eO +~ negate' (a ^. tickLabelGap)
 
+    -- grid = mempty
     -- grid
     grid = majorLines <> minorLines
       where
         majorLines = foldMap mkGridLine majorGridXs
                        # tStroke
-                       # applyStyle (gridD ^. majorGridStyle)
-        majorGridXs = (gridD ^. majorGridF) majorTickXs' b
+                       # applyStyle (a ^. majorGridLinesStyle)
+        majorGridXs = view majorGridLinesFunction a majorTickXs' b
         --
         minorLines = foldMap mkGridLine minorGridXs
                        # tStroke
-                       # applyStyle (gridD ^. minorGridStyle)
-        minorGridXs = (gridD ^. minorGridF) minorTickXs' b
+                       # applyStyle (a ^. minorGridLinesStyle)
+        minorGridXs = view minorGridLinesFunction a minorTickXs' b
         -- --
         mkGridLine x = pathFromVertices [f y0, f y1]
           where f y = over lensP ((el e .~ x) . (el eO .~ y)) p
         --
-        gridD = a ^. axisGridLines ^. el e -- :: GridLines N
+        -- gridD = a ^. axisGridLines ^. el e -- :: GridLines N
 
     -- ticks
     ticks = foldMap drawTicks ys
 
-    drawTicks (pos,y) = majorTicks <> minorTicks
+    drawTicks (pos,y) = maTicks <> miTicks
       where
-        majorTicks = foldMap (positionTick majorTick) majorTickXs'
+        maTicks = foldMap (positionTick majorTick) majorTickXs'
                        # stroke
-                       # applyStyle (ticksD ^. majorTickStyle)
+                       # applyStyle (a ^. majorTickStyle)
         --
-        minorTicks = foldMap (positionTick minorTick) minorTickXs'
+        miTicks = foldMap (positionTick minorTick) minorTickXs'
                        # stroke
-                       # applyStyle (ticksD ^. minorTickStyle)
+                       # applyStyle (a ^. minorTickStyle)
         --
-        minorTick = someTick (ticksD ^. minorTickAlign) (ticksD ^. minorTickLength)
-        majorTick = someTick (ticksD ^. majorTickAlign) (ticksD ^. majorTickLength)
+        minorTick = someTick (a ^. minorTickAlign) (a ^. minorTickLength)
+        majorTick = someTick (a ^. majorTickAlign) (a ^. majorTickLength)
         --
         someTick tType d = pathFromVertices $
           case tType  of
@@ -236,7 +238,7 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
               case pos of
                 UpperAxis -> [origin & ep eO -~ d*bb, origin & ep eO +~ d*aa]
                 _         -> [origin & ep eO -~ d*aa, origin & ep eO +~ d*bb]
-            NoTick -> []
+            -- NoTick -> []
         -- middleTick d =
         --   pathFromVertices
         positionTick tick x = place tick p'
@@ -246,11 +248,11 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
 
     -- axis lines
     line
-      | a ^. axisLines . el e . hidden = mempty
+      | a ^. axisLineVisible . to not = mempty
       | otherwise = foldMap mkline (map snd ys) -- merge with ticks?
              # transform t
              # stroke
-             # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
+             -- # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
              # lineCap LineCapSquare
       where
         -- TODO: Arrow for R3
@@ -267,28 +269,30 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
                                  then swapped
                                  else id
     --
-    ticksD       = a ^. axisTicks . el e
-    majorTickXs  = (ticksD ^. majorTicksFun) b
+    -- ticksD       = a ^. axisTicks . el e
+    majorTickXs  = view majorTickFunction a b
     majorTickXs' = map coscaleNum majorTickXs
-    minorTickXs  = (ticksD ^. minorTicksFun) majorTickXs b
+    minorTickXs  = view minorTickFunction a majorTickXs b
     minorTickXs' = map coscaleNum minorTickXs
     -- majorTickXs = logNumber (ls ^. el e) <$> (ticksD ^. majorTicksFun) b
     -- minorTickXs = logNumber (ls ^. el e) <$> (ticksD ^. minorTicksFun) majorTickXs b
     --
     ys       = getAxisLinePos yb lineType
-    lineType = a ^. axisLines . el e . axisLineType
-    txtAlign = case lp of
-                  LowerLabels -> BoxAlignedText 0.5 1
-                  LeftLabels  -> BoxAlignedText 1   0.5
-                  RightLabels -> BoxAlignedText 0   0.5
-                  UpperLabels -> BoxAlignedText 1   0
-                  _           -> error "No labels" -- XXX Temporary
+    lineType = a ^. axisLineType
+    txtAlign =
+      case lp of
+         LowerLabels -> BoxAlignedText 0.5 1
+         LeftLabels  -> BoxAlignedText 1   0.5
+         RightLabels -> BoxAlignedText 0   0.5
+         UpperLabels -> BoxAlignedText 1   0
+         _           -> error "No labels" -- XXX Temporary
     -- t2 = scaling 4
     --
     negate' = if lp == UpperLabels || lp == RightLabels
                 then id
                 else negate
 
+-- | Stroke without any envelope, trace, query etc.
 primStroke :: (Ord n, Typeable n, Typeable v, Renderable (Path v n) b)
            => Path v n -> QDiagram b v n Any
 primStroke path =
@@ -319,8 +323,11 @@ primStroke path =
 --
 
 workOutScale :: (v ~ BaseSpace v, HasLinearMap v, V (v n) ~ v, Distributive v, OrderedField n, Applicative v, Metric v)
-  => BoundingBox v n -> Axis b v n
-  -> (BaseSpace v (n,n), Transformation (BaseSpace v) n, Transformation (BaseSpace v) n)
+  => BoundingBox v n
+  -> Axis b v n
+  -> (BaseSpace v (n,n),
+      Transformation (BaseSpace v) n,
+      Transformation (BaseSpace v) n)
 workOutScale bb a = (enlargedBounds, aspectScaling, specScaling)
  where
     enlargedBounds = workOutUsedBounds
@@ -337,30 +344,30 @@ workOutScale bb a = (enlargedBounds, aspectScaling, specScaling)
     aspectScaling
       -- if any of the aspect ratios are committed we use the aspect ratio from
       -- aScaling
-      | anyOf (folded . aspectRatio) (is _Commit) aScaling
-          = vectorScaling (view (aspectRatio . _recommend) <$> aScaling)
+      | anyOf (folded . scaleAspectRatio) (is _Commit) aScaling
+          = vectorScaling (view (scaleAspectRatio . _recommend) <$> aScaling)
       -- otherwise all ratios are just recommend, ignore them and scale such
       -- that each axis is the same length
       | otherwise = inv $ vectorScaling v
     --
     spec     = a ^. axisSize
-    aScaling = a ^. axisScaling
+    aScaling = a ^. axes . column axisScaling
     -- bb       = a ^. axisPlots . folded . to boundingBox
-    bnd      = a ^. bounds
+    bnd      = Bounds $ a ^. axes . column singleAxisBound -- :: _ -- . to Bound
 
 -- messy tempory fix while stuff is getting worked out
 workOutUsedBounds :: (Applicative v, Distributive v, Num n)
-  => v (Scaling n) -> Maybe (v (n, n)) -> Bounds v n -> v (n, n)
+  => v (AxisScaling n) -> Maybe (v (n, n)) -> Bounds v n -> v (n, n)
 workOutUsedBounds aScale mBox bnd =
   workOutUsedBound <$> aScale <*> distribute mBox <*> (\(Bounds a) -> a) bnd
 
-workOutUsedBound :: Num n => Scaling n -> Maybe (n, n) -> Bound n -> (n, n)
+workOutUsedBound :: Num n => AxisScaling n -> Maybe (n, n) -> Bound n -> (n, n)
 workOutUsedBound aScale mBox (Bound rL rU) = enlarged
   where
     -- TODO: - make better
     --       - seperate enlarge axis for lower and upper bounds
     --       - absolute units as well as scale factor (requires refactoring)
-    enlarged = case aScale ^. enlargeAxisLimits of
+    enlarged = case aScale ^. axisScaleEnlarge of
       Nothing            -> (l', u')
 
       -- committed enlargements enlarge all bounds

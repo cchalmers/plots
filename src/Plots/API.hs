@@ -34,7 +34,7 @@ module Plots.API
   , zMin, zMax
 
     -- ** Grid lines
-  , noGridLines
+  -- , noGridLines
   , addLegendEntry
 
     -- ** Ticks
@@ -44,7 +44,7 @@ module Plots.API
     -- Grid lines
 
   -- , recentProps
-  , cartesianLabels
+  -- , cartesianLabels
 
     -- ** Axis labels
     -- ** Axis title
@@ -81,24 +81,24 @@ module Plots.API
    -- ** Axis labels
    -- *** Label text
   , axisLabel
-  , xAxisLabel
-  , yAxisLabel
-  , zAxisLabel
-  , cartesianLabels
+  -- , xAxisLabel
+  -- , yAxisLabel
+  -- , zAxisLabel
+  -- , cartesianLabels
 
     -- *** Label position
   , AxisLabelPosition (..)
-  , axesLabelPositions
+  -- , axesLabelPositions
   , axisLabelPosition
   -- , axisPlotProperties
 
     -- *** Label gaps
-  , setAxisLabelGap
-  , setAxesLabelGaps
+  -- , setAxisLabelGap
+  -- , setAxesLabelGaps
 
     -- * Axis scaling
-  , setAxisRatio
-  , equalAxis
+  -- , setAxisRatio
+  -- , equalAxis
 
     -- ** Axis line type
   , AxisLineType (..)
@@ -118,28 +118,28 @@ module Plots.API
   , module Plots.Axis.Labels
 
     -- ** Axis Grid
-  , noGridLines
-  , noGridLine
-  , setMajorGridLines
-  , setMajorGridLine
-  , noMajorGridLines
-  , noMajorGridLine
-  , setMinorGridLines
-  , setMinorGridLine
-  , noMinorGridLines
-  , noMinorGridLine
-  , allGridLines
+  -- , noGridLines
+  -- , noGridLine
+  -- , setMajorGridLines
+  -- , setMajorGridLine
+  -- , noMajorGridLines
+  -- , noMajorGridLine
+  -- , setMinorGridLines
+  -- , setMinorGridLine
+  -- , noMinorGridLines
+  -- , noMinorGridLine
+  -- , allGridLines
 
     -- ** Axis Lines
-  , middleAxisLines
-  , boxAxisLines
+  -- , middleAxisLines
+  -- , boxAxisLines
 
     -- ** Axis ticks
-  , noAxisTicks
-  , noMajorTicks
-  , noMinorTicks
-  , centerAxisTicks
-  , insideAxisTicks
+  -- , noAxisTicks
+  -- , noMajorTicks
+  -- , noMinorTicks
+  -- , centerAxisTicks
+  -- , insideAxisTicks
 
     -- ** Axis style
   , PlotStyle
@@ -152,7 +152,7 @@ module Plots.API
   , ColourBar
   , ColourMap
   -- , C
-  , showColourBar
+  -- , showColourBar
   ) where
 
 import           Control.Lens                    hiding (( # ))
@@ -369,101 +369,101 @@ r2Axis = def
 --   @@
 --   myaxis = 'r2Axis' &~ 'axisLabel' 'ex' "x-axis"
 --   @@
-axisLabel :: E v -> Lens' (Axis b v n) String
-axisLabel (E e) = axisLabels . e . axisLabelText
+-- axisLabel :: E v -> Lens' (Axis b v n) String
+-- axisLabel (E e) = axisLabels . e . axisLabelText
 
 -- | Lens onto the x axis label.
-xAxisLabel :: R1 v => Lens' (Axis b v n) String
-xAxisLabel = axisLabel ex
+-- xAxisLabel :: R1 v => Lens' (Axis b v n) String
+-- xAxisLabel = axisLabel ex
 
 -- | Lens onto the y axis label.
-yAxisLabel :: R2 v => Lens' (Axis b v n) String
-yAxisLabel = axisLabel ey
+-- yAxisLabel :: R2 v => Lens' (Axis b v n) String
+-- yAxisLabel = axisLabel ey
 
 -- | Lens onto the z axis label.
-zAxisLabel :: R3 v => Lens' (Axis b v n) String
-zAxisLabel = axisLabel ex
+-- zAxisLabel :: R3 v => Lens' (Axis b v n) String
+-- zAxisLabel = axisLabel ex
 
 -- | Set the position of the given axis label.
-axisLabelPosition :: E v -> Lens' (Axis b v n) AxisLabelPosition
-axisLabelPosition (E e) = axisLabels . e . axisLabelPos
+-- axisLabelPosition :: E v -> Lens' (Axis b v n) AxisLabelPosition
+-- axisLabelPosition (E e) = axisLabels . e . axisLabelPos
 
 -- | Set the position of all axes labels.
-axesLabelPositions :: Traversable v => Traversal' (Axis b v n) AxisLabelPosition
-axesLabelPositions = axisLabels . traversed . axisLabelPos
+-- axesLabelPositions :: Traversable v => Traversal' (Axis b v n) AxisLabelPosition
+-- axesLabelPositions = axisLabels . traversed . axisLabelPos
 
 -- | Set the gap between the axis and the axis label.
-setAxisLabelGap :: E v -> Lens' (Axis b v n) n
-setAxisLabelGap (E e) = axisLabels . e . axisLabelGap
+-- setAxisLabelGap :: E v -> Lens' (Axis b v n) n
+-- setAxisLabelGap (E e) = axisLabels . e . axisLabelGap
 
 -- | Set the gaps between all axes and the axis labels.
-setAxesLabelGaps :: Traversable v => Traversal' (Axis b v n) n
-setAxesLabelGaps = axisLabels . traverse . axisLabelGap
+-- setAxesLabelGaps :: Traversable v => Traversal' (Axis b v n) n
+-- setAxesLabelGaps = axisLabels . traverse . axisLabelGap
 
 -- | Label the x,y and z axis with \"x\", \"y\" and \"z\" respectively.
-cartesianLabels :: (Traversable v, MonadState (Axis b v n) m) => m ()
-cartesianLabels =
-  partsOf (axisLabels . traverse . axisLabelText) .= ["x", "y", "z"]
+-- cartesianLabels :: (Traversable v, MonadState (Axis b v n) m) => m ()
+-- cartesianLabels =
+--   partsOf (axisLabels . traverse . axisLabelText) .= ["x", "y", "z"]
 
 -- | Set the aspect ratio of given axis.
-setAxisRatio :: MonadState (Axis b v n) m => E v -> n -> m ()
-setAxisRatio e n = axisScaling . el e . aspectRatio .= Commit n
+-- setAxisRatio :: MonadState (Axis b v n) m => E v -> n -> m ()
+-- setAxisRatio e n = axisScaling . el e . aspectRatio .= Commit n
 
 -- | Make each axis have the same unit length.
-equalAxis :: (MonadState (Axis b v n) m, Functor v, Num n) => m ()
-equalAxis = axisScaling . mapped . aspectRatio .= Commit 1
+-- equalAxis :: (MonadState (Axis b v n) m, Functor v, Num n) => m ()
+-- equalAxis = axisScaling . mapped . aspectRatio .= Commit 1
 
 ------------------------------------------------------------------------
 -- Grid lines
 ------------------------------------------------------------------------
 
 -- | Set no major or minor grid lines for all axes.
-noGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
-noGridLines = noMajorGridLines >> noMinorGridLines
+-- noGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- noGridLines = noMajorGridLines >> noMinorGridLines
 
 -- | Set no major or minor grid lines for given axes.
-noGridLine :: MonadState (Axis b v n) m => E v -> m ()
-noGridLine e = noMajorGridLine e >> noMinorGridLine e
+-- noGridLine :: MonadState (Axis b v n) m => E v -> m ()
+-- noGridLine e = noMajorGridLine e >> noMinorGridLine e
 
 -- Majors
 
 -- | Add major grid lines for all axes.
-setMajorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
-setMajorGridLines = axisGridLines . mapped . majorGridF .= tickGridF
+-- setMajorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- setMajorGridLines = axisGridLines . mapped . majorGridF .= tickGridF
 
 -- | Add major grid lines for given axis.
-setMajorGridLine :: MonadState (Axis b v n) m => E v -> m ()
-setMajorGridLine (E e) = axisGridLines . e . majorGridF .= tickGridF
+-- setMajorGridLine :: MonadState (Axis b v n) m => E v -> m ()
+-- setMajorGridLine (E e) = axisGridLines . e . majorGridF .= tickGridF
 
 -- | Set no major grid lines for all axes.
-noMajorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
-noMajorGridLines = axisGridLines . mapped . majorGridF .= noGridF
+-- noMajorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- noMajorGridLines = axisGridLines . mapped . majorGridF .= noGridF
 
 -- | Set no major grid lines for given axis.
-noMajorGridLine :: MonadState (Axis b v n) m => E v -> m ()
-noMajorGridLine (E l) = axisGridLines . l . majorGridF .= noGridF
+-- noMajorGridLine :: MonadState (Axis b v n) m => E v -> m ()
+-- noMajorGridLine (E l) = axisGridLines . l . majorGridF .= noGridF
 
 -- Minors
 
 -- | Add minor grid lines for all axes.
-setMinorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
-setMinorGridLines = axisGridLines . mapped . minorGridF .= tickGridF
+-- setMinorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- setMinorGridLines = axisGridLines . mapped . minorGridF .= tickGridF
 
 -- | Add minor grid lines for given axis.
-setMinorGridLine :: MonadState (Axis b v n) m => E v -> m ()
-setMinorGridLine (E l) = axisGridLines . l . minorGridF .= tickGridF
+-- setMinorGridLine :: MonadState (Axis b v n) m => E v -> m ()
+-- setMinorGridLine (E l) = axisGridLines . l . minorGridF .= tickGridF
 
 -- | Set no minor grid lines for all axes.
-noMinorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
-noMinorGridLines = axisGridLines . mapped . minorGridF .= noGridF
+-- noMinorGridLines :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- noMinorGridLines = axisGridLines . mapped . minorGridF .= noGridF
 
 -- | Set no minor grid lines for given axis.
-noMinorGridLine :: MonadState (Axis b v n) m => E v -> m ()
-noMinorGridLine (E l) = axisGridLines . l . minorGridF .= noGridF
+-- noMinorGridLine :: MonadState (Axis b v n) m => E v -> m ()
+-- noMinorGridLine (E l) = axisGridLines . l . minorGridF .= noGridF
 
 -- | Traversal over both major and minor grid lines for all axes.
-allGridLines :: Traversable v => Traversal' (Axis b v n) (GridLines v n)
-allGridLines = axisGridLines . traverse
+-- allGridLines :: Traversable v => Traversal' (Axis b v n) (GridLines v n)
+-- allGridLines = axisGridLines . traverse
 
 ------------------------------------------------------------------------
 -- Bounds
@@ -498,15 +498,15 @@ zMax = boundMin ey
 ------------------------------------------------------------------------
 
 -- | Set all axis grid lines to form a box.
-boxAxisLines :: (Functor v, MonadState (Axis b v n) m) => m ()
-boxAxisLines =
-  axisLines . mapped . axisLineType .= BoxAxisLine
+-- boxAxisLines :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- boxAxisLines =
+--   axisLines . mapped . axisLineType .= BoxAxisLine
 
 -- | Set all axis grid lines to pass though the origin. If the origin is
 --   not in bounds the line will be on the edge closest to the origin.
-middleAxisLines :: (Functor v, MonadState (Axis b v n) m) => m ()
-middleAxisLines =
-  axisLines . mapped . axisLineType .= MiddleAxisLine
+-- middleAxisLines :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- middleAxisLines =
+--   axisLines . mapped . axisLineType .= MiddleAxisLine
 
 -- -- | Traversal over all axis line types.
 -- axisLineTypes :: HasAxisLines a v => Tranversal' a AxisLineType
@@ -539,26 +539,26 @@ middleAxisLines =
 ------------------------------------------------------------------------
 
 -- | Remove minor ticks from all axes.
-noMinorTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
-noMinorTicks =
-  axisTicks . mapped . minorTickAlign .= noTicks
+-- noMinorTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- noMinorTicks =
+--   axisTicks . mapped . minorTickAlign .= noTicks
 
 -- | Remove major ticks from all axes.
-noMajorTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
-noMajorTicks =
-  axisTicks . mapped . majorTickAlign .= noTicks
+-- noMajorTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- noMajorTicks =
+--   axisTicks . mapped . majorTickAlign .= noTicks
 
 -- | Remove both major and minor ticks from all axes.
-noAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
-noAxisTicks = noMinorTicks >> noMajorTicks
+-- noAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- noAxisTicks = noMinorTicks >> noMajorTicks
 
-centerAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
-centerAxisTicks =
-  axisTicks . mapped . tickAlign .= centerTicks
+-- centerAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- centerAxisTicks =
+--   axisTicks . mapped . tickAlign .= centerTicks
 
-insideAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
-insideAxisTicks =
-  axisTicks . mapped . tickAlign .= insideTicks
+-- insideAxisTicks :: (Functor v, MonadState (Axis b v n) m) => m ()
+-- insideAxisTicks =
+--   axisTicks . mapped . tickAlign .= insideTicks
 
 
 ------------------------------------------------------------------------
@@ -581,8 +581,8 @@ insideAxisTicks =
 -- 'addHeatMap' to turn it on or it can be turned on explicitly by
 -- 'showColorBar'.
 
-showColourBar :: MonadState (Axis b v n) m => m ()
-showColourBar = axisColourBar . colourBarVisible .= True
+-- showColourBar :: MonadState (Axis b v n) m => m ()
+-- showColourBar = axisColourBar . colourBarVisible .= True
 
 
 {-# ANN module ("HLint: ignore Use import/export shortcut" :: String) #-}

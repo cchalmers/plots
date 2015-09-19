@@ -460,8 +460,11 @@ barLayoutAxisLabels
   => BarLayout n -> [String] -> m ()
 barLayoutAxisLabels bl ls =
   unless (null ls) $ do
-    axisTicks . orient bl _y _x . majorTicksFun . mapped .= xs
-    axisTickLabels . orient bl _y _x . tickLabelFun .= \_ _ -> zip xs ls
+    axes . orient bl _y _x . majorTickFunction . mapped .= xs
+    axes . orient bl _y _x . tickLabelFunction .= \_ _ -> zip xs ls
+    -- zoom (axes . orient bl _y _x) $ do
+    --   majorTickFunction .= \_   -> xs
+    --   tickLabelFunction .= \_ _ -> zip xs ls
   where
     xs = map ((+ view barStart bl) . (* view barSpacing bl) . fromIntegral)
              [0 .. length ls - 1]
