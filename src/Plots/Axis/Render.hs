@@ -217,11 +217,15 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
 
     drawTicks (pos,y) = maTicks <> miTicks
       where
-        maTicks = foldMap (positionTick majorTick) majorTickXs'
+        maTicks
+          | a ^. majorTickVisible . to not = mempty
+          | otherwise = foldMap (positionTick majorTick) majorTickXs'
                        # stroke
                        # applyStyle (a ^. majorTickStyle)
         --
-        miTicks = foldMap (positionTick minorTick) minorTickXs'
+        miTicks
+          | a ^. minorTickVisible . to not = mempty
+          | otherwise = foldMap (positionTick minorTick) minorTickXs'
                        # stroke
                        # applyStyle (a ^. minorTickStyle)
         --
