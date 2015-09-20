@@ -1,13 +1,13 @@
-{-# LANGUAGE CPP                       #-}
-{-# LANGUAGE DeriveDataTypeable        #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
-{-# LANGUAGE FunctionalDependencies    #-}
-{-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE RankNTypes                #-}
-{-# LANGUAGE TemplateHaskell           #-}
-{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE CPP                    #-}
+{-# LANGUAGE DeriveDataTypeable     #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE GADTs                  #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilies           #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Types
@@ -34,6 +34,8 @@ module Plots.Types
     -- * Plot options
   , PlotOptions
   , HasPlotOptions (..)
+  , key
+  , addLegendEntry
 
     -- * Plotable class
   , Plotable (..)
@@ -99,17 +101,18 @@ module Plots.Types
 
   ) where
 
+import           Control.Monad.State
 import           Data.Bool
 import           Data.Functor.Rep
 import           Data.Monoid.Recommend
-import           Data.Orphans               ()
+import           Data.Orphans          ()
 import           Data.Typeable
 -- import           Diagrams.BoundingBox
-import           Diagrams.Prelude           as D
-import Data.List (sortOn)
+import           Data.List             (sortOn)
+import           Diagrams.Prelude      as D
 
 #if __GLASGOW_HASKELL__ < 710
-import           Data.Foldable           (Foldable)
+import           Data.Foldable         (Foldable)
 #endif
 
 import           Linear
@@ -278,11 +281,11 @@ mkLegendEntry x = LegendEntry DefaultLegendPic x 0
 
 -- | Data type for holding information all plots must contain.
 data PlotOptions b v n = PlotOptions
-  { poName                :: Name
-  , poClipPlot            :: Bool
-  , poLegend              :: [LegendEntry b v n]
-  , poVisible             :: Bool
-  , poTransform           :: Transformation v n
+  { poName      :: Name
+  , poClipPlot  :: Bool
+  , poLegend    :: [LegendEntry b v n]
+  , poVisible   :: Bool
+  , poTransform :: Transformation v n
   -- , poPostPlotBoundingBox :: BoundingBox v n -> BoundingBox v n
   -- , poPlotPostProduction  :: QDiagram b v n Any -> QDiagram b v n Any
   } deriving Typeable
@@ -364,14 +367,41 @@ instance (HasLinearMap v, Num n) => Transformable (PlotOptions b v n) where
 instance (Additive v, Num n) => HasOrigin (PlotOptions b v n) where
   moveOriginTo = over plotTransform . moveOriginTo
 
--- instance HasPlotStyle (PlotOptions b v n) b where
---   plotStyle = plotPropertiesStyle
-
 instance Qualifiable (PlotOptions b v n) where
   n .>> p = over plotName (n .>>) p
 
+-- XXX template haskell getting in the way
 -- instance HasVisibility (PlotOptions b v n) where
 --   visible = plotVisible
+
+-- | Add a 'LegendEntry' to something with 'PlotOptions' using the
+--   'String' as the 'legendText' and a 'DefaultLegendPic'. Here are
+--   some typical examples:
+--
+-- @
+-- 'key' :: 'String' -> 'State' ('Plot' ('ScatterPlot' v n) b) ()
+-- 'key' :: 'String' -> 'State' ('DynamicPlot' b v n) ()
+-- 'key' :: 'String' -> 'State' ('PlotMods' b v n) ()
+-- @
+--
+--  If you only care about the name of the legend, use 'key'.
+key :: (HasPlotOptions Identity a b, MonadState a m, Num (N a)) => String -> m ()
+key = addLegendEntry . mkLegendEntry
+
+-- | Add a 'LegendEntry' to something with 'PlotOptions'. Here are some
+--   typical examples:
+--
+-- @
+-- 'addLegendEntry' :: 'LegendEntry' b v n -> 'State' ('Plot' ('ScatterPlot' v n) b) ()
+-- 'addLegendEntry' :: 'LegendEntry' b v n -> 'State' ('DynamicPlot' b v n) ()
+-- @
+--
+--  If you only care about the name of the legend, use 'key'.
+addLegendEntry
+  :: (HasPlotOptions Identity a b, MonadState a m, Num (N a))
+  => LegendEntry b (V a) (N a)
+  -> m ()
+addLegendEntry l = legendEntries <>= [l]
 
 -- zeroInt :: Additive v => v Int
 -- zeroInt = zero
@@ -382,9 +412,9 @@ instance Qualifiable (PlotOptions b v n) where
 
 -- | Information from the 'Plots.Axis.Axis' necessary to render a 'Plotable'.
 data AxisSpec v n = AxisSpec
-  { _specBounds :: v (n, n)
-  , _specTrans  :: Transformation v n
-  , _specScale  :: v AxisScale
+  { _specBounds    :: v (n, n)
+  , _specTrans     :: Transformation v n
+  , _specScale     :: v AxisScale
   , _specColourMap :: ColourMap
   }
 
