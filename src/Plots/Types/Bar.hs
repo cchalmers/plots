@@ -69,8 +69,9 @@ import qualified Data.Foldable as F
 
 import           Plots.Style
 import           Plots.Types
-import Plots.Axis
-import Plots.API
+import           Plots.Axis
+import           Plots.Axis.Ticks
+import           Plots.Axis.Labels
 
 import qualified Data.List               as List
 import           Diagrams.Core.Transform (fromSymmetric)

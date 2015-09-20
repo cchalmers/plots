@@ -13,11 +13,9 @@
 ----------------------------------------------------------------------------
 module Plots
   (
-    -- * API
 
-    -- | Data types and classes, definitions of plotable, bounds, axis
-    --   labels, legends, diagram essentials and so on.
-    module Plots.API
+    -- | Axis definition (r2Axis and polarAxis), aspect ratio and scaling.
+    module Plots.Axis
 
     -- | 'AxisStyle's are used to provide default colours and shapes
     -- for the plots of an axis.
@@ -103,9 +101,6 @@ module Plots
     --   plot ,plot spec and so on.
   , module Plots.Types
 
-    -- | Axis definition (r2Axis and polarAxis), aspect ratio and scaling.
-  , module Plots.Axis
-
     -- | Grid lines and styles.
   , module Plots.Axis.Grid
 
@@ -133,7 +128,6 @@ import           Plots.Axis.ColourBar
 
 import           Plots.Types
 import           Plots.Style
-import           Plots.API
 import           Plots.CmdLine
 
 import           Plots.Types.Scatter

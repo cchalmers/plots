@@ -28,6 +28,9 @@ module Plots.Axis
   , axisSize
   , axisScale
 
+    -- * Default axes
+  , r2Axis
+
     -- ** Base space
   , BaseSpace
 
@@ -302,6 +305,37 @@ instance HasColourBar (Axis b v n) b where
 
 -- Axis functions ------------------------------------------------------
 
+-- $plotable
+-- The 'Plotable' class defines ways of converting the data type to a
+-- diagram for some axis. There are several variants for adding an axis
+-- with constraints @('InSpace' v n a, 'Plotable' a b)@:
+--
+-- @
+-- 'addPlotable'  ::           a -> 'PlotState' a b -> 'AxisState' b v n
+-- 'addPlotable''   ::           a ->                  'AxisState' b v n
+-- @
+--
+-- The last argument is a 'PlotState' so you can use @do@ notation to
+-- make adjustments to the plot. The @L@ suffix stands for \"legend\",
+-- it is equivalent of using 'addLegendEntry' in the 'PlotState'. Since
+-- legend entries are so common it has it's own suffix. The following
+-- are equivalent:
+--
+-- @
+-- myaxis = 'r2Axis' &~ do
+--   'addPlotable'' myplot $ do
+--     'addLegendEntry' "my plot"
+-- @
+--
+-- @
+-- myaxis = 'r2Axis' &~ do
+--   'addPlotableL' "my plot" myplot
+-- @
+--
+-- Most of the time you won't use these functions directly. However,
+-- other plotting functions follow this naming convention where instead
+-- of @a@, it takes the data needed to make the plot.
+
 -- | Add something 'Plotable' to the axis with a statefull modification
 --   of the 'Plot'.
 addPlotable
@@ -316,23 +350,25 @@ addPlotable'
 addPlotable' p = addPlotable p (return ())
 
 ------------------------------------------------------------------------
--- R2 Axis
+-- Predefined axes
 ------------------------------------------------------------------------
 
-instance (TypeableFloat n,
-          Enum n,
-          Renderable (Text n) b,
-          Renderable (Path V2 n) b)
-    => Default (Axis b V2 n) where
-  def = Axis
-    { _axisAxisStyle  = fadedColours
-    , _axisColourBar  = defColourBar
+-- | The default axis for plots in the 'V2' coordinate system.
+r2Axis
+  :: (TypeableFloat n,
+     Enum n,
+     Renderable (Text n) b,
+     Renderable (Path V2 n) b)
+  => Axis b V2 n
+r2Axis = Axis
+  { _axisAxisStyle  = fadedColours
+  , _axisColourBar  = defColourBar
 
-    , _axisLegend     = def
-    , _axisPlots      = []
+  , _axisLegend     = def
+  , _axisPlots      = []
 
-    , _axes = pure def
-    }
+  , _axes = pure def
+  }
 
 -- The x-axis ----------------------------------------------------------
 
