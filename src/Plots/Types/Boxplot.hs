@@ -13,16 +13,16 @@ module Plots.Types.Boxplot
   ( -- * Adding box plots
     boxPlot
   , boxPlot'
-  , boxPlotL
+  -- , boxPlotL
 
     -- * Fold variant boxplot
   , boxPlotOf
   , boxPlotOf'
-  , boxPlotOfL
+  -- , boxPlotOfL
 
      -- * Boxplot type
   , GBoxPlot
-  , _BoxPlot
+  -- , _BoxPlot
 
     -- * Box plot
   , BoxPlot
@@ -47,7 +47,6 @@ import           Diagrams.Coordinates.Isomorphic
 import           Plots.Style
 import           Plots.Types
 import           Plots.Axis
-import           Plots.API
 
 ------------------------------------------------------------------------
 -- Boxplot data
@@ -84,7 +83,7 @@ instance (Metric v, OrderedField n) => Enveloped (GBoxPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n, n ~ Double)
     => Plotable (GBoxPlot V2 n a) b where
-  renderPlotable s GBoxPlot {..} pp =
+  renderPlotable s _opts sty GBoxPlot {..} =
     if bFill
       then mconcat ([ draw' d | d <-(drawBoxPlot dd)] ++ [foo])
       else mconcat [ draw' d | d <-(drawBoxPlot dd)]
@@ -95,19 +94,19 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
                   # mapLoc closeLine
                   # stroke
                   # lw none
-                  # applyAreaStyle pp
+                  # applyAreaStyle sty
                   # transform t
       t       = s ^. specTrans
       ls      = s ^. specScale
       draw' d = d # transform t
                   # stroke
 
-  defLegendPic GBoxPlot {..} pp
-      = square 5 # applyAreaStyle pp
+  defLegendPic GBoxPlot {..} sty
+      = square 5 # applyAreaStyle sty
 
-_BoxPlot :: (Plotable (BoxPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (BoxPlot v n)
-_BoxPlot = _Plot
+-- _BoxPlot :: (Plotable (BoxPlot v n) b, Typeable b)
+--                    => Prism' (Plot b v n) (BoxPlot v n)
+-- _BoxPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Boxplot
@@ -189,8 +188,8 @@ class HasBox a v n d | a -> v n, a -> d where
 instance HasBox (GBoxPlot v n d) v n d where
   box = id
 
-instance HasBox (PropertiedPlot (GBoxPlot v n d) b) v n d where
-  box = _pp
+instance HasBox (Plot (GBoxPlot v n d) b) v n d where
+  box = rawPlot
 
 ------------------------------------------------------------------------
 -- Boxplot
@@ -234,7 +233,7 @@ boxPlot
       Plotable (BoxPlot v n) b,
       F.Foldable f ,
       Enum n, TypeableFloat n)
-  => f p -> m ()
+  => f p -> State (Plot (BoxPlot v n) b) () -> m ()
 boxPlot d = addPlotable (mkBoxPlot d)
 
 -- | Make a 'BoxPlot' and take a 'State' on the plot to alter its
@@ -253,7 +252,7 @@ boxPlot'
       Plotable (BoxPlot v n) b,
       F.Foldable f ,
       Enum n, TypeableFloat n)
-  => f p -> PlotState (BoxPlot v n) b -> m ()
+  => f p -> m ()
 boxPlot' d = addPlotable' (mkBoxPlot d)
 
 -- | Add a 'BoxPlot' with the given name for the legend entry.
@@ -263,15 +262,15 @@ boxPlot' d = addPlotable' (mkBoxPlot d)
 --     boxPlotL "blue team" pointData1
 --     boxPlotL "red team" pointData2
 -- @
-boxPlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (BoxPlot v n) b,
-      F.Foldable f ,
-      Enum n, TypeableFloat n)
-  => String -> f p  -> m ()
-boxPlotL l d = addPlotableL l (mkBoxPlot d)
+-- boxPlotL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (BoxPlot v n) b,
+--       F.Foldable f ,
+--       Enum n, TypeableFloat n)
+--   => String -> f p -> m ()
+-- boxPlotL l d = addPlotableL l (mkBoxPlot d)
 
 -- Fold variants
 
@@ -281,7 +280,7 @@ boxPlotOf
       MonadState (Axis b c n) m,
       Plotable (BoxPlot v n) b,
       Enum n, TypeableFloat n)
-  => Fold s p -> s -> m ()
+  => Fold s p -> s -> State (Plot (BoxPlot v n) b) () -> m ()
 boxPlotOf f s = addPlotable (mkBoxPlotOf f s)
 
 boxPlotOf'
@@ -290,15 +289,15 @@ boxPlotOf'
       MonadState (Axis b c n) m,
       Plotable (BoxPlot v n) b,
       Enum n, TypeableFloat n)
-  => Fold s p -> s -> PlotState (BoxPlot v n) b -> m ()
+  => Fold s p -> s -> m ()
 boxPlotOf' f s = addPlotable' (mkBoxPlotOf f s)
 
-boxPlotOfL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (BoxPlot v n) b,
-      Enum n, TypeableFloat n)
-  => String -> Fold s p -> s -> m ()
-boxPlotOfL l f s = addPlotableL l (mkBoxPlotOf f s)
+-- boxPlotOfL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (BoxPlot v n) b,
+--       Enum n, TypeableFloat n)
+--   => String -> Fold s p -> s -> m ()
+-- boxPlotOfL l f s = addPlotableL l (mkBoxPlotOf f s)
 

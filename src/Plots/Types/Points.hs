@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -38,7 +37,7 @@ import           Diagrams.Coordinates.Polar
 
 import           Plots.Style
 import           Plots.Types
-import           Plots.API
+import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- GPoints plot
@@ -61,19 +60,19 @@ instance (OrderedField n) => Enveloped (GPointsPlot n) where
 
 instance (v ~ V2, Typeable b, TypeableFloat n, Renderable (Path v n) b)
     => Plotable (GPointsPlot n) b where
-  renderPlotable _ GPointsPlot {..} pp =
-      mconcat [marker # applyMarkerStyle pp # scale 0.1 # moveTo (p2 (r*(cosA theta),r*(sinA theta)))| (r,theta) <- sPoints]
+  renderPlotable _ _opts sty GPointsPlot {..} =
+      mconcat [marker # applyMarkerStyle sty # scale 0.1 # moveTo (p2 (r*(cosA theta),r*(sinA theta)))| (r,theta) <- sPoints]
    <> if sFill
          then doline <> doarea
       else mempty
       where
-       marker = pp ^. plotMarker
-       doline = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # applyLineStyle pp
-       doarea = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # lw none # applyAreaStyle pp
+       marker = sty ^. plotMarker
+       doline = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # applyLineStyle sty
+       doarea = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # lw none # applyAreaStyle sty
 
-  defLegendPic GPointsPlot {..} pp
-      = pp ^. plotMarker
-         & applyMarkerStyle pp
+  defLegendPic GPointsPlot {..} sty
+      = sty ^. plotMarker
+         & applyMarkerStyle sty
 
 ------------------------------------------------------------------------
 -- Points plot
@@ -100,8 +99,8 @@ class HasPoints a n | a -> n where
 instance HasPoints (GPointsPlot n) n where
   pts = id
 
-instance HasPoints (PropertiedPlot (GPointsPlot n) b) n where
-  pts = _pp
+instance HasPoints (Plot (GPointsPlot n) b) n where
+  pts = rawPlot
 
 ------------------------------------------------------------------------
 -- Points plot
@@ -142,7 +141,7 @@ pointsPlot
       MonadState (Axis b c n) m,
       Plotable (GPointsPlot n) b,
       RealFloat n)
-  => [(n,Angle n)] -> m ()
+  => [(n,Angle n)] -> State (Plot (GPointsPlot n) b) () -> m ()
 pointsPlot ds = addPlotable (mkPointsPlot ds)
 
 -- | Make a 'PointsPlot' and take a 'State' on the plot to alter it's
@@ -161,5 +160,5 @@ pointsPlot'
       MonadState (Axis b c n) m,
       Plotable (GPointsPlot n) b,
       RealFloat n)
-  => [(n,Angle n)] -> PlotState (GPointsPlot n) b -> m ()
+  => [(n,Angle n)] -> m ()
 pointsPlot' ds = addPlotable' (mkPointsPlot ds)

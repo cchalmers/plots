@@ -1,6 +1,4 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
@@ -13,9 +11,6 @@
 {-# LANGUAGE UndecidableInstances      #-}
 
 {-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE AllowAmbiguousTypes       #-}
-
-{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.Types.Function
   ( -- * Function plot options
@@ -60,8 +55,8 @@ module Plots.Types.Function
   , parametricRangePlot
   , parametricPlot'
   , parametricRangePlot'
-  , parametricPlotL
-  , parametricRangePlotL
+  -- , parametricPlotL
+  -- , parametricRangePlotL
 
     -- * Line functions
   , abLinePlot
@@ -73,7 +68,7 @@ module Plots.Types.Function
   , vectorPointPlot
   , vectorPointPlot'
   , vectorPointPlot''
-  , vectorPointPlotL
+  -- , vectorPointPlotL
   , vectorFieldPlot
 
   -- , meshPlot
@@ -93,7 +88,7 @@ import           Diagrams.Prelude                hiding (view)
 
 import           Plots.Style
 import           Plots.Types
-import           Plots.API
+import           Plots.Axis
 
 -- import           Data.Traversable  as T
 -- import           Data.Foldable
@@ -151,11 +146,11 @@ instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (Param
 
 instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
     => Plotable (ParametricPlot V2 n) b where
-  renderPlotable s pa pp =
+  renderPlotable s _opts sty pa =
     pathFromVertices p
       # transform (s^.specTrans)
       # stroke
-      # applyLineStyle pp
+      # applyLineStyle sty
     where
       p = map f [a, a + 1 / (pa ^. functionPlotNumPoints . to fromIntegral) .. b]
       f = pa ^. parametricFunction
@@ -218,7 +213,7 @@ instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (Vecto
 
 instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
     => Plotable (VectorPlot V2 n) b where
-  renderPlotable s v _pp = arrowAt' opts pt1 (V2 q r)
+  renderPlotable s _opts _sty v = arrowAt' opts pt1 (V2 q r)
                           # transform (s^.specTrans)
                           # translate (r2 (x, y))
                           where
@@ -227,9 +222,9 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
                              (V2 q r) = v ^. vectorV
                              opts     = v ^. vectorArrows
 
-  defLegendPic VectorPlot {..} pp
+  defLegendPic VectorPlot {..} sty
       = (p2 (-10,0) ~~ p2 (10,0))
-          # applyLineStyle pp
+          # applyLineStyle sty
 
 -- | Plot a given vector at (0,0).
 mkVectorPlot :: (Additive v, TypeableFloat n) => v n -> VectorPlot v n
@@ -261,8 +256,8 @@ class HasVector a v n | a -> v n where
 instance HasVector (VectorPlot v n) v n where
   vector = id
 
-instance HasVector (PropertiedPlot (VectorPlot v n) b) v n where
-  vector = _pp
+instance HasVector (Plot (VectorPlot v n) b) v n where
+  vector = rawPlot
 
 ------------------------------------------------------------------------
 -- Parametric Plot
@@ -274,7 +269,7 @@ parametricPlot
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
       Additive v, TypeableFloat n)
-  => (n -> p) -> m ()
+  => (n -> p) -> State (Plot (ParametricPlot v n) b) () -> m ()
 parametricPlot f = addPlotable (mkParametricPlot f)
 
 parametricPlot'
@@ -283,17 +278,17 @@ parametricPlot'
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
       Additive v, TypeableFloat n)
-  => (n -> p) -> PlotState (ParametricPlot v n) b -> m ()
+  => (n -> p) -> m ()
 parametricPlot' f = addPlotable' (mkParametricPlot f)
 
-parametricPlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
-  => String -> (n -> p) -> m ()
-parametricPlotL l f = addPlotableL l (mkParametricPlot f)
+-- parametricPlotL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (ParametricPlot v n) b,
+--       Additive v, TypeableFloat n)
+--   => String -> (n -> p) -> m ()
+-- parametricPlotL l f = addPlotableL l (mkParametricPlot f)
 
 -- range variant
 
@@ -303,7 +298,7 @@ parametricRangePlot
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
       Additive v, TypeableFloat n)
-  => (n -> p) -> (n ,n) -> m ()
+  => (n -> p) -> (n ,n) -> State (Plot (ParametricPlot v n) b) () -> m ()
 parametricRangePlot f d = addPlotable (mkParametricRangePlot f d)
 
 parametricRangePlot'
@@ -312,17 +307,17 @@ parametricRangePlot'
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
       Additive v, TypeableFloat n)
-  => (n -> p) -> (n ,n) -> PlotState (ParametricPlot v n) b -> m ()
+  => (n -> p) -> (n ,n) -> m ()
 parametricRangePlot' f d = addPlotable' (mkParametricRangePlot f d)
 
-parametricRangePlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
-  => String -> (n -> p) -> (n ,n) -> m ()
-parametricRangePlotL l f d = addPlotableL l (mkParametricRangePlot f d)
+-- parametricRangePlotL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (ParametricPlot v n) b,
+--       Additive v, TypeableFloat n)
+--   => String -> (n -> p) -> (n ,n) -> m ()
+-- parametricRangePlotL l f d = addPlotableL l (mkParametricRangePlot f d)
 
 ------------------------------------------------------------------------
 -- Vector Plot
@@ -333,7 +328,7 @@ vectorPlot
       MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
       Additive v, TypeableFloat n)
-  =>  v n -> m ()
+  =>  v n -> State (Plot (VectorPlot v n) b) () -> m ()
 vectorPlot f = addPlotable (mkVectorPlot f)
 
 vectorPointPlot
@@ -341,7 +336,7 @@ vectorPointPlot
       MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
       Additive v, TypeableFloat n)
-  =>  v n -> (n, n)  -> m ()
+  =>  v n -> (n, n) -> State (Plot (VectorPlot v n) b) () -> m ()
 vectorPointPlot f d = addPlotable (mkVectorPointPlot f d)
 
 vectorPointPlot'
@@ -349,7 +344,7 @@ vectorPointPlot'
       MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
       Additive v, TypeableFloat n)
-  =>  v n -> (n, n) -> PlotState (VectorPlot v n) b -> m ()
+  =>  v n -> (n, n) -> m ()
 vectorPointPlot' f d = addPlotable' (mkVectorPointPlot f d)
 
 vectorPointPlot''
@@ -358,16 +353,16 @@ vectorPointPlot''
       Plotable (VectorPlot v n) b,
       Additive v, TypeableFloat n)
   =>  v n -> (n, n) -> ArrowOpts n -> m ()
-vectorPointPlot'' f d opts = addPlotable' (mkVectorPointPlot f d) $ do
+vectorPointPlot'' f d opts = addPlotable (mkVectorPointPlot f d) $ do
                               setArrowOpts .= opts
 
-vectorPointPlotL
-  :: (v ~ BaseSpace c,
-      MonadState (Axis b c n) m,
-      Plotable (VectorPlot v n) b,
-      Additive v, TypeableFloat n)
-  =>  String -> v n -> (n, n) -> m ()
-vectorPointPlotL l f d = addPlotableL l (mkVectorPointPlot f d)
+-- vectorPointPlotL
+--   :: (v ~ BaseSpace c,
+--       MonadState (Axis b c n) m,
+--       Plotable (VectorPlot v n) b,
+--       Additive v, TypeableFloat n)
+--   =>  String -> v n -> (n, n) -> m ()
+-- vectorPointPlotL l f d = addPlotableL l (mkVectorPointPlot f d)
 
 vectorFieldPlot
   :: (v ~ BaseSpace c,
@@ -375,7 +370,9 @@ vectorFieldPlot
       Plotable (VectorPlot v n) b,
       Additive v, TypeableFloat n)
   =>  [v n] -> [(n, n)] -> ArrowOpts n -> m ()
-vectorFieldPlot vs ps opts = F.forM_ (zip vs ps) $ \x -> vectorPointPlot'' (fst x) (snd x) opts
+vectorFieldPlot vs ps opts =
+  F.forM_ (zip vs ps) $ \x ->
+    vectorPointPlot'' (fst x) (snd x) opts
 
 -------------------------------------------------------------------------------
 -- Line
@@ -387,7 +384,7 @@ abLinePlot
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
       Additive v, TypeableFloat n)
-     => n -> n -> (n ,n) -> m ()
+     => n -> n -> (n ,n) -> State (Plot (ParametricPlot v n) b) () -> m ()
 abLinePlot slope intercept d = addPlotable (mkParametricRangePlot (createABLine slope intercept) d)
 
 hLinePlot
@@ -396,7 +393,7 @@ hLinePlot
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
       Additive v, TypeableFloat n)
-     => n -> (n ,n) -> m ()
+     => n -> (n ,n) -> State (Plot (ParametricPlot v n) b) () -> m ()
 hLinePlot intercept d = addPlotable (mkParametricRangePlot (createHLine intercept) d)
 
 vLinePlot
@@ -405,7 +402,7 @@ vLinePlot
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
       Additive v, TypeableFloat n)
-     => n -> (n ,n) -> m ()
+     => n -> (n ,n) -> State (Plot (ParametricPlot v n) b) () -> m ()
 vLinePlot intercept d = addPlotable (mkParametricRangePlot (createVLine intercept) d)
 
 ------------------------------------------------------------------------

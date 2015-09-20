@@ -28,6 +28,10 @@ module Plots.Axis
   , axisSize
   , axisScale
 
+    -- * Axis plots
+  , addPlotable
+  , addPlotable'
+
     -- * Single axis
   , SingleAxis
   , singleAxisSize
@@ -72,6 +76,7 @@ import           Plots.Axis.Line
 import           Plots.Legend
 import           Plots.Style
 import           Plots.Types
+import Control.Monad.State
 
 import Linear
 
@@ -218,7 +223,7 @@ data Axis b c n = Axis
 
 
   , _axisLegend     :: Legend b n
-  , _axisPlots      :: [ModifiedPlot b (BaseSpace c) n]
+  , _axisPlots      :: [DynamicPlot b (BaseSpace c) n]
   -- , _axisTitle      :: Maybe String
 
   -- the v in each axis is only used for @'Style' v n@
@@ -270,6 +275,21 @@ instance HasAxisStyle (Axis b v n) b where
 
 instance HasColourBar (Axis b v n) b where
   colourBar = axisColourBar
+
+-- Axis functions ------------------------------------------------------
+
+-- | Add something 'Plotable' to the axis with a statefull modification
+--   of the 'Plot'.
+addPlotable
+  :: (InSpace (BaseSpace v) n p, MonadState (Axis b v n) m, Plotable p b)
+  => p -> State (Plot p b) () -> m ()
+addPlotable p s = axisPlots <>= [DynamicPlot $ execState s (mkPlot p)]
+
+-- | Simple version of 'AddPlotable' without any changes 'Plot'.
+addPlotable'
+  :: (InSpace (BaseSpace v) n p, MonadState (Axis b v n) m, Plotable p b)
+  => p -> m ()
+addPlotable' p = addPlotable p (return ())
 
 ------------------------------------------------------------------------
 -- R2 Axis

@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP                       #-}
+-- {-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -14,7 +14,7 @@ module Plots.Types.Scatter
     ScatterPlot
   , mkScatterPlot
   , mkScatterPlotOf
-  , _ScatterPlot
+  -- , _ScatterPlot
 
     -- * Bubble plot
   , BubblePlot
@@ -34,11 +34,11 @@ module Plots.Types.Scatter
     -- ** Scatter plot
   , scatterPlot
   , scatterPlot'
-  , scatterPlotL
+  -- , scatterPlotL
     -- ** Fold variant scatter plot
   , scatterPlotOf
   , scatterPlotOf'
-  , scatterPlotLOf
+  -- , scatterPlotLOf
 
   , bubblePlot
   , bubblePlot'
@@ -46,7 +46,7 @@ module Plots.Types.Scatter
     -- ** General scatter plot
   , gscatterPlot
   , gscatterPlot'
-  , gscatterPlotL
+  -- , gscatterPlotL
 
   -- **fold variant
   --, gscatterPlotOf
@@ -63,7 +63,8 @@ import           Data.Typeable
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude                hiding (view)
 
-import           Plots.API
+import           Plots.Axis
+import           Plots.Style
 import           Plots.Types
 
 ------------------------------------------------------------------------
@@ -89,12 +90,12 @@ instance (Metric v, OrderedField n) => Enveloped (GScatterPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GScatterPlot V2 n a) b where
-  renderPlotable s GScatterPlot {..} pp =
-      foldMapOf sFold mk sData # applyMarkerStyle pp
+  renderPlotable s _opts sty GScatterPlot {..} =
+      foldMapOf sFold mk sData # applyMarkerStyle sty
    <> if cLine
         then fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
                # transform t
-               # applyLineStyle pp
+               # applyLineStyle sty
         else mempty
     where
       t = s ^. specTrans
@@ -102,15 +103,15 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       mk a = marker # maybe id (transform  . ($ a)) sTr
                     # maybe id (applyStyle . ($ a)) sSty
                     # moveTo (specPoint s $ sPos a)
-      marker = pp ^. plotMarker
+      marker = sty ^. plotMarker
 
-  defLegendPic GScatterPlot {..} pp =
-    pp ^. plotMarker
-      & applyMarkerStyle pp
+  defLegendPic GScatterPlot {..} sty =
+    sty ^. plotMarker
+      & applyMarkerStyle sty
 
-_ScatterPlot :: (Plotable (ScatterPlot v n) b, Typeable b)
-             => Prism' (Plot b v n) (ScatterPlot v n)
-_ScatterPlot = _Plot
+-- _ScatterPlot :: (Plotable (ScatterPlot v n) b, Typeable b)
+--              => Prism' (Plot b v n) (ScatterPlot v n)
+-- _ScatterPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Scatter plot
@@ -182,11 +183,11 @@ mkGScatterPlot = mkGScatterPlotOf folded
 -- Scatter plot lenses
 ------------------------------------------------------------------------
 
-class HasScatter a v n d | a -> v n, a -> d where
-  scatter :: Lens' a (GScatterPlot v n d)
+class HasScatter a d | a -> d where
+  scatter :: Lens' a (GScatterPlot (V a) (N a) d)
 
   -- | Lens onto the transform depending on the scatter plot data.
-  scatterTransform :: Lens' a (Maybe (d -> T2 n))
+  scatterTransform :: Lens' a (Maybe (d -> T2 (N a)))
   scatterTransform = scatter . lens sTr (\sp t -> sp {sTr = t})
 
   -- | Change the style for a scatter plot, given the data entry.
@@ -196,7 +197,7 @@ class HasScatter a v n d | a -> v n, a -> d where
   --              & scatterTransform .~ Nothing
   -- @
   --
-  scatterStyle :: Lens' a (Maybe (d -> Style V2 n))
+  scatterStyle :: Lens' a (Maybe (d -> Style V2 (N a)))
   scatterStyle = scatter . lens sSty (\sp sty -> sp {sSty = sty})
 
   -- | Lens onto whether the scatter plot should have a connecting line
@@ -204,11 +205,11 @@ class HasScatter a v n d | a -> v n, a -> d where
   connectingLine :: Lens' a Bool
   connectingLine = scatter . lens cLine (\s b -> (s {cLine = b}))
 
-instance HasScatter (GScatterPlot v n d) v n d where
+instance HasScatter (GScatterPlot v n d) d where
   scatter = id
 
-instance HasScatter (PropertiedPlot (GScatterPlot v n d) b) v n d where
-  scatter = _pp
+-- instance HasScatter p d => HasScatter (Plot p b) d where
+--   scatter = rawPlot . scatter
 
 ------------------------------------------------------------------------
 -- Scatter plot
@@ -254,8 +255,9 @@ scatterPlot
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b,
+      Typeable b,
       F.Foldable f)
-  => f p -> m ()
+  => f p -> State (Plot (ScatterPlot v n) b) () -> m ()
 scatterPlot d = addPlotable (mkScatterPlot d)
 
 -- | Make a 'ScatterPlot' and take a 'State' on the plot to alter it's
@@ -273,8 +275,9 @@ scatterPlot'
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b,
+      Typeable b,
       F.Foldable f)
-  => f p -> PlotState (ScatterPlot v n) b -> m ()
+  => f p -> m ()
 scatterPlot' d = addPlotable' (mkScatterPlot d)
 
 -- | Add a 'ScatterPlot' with the given name for the legend entry.
@@ -304,14 +307,14 @@ scatterPlot' d = addPlotable' (mkScatterPlot d)
 --    scatterPlotL "data 3" mydata3
 -- @
 
-scatterPlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b,
-      F.Foldable f)
-  => String -> f p -> m ()
-scatterPlotL l d = addPlotableL l (mkScatterPlot d)
+-- scatterPlotL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (ScatterPlot v n) b,
+--       F.Foldable f)
+--   => String -> f p -> m ()
+-- scatterPlotL l d = addPlotableL l (mkScatterPlot d)
 
 -- Fold variants
 
@@ -320,7 +323,7 @@ scatterPlotOf
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b)
-  => Fold s p -> s -> m ()
+  => Fold s p -> s -> State (Plot (ScatterPlot v n) b) () -> m ()
 scatterPlotOf f s = addPlotable (mkScatterPlotOf f s)
 
 scatterPlotOf'
@@ -328,16 +331,16 @@ scatterPlotOf'
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b)
-  => Fold s p -> s -> PlotState (ScatterPlot v n) b -> m ()
+  => Fold s p -> s -> m ()
 scatterPlotOf' f s = addPlotable' (mkScatterPlotOf f s)
 
-scatterPlotLOf
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b)
-  => String -> Fold s p -> s -> m ()
-scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
+-- scatterPlotLOf
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (ScatterPlot v n) b)
+--   => String -> Fold s p -> s -> m ()
+-- scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 
 ------------------------------------------------------------------------
 -- Bubble plot --
@@ -350,13 +353,13 @@ scatterPlotLOf l f s = addPlotableL l (mkScatterPlotOf f s)
 bubblePlot :: (v ~ BaseSpace c, Fractional n, Foldable f, PointLike v n p,
                MonadState (Axis b c n) m,
                Plotable (BubblePlot v n) b) =>
-              f (n, p) -> m ()
+              f (n, p) -> State (Plot (BubblePlot v n) b) () -> m ()
 bubblePlot d = addPlotable (mkBubblePlot d)
 
 bubblePlot' :: (v ~ BaseSpace c, Fractional n, Foldable f, PointLike v n p,
                 MonadState (Axis b c n) m,
                 Plotable (BubblePlot v n) b) =>
-               f (n, p) -> PlotState (BubblePlot v n) b -> m ()
+               f (n, p) -> m ()
 bubblePlot' d = addPlotable' (mkBubblePlot d)
 
 ------------------------------------------------------------------------
@@ -369,7 +372,7 @@ gscatterPlot
       MonadState (Axis b c n) m,
       Plotable (GScatterPlot v n a) b,
       F.Foldable f)
-  => f a -> (a -> p) -> m ()
+  => f a -> (a -> p) -> State (Plot (GScatterPlot v n a) b) () -> m ()
 gscatterPlot d pf = addPlotable (mkGScatterPlot d pf)
 
 gscatterPlot'
@@ -378,14 +381,14 @@ gscatterPlot'
       MonadState (Axis b c n) m,
       Plotable (GScatterPlot v n a) b,
       F.Foldable f)
-  => f a -> (a -> p) -> PlotState (GScatterPlot v n a) b -> m ()
+  => f a -> (a -> p) -> m ()
 gscatterPlot' d pf = addPlotable' (mkGScatterPlot d pf)
 
-gscatterPlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (GScatterPlot v n a) b,
-      F.Foldable f)
-  => String -> f a -> (a -> p) -> m ()
-gscatterPlotL l d pf = addPlotableL l (mkGScatterPlot d pf)
+-- gscatterPlotL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (GScatterPlot v n a) b,
+--       F.Foldable f)
+--   => String -> f a -> (a -> p) -> m ()
+-- gscatterPlotL l d pf = addPlotableL l (mkGScatterPlot d pf)

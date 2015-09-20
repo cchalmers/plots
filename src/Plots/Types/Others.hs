@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -10,25 +9,20 @@
 {-# LANGUAGE FunctionalDependencies    #-}
 
 {-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE AllowAmbiguousTypes       #-}
-
-{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
-
-{-# LANGUAGE AllowAmbiguousTypes          #-}
 
 module Plots.Types.Others
   ( -- * Vertical line range
     createlinerangev
   , linerangevPlot
   , linerangevPlot'
-  , linerangevPlotL
+  -- , linerangevPlotL
   , linerangevPlotwithPoint
 
     -- * Horizontal line range
   , createlinerangeh
   , linerangehPlot
   , linerangehPlot'
-  , linerangehPlotL
+  -- , linerangehPlotL
   , linerangehPlotwithPoint
 
     -- * Vertical errorbar
@@ -80,26 +74,26 @@ createlinerangev (a, b) s = [(a+(s/2), b), (a-(s/2), b)]
 linerangevPlot :: (Typeable b, Renderable (Path V2 Double) b,
                    MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                   (Double, Double) -> Double -> m ()
-linerangevPlot a s  = linePlot (createlinerangev a s)
+linerangevPlot a s  = linePlot' (createlinerangev a s)
 
 linerangevPlot' :: (Typeable b, Renderable (Path V2 Double) b,
                     MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                    (Double, Double) -> Double -> m ()
-linerangevPlot' a s  = linePlot (createlinerangev a s)
+linerangevPlot' a s  = linePlot' (createlinerangev a s)
 
-linerangevPlotL :: (Typeable b, Renderable (Path V2 Double) b,
-                    MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                   String -> (Double, Double) -> Double -> m ()
-linerangevPlotL l a s = linePlotL l (createlinerangev a s)
+-- linerangevPlotL :: (Typeable b, Renderable (Path V2 Double) b,
+--                     MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+--                    String -> (Double, Double) -> Double -> m ()
+-- linerangevPlotL l a s = linePlotL l (createlinerangev a s)
 
 linerangevPlotwithPoint :: (Typeable b, Renderable (Path V2 Double) b,
                             MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                            (Double, Double) -> Double -> m ()
 linerangevPlotwithPoint a s = do
-     linePlot' (createlinerangev a s) $ do
+     linePlot (createlinerangev a s) $ do
         plotColor .= purple
-        addLegendEntry "data 1"
-     scatterPlot' [a] $ do
+        -- addLegendEntry "data 1"
+     scatterPlot [a] $ do
         plotColor .= purple
         plotMarker %= scale 2
 
@@ -112,26 +106,26 @@ createlinerangeh (a, b) s = [(a, b+(s/2)), (a, b-(s/2))]
 linerangehPlot :: (Typeable b, Renderable (Path V2 Double) b,
                    MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                   (Double, Double) -> Double -> m ()
-linerangehPlot a s  = linePlot (createlinerangeh a s)
+linerangehPlot a s  = linePlot' (createlinerangeh a s)
 
 linerangehPlot' :: (Typeable b, Renderable (Path V2 Double) b,
                     MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                    (Double, Double) -> Double -> m ()
-linerangehPlot' a s  = linePlot (createlinerangeh a s)
+linerangehPlot' a s  = linePlot' (createlinerangeh a s)
 
-linerangehPlotL :: (Typeable b, Renderable (Path V2 Double) b,
-                    MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
-                   String -> (Double, Double) -> Double -> m ()
-linerangehPlotL l a s = linePlotL l (createlinerangeh a s)
+-- linerangehPlotL :: (Typeable b, Renderable (Path V2 Double) b,
+--                     MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
+--                    String -> (Double, Double) -> Double -> m ()
+-- linerangehPlotL l a s = linePlotL l (createlinerangeh a s)
 
 linerangehPlotwithPoint :: (Typeable b, Renderable (Path V2 Double) b,
                             MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                            (Double, Double) -> Double -> m ()
 linerangehPlotwithPoint a s = do
-     linePlot' (createlinerangeh a s) $ do
+     linePlot (createlinerangeh a s) $ do
         plotColor .= purple
-        addLegendEntry "data 1"
-     scatterPlot' [a] $ do
+        -- addLegendEntry "data 1"
+     scatterPlot [a] $ do
         plotColor .= purple
         plotMarker %= scale 2
 
@@ -143,26 +137,26 @@ errorbarvPlot :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                  (Double, Double) -> Double -> Double -> m ()
 errorbarvPlot (a,b) s h = do
-              linePlot' (createlinerangev (a, b) s) $ do
+              linePlot (createlinerangev (a, b) s) $ do
                  plotColor .= red
-                 addLegendEntry "data 1"
-              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+                 -- addLegendEntry "data 1"
+              linePlot (createlinerangeh (a+(s/2), b) h) $ do
                  plotColor .= red
-              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+              linePlot (createlinerangeh (a-(s/2), b) h) $ do
                  plotColor .= red
 
 errorbarvPlotwithPoint :: (Typeable b, Renderable (Path V2 Double) b,
                            MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                           (Double, Double) -> Double -> Double -> m ()
 errorbarvPlotwithPoint (a,b) s h = do
-              linePlot' (createlinerangev (a, b) s) $ do
+              linePlot (createlinerangev (a, b) s) $ do
                  plotColor .= blue
-                 addLegendEntry "data 1"
-              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+                 -- addLegendEntry "data 1"
+              linePlot (createlinerangeh (a+(s/2), b) h) $ do
                  plotColor .= blue
-              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+              linePlot (createlinerangeh (a-(s/2), b) h) $ do
                  plotColor .= blue
-              scatterPlot' [(a,b)] $ do
+              scatterPlot [(a,b)] $ do
                  plotColor .= blue
 
 
@@ -175,26 +169,26 @@ errorbarhPlot :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                  (Double, Double) -> Double -> Double -> m ()
 errorbarhPlot (a,b) s h = do
-              linePlot' (createlinerangeh (a, b) s) $ do
+              linePlot (createlinerangeh (a, b) s) $ do
                  plotColor .= red
-                 addLegendEntry "data n"
-              linePlot' (createlinerangev (a, b+(s/2)) h) $ do
+                 -- addLegendEntry "data n"
+              linePlot (createlinerangev (a, b+(s/2)) h) $ do
                  plotColor .= red
-              linePlot' (createlinerangev (a, b-(s/2)) h) $ do
+              linePlot (createlinerangev (a, b-(s/2)) h) $ do
                  plotColor .= red
 
 errorbarhPlotwithPoint :: (Typeable b, Renderable (Path V2 Double) b,
                            MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                           (Double, Double) -> Double -> Double -> m ()
 errorbarhPlotwithPoint (a,b) s h = do
-              linePlot' (createlinerangeh (a, b) s) $ do
+              linePlot (createlinerangeh (a, b) s) $ do
                  plotColor .= blue
-                 addLegendEntry "data n"
-              linePlot' (createlinerangev (a, b+(s/2)) h) $ do
+                 -- addLegendEntry "data n"
+              linePlot (createlinerangev (a, b+(s/2)) h) $ do
                  plotColor .= blue
-              linePlot' (createlinerangev (a, b-(s/2)) h) $ do
+              linePlot (createlinerangev (a, b-(s/2)) h) $ do
                  plotColor .= blue
-              scatterPlot' [(a,b)] $ do
+              scatterPlot [(a,b)] $ do
                  plotColor .= blue
 
 ------------------------------------------------------------------------
@@ -205,34 +199,34 @@ crossbarvPlot :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                  (Double, Double) -> Double -> Double -> m ()
 crossbarvPlot (a,b) s h = do
-              linePlot' (createlinerangeh (a, b) h) $ do
+              linePlot (createlinerangeh (a, b) h) $ do
                  plotColor .= red
-                 addLegendEntry "data n"
-              linePlot' (createlinerangev (a, b+(h/2)) s) $ do
+                 -- addLegendEntry "data n"
+              linePlot (createlinerangev (a, b+(h/2)) s) $ do
                  plotColor .= red
-              linePlot' (createlinerangev (a, b-(h/2)) s) $ do
+              linePlot (createlinerangev (a, b-(h/2)) s) $ do
                  plotColor .= red
-              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+              linePlot (createlinerangeh (a+(s/2), b) h) $ do
                  plotColor .= red
-              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+              linePlot (createlinerangeh (a-(s/2), b) h) $ do
                  plotColor .= red
 
 crossbarvPlotwithPoint :: (Typeable b, Renderable (Path V2 Double) b,
                            MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                           (Double, Double) -> Double -> Double -> m ()
 crossbarvPlotwithPoint (a,b) s h = do
-              linePlot' (createlinerangeh (a, b) h) $ do
+              linePlot (createlinerangeh (a, b) h) $ do
                  plotColor .= blue
-                 addLegendEntry "data n"
-              linePlot' (createlinerangev (a, b+(h/2)) s) $ do
+                 -- addLegendEntry "data n"
+              linePlot (createlinerangev (a, b+(h/2)) s) $ do
                  plotColor .= blue
-              linePlot' (createlinerangev (a, b-(h/2)) s) $ do
+              linePlot (createlinerangev (a, b-(h/2)) s) $ do
                  plotColor .= blue
-              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+              linePlot (createlinerangeh (a+(s/2), b) h) $ do
                  plotColor .= blue
-              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+              linePlot (createlinerangeh (a-(s/2), b) h) $ do
                  plotColor .= blue
-              scatterPlot' [(a,b)] $ do
+              scatterPlot [(a,b)] $ do
                  plotColor .= blue
 
 ------------------------------------------------------------------------
@@ -243,34 +237,34 @@ crossbarhPlot :: (Typeable b, Renderable (Path V2 Double) b,
                   MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                  (Double, Double) -> Double -> Double -> m ()
 crossbarhPlot (a,b) s h = do
-              linePlot' (createlinerangev (a, b) s) $ do
+              linePlot (createlinerangev (a, b) s) $ do
                  plotColor .= red
-                 addLegendEntry "data n"
-              linePlot' (createlinerangev (a, b+(h/2)) s) $ do
+                 -- addLegendEntry "data n"
+              linePlot (createlinerangev (a, b+(h/2)) s) $ do
                  plotColor .= red
-              linePlot' (createlinerangev (a, b-(h/2)) s) $ do
+              linePlot (createlinerangev (a, b-(h/2)) s) $ do
                  plotColor .= red
-              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+              linePlot (createlinerangeh (a+(s/2), b) h) $ do
                  plotColor .= red
-              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+              linePlot (createlinerangeh (a-(s/2), b) h) $ do
                  plotColor .= red
 
 crossbarhPlotwithPoint :: (Typeable b, Renderable (Path V2 Double) b,
                            MonadState (Axis b c Double) m, BaseSpace c ~ V2) =>
                           (Double, Double) -> Double -> Double -> m ()
 crossbarhPlotwithPoint (a,b) s h = do
-              linePlot' (createlinerangev (a, b) s) $ do
+              linePlot (createlinerangev (a, b) s) $ do
                  plotColor .= blue
-                 addLegendEntry "data n"
-              linePlot' (createlinerangev (a, b+(h/2)) s) $ do
+                 -- addLegendEntry "data n"
+              linePlot (createlinerangev (a, b+(h/2)) s) $ do
                  plotColor .= blue
-              linePlot' (createlinerangev (a, b-(h/2)) s) $ do
+              linePlot (createlinerangev (a, b-(h/2)) s) $ do
                  plotColor .= blue
-              linePlot' (createlinerangeh (a+(s/2), b) h) $ do
+              linePlot (createlinerangeh (a+(s/2), b) h) $ do
                  plotColor .= blue
-              linePlot' (createlinerangeh (a-(s/2), b) h) $ do
+              linePlot (createlinerangeh (a-(s/2), b) h) $ do
                  plotColor .= blue
-              scatterPlot' [(a,b)] $ do
+              scatterPlot [(a,b)] $ do
                  plotColor .= blue
 
 ------------------------------------------------------------------------
@@ -282,9 +276,9 @@ boxplotvPlot :: (Typeable b, Renderable (Path V2 Double) b,
                 (Double, Double) -> Double -> Double -> Double -> m ()
 boxplotvPlot (a,b) s1 s2 h = do
                              crossbarhPlot (a,b) s1 h
-                             linePlot' (createlinerangeh (a-(s1/2), b) (s2-s1)) $ do
+                             linePlot (createlinerangeh (a-(s1/2), b) (s2-s1)) $ do
                                  plotColor .= red
-                             linePlot' (createlinerangeh (a+(s1/2), b) (s2-s1)) $ do
+                             linePlot (createlinerangeh (a+(s1/2), b) (s2-s1)) $ do
                                  plotColor .= red
 
 
@@ -297,9 +291,9 @@ boxplothPlot :: (Typeable b, Renderable (Path V2 Double) b,
                 (Double, Double) -> Double -> Double -> Double -> m ()
 boxplothPlot (a,b) s h1 h2= do
                             crossbarhPlot (a,b) s h1
-                            linePlot' (createlinerangeh (a, b1) hmean) $ do
+                            linePlot (createlinerangeh (a, b1) hmean) $ do
                                  plotColor .= red
-                            linePlot' (createlinerangeh (a, b2) hmean) $ do
+                            linePlot (createlinerangeh (a, b2) hmean) $ do
                                  plotColor .= red
                             where b1 = b + (h1/2) + (h2/2)
                                   b2 = b - (h1/2) - (h2/2)

@@ -26,9 +26,9 @@ module Plots.Axis.Render where
 import           Control.Lens               hiding (lmap, transform, ( # ))
 import           Control.Lens.Extras        (is)
 import           Data.Distributive
-import           Data.Foldable
 import           Data.Monoid.Recommend
 import           Data.Typeable
+import           Data.Foldable
 
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude           as D hiding (under, view)
@@ -47,6 +47,8 @@ import           Plots.Style
 import           Plots.Axis.ColourBar
 import           Plots.Types
 import           Plots.Utils
+
+import Prelude
 
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b (BaseSpace v) n Any
@@ -102,15 +104,15 @@ renderR2Axis a = frame 40
               <> drawAxis ey ex LeftLabels
               <> plots
   where
-    spec = AxisSpec xs t (a^.axisScale) (a ^. axisColourMap)
-    plots    = foldMap (uncurry $ renderPlotable spec) plots'
+    spec  = AxisSpec xs t (a^.axisScale) (a ^. axisColourMap)
+    plots = foldMap (renderStyledPlot spec) styledPlots
     drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axisScale) t ll ll2
     --
-    (xs, tv, t') = workOutScale (boundingBox $ map fst plots') a
+    (xs, tv, t') = workOutScale (boundingBox styledPlots) a
     t = tv <> t'
     --
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
-    legend = drawLegend bb (a ^. axisLegend) (toList plots')
+    legend = drawLegend bb (styledPlotLegends styledPlots) (a ^. axisLegend)
     --
 
     -- The colour bar
@@ -119,12 +121,7 @@ renderR2Axis a = frame 40
     cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
     --
 
-    -- render the plots
-    -- preparePlots :: [ModifiedPlot b v n] -> [(Plot b v n, PlotProperties b v n)]
-    preparePlots =
-      zipWith (\theme p' -> modifyPlot p' (startingProperties theme))
-              (a ^.. axisStyle . axisStyles)
-    plots'     = a ^. axisPlots . to preparePlots
+    styledPlots = zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
 
 data LabelPosition
   = NoLabels
@@ -570,8 +567,7 @@ renderPolarAxis a = frame 15
               <> plots
   where
     spec = AxisSpec (pure (-10, 10)) mempty (pure LinearAxis) (a ^. axisColourMap)
-    -- plots    = foldMap (uncurry $ renderPlotable (AxisSpec xs t (a^.axisScale))) plots'
-    plots    = foldMap (uncurry $ renderPlotable spec) plots' # scale 6
+    plots    = foldMap (renderStyledPlot spec) styledPlots # scale 6
 
     -- drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --
@@ -587,23 +583,8 @@ renderPolarAxis a = frame 15
     -- t = tv <> t'
     --
     bb = fromCorners (p2 (-10,-10)) (p2 (10,10)) -- (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
-    legend = drawLegend bb (a ^. axisLegend) (toList plots')
+    legend = drawLegend bb (styledPlotLegends styledPlots) (a ^. axisLegend)
     --
-    -- pp = a ^. plotProperties
-    -- preparePlots =
-    --   zipWith (\theme p' -> modifyPlot (p' & properties . plotStyle .~ theme) pp)
-    --           (a ^.. axisStyle . axisStyles)
 
-    -- The colour bar
-    -- cbo = a ^. axisColourBar
-    --         & cbExtent .~ ex'
-    -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
-    -- colourBar = undefined -- addColourBar bb cbo (pp ^. plotColourMap) 0 1
-
-    -- Rendering plots
-    -- preparePlots :: [ModifiedPlot b v n] -> [(Plot b v n, PlotProperties b v n)]
-    preparePlots =
-      zipWith (\theme p' -> modifyPlot p' (startingProperties theme))
-              (a ^.. axisStyle . axisStyles)
-    plots'     = a ^. axisPlots . to preparePlots
+    styledPlots = zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
 

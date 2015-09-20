@@ -16,17 +16,17 @@ module Plots.API
   , r2Axis
   , renderAxis
   , Plot
-  , PlotState
-  , PlotStateM
+  -- , PlotState
+  -- , PlotStateM
   , R2Backend
 
     -- * Plotable
-  , addPlotable
-  , addPlotable'
-  , addPlotableL
-  , addPlotableL'
+  -- , addPlotable
+  -- , addPlotable'
+  -- , addPlotableL
+  -- , addPlotableL'
 
-  , diagramPlot
+  -- , diagramPlot
 
     -- ** Bounds
   , xMin, xMax
@@ -35,7 +35,7 @@ module Plots.API
 
     -- ** Grid lines
   -- , noGridLines
-  , addLegendEntry
+  -- , addLegendEntry
 
     -- ** Ticks
 
@@ -47,7 +47,7 @@ module Plots.API
     -- ** Axis labels
     -- ** Axis title
     -- * Legend
-  , addLegendEntry
+  -- , addLegendEntry
 
     -- * Diagrams essentials
   , (#)
@@ -207,11 +207,11 @@ type R2Backend b n =
 -- type AxisStateM b v n = State (Axis b v n)
 -- type AxisState b v n  = AxisStateM b v n ()
 
-type PlotStateM a b = State (PropertiedPlot a b)
+-- type PlotStateM a b = State (PropertiedPlot a b)
 
 -- | The plot state allows you to use lenses for the plot @a@ as well as
 --   the @PlotProperties@.
-type PlotState a b  = PlotStateM a b ()
+-- type PlotState a b  = PlotStateM a b ()
 
 -- type PropertyStateM b v n a = State (PlotProperties b v n) a
 -- type PropertyState b v n = State (PlotProperties b v n) ()
@@ -267,42 +267,42 @@ type PlotState a b  = PlotStateM a b ()
 -- other plotting functions follow this naming convention where instead
 -- of @a@, it takes the data needed to make the plot.
 
--- | Add something 'Plotable' to the axis.
--- addPlotable :: (InSpace (BaseSpace v) n a, MoPlotable a b) => a -> AxisState b v n
-addPlotable :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
-            => a -> m ()
-addPlotable a = axisPlots %= flip snoc (ModifiedPlot a mempty)
+-- -- | Add something 'Plotable' to the axis.
+-- -- addPlotable :: (InSpace (BaseSpace v) n a, MoPlotable a b) => a -> AxisState b v n
+-- addPlotable :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
+--             => a -> m ()
+-- addPlotable a = axisPlots %= flip snoc (ModifiedPlot a mempty)
 
--- | Add something 'Plotable' and modify the 'PlotState' of that plot.
-addPlotable' :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
-             => a -> PlotState a b -> m ()
-addPlotable' a s = axisPlots <>= [ModifiedPlot a (Endo $ execState s)]
+-- -- | Add something 'Plotable' and modify the 'PlotState' of that plot.
+-- addPlotable' :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
+--              => a -> PlotState a b -> m ()
+-- addPlotable' a s = axisPlots <>= [ModifiedPlot a (Endo $ execState s)]
 
--- | Add something 'Plotable' with given legend entry.
-addPlotableL :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
-             => String -> a -> m ()
-addPlotableL l a = addPlotable' a $ addLegendEntry l
+-- -- | Add something 'Plotable' with given legend entry.
+-- addPlotableL :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
+--              => String -> a -> m ()
+-- addPlotableL l a = addPlotable' a $ addLegendEntry l
 
--- | Add something 'Plotable' with given legend entry and modify the
---   'PlotState' of that plot.
-addPlotableL' :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
-              => String -> a -> PlotState a b -> m ()
-addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
+-- -- | Add something 'Plotable' with given legend entry and modify the
+-- --   'PlotState' of that plot.
+-- addPlotableL' :: (InSpace (BaseSpace v) n a, MonadState (Axis b v n) m, Plotable a b)
+--               => String -> a -> PlotState a b -> m ()
+-- addPlotableL' l a s = addPlotable' a $ addLegendEntry l >> s
 
 ------------------------------------------------------------------------
 -- Diagram Plot
 ------------------------------------------------------------------------
 
-diagramPlot
-  :: (v ~ BaseSpace c,
-      Renderable (Path V2 n) b,
-      MonadState (Axis b c n) m,
-      Typeable b,
-      Typeable v,
-      Metric v,
-      TypeableFloat n)
-  => QDiagram b v n Any -> m ()
-diagramPlot = addPlotable
+-- diagramPlot
+--   :: (v ~ BaseSpace c,
+--       Renderable (Path V2 n) b,
+--       MonadState (Axis b c n) m,
+--       Typeable b,
+--       Typeable v,
+--       Metric v,
+--       TypeableFloat n)
+--   => QDiagram b v n Any -> m ()
+-- diagramPlot = addPlotable
 
 ------------------------------------------------------------------------
 -- Axis properties
@@ -315,9 +315,9 @@ diagramPlot = addPlotable
 -- Legend
 ------------
 
-addLegendEntry :: (MonadState a m, HasPlotProperties a b, Num (N a))
-               => String -> m ()
-addLegendEntry s = legendEntries <>= [mkLegendEntry s]
+-- addLegendEntry :: (MonadState a m, HasPlotProperties a b, Num (N a))
+--                => String -> m ()
+-- addLegendEntry s = legendEntries <>= [mkLegendEntry s]
 
 -- axisState :: Axis b v n -> AxisStateM b v n a -> Axis b v n
 -- axisState a s = execState s a

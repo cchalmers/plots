@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -51,7 +50,7 @@ import           Diagrams.Prelude hiding (r2)
 
 import           Plots.Style
 import           Plots.Types
-import           Plots.API
+import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- General pie plot
@@ -73,19 +72,19 @@ instance (OrderedField n) => Enveloped (GPiePlot n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GPiePlot n) b where
-  renderPlotable _s GPiePlot {..} pp =
+  renderPlotable _s _opts sty GPiePlot {..} =
       annularWedge sLargeRadius sSmallRadius sDirection sAngle
         # lw none
-        # applyAreaStyle pp
+        # applyAreaStyle sty
    <> if sArc
         then arc' sLargeRadius sDirection sAngle
-               # applyLineStyle pp
+               # applyLineStyle sty
           <> arc' sLargeRadius sDirection sAngle
-               # applyLineStyle pp
+               # applyLineStyle sty
         else mempty
 
-  defLegendPic GPiePlot {..} pp
-      = square 5 # applyAreaStyle pp
+  defLegendPic GPiePlot {..} sty
+      = square 5 # applyAreaStyle sty
 
 ------------------------------------------------------------------------
 -- Wedge plot
@@ -152,8 +151,8 @@ class HasPie a n | a -> n where
 instance HasPie (GPiePlot n) n where
   pie = id
 
-instance HasPie (PropertiedPlot (GPiePlot n) b) n where
-  pie = _pp
+instance HasPie (Plot (GPiePlot n) b) n where
+  pie = rawPlot
 
 ------------------------------------------------------------------------
 -- Wedge
@@ -208,7 +207,7 @@ wedgePlot
       MonadState (Axis b c n) m,
       Plotable (GPiePlot n) b,
       RealFloat n)
-  => n -> Angle n -> m ()
+  => n -> Angle n -> State (Plot (GPiePlot n) b) () -> m ()
 wedgePlot r a = addPlotable (mkWedgePlot r a)
 
 wedgePlotFrom
@@ -217,7 +216,7 @@ wedgePlotFrom
       MonadState (Axis b c n) m,
       Plotable (GPiePlot n) b,
       RealFloat n)
-  => n -> Direction V2 n -> Angle n -> m ()
+  => n -> Direction V2 n -> Angle n -> State (Plot (GPiePlot n) b) () -> m ()
 wedgePlotFrom r d a = addPlotable (mkWedgePlotFrom r d a)
 
 -- | Make a wedge and take a 'State' on the plot to alter it's
@@ -229,7 +228,7 @@ wedgePlotFrom'
       MonadState (Axis b c n) m,
       Plotable (GPiePlot n) b,
       RealFloat n)
-  => n -> Direction V2 n -> Angle n -> PlotState (GPiePlot n) b  -> m ()
+  => n -> Direction V2 n -> Angle n -> m ()
 wedgePlotFrom' r d a = addPlotable' (mkWedgePlotFrom r d a)
 
 ------------------------------------------------------------------------
@@ -242,7 +241,7 @@ annularWedgePlot
       MonadState (Axis b c n) m,
       Plotable (GPiePlot n) b,
       RealFloat n)
-  => n -> n -> Angle n -> m ()
+  => n -> n -> Angle n -> State (Plot (GPiePlot n) b) () -> m ()
 annularWedgePlot r1 r2 a = addPlotable (mkAnnularWedgePlot r1 r2 a)
 
 annularWedgePlotFrom
@@ -251,7 +250,7 @@ annularWedgePlotFrom
       MonadState (Axis b c n) m,
       Plotable (GPiePlot n) b,
       RealFloat n)
-  => n -> n -> Direction V2 n -> Angle n -> m ()
+  => n -> n -> Direction V2 n -> Angle n -> State (Plot (GPiePlot n) b) () -> m ()
 annularWedgePlotFrom r1 r2 d a = addPlotable (mkAnnularWedgePlotFrom r1 r2 d a)
 
 -- | Make an annular wedge and take a 'State' on the plot to alter it's
@@ -263,5 +262,5 @@ annularWedgePlotFrom'
       MonadState (Axis b c n) m,
       Plotable (GPiePlot n) b,
       RealFloat n)
-  => n -> n -> Direction V2 n -> Angle n -> PlotState (GPiePlot n) b -> m ()
+  => n -> n -> Direction V2 n -> Angle n -> m ()
 annularWedgePlotFrom' r1 r2 d a = addPlotable' (mkAnnularWedgePlotFrom r1 r2 d a)

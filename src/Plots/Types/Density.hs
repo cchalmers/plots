@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -17,7 +16,7 @@
 module Plots.Types.Density
   ( -- * GDensitylot plot
     GDensityPlot
-  , _DensityPlot
+  -- , _DensityPlot
 
     -- * Density plot
   , DensityPlot
@@ -33,12 +32,12 @@ module Plots.Types.Density
     -- * Density plot
   , densityPlot
   , densityPlot'
-  , densityPlotL
+  -- , densityPlotL
 
      -- * Fold variant density plot
    , densityPlotOf
    , densityPlotOf'
-   , densityPlotOfL
+   -- , densityPlotOfL
   ) where
 
 import               Control.Lens                    hiding (lmap, none, transform,
@@ -55,7 +54,6 @@ import               Diagrams.Prelude
 import               Plots.Style
 import               Plots.Types
 import               Plots.Axis
-import               Plots.API
 
 ------------------------------------------------------------------------
 -- General density plot
@@ -77,13 +75,13 @@ instance (Metric v, OrderedField n) => Enveloped (GDensityPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n)
     => Plotable (GDensityPlot V2 n a) b where
-  renderPlotable s GDensityPlot {..} pp =
+  renderPlotable s _opts sty GDensityPlot {..} =
                dd # transform t
                   # stroke
             <> if dFill
                 then (fillDensity dd) # stroke
                                       # lw none
-                                      # applyAreaStyle pp
+                                      # applyAreaStyle sty
                                       # transform t
                 else mempty
           where
@@ -96,13 +94,13 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
 -- dd :: Located (Trail' Line V2 n)
 -- # applyLineStyle pp
 
-  defLegendPic GDensityPlot {..} pp
+  defLegendPic GDensityPlot {..} sty
       = (p2 (-10,0) ~~ p2 (10,0))
-          # applyLineStyle pp
+          # applyLineStyle sty
 
-_DensityPlot :: (Plotable (DensityPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (DensityPlot v n)
-_DensityPlot = _Plot
+-- _DensityPlot :: (Plotable (DensityPlot v n) b, Typeable b)
+--                    => Prism' (Plot b v n) (DensityPlot v n)
+-- _DensityPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Simple density plot
@@ -167,8 +165,8 @@ class HasDensity a v n d | a -> v n, a -> d where
 instance HasDensity (GDensityPlot v n d) v n d where
   density = id
 
-instance HasDensity (PropertiedPlot (GDensityPlot v n d) b) v n d where
-  density = _pp
+instance HasDensity (Plot (GDensityPlot v n d) b) v n d where
+  density = rawPlot
 
 ------------------------------------------------------------------------
 -- Density Plot
@@ -209,7 +207,7 @@ densityPlot
       Plotable (DensityPlot v n) b,
       F.Foldable f ,
       Enum n, TypeableFloat n)
-  => f p -> m ()
+  => f p -> State (Plot (DensityPlot v n) b) () -> m ()
 densityPlot d = addPlotable (mkDensityPlot d)
 
 -- | Make a 'DensityPlot' and take a 'State' on the plot to alter it's
@@ -229,7 +227,7 @@ densityPlot'
       Plotable (DensityPlot v n) b,
       F.Foldable f ,
       Enum n, TypeableFloat n)
-  => f p -> PlotState (DensityPlot v n) b -> m ()
+  => f p -> m ()
 densityPlot' d = addPlotable' (mkDensityPlot d)
 
 -- | Add a 'DensityPlot' with the given name for the legend entry.
@@ -240,15 +238,15 @@ densityPlot' d = addPlotable' (mkDensityPlot d)
 --     densityPlotL "red team" pointData2
 -- @
 
-densityPlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (DensityPlot v n) b,
-      F.Foldable f ,
-      Enum n, TypeableFloat n)
-  => String -> f p  -> m ()
-densityPlotL l d = addPlotableL l (mkDensityPlot d)
+-- densityPlotL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (DensityPlot v n) b,
+--       F.Foldable f ,
+--       Enum n, TypeableFloat n)
+--   => String -> f p  -> m ()
+-- densityPlotL l d = addPlotableL l (mkDensityPlot d)
 
 -- fold variant
 
@@ -258,7 +256,7 @@ densityPlotOf
       MonadState (Axis b c n) m,
       Plotable (DensityPlot v n) b,
       Enum n, TypeableFloat n)
-  => Fold s p -> s -> m ()
+  => Fold s p -> s -> State (Plot (DensityPlot v n) b) () -> m ()
 densityPlotOf f s = addPlotable (mkDensityPlotOf f s)
 
 densityPlotOf'
@@ -267,16 +265,16 @@ densityPlotOf'
       MonadState (Axis b c n) m,
       Plotable (DensityPlot v n) b,
       Enum n, TypeableFloat n)
-  => Fold s p -> s -> PlotState (DensityPlot v n) b -> m ()
+  => Fold s p -> s -> m ()
 densityPlotOf' f s = addPlotable' (mkDensityPlotOf f s)
 
-densityPlotOfL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (DensityPlot v n) b,
-      Enum n, TypeableFloat n)
-  => String -> Fold s p -> s -> m ()
-densityPlotOfL l f s = addPlotableL l (mkDensityPlotOf f s)
+-- densityPlotOfL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (DensityPlot v n) b,
+--       Enum n, TypeableFloat n)
+--   => String -> Fold s p -> s -> m ()
+-- densityPlotOfL l f s = addPlotableL l (mkDensityPlotOf f s)
 
 

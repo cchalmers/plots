@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -8,15 +7,11 @@
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE AllowAmbiguousTypes          #-}
-
-
-{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.Types.Smooth
   (  -- * General smooth plot
      GSmoothPlot
-  , _SmoothPlot
+  -- , _SmoothPlot
 
     -- * Smooth plot
   , SmoothPlot
@@ -30,11 +25,11 @@ module Plots.Types.Smooth
      -- * Smooth Plot
    , smoothPlot
    , smoothPlot'
-   , smoothPlotL
+   -- , smoothPlotL
      -- * Fold variant smooth plot
    , smoothPlotOf
    , smoothPlotOf'
-   , smoothPlotOfL
+   -- , smoothPlotOfL
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
@@ -48,7 +43,7 @@ import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Style
 import           Plots.Types
-import           Plots.API
+import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- GPoints plot
@@ -73,10 +68,10 @@ instance (Metric v, OrderedField n) => Enveloped (GSmoothPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GSmoothPlot V2 n a) b where
-  renderPlotable s GSmoothPlot {..} pp =
+  renderPlotable s _opts sty GSmoothPlot {..} =
                lp # stroke
                   # lw none
-                  # applyAreaStyle pp
+                  # applyAreaStyle sty
                   # opacity 0.7
                   # transform t
             <> if sLine
@@ -90,12 +85,12 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
             t              = s ^. specTrans
             ls             = s ^. specScale
 
-  defLegendPic GSmoothPlot {..} pp
-      = square 5 # applyAreaStyle pp
+  defLegendPic GSmoothPlot {..} sty
+      = square 5 # applyAreaStyle sty
 
-_SmoothPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (SmoothPlot v n)
-_SmoothPlot = _Plot
+-- _SmoothPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
+--                    => Prism' (Plot b v n) (SmoothPlot v n)
+-- _SmoothPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Simple smooth plot
@@ -192,8 +187,8 @@ class HasSmooth a v n d | a -> v n, a -> d where
 instance HasSmooth (GSmoothPlot v n d) v n d where
   smooth = id
 
-instance HasSmooth (PropertiedPlot (GSmoothPlot v n d) b) v n d where
-  smooth = _pp
+instance HasSmooth (Plot (GSmoothPlot v n d) b) v n d where
+  smooth = rawPlot
 
 ------------------------------------------------------------------------
 -- Smooth Plot
@@ -234,7 +229,7 @@ smoothPlot
       Plotable (SmoothPlot v n) b,
       F.Foldable f ,
       Enum n, TypeableFloat n)
-  => f p -> m ()
+  => f p -> State (Plot (SmoothPlot v n) b) () -> m ()
 smoothPlot d = addPlotable (mkSmoothPlot d)
 
 -- | Make a 'SmoothPlot' and take a 'State' on the plot to alter it's
@@ -254,7 +249,7 @@ smoothPlot'
       Plotable (SmoothPlot v n) b,
       F.Foldable f ,
       Enum n, TypeableFloat n)
-  => f p -> PlotState (SmoothPlot v n) b -> m ()
+  => f p -> m ()
 smoothPlot' d = addPlotable' (mkSmoothPlot d)
 
 -- | Add a 'SmoothPlot' with the given name for the legend entry.
@@ -265,15 +260,15 @@ smoothPlot' d = addPlotable' (mkSmoothPlot d)
 --     smoothPlotL "red team" pointData2
 -- @
 
-smoothPlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (SmoothPlot v n) b,
-      F.Foldable f ,
-      Enum n, TypeableFloat n)
-  => String -> f p  -> m ()
-smoothPlotL l d = addPlotableL l (mkSmoothPlot d)
+-- smoothPlotL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (SmoothPlot v n) b,
+--       F.Foldable f ,
+--       Enum n, TypeableFloat n)
+--   => String -> f p  -> m ()
+-- smoothPlotL l d = addPlotableL l (mkSmoothPlot d)
 
 -- fold variant
 
@@ -283,7 +278,7 @@ smoothPlotOf
       MonadState (Axis b c n) m,
       Plotable (SmoothPlot v n) b,
       Enum n, TypeableFloat n)
-  => Fold s p -> s -> m ()
+  => Fold s p -> s -> State (Plot (SmoothPlot v n) b) () -> m ()
 smoothPlotOf f s = addPlotable (mkSmoothPlotOf f s)
 
 smoothPlotOf'
@@ -292,14 +287,14 @@ smoothPlotOf'
       MonadState (Axis b c n) m,
       Plotable (SmoothPlot v n) b,
       Enum n, TypeableFloat n)
-  => Fold s p -> s -> PlotState (SmoothPlot v n) b -> m ()
+  => Fold s p -> s -> m ()
 smoothPlotOf' f s = addPlotable' (mkSmoothPlotOf f s)
 
-smoothPlotOfL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (SmoothPlot v n) b,
-      Enum n, TypeableFloat n)
-  => String -> Fold s p -> s -> m ()
-smoothPlotOfL l f s = addPlotableL l (mkSmoothPlotOf f s)
+-- smoothPlotOfL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (SmoothPlot v n) b,
+--       Enum n, TypeableFloat n)
+--   => String -> Fold s p -> s -> m ()
+-- smoothPlotOfL l f s = addPlotableL l (mkSmoothPlotOf f s)

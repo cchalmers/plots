@@ -1,33 +1,31 @@
 {-# LANGUAGE DeriveDataTypeable    #-}
 {-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances      #-}
-{-# LANGUAGE TypeOperators      #-}
-{-# LANGUAGE ConstraintKinds       #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE ViewPatterns          #-}
 {-# LANGUAGE UndecidableInstances  #-}
-module Plots.Legend where
- -- ( -- * Legend entries
- --   LegendEntry
- -- , legendText
- -- , legendPic
- -- , legendAnchor
- -- , legendGap
- --   -- * Legend configuration
- -- , legendPosition
+module Plots.Legend
+ ( -- * Legend entries
+   LegendEntry
+ , legendText
+ , legendAnchor
+ , legendGap
+   -- * Legend configuration
+ , legendPosition
 
- --   -- * Positioning
- -- , Position (..)
- -- , getPosition
- -- , Anchor (..)
- -- , anchor
+   -- * Positioning
+ , Position (..)
+ , getPosition
+ , Anchor (..)
+ , anchor
+ , alignTo
 
- -- , legendOrientation
- -- , Legend
- -- , drawLegend
- -- ) where
+ , legendOrientation
+ , Legend
+ , drawLegend
+
+ ) where
 
 import           Control.Lens         hiding (none, ( # ))
 import           Data.Default
@@ -35,9 +33,8 @@ import           Data.Typeable
 import           Diagrams.TwoD.Text
 
 import           Diagrams.BoundingBox
-import           Diagrams.Prelude hiding (view)
+import           Diagrams.Prelude
 
-import           Plots.Style
 import           Plots.Types
 
 data Position
@@ -143,17 +140,17 @@ makeLenses ''Legend
 
 instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
   def = Legend
-          { _legendPosition    = NorthEast
-          , _legendAnchor      = AnchorTopLeft
-          , _legendGap         = V2 20 0
-          , _legendSpacing     = 20
-          , _legendTextWidth   = 60
-          , _legendStyle       = mempty
-          , _legendTextF       = mkText (BoxAlignedText 0 0.5)
-          , _legendTextStyle   = mempty & fontSize (output 8)
-          , _legendOrientation = Vertical
-          , _legendVisible     = True
-          }
+    { _legendPosition    = NorthEast
+    , _legendAnchor      = AnchorTopLeft
+    , _legendGap         = V2 20 0
+    , _legendSpacing     = 20
+    , _legendTextWidth   = 60
+    , _legendStyle       = mempty
+    , _legendTextF       = mkText (BoxAlignedText 0 0.5)
+    , _legendTextStyle   = mempty & fontSize (output 8)
+    , _legendOrientation = Vertical
+    , _legendVisible     = True
+    }
 
 instance HasVisibility (Legend b n) where
   visible = legendVisible
@@ -164,12 +161,18 @@ instance TypeableFloat n => HasStyle (Legend b n) where
 instance HasOrientation (Legend b n) where
   orientation = legendOrientation
 
-drawLegend :: (TypeableFloat n, Typeable b, Renderable (Path V2 n) b, Renderable (Text n) b)
-           => BoundingBox V2 n
-           -> Legend b n
-           -> [(Plot b V2 n, PlotProperties b V2 n)]
-           -> QDiagram b V2 n Any
-drawLegend bb l ps
+-- | Draw a legend to the bounding box using the legend entries and
+--   legend options.
+drawLegend
+  :: (TypeableFloat n,
+      Typeable b,
+      Renderable (Path V2 n) b,
+      Renderable (Text n) b)
+  => BoundingBox V2 n
+  -> [(QDiagram b V2 n Any, String)]
+  -> Legend b n
+  -> QDiagram b V2 n Any
+drawLegend bb entries l
   | l ^. hidden = mempty
   | otherwise   = alignTo (l ^. legendPosition)
                           bb
@@ -180,20 +183,15 @@ drawLegend bb l ps
     w = l ^. legendTextWidth
     h = l ^. legendSpacing
     --
-    ledge      = orient (l ^. legendOrientation) hcat vcat
-               $ concatMap mkLabels ps
-    mkLabels (p,pp) = map mkLabel (pp ^. legendEntries)
-      where
-        mkLabel entry = pic ||| strutX 5 ||| txt
-          where
-            -- pps = p ^. plotProperties
-            txt = (l ^. legendTextF) (entry ^. legendText)
-                    # applyStyle (l ^. legendTextStyle)
-                    # withEnvelope (fromCorners origin (mkP2 w h))
-            pic = case entry ^. legendPic of
-                    DefaultLegendPic  -> defLegendPic p pp
-                    CustomLegendPic f -> f $ pp ^. plotStyle
+    ledge = orient (l ^. legendOrientation) hcat vcat
+          $ map mkLabels entries
 
-wrapPic :: RealFloat n => V2 n -> QDiagram b V2 n Any -> QDiagram b V2 n Any
-wrapPic ((^/ 2) -> v) d
-  = d # sizedAs (fromCorners (origin .-^ v) (origin .+^ v))
+    -- mkLabels :: (QDiagram b V2 n Any, String) -> QDiagram b V2 n Any
+    mkLabels (pic, txt) = pic ||| strutX 5 ||| label where
+      label = (l ^. legendTextF) txt
+                # applyStyle (l ^. legendTextStyle)
+                # withEnvelope (fromCorners origin (mkP2 w h))
+
+-- wrapPic :: RealFloat n => V2 n -> QDiagram b V2 n Any -> QDiagram b V2 n Any
+-- wrapPic ((^/ 2) -> v) d
+--   = d # sizedAs (fromCorners (origin .-^ v) (origin .+^ v))

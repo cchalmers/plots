@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -8,16 +7,12 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE FunctionalDependencies    #-}
-
 {-# LANGUAGE StandaloneDeriving        #-}
-{-# LANGUAGE AllowAmbiguousTypes       #-}
-
-{-# OPTIONS_GHC -fno-warn-duplicate-exports #-}
 
 module Plots.Types.Histogram
   (  -- * GHistogramPlot plot
      GHistogramPlot
-  , _HistogramPlot
+  -- , _HistogramPlot
 
     -- * Histogram plot
   , HistogramPlot
@@ -33,12 +28,12 @@ module Plots.Types.Histogram
     -- * Histogram
   , histogramPlot
   , histogramPlot'
-  , histogramPlotL
+  -- , histogramPlotL
 
     -- * Fold variant histogram
   , histogramPlotOf
   , histogramPlotOf'
-  , histogramPlotLOf
+  -- , histogramPlotLOf
   ) where
 
 import           Control.Lens                    hiding (lmap, none, transform,
@@ -55,7 +50,7 @@ import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Style
 import           Plots.Types
-import           Plots.API
+import           Plots.Axis
 
 ------------------------------------------------------------------------
 -- GHistogram plot
@@ -81,7 +76,7 @@ instance (Metric v, OrderedField n) => Enveloped (GHistogramPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GHistogramPlot V2 n a) b where
-  renderPlotable s GHistogramPlot {..} pp =
+  renderPlotable s _opts sty GHistogramPlot {..} =
       mconcat [drawbar (createBarData' z w) | z <- zs ]
     where
       ps = toListOf (hFold . to hPos . to (logPoint ls)) hData
@@ -94,15 +89,15 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       drawbar barpts = fromVertices barpts
                          # mapLoc closeLine
                          # stroke
-                         # applyAreaStyle pp
+                         # applyAreaStyle sty
                          # transform t
 
-  defLegendPic GHistogramPlot {..} pp
-      = square 5 # applyAreaStyle pp
+  defLegendPic GHistogramPlot {..} sty
+      = square 5 # applyAreaStyle sty
 
-_HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (HistogramPlot v n)
-_HistogramPlot = _Plot
+-- _HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
+--                    => Prism' (Plot b v n) (HistogramPlot v n)
+-- _HistogramPlot = _Plot
 
 ------------------------------------------------------------------------
 -- Simple histogram plot
@@ -165,8 +160,8 @@ class HasHistogram a v n d | a -> v n, a -> d where
 instance HasHistogram (GHistogramPlot v n d) v n d where
   histogram = id
 
-instance HasHistogram (PropertiedPlot (GHistogramPlot v n d) b) v n d where
-  histogram = _pp
+instance HasHistogram (Plot (GHistogramPlot v n d) b) v n d where
+  histogram = rawPlot
 
 ------------------------------------------------------------------------
 -- Histogram
@@ -208,7 +203,7 @@ histogramPlot
       MonadState (Axis b c n) m,
       Plotable (HistogramPlot v n) b,
       F.Foldable f, Enum n)
-  => f p -> m ()
+  => f p -> State (Plot (HistogramPlot v n) b) () -> m ()
 histogramPlot d = addPlotable (mkHistogramPlot d)
 
 -- | Make a 'HistogramPlot' and take a 'State' on the plot to alter it's
@@ -227,7 +222,7 @@ histogramPlot'
       MonadState (Axis b c n) m,
       Plotable (HistogramPlot v n) b,
       F.Foldable f, Enum n)
-  => f p -> PlotState (HistogramPlot v n) b -> m ()
+  => f p -> m ()
 histogramPlot' d = addPlotable' (mkHistogramPlot d)
 
 -- | Add a 'HistogramPlot' with the given name for the legend entry.
@@ -238,14 +233,14 @@ histogramPlot' d = addPlotable' (mkHistogramPlot d)
 --     histogramPlotL "red team" pointData2
 -- @
 
-histogramPlotL
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (HistogramPlot v n) b,
-      F.Foldable f, Enum n)
-  => String -> f p -> m ()
-histogramPlotL l d = addPlotableL l (mkHistogramPlot d)
+-- histogramPlotL
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (HistogramPlot v n) b,
+--       F.Foldable f, Enum n)
+--   => String -> f p -> m ()
+-- histogramPlotL l d = addPlotableL l (mkHistogramPlot d)
 
 -- Fold variants
 
@@ -254,7 +249,7 @@ histogramPlotOf
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (HistogramPlot v n) b, Enum n)
-  => Fold s p -> s -> m ()
+  => Fold s p -> s -> State (Plot (HistogramPlot v n) b) () -> m ()
 histogramPlotOf f s = addPlotable (mkHistogramPlotOf f s)
 
 histogramPlotOf'
@@ -262,14 +257,14 @@ histogramPlotOf'
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (HistogramPlot v n) b, Enum n)
-  => Fold s p -> s -> PlotState (HistogramPlot v n) b -> m ()
+  => Fold s p -> s -> m ()
 histogramPlotOf' f s = addPlotable' (mkHistogramPlotOf f s)
 
-histogramPlotLOf
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (HistogramPlot v n) b, Enum n)
-  => String -> Fold s p -> s -> m ()
-histogramPlotLOf l f s = addPlotableL l (mkHistogramPlotOf f s)
+-- histogramPlotLOf
+--   :: (v ~ BaseSpace c,
+--       PointLike v n p,
+--       MonadState (Axis b c n) m,
+--       Plotable (HistogramPlot v n) b, Enum n)
+--   => String -> Fold s p -> s -> m ()
+-- histogramPlotLOf l f s = addPlotableL l (mkHistogramPlotOf f s)
 

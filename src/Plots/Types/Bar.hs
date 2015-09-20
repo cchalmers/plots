@@ -175,18 +175,18 @@ instance OrderedField n => Enveloped (BarPlot n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
-  renderPlotable s BarPlot {..} pp =
+  renderPlotable s _opts sty BarPlot {..} =
     ifoldMap drawBar bpData
       # orient bpLayout _reflectXY id
-      # applyAreaStyle pp
+      # applyAreaStyle sty
       # transform (s^.specTrans)
     where
       drawBar i (a,b) = rectB (mkP2 x a) (V2 (view barWidth bpLayout) (b - a))
         where x = view barStart bpLayout + fromIntegral i * view barSpacing bpLayout
 
-  defLegendPic BarPlot {..} pp
+  defLegendPic BarPlot {..} sty
     = centerXY
-    . applyAreaStyle pp'
+    . applyAreaStyle sty'
     . orient bpLayout _reflectXY id
     $ d
     where
@@ -196,7 +196,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         | otherwise        = rect 4 10
 
       -- The legend bars don't look right if the line width is too big so we limit it
-      pp' = pp & areaStyle . mapped . _lw %~ atMost (local 0.8)
+      sty' = sty & areaStyle . mapped . _lw %~ atMost (local 0.8)
 
 instance HasBarLayout (BarPlot n) where
   barLayout = lens bpLayout (\bp l -> bp {bpLayout = l})
@@ -303,10 +303,10 @@ barPlot
       Typeable b,
       Foldable f,
       TypeableFloat n)
-  => f n                     -- ^ bar heights
-  -> PlotState (BarPlot n) b -- ^ changes to the bars
+  => f n                           -- ^ bar heights
+  -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()
-barPlot ns = addPlotable' (mkBars def ns)
+barPlot ns = addPlotable (mkBars def ns)
 
 -- -- | Make a 'BarPlot'.
 -- barPlot'
@@ -328,9 +328,9 @@ floatingBarPlot'
       Foldable f,
       TypeableFloat n)
   => f (n,n) -- ^ bar heights
-  -> PlotState (BarPlot n) b -- ^ changes to the bars
+  -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()
-floatingBarPlot' ns = addPlotable' (mkFloatingBars def ns)
+floatingBarPlot' ns = addPlotable (mkFloatingBars def ns)
 
 ------------------------------------------------------------------------
 -- Multi bar state API
@@ -362,7 +362,7 @@ data MultiBarState b n a = MultiBarState
   { mbsLayout :: BarLayout n
     -- ^ options for building bar plots
 
-  , mbsMods :: [(a, Endo (PlotProperties b V2 n))]
+  , mbsMods :: [(a, Endo (PlotOptions b V2 n))]
     -- ^ the data along with an adjustment to the plot properties
 
   , mbsLabels  :: [String]
@@ -432,7 +432,7 @@ multiBars
 multiBars (F.toList -> as) f st = do
   -- add the plots
   F.forM_ propertiedBars $ \(b,endo) ->
-    addPlotable' b $ plotProperties %= appEndo endo
+    addPlotable b $ plotOptions %= appEndo endo
 
   -- label bars on axis if necessary
   barLayoutAxisLabels (bs ^. barLayout) (bs ^. labels)
@@ -471,7 +471,7 @@ barLayoutAxisLabels bl ls =
 
 -- | Given the data for the bar, modify the properties for the bar that
 --   uses that data.
-onBars :: (a -> State (PlotProperties b V2 n) ())
+onBars :: (a -> State (PlotOptions b V2 n) ())
        -> State (MultiBarState b n a) ()
 onBars f =
   mods . mapped %= \(a, endo) -> (a, endo <> Endo (execState (f a)))

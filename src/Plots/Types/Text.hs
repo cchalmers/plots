@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -23,7 +22,7 @@ module Plots.Types.Text
   -- * Text plot
   , textPlot
   , textPlot'
-  , textPlotL
+  -- , textPlotL
 
   , tString
   , textPoint
@@ -43,10 +42,11 @@ import           Data.Typeable
 
 import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
+import           Diagrams.Coordinates.Isomorphic
 
 import           Plots.Style
 import           Plots.Types
-import           Plots.API
+import           Plots.Axis
 import           Control.Monad.State.Lazy
 
 ------------------------------------------------------------------------
@@ -89,8 +89,8 @@ instance (Fractional n, OrderedField n, TypeableFloat n, Enum n) => Enveloped (T
 
 instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
     => Plotable (TextPlot n) b where
-  renderPlotable s v pp = alignedText a b str # fontSize (local fsze)
-                          # applyTextStyle pp
+  renderPlotable s _opts sty v = alignedText a b str # fontSize (local fsze)
+                          # applyTextStyle sty
                           # transform (s^.specTrans)
 
                           where
@@ -106,9 +106,9 @@ instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n)
 -- a point in plot, translate and move doesnt work.
 -- Implement a font slant and font weight.
 
-  defLegendPic TextPlot {..} pp
+  defLegendPic TextPlot {..} sty
       = (p2 (-10,0) ~~ p2 (10,0))
-          # applyLineStyle pp
+          # applyLineStyle sty
 
 ------------------------------------------------------------------------
 -- Text plot
@@ -136,8 +136,8 @@ class HasText a n | a -> n where
 instance HasText (TextPlot n) n where
   txt = id
 
-instance HasText (PropertiedPlot (TextPlot n) b) n where
-  txt = _pp
+instance HasText (Plot (TextPlot n) b) n where
+  txt = rawPlot
 
 ------------------------------------------------------------------------
 -- Textplot
@@ -151,7 +151,7 @@ textPlot
       MonadState (Axis b c n) m,
       Plotable (TextPlot n) b,
       v ~ V2)
-  => (n,n) -> String -> m ()
+  => (n,n) -> String -> State (Plot (TextPlot n) b) () -> m ()
 textPlot pt a = addPlotable (mkTextPlot pt a)
 
 textPlot'
@@ -162,16 +162,16 @@ textPlot'
       MonadState (Axis b c n) m,
       Plotable (TextPlot n) b,
       v ~ V2)
-  => (n,n) -> String -> PlotState (TextPlot n) b -> m ()
+  => (n,n) -> String -> m ()
 textPlot' pt a = addPlotable' (mkTextPlot pt a)
 
-textPlotL
-  :: (v ~ BaseSpace c,
-      RealFloat n,
-      Typeable n,
-      PointLike v n (V2 n),
-      MonadState (Axis b c n) m,
-      Plotable (TextPlot n) b,
-      v ~ V2)
-  => String -> (n,n) -> String -> m ()
-textPlotL l pt a = addPlotableL l (mkTextPlot pt a)
+-- textPlotL
+--   :: (v ~ BaseSpace c,
+--       RealFloat n,
+--       Typeable n,
+--       PointLike v n (V2 n),
+--       MonadState (Axis b c n) m,
+--       Plotable (TextPlot n) b,
+--       v ~ V2)
+--   => String -> (n,n) -> String -> m ()
+-- textPlotL l pt a = addPlotableL l (mkTextPlot pt a)
