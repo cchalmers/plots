@@ -1,24 +1,25 @@
 {-# LANGUAGE CPP                       #-}
-{-# LANGUAGE ConstraintKinds           #-}
-{-# LANGUAGE DefaultSignatures         #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RankNTypes                #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
-{-# LANGUAGE StandaloneDeriving        #-}
 {-# LANGUAGE TemplateHaskell           #-}
 {-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE UndecidableInstances      #-}
-
-{-# OPTIONS_GHC -fno-warn-orphans       #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Types
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- Primitive types for building plots.
+--
+----------------------------------------------------------------------------
 module Plots.Types
   (
     -- * Plot type
