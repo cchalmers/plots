@@ -555,6 +555,9 @@ instance Settable f => HasPlotStyle f (Plot p b) b where
   plotStyle = sty . mapped where
     sty f (Plot p opts s) = f s <&> \s' -> Plot p opts s'
 
+instance HasOrientation p => HasOrientation (Plot p b) where
+  orientation = rawPlot . orientation
+
 -- | Make a 'Plot' with 'Default' 'PlotOptions'.
 mkPlot :: (Additive (V p), Num (N p)) => p -> Plot p b
 mkPlot p = Plot p def id
