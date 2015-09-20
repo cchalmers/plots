@@ -276,6 +276,9 @@ instance (Applicative f, Traversable c) => HasTickLabels f (Axis b c n) b where
 instance Settable f => HasPlotStyle f (Axis b c n) b where
   plotStyle = axisPlots . traverse . plotStyle
 
+instance HasLegend (Axis b c n) b where
+  legend = axisLegend
+
 axisSize :: (Representable c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
 axisSize = axes . column singleAxisSize . iso mkSizeSpec getSpec
 

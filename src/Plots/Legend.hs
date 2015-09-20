@@ -1,18 +1,19 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE DeriveDataTypeable     #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RankNTypes             #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 module Plots.Legend
- ( -- * Legend entries
-   LegendEntry
- , legendText
- , legendAnchor
- , legendGap
+ (
+   -- * Legend
+   Legend
+ , HasLegend (..)
+
    -- * Legend configuration
- , legendPosition
 
    -- * Positioning
  , Position (..)
@@ -21,8 +22,7 @@ module Plots.Legend
  , anchor
  , alignTo
 
- , legendOrientation
- , Legend
+   -- * Drawing a legend
  , drawLegend
 
  ) where
@@ -120,36 +120,83 @@ alignTo p a an v b
 
 -- anchorAlign :: (Alignable a, Alignable b, V a ~ V b) => a -> Anchor -> Position -> V a ->
 
+-- | The data type to describe how to draw a legend. For legend entries
+--   see 'Plots.Axis.LegendEntry'.
 data Legend b n = Legend
-  { _legendPosition    :: Position
-  , _legendAnchor      :: Anchor
-  , _legendGap         :: V2 n
-  , _legendStyle       :: Style V2 n
-  , _legendSpacing     :: n
-  , _legendTextWidth   :: n
-  , _legendTextF       :: String -> QDiagram b V2 n Any
-  , _legendTextStyle   :: Style V2 n
-  , _legendOrientation :: Orientation
-  , _legendVisible     :: Bool
+  { lPosition    :: Position
+  , lAnchor      :: Anchor
+  , lGap         :: V2 n
+  , lStyle       :: Style V2 n
+  , lSpacing     :: n
+  , lTextWidth   :: n
+  , lTextF       :: String -> QDiagram b V2 n Any
+  , lTextStyle   :: Style V2 n
+  , lOrientation :: Orientation
+  , lVisible     :: Bool
   } deriving Typeable
 
 type instance V (Legend b n) = V2
 type instance N (Legend b n) = n
 
-makeLenses ''Legend
+class HasLegend a b | a -> b where
+  legend :: Lens' a (Legend b (N a))
+
+  -- | The 'Position' of the legend relative to the 'Plots.Axis.Axis'.
+  legendPosition :: Lens' a Position
+  legendPosition = legend . lens lPosition (\l a -> l {lPosition = a})
+
+  -- | The anchor for where the legend is placed.
+  legendAnchor :: Lens' a Anchor
+  legendAnchor = legend . lens lAnchor (\l a -> l {lAnchor = a})
+
+  -- | The gap between the legend and the axis.
+  legendGap :: Lens' a (V2 (N a))
+  legendGap = legend . lens lGap (\l a -> l {lGap = a})
+
+  -- | The style applied to the surronding box of the legend.
+  legendStyle :: Lens' a (Style V2 (N a))
+  legendStyle = legend . lens lStyle (\l a -> l {lStyle = a})
+
+  -- | The spacing between entries in the legend.
+  legendSpacing :: Lens' a (N a)
+  legendSpacing = legend . lens lSpacing (\l a -> l {lSpacing = a})
+
+  -- | The space given for the text in the legend.
+  legendTextWidth :: Lens' a (N a)
+  legendTextWidth = legend . lens lTextWidth (\l a -> l {lTextWidth = a})
+
+  -- | The function to generate the legend text.
+  legendTextFunction :: Lens' a (String -> QDiagram b V2 (N a) Any)
+  legendTextFunction = legend . lens lTextF (\l a -> l {lTextF = a})
+
+  -- | The style applied to the legend text.
+  legendTextStyle :: Lens' a (Style V2 (N a))
+  legendTextStyle = legend . lens lTextStyle (\l a -> l {lTextStyle = a})
+
+  -- | The way the legend entries are listed. (This will likely be
+  --   replaced by a grid-like system)
+  legendOrientation :: Lens' a Orientation
+  legendOrientation = legend . lens lOrientation (\l a -> l {lOrientation = a})
+
+  -- | Whether the legend should be visible.
+  legendVisible :: Lens' a Bool
+  legendVisible = legend . lens lVisible (\l a -> l {lVisible = a})
+
+instance HasLegend (Legend b n) b where
+  legend = id
 
 instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
   def = Legend
-    { _legendPosition    = NorthEast
-    , _legendAnchor      = AnchorTopLeft
-    , _legendGap         = V2 20 0
-    , _legendSpacing     = 20
-    , _legendTextWidth   = 60
-    , _legendStyle       = mempty
-    , _legendTextF       = mkText (BoxAlignedText 0 0.5)
-    , _legendTextStyle   = mempty & fontSize (output 8)
-    , _legendOrientation = Vertical
-    , _legendVisible     = True
+    { lPosition    = NorthEast
+    , lAnchor      = AnchorTopLeft
+    , lGap         = V2 20 0
+    , lSpacing     = 20
+    , lTextWidth   = 60
+    , lStyle       = mempty
+    , lTextF       = mkText (BoxAlignedText 0 0.5)
+    , lTextStyle   = mempty & fontSize (output 8)
+    , lOrientation = Vertical
+    , lVisible     = True
     }
 
 instance HasVisibility (Legend b n) where
@@ -188,7 +235,7 @@ drawLegend bb entries l
 
     -- mkLabels :: (QDiagram b V2 n Any, String) -> QDiagram b V2 n Any
     mkLabels (pic, txt) = pic ||| strutX 5 ||| label where
-      label = (l ^. legendTextF) txt
+      label = view legendTextFunction l txt
                 # applyStyle (l ^. legendTextStyle)
                 # withEnvelope (fromCorners origin (mkP2 w h))
 

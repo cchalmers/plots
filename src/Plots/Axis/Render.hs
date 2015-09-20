@@ -98,7 +98,7 @@ renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
                  Renderable (Text n) b)
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 40
-               $ legend
+               $ leg
               <> cBar
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LeftLabels
@@ -112,7 +112,7 @@ renderR2Axis a = frame 40
     t = tv <> t'
     --
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
-    legend = drawLegend bb (styledPlotLegends styledPlots) (a ^. axisLegend)
+    leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. axisLegend)
     --
 
     -- The colour bar
@@ -560,7 +560,7 @@ renderPolarAxis
       Renderable (Text n) b)
   => Axis b Polar n -> QDiagram b V2 n Any
 renderPolarAxis a = frame 15
-               $ legend
+               $ leg
               -- <> colourBar
               <> circles
               <> rAxis
@@ -583,7 +583,7 @@ renderPolarAxis a = frame 15
     -- t = tv <> t'
     --
     bb = fromCorners (p2 (-10,-10)) (p2 (10,10)) -- (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
-    legend = drawLegend bb (styledPlotLegends styledPlots) (a ^. axisLegend)
+    leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. axisLegend)
     --
 
     styledPlots = zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)

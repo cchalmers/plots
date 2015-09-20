@@ -594,7 +594,7 @@ singleStyledPlotLegend (StyledPlot p opts sty) =
 styledPlotLegends
   :: Ord n
   => [StyledPlot b v n]
-  -> [(QDiagram b v n Any, String)] -- ^ @(z-order, legend pic, legend text)@
+  -> [(QDiagram b v n Any, String)] -- ^ @[(legend pic, legend text)]@
 styledPlotLegends
   = map (\(_,p,t) -> (p,t))
   . sortOn (view _1)
