@@ -28,7 +28,8 @@ module Plots.Types.Bar
     -- * BarPlot
     BarPlot
   , barPlot
-  , floatingBarPlot'
+  , barPlot'
+  , floatingBarPlot
 
     -- * Bar layout
   , BarLayout
@@ -172,7 +173,6 @@ instance OrderedField n => Enveloped (BarPlot n) where
     where
       drawBar i (a,b) = rectB (mkP2 x a) (V2 (view barWidth bpLayout) (b - a))
         where x = view barStart bpLayout + fromIntegral i * view barSpacing bpLayout
-        -- where x = bStart + fromIntegral i * bSpacing
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
@@ -222,7 +222,7 @@ mkFloatingBars bl (F.toList -> ns) = BarPlot
 mkRunningBars
   :: Num n
   => BarLayout n
-  -> [[(n,n)]] -- values
+  -> [[(n,n)]]
   -> [BarPlot n]
 mkRunningBars bl = snd . foldr f (view barStart bl, [])
   where
@@ -292,12 +292,11 @@ _reflectionXY = fromSymmetric $ (_xy %~ view _yx) <-> (_xy %~ view _yx)
 _reflectXY :: (InSpace v n t, R2 v, Transformable t) => t -> t
 _reflectXY = transform _reflectionXY
 
-
 ----------------------------------------------------------------------------------
 -- Single bar state API
 ----------------------------------------------------------------------------------
 
--- | Make a 'BarPlot'.
+-- | A add 'BarPlot' to an 'Axis'.
 barPlot
   :: (MonadState (Axis b V2 n) m,
       Renderable (Path V2 n) b,
@@ -306,23 +305,22 @@ barPlot
       TypeableFloat n)
   => f n                           -- ^ bar heights
   -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
-  -> m ()
+  -> m ()                          -- ^ changes to the 'Axis'
 barPlot ns = addPlotable (mkBars def ns)
 
--- -- | Make a 'BarPlot'.
--- barPlot'
---   :: (MonadState (Axis b V2 n) m,
---       Renderable (Path V2 n) b,
---       Typeable b,
---       Foldable f,
---       TypeableFloat n)
---   => f n -- ^ bar heights
---   -> State (PlotState (BarPlot n) b) () -- ^ changes to the bars
---   -> m ()
--- barPlot' ns = addPlotable' (mkBars def ns)
+-- | Simple version of 'barPlot' without any modification to the 'Plot'.
+barPlot'
+  :: (MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b,
+      Typeable b,
+      Foldable f,
+      TypeableFloat n)
+  => f n  -- ^ bar heights
+  -> m () -- ^ changes to the 'Axis'
+barPlot' ns = addPlotable' (mkBars def ns)
 
 -- | Same as 'barPlot' but with lower and upper bounds for the bars.
-floatingBarPlot'
+floatingBarPlot
   :: (MonadState (Axis b V2 n) m,
       Renderable (Path V2 n) b,
       Typeable b,
@@ -331,7 +329,7 @@ floatingBarPlot'
   => f (n,n) -- ^ bar heights
   -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()
-floatingBarPlot' ns = addPlotable (mkFloatingBars def ns)
+floatingBarPlot ns = addPlotable (mkFloatingBars def ns)
 
 ------------------------------------------------------------------------
 -- Multi bar state API
@@ -345,25 +343,27 @@ floatingBarPlot' ns = addPlotable (mkFloatingBars def ns)
 --
 --   * To choose the way the bars are grouped together choose one of
 --
---       * 'groupedBars' - Together in grouped (the default)
---       * 'stackedBars' - On on top of another
+--       * 'groupedBars'      - Together in grouped (the default)
+--       * 'stackedBars'      - On on top of another
 --       * 'stackedEqualBars' - 'stackedBars' with the same height
---       * 'followingBars' - each group of bars follows the last
+--       * 'runningBars'      - each group of bars follows the last
 --
 --   * You can add labels to each (group of) bars with 'labelBars'.
 --
 --   * Modify the 'PlotProperties' of groups of bars with 'onBars'
 --
 --   * Modify the layout of the (groups of) bars with
+--
 --       * 'orientation' - Horizontal or vertical bars
 --       * 'barWidth'    - Width of each (group of) bar(s)
 --       * 'barSpacing'  - Space between each (group of) bar(s)
 --       * 'barStart'    - Start of centre of first bar
+--
 data MultiBarState b n a = MultiBarState
   { mbsLayout :: BarLayout n
     -- ^ options for building bar plots
 
-  , mbsMods :: [(a, Endo (PlotOptions b V2 n))]
+  , mbsMods :: [(a, Endo (PlotMods b V2 n))]
     -- ^ the data along with an adjustment to the plot properties
 
   , mbsLabels  :: [String]
@@ -433,7 +433,7 @@ multiBars
 multiBars (F.toList -> as) f st = do
   -- add the plots
   F.forM_ propertiedBars $ \(b,endo) ->
-    addPlotable b $ plotOptions %= appEndo endo
+    addPlotable b $ plotMods %= appEndo endo
 
   -- label bars on axis if necessary
   barLayoutAxisLabels (bs ^. barLayout) (bs ^. labels)
@@ -472,12 +472,16 @@ barLayoutAxisLabels bl ls =
 
 -- | Given the data for the bar, modify the properties for the bar that
 --   uses that data.
-onBars :: (a -> State (PlotOptions b V2 n) ())
-       -> State (MultiBarState b n a) ()
+onBars
+  :: (a -> State (PlotMods b V2 n) ())
+     -- ^ Modifier the 'PlotOptions' and 'PlotStyle' for the bars
+     -- associated with the data from @a@.
+
+  -> State (MultiBarState b n a) ()
+     -- ^ Changes to each data set when executing 'multiBars'.
 onBars f =
   mods . mapped %= \(a, endo) -> (a, endo <> Endo (execState (f a)))
-    where
-      mods = lens mbsMods (\bs d -> bs {mbsMods = d})
+  where mods = lens mbsMods (\bs d -> bs {mbsMods = d})
 
 class HasLabels a where
   labels :: Lens' a [String]

@@ -26,6 +26,10 @@ module Plots.Types
   , mkPlot
   , rawPlot
 
+    -- ** Plot modifications
+  , PlotMods
+  , plotMods
+
     -- * Plot options
   , PlotOptions
   , HasPlotOptions (..)
@@ -83,6 +87,7 @@ module Plots.Types
     -- ** Dynamic plot
   , DynamicPlot (..)
   , _DynamicPlot
+  , dynamicPlotMods
 
     -- ** Styled plot
   , StyledPlot
@@ -472,6 +477,28 @@ class HasVisibility a where
 -- _RawPlot = prism' RawPlot (\(RawPlot a) -> cast a)
 
 ------------------------------------------------------------------------
+-- Plot modification
+------------------------------------------------------------------------
+
+-- | Modifications to 'PlotOptions' and 'PlotStyle' without being tied
+--   to a specific plot.
+data PlotMods b v n
+  = PlotMods (PlotOptions b v n) (PlotStyle b v n -> PlotStyle b v n)
+
+type instance V (PlotMods b v n) = v
+type instance N (PlotMods b v n) = n
+
+instance Functor f => HasPlotOptions f (PlotMods b v n) b where
+  plotOptions f (PlotMods opts sty) = f opts <&> \opts' -> PlotMods opts' sty
+
+instance Settable f => HasPlotStyle f (PlotMods b v n) b where
+  plotStyle = sty . mapped where
+    sty f (PlotMods opts s) = f s <&> \s' -> PlotMods opts s'
+
+instance (Additive v, Num n) => Default (PlotMods b v n) where
+  def = PlotMods def id
+
+------------------------------------------------------------------------
 -- Plot type
 ------------------------------------------------------------------------
 
@@ -505,6 +532,11 @@ mkPlot p = Plot p def id
 rawPlot :: SameSpace p p' => Lens (Plot p b) (Plot p' b) p p'
 rawPlot f (Plot p opts ps) = f p <&> \p' -> Plot p' opts ps
 
+-- | The modifications to the 'PlotOptions' and 'PlotStyle' in a 'Plot'.
+plotMods :: Lens' (Plot p b) (PlotMods b (V p) (N p))
+plotMods f (Plot p opts ps) =
+  f (PlotMods opts ps) <&> \(PlotMods opts' ps') -> Plot p opts' ps'
+
 ------------------------------------------------------------------------
 -- DynamicPlot
 ------------------------------------------------------------------------
@@ -530,6 +562,10 @@ instance Settable f => HasPlotStyle f (DynamicPlot b v n) b where
     sty :: Setter' (DynamicPlot b v n) (PlotStyle b v n -> PlotStyle b v n)
     sty f (DynamicPlot (Plot p opts s)) = f s <&> \s' -> DynamicPlot (Plot p opts s')
 
+-- | The modifications to the 'PlotOptions' and 'PlotStyle' in a 'DynamicPlot'.
+dynamicPlotMods :: Lens' (DynamicPlot b v n) (PlotMods b v n)
+dynamicPlotMods f (DynamicPlot (Plot p opts ps)) =
+  f (PlotMods opts ps) <&> \(PlotMods opts' ps') -> DynamicPlot (Plot p opts' ps')
 
 ------------------------------------------------------------------------
 -- StyledPlot
