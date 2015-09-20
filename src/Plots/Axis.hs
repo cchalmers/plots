@@ -28,6 +28,9 @@ module Plots.Axis
   , axisSize
   , axisScale
 
+    -- ** Base space
+  , BaseSpace
+
     -- * Axis plots
   , addPlotable
   , addPlotable'
@@ -59,27 +62,27 @@ module Plots.Axis
   , yAxisLabel
   ) where
 
+import           Data.Complex
 import           Data.Default
+import           Data.Functor.Rep
 import           Data.Monoid.Recommend
 import           Data.Typeable
-import Data.Functor.Rep
 
--- import           Diagrams.Coordinates.Polar
+import           Diagrams.Coordinates.Polar
 import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 
+import           Control.Monad.State
 import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
-import           Plots.Axis.Ticks
 import           Plots.Axis.Line
+import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Style
 import           Plots.Types
-import Control.Monad.State
 
-import Linear
-
+import           Linear
 
 ------------------------------------------------------------------------
 -- Axis scale
@@ -147,19 +150,19 @@ data SingleAxis b v n = SingleAxis
 -- note the the v is only present for Style v n
   {
   -- labels
-    saLabel      :: AxisLabel b v n
-  , saLine       :: AxisLine v n
-  , saTickLabel  :: TickLabels b v n
+    saLabel     :: AxisLabel b v n
+  , saLine      :: AxisLine v n
+  , saTickLabel :: TickLabels b v n
 
   -- markers
-  , saGridLines  :: GridLines v n
-  , saTicks      :: Ticks v n
+  , saGridLines :: GridLines v n
+  , saTicks     :: Ticks v n
 
   -- size / scale
-  , saScaling    :: AxisScaling n
-  , saSize       :: Maybe n -- used for SizeSpec
-  , saBounds     :: Bound n
-  , saScale      :: AxisScale
+  , saScaling   :: AxisScaling n
+  , saSize      :: Maybe n -- used for SizeSpec
+  , saBounds    :: Bound n
+  , saScale     :: AxisScale
   }
 
 type instance V (SingleAxis b v n) = v
@@ -209,7 +212,22 @@ singleAxisScale = lens saScale (\sa s -> sa {saScale = s})
 singleAxisBound :: Lens' (SingleAxis b v n) (Bound n)
 singleAxisBound = lens saBounds (\sa b -> sa {saBounds = b})
 
--- Complete axis -------------------------------------------------------
+------------------------------------------------------------------------
+-- Axis type
+------------------------------------------------------------------------
+
+-- Base space ----------------------------------------------------------
+
+-- | This family is used so that we can say (Axis Polar) but use V2 for the
+--   underlying diagram.
+type family BaseSpace (c :: * -> *) :: * -> *
+
+type instance BaseSpace V2      = V2
+type instance BaseSpace Complex = V2
+type instance BaseSpace Polar   = V2
+type instance BaseSpace V3      = V3
+
+-- Axis data type ------------------------------------------------------
 
 -- | Axis is the data type that holds all the nessessary information to render
 --   a plot. The idea is to use one of the default axis, customise, add plots
@@ -217,17 +235,17 @@ singleAxisBound = lens saBounds (\sa b -> sa {saBounds = b})
 data Axis b c n = Axis
   { -- These lenses are not being exported, they're just here for instances.
     -- _axisAxisBounds :: Bounds v n
-    _axisAxisStyle  :: AxisStyle b (BaseSpace c) n
-  , _axisColourBar  :: ColourBar b n
+    _axisAxisStyle :: AxisStyle b (BaseSpace c) n
+  , _axisColourBar :: ColourBar b n
   -- , _axisPP         :: PlotProperties b (BaseSpace v) n
 
 
-  , _axisLegend     :: Legend b n
-  , _axisPlots      :: [DynamicPlot b (BaseSpace c) n]
+  , _axisLegend    :: Legend b n
+  , _axisPlots     :: [DynamicPlot b (BaseSpace c) n]
   -- , _axisTitle      :: Maybe String
 
   -- the v in each axis is only used for @'Style' v n@
-  , _axes :: c (SingleAxis b (BaseSpace c) n)
+  , _axes          :: c (SingleAxis b (BaseSpace c) n)
   } deriving Typeable
 
 makeLenses ''Axis
@@ -319,37 +337,13 @@ xAxis = axes . _x
 xAxisLabel :: R1 c => Lens' (Axis b c n) String
 xAxisLabel = xAxis . axisLabelText
 
--- The x-axis ----------------------------------------------------------
+-- The y-axis ----------------------------------------------------------
 
 yAxis :: R2 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
 yAxis = axes . _y
 
 yAxisLabel :: R2 c => Lens' (Axis b c n) String
 yAxisLabel = yAxis . axisLabelText
-
-
-
-    -- { _axisTitle      = Nothing
-    -- , _axisSize       = mkWidth 300
-    -- , _axisPlots      = []
-    -- , _axisLegend     = def
-    -- , _axisColourBar  = defColourBar
-    -- , _axisAxisStyle  = fadedColours
-    -- , _axisAxisBounds = Bounds $ pure def
-    -- , _axisGridLines  = pure def
-    -- , _axisLabels     = V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4))
-    --                                 & axisLabelGap .~ 40)
-    -- , _axisScaling    = pure def
-    -- , _axisTickLabels = pure def
-    -- , _axisTicks      = pure def
-    -- , _axisLines      = pure def
-    -- , _axisScale      = pure def
-    -- -- , _axisPP         = def
-    -- }
-
--- instance HasPlotProperties (Axis b v n) b where
---   plotProperties = axisPP
---   {-# INLINE plotProperties #-}
 
 -- R3 Axis
 

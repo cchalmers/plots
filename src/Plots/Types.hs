@@ -33,9 +33,6 @@ module Plots.Types
     -- * Plotable class
   , Plotable (..)
 
-  -- ** Base space
-  , BaseSpace
-
   -- * Miscellaneous
 
   -- * Bounds
@@ -47,7 +44,6 @@ module Plots.Types
   , upperBound
   , lowerBound
   , boundsMin, boundsMax
-  -- , zMin, zMax, zAxisBounds
 
   -- * Logarithmic scaling
   , AxisScale (..)
@@ -110,18 +106,9 @@ import Data.List (sortOn)
 import           Data.Foldable           (Foldable)
 #endif
 
-import           Diagrams.Coordinates.Polar
 import           Linear
 import           Plots.Style
 import           Plots.Utils
-
--- | This family is used so that we can say (Axis Polar) but use V2 for the
---   underlying diagram.
-type family BaseSpace (c :: * -> *) :: * -> *
-
-type instance BaseSpace V2    = V2
-type instance BaseSpace Polar = V2
-type instance BaseSpace V3    = V3
 
 -- Bounds
 
@@ -508,7 +495,7 @@ instance Functor f => HasPlotOptions f (Plot p b) b where
 
 instance Settable f => HasPlotStyle f (Plot p b) b where
   plotStyle = sty . mapped where
-    sty f (Plot p opts sty) = f sty <&> \sty' -> Plot p opts sty'
+    sty f (Plot p opts s) = f s <&> \s' -> Plot p opts s'
 
 -- | Make a 'Plot' with 'Default' 'PlotOptions'.
 mkPlot :: (Additive (V p), Num (N p)) => p -> Plot p b
