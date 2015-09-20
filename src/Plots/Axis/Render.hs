@@ -201,7 +201,7 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
         majorGridXs = view majorGridLineFunction a majorTickXs' b
         --
         minorLines
-          | a ^. majorGridLineVisible . to not = mempty
+          | a ^. minorGridLineVisible . to not = mempty
           | otherwise = foldMap mkGridLine minorGridXs
                        # tStroke
                        # applyStyle (a ^. minorGridLineStyle)
