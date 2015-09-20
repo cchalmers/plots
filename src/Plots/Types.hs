@@ -525,6 +525,12 @@ instance Functor f => HasPlotOptions f (DynamicPlot b v n) b where
   plotOptions f (DynamicPlot (Plot p opts sty)) =
     f opts <&> \opts' -> DynamicPlot (Plot p opts' sty)
 
+instance Settable f => HasPlotStyle f (DynamicPlot b v n) b where
+  plotStyle = sty . mapped where
+    sty :: Setter' (DynamicPlot b v n) (PlotStyle b v n -> PlotStyle b v n)
+    sty f (DynamicPlot (Plot p opts s)) = f s <&> \s' -> DynamicPlot (Plot p opts s')
+
+
 ------------------------------------------------------------------------
 -- StyledPlot
 ------------------------------------------------------------------------
@@ -553,9 +559,9 @@ instance (Metric v, OrderedField n) => Enveloped (StyledPlot b v n) where
   getEnvelope (StyledPlot p opts _) =
     getEnvelope p & transform (poTransform opts)
 
--- instance Functor f => HasPlotStyle (StyledPlot b v n) where
---   plotStyle f (StyledPlot p opts sty) =
---     f sty <&> StyledPlot p opts
+instance Functor f => HasPlotStyle f (StyledPlot b v n) b where
+  plotStyle f (StyledPlot p opts sty) =
+    f sty <&> StyledPlot p opts
 
 -- | Give a 'DynamicPlot' a concrete 'PlotStyle'.
 styleDynamic :: PlotStyle b v n -> DynamicPlot b v n -> StyledPlot b v n
@@ -593,21 +599,6 @@ styledPlotLegends
   = map (\(_,p,t) -> (p,t))
   . sortOn (view _1)
   . concatMap singleStyledPlotLegend
-
--- renderDynamicPlotLegendPic
---   :: PlotStyle b v n
---   -> DynamicPlot b v n
---   -> QDiagram b v n Any
--- renderDynamicPlotLegendPic sty (DynamicPlot (Plot p opts styF))
---   = renderL
-
--- dynamicLegends
---   :: [(PlotStyle b v n, DynamicPlot b v n)]
---   -> [(QDiagram b v n Any, String)]
--- dynamicLegends  (DynamicPlot (Plot p opts styF))
---   =
-
--- mkLegendPic :: Proxy p -> LegendEntry -> QDiagram b v n Any
 
 -- instance (HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
 --   transform = over plotTransform . transform
