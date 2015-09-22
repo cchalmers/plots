@@ -198,7 +198,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         | otherwise        = rect 4 10
 
       -- The legend bars don't look right if the line width is too big so we limit it
-      sty' = sty & areaStyle . mapped . _lw %~ atMost (local 0.8)
+      sty' = sty & areaStyle . _lw %~ atMost (local 0.8)
 
 instance HasBarLayout (BarPlot n) where
   barLayout = lens bpLayout (\bp l -> bp {bpLayout = l})
@@ -476,9 +476,14 @@ barLayoutAxisLabels bl ls =
 --
 --   Some common functions to use on the 'PlotMods':
 --
---       * 'plotColour' - change the colour of the bars
---       * 'areaStyle'  - modify the style of the bars
---       * 'key'        - add a legend entry for that group of bars
+--       * 'plotColour' :: @'Lens'' ('PlotMods' b 'V2' n) ('Colour' 'Double')@
+--            - change the colour of the bars
+--
+--       * 'areaStyle' :: @'Setter'' ('PlotMods' b 'V2' n) ('Style' 'V2' n)@
+--            - modify the style of the bars
+--
+--       * 'key' :: @'String' -> 'State' ('PlotMods' b 'V2' n) ()@
+--            - add a legend entry for that group of bars
 --
 onBars
   :: (a -> State (PlotMods b V2 n) ())
