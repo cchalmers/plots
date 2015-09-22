@@ -1,10 +1,10 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE FunctionalDependencies    #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DeriveDataTypeable     #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilies           #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Axis.Labels
@@ -25,8 +25,9 @@ module Plots.Axis.Labels
   , AxisLabelPlacement (..)
 
     -- * Axis tick labels
-  , HasTickLabels (..)
   , TickLabels
+  , HasTickLabels (..)
+  , tickLabelPositions
   ) where
 
 import           Control.Lens       hiding (( # ))
@@ -165,22 +166,32 @@ class HasTickLabels f a b | a -> b where
   tickLabel :: LensLike' f a (TickLabels b (V a) (N a))
 
   -- | The 'TextFunction' to render the text.
+  --
+  --   'Default' is @'atMajorTicks' 'floatShow'@
   tickLabelTextFunction :: Functor f => LensLike' f a (TextFunction b (V a) (N a))
   tickLabelTextFunction = tickLabel . lens tlTextFun (\tl f -> tl {tlTextFun = f})
 
   -- | The 'TextFunction' to render the text.
+  --
+  --   'Default' is 'mkText'.
   tickLabelFunction :: Functor f => LensLike' f a (TickLabelFunction (N a))
   tickLabelFunction = tickLabel . lens tlFun (\tl f -> tl {tlFun = f})
 
   -- | The 'Style' to use on the rendered text.
+  --
+  --   'Default' is @'fontSize' ('output' 11)@.
   tickLabelStyle :: Functor f => LensLike' f a (Style (V a) (N a))
   tickLabelStyle = tickLabel . lens tlStyle (\tl sty -> tl {tlStyle = sty})
 
   -- | The gap between the axis and the tick labels.
+  --
+  --   'Default' is @12@.
   tickLabelGap :: Functor f => LensLike' f a (N a)
   tickLabelGap = tickLabel . lens tlGap (\tl n -> tl {tlGap = n})
 
   -- | Whether the axis label should be visible.
+  --
+  --   'Default' is 'True'.
   tickLabelVisible :: Functor f => LensLike' f a Bool
   tickLabelVisible = tickLabel . lens tlVisible (\tl b -> tl {tlVisible = b})
 
@@ -192,13 +203,22 @@ instance (TypeableFloat n, Renderable (Text n) b)
   def = TickLabels
     { tlFun     = atMajorTicks floatShow
     , tlTextFun = mkText
-    , tlStyle   = mempty & fontSize (output 8)
-    , tlGap     = 8
+    , tlStyle   = mempty & fontSize (output 11)
+    , tlGap     = 12
     , tlVisible = True
     }
 
 instance HasVisibility (TickLabels b v n) where
   visible = tickLabelVisible
+
+-- | Setter over the final positions the major ticks. This is not as
+--   general as 'minorTicksFunction' because you don't have access to
+--   the bounds but it can be useful when you know exactly what ticks
+--   you want to add or modify existing tick positions.
+tickLabelPositions
+  :: (HasTickLabels f a b, Settable f)
+  => LensLike' f a [(N a, String)]
+tickLabelPositions = tickLabelFunction . mapped . mapped
 
 -- | Numbers are shown as 'Float's to reduce the chance of numbers like
 --   1.30000000008. (This is not an idea solution.)

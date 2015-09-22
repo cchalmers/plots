@@ -73,6 +73,7 @@ import           Plots.Types
 import           Plots.Axis
 import           Plots.Axis.Ticks
 import           Plots.Axis.Labels
+import           Plots.Utils
 
 import qualified Data.List               as List
 import           Diagrams.Core.Transform (fromSymmetric)
@@ -348,9 +349,8 @@ floatingBarPlot ns = addPlotable (mkFloatingBars def ns)
 --       * 'stackedEqualBars' - 'stackedBars' with the same height
 --       * 'runningBars'      - each group of bars follows the last
 --
---   * You can add labels to each (group of) bars with 'labelBars'.
---
---   * Modify the 'PlotProperties' of groups of bars with 'onBars'
+--   * Modify the 'PlotOptions' and 'PlotStyle' of groups of bars with
+--     'onBars'.
 --
 --   * Modify the layout of the (groups of) bars with
 --
@@ -358,6 +358,8 @@ floatingBarPlot ns = addPlotable (mkFloatingBars def ns)
 --       * 'barWidth'    - Width of each (group of) bar(s)
 --       * 'barSpacing'  - Space between each (group of) bar(s)
 --       * 'barStart'    - Start of centre of first bar
+--
+--   * Add labels to each (group of) bars with 'labelBars'.
 --
 data MultiBarState b n a = MultiBarState
   { mbsLayout :: BarLayout n
@@ -460,18 +462,24 @@ barLayoutAxisLabels
   :: (MonadState (Axis b V2 n) m, Fractional n)
   => BarLayout n -> [String] -> m ()
 barLayoutAxisLabels bl ls =
-  unless (null ls) $ do
-    axes . orient bl _y _x . majorTickFunction . mapped .= xs
-    axes . orient bl _y _x . tickLabelFunction .= \_ _ -> zip xs ls
-    -- zoom (axes . orient bl _y _x) $ do
-    --   majorTickFunction .= \_   -> xs
-    --   tickLabelFunction .= \_ _ -> zip xs ls
+  unless (null ls) $
+    axes . orient bl _y _x &= do
+      majorTickPositions .= xs
+      minorTickVisible   .= False
+      tickLabelPositions .= zip xs ls
   where
     xs = map ((+ view barStart bl) . (* view barSpacing bl) . fromIntegral)
              [0 .. length ls - 1]
 
 -- | Given the data for the bar, modify the properties for the bar that
 --   uses that data.
+--
+--   Some common functions to use on the 'PlotMods':
+--
+--       * 'plotColour' - change the colour of the bars
+--       * 'areaStyle'  - modify the style of the bars
+--       * 'key'        - add a legend entry for that group of bars
+--
 onBars
   :: (a -> State (PlotMods b V2 n) ())
      -- ^ Modifier the 'PlotOptions' and 'PlotStyle' for the bars

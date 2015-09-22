@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE BangPatterns          #-}
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
@@ -12,11 +11,27 @@ module Plots.Utils
   , pathFromVertices
   , minmaxOf
   , enumFromToN
+
+    -- * State helpers
+  , (&=)
+  , (&~~)
   ) where
 
 import           Control.Lens
+import           Control.Monad.State
 import           Data.Monoid.Recommend
 import           Diagrams.Prelude           hiding (diff)
+
+-- | Similar to '(%=)' but takes a state modification instead of a
+--   function.
+(&=) :: MonadState s m => ASetter' s b -> State b a -> m ()
+l &= s = l %= execState s
+infix 3 &=
+
+-- | Similar to '(&~)' but works with 'StateT' and returns it in @m@.
+(&~~) :: Monad m => s -> StateT s m a -> m s
+l &~~ s = execStateT s l
+infix 1 &~~
 
 -- | @enumFromToN a b n@ calculates a list from @a@ to @b@ in @n@ steps.
 enumFromToN :: Fractional n => n -> n -> Int -> [n]

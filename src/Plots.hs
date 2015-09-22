@@ -117,6 +117,8 @@ module Plots
     -- | Colour bars.
   , module Plots.Axis.ColourBar
 
+  , (&=), (&~~)
+
   ) where
 
 import           Plots.Axis
@@ -129,6 +131,7 @@ import           Plots.Axis.ColourBar
 import           Plots.Types
 import           Plots.Style
 import           Plots.CmdLine
+import           Plots.Utils
 
 import           Plots.Types.Scatter
 import           Plots.Types.Line
