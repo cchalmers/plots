@@ -300,10 +300,8 @@ _reflectXY = transform _reflectionXY
 -- | A add 'BarPlot' to an 'Axis'.
 barPlot
   :: (MonadState (Axis b V2 n) m,
-      Renderable (Path V2 n) b,
-      Typeable b,
-      Foldable f,
-      TypeableFloat n)
+      Plotable (BarPlot n) b,
+      Foldable f)
   => f n                           -- ^ bar heights
   -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()                          -- ^ changes to the 'Axis'
@@ -312,10 +310,8 @@ barPlot ns = addPlotable (mkBars def ns)
 -- | Simple version of 'barPlot' without any modification to the 'Plot'.
 barPlot'
   :: (MonadState (Axis b V2 n) m,
-      Renderable (Path V2 n) b,
-      Typeable b,
-      Foldable f,
-      TypeableFloat n)
+      Plotable (BarPlot n) b,
+      Foldable f)
   => f n  -- ^ bar heights
   -> m () -- ^ changes to the 'Axis'
 barPlot' ns = addPlotable' (mkBars def ns)
@@ -323,10 +319,8 @@ barPlot' ns = addPlotable' (mkBars def ns)
 -- | Same as 'barPlot' but with lower and upper bounds for the bars.
 floatingBarPlot
   :: (MonadState (Axis b V2 n) m,
-      Renderable (Path V2 n) b,
-      Typeable b,
-      Foldable f,
-      TypeableFloat n)
+      Plotable (BarPlot n) b,
+      Foldable f)
   => f (n,n) -- ^ bar heights
   -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()
@@ -383,11 +377,6 @@ instance HasOrientation (MultiBarState b n a) where
 instance HasBarLayout (MultiBarState b n a) where
   barLayout = lens mbsLayout (\mbs l -> mbs {mbsLayout = l})
 
--- This is an experimental api to help with typical bar charts. The
--- implementation is quite complicated and probably over engineered. In
--- the future more options like values on top bars / error bars etc
--- could be added to this setup.
-
 -- Adding to axis ------------------------------------------------------
 
 multiFun :: Lens' (MultiBarState b n a) (BarLayout n -> [[n]] -> [BarPlot n])
@@ -421,13 +410,12 @@ runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
 
 -- | Construct multiple bars, grouped together. See 'MultiBarState' for
 --   details on how to customise how the bars are drawn.
+--
 multiBars
   :: (MonadState (Axis b V2 n) m,
-      Renderable (Path V2 n) b,
-      Typeable b,
+      Plotable (BarPlot n) b,
       Foldable f,
-      Foldable g,
-      TypeableFloat n)
+      Foldable g)
   => f a                            -- ^ data for multi plot
   -> (a -> g n)                     -- ^ extract bar heights from each data set
   -> State (MultiBarState b n a) () -- ^ state to make changes to the plot
@@ -476,14 +464,11 @@ barLayoutAxisLabels bl ls =
 --
 --   Some common functions to use on the 'PlotMods':
 --
---       * 'plotColour' :: @'Lens'' ('PlotMods' b 'V2' n) ('Colour' 'Double')@
---            - change the colour of the bars
+--       * 'plotColour' - change the colour of the bars
 --
---       * 'areaStyle' :: @'Setter'' ('PlotMods' b 'V2' n) ('Style' 'V2' n)@
---            - modify the style of the bars
+--       * 'areaStyle' - modify the style of the bars
 --
---       * 'key' :: @'String' -> 'State' ('PlotMods' b 'V2' n) ()@
---            - add a legend entry for that group of bars
+--       * 'key' - add a legend entry for that group of bars
 --
 onBars
   :: (a -> State (PlotMods b V2 n) ())
