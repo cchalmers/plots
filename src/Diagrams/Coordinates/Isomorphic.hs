@@ -115,7 +115,8 @@ class (Euclidean v, Typeable v) => PointLike v n a | a -> v n where
 -- | Things that are isomorphic to points in R2.
 type P2Like = PointLike V2
 
-instance PointLike V2 n (P2 n) where pointLike = id
+instance (Euclidean v, Typeable v) => PointLike v n (Point v n) where
+  pointLike = id
 
 instance PointLike V2 n (V2 n) where
   pointLike = _Point
@@ -131,10 +132,6 @@ instance PointLike V2 n (Complex n) where
   {-# INLINE pointLike #-}
 
 type P3Like = PointLike V3
-
-instance PointLike V3 n (P3 n) where
-  pointLike = id
-  {-# INLINE pointLike #-}
 
 instance (n ~ m, m ~ o) => PointLike V3 n (n, m, o) where
   pointLike = iso unp3 p3
