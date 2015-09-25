@@ -35,6 +35,7 @@ module Plots.Axis
   , BaseSpace
 
     -- * Axis plots
+  , addPlot
   , addPlotable
   , addPlotable'
 
@@ -327,26 +328,31 @@ instance HasColourBar (Axis b v n) b where
 --     'addLegendEntry' "my plot"
 -- @
 --
--- @
--- myaxis = 'r2Axis' &~ do
---   'addPlotableL' "my plot" myplot
--- @
---
 -- Most of the time you won't use these functions directly. However,
 -- other plotting functions follow this naming convention where instead
 -- of @a@, it takes the data needed to make the plot.
 
+-- | Add a 'Plotable' 'Plot' to an axis.
+addPlot
+  :: (InSpace (BaseSpace c) n p, MonadState (Axis b c n) m, Plotable p b)
+  => Plot p b -- ^ the plot
+  -> m ()     -- ^ add plot to the 'Axis'
+addPlot p = axisPlots <>= [DynamicPlot p]
+
 -- | Add something 'Plotable' to the axis with a statefull modification
 --   of the 'Plot'.
 addPlotable
-  :: (InSpace (BaseSpace v) n p, MonadState (Axis b v n) m, Plotable p b)
-  => p -> State (Plot p b) () -> m ()
-addPlotable p s = axisPlots <>= [DynamicPlot $ execState s (mkPlot p)]
+  :: (InSpace (BaseSpace c) n p, MonadState (Axis b c n) m, Plotable p b)
+  => p -- ^ the plot
+  -> State (Plot p b) () -- ^ changes to the plot
+  -> m () -- ^ add plot to the 'Axis'
+addPlotable p s = addPlot $ execState s (mkPlot p)
 
 -- | Simple version of 'AddPlotable' without any changes 'Plot'.
 addPlotable'
   :: (InSpace (BaseSpace v) n p, MonadState (Axis b v n) m, Plotable p b)
-  => p -> m ()
+  => p    -- ^ the plot
+  -> m () -- ^ add plot to the 'Axis'
 addPlotable' p = addPlotable p (return ())
 
 ------------------------------------------------------------------------
