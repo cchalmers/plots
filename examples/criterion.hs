@@ -1,8 +1,17 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Criterion where
+{-# LANGUAGE TupleSections #-}
+-- | This example requires cassava for csv parsing.
+-- module Criterion where
 import Data.Csv hiding ((.=))
 import Data.Typeable
 import qualified Data.ByteString.Lazy as BS
@@ -10,16 +19,34 @@ import Diagrams.Prelude
 import qualified Data.Vector as V
 import System.IO.Unsafe
 import Control.Applicative
--- import Diagrams.Backend.PGF
+import Diagrams.Backend.SVG
+import Diagrams.Backend.SVG.CmdLine
 import Plots
-import Plots.Types.Bar
+-- import Plots.Types.Bar
 import Diagrams.TwoD.Text
+import Control.Arrow ((&&&))
 import Plots.Axis
-import Diagrams.Backend.Rasterific
+import Diagrams.Backend.SVG
 import Data.Monoid.Recommend
-import Control.Arrow
+-- import Control.Arrow
 import Data.Function
 import Data.List (groupBy)
+import Diagrams.Core.Transform
+import Control.Monad.State
+import Linear.V2
+import Data.Bool
+import qualified Debug.Trace as Debug
+import Diagrams.Backend.CmdLine hiding (output)
+import Plots.Types.Bar
+import qualified Data.Foldable as F
+import Data.Monoid (Endo (..))
+
+-- Misc stuff ----------------------------------------------------------
+
+barAxis :: Axis SVG V2 Double
+barAxis = r2Axis &~ gridLineVisible .= False
+
+-- Criterion csv parsing -----------------------------------------------
 
 data CResult = CResult
   { _name     :: !String
@@ -48,90 +75,85 @@ instance FromRecord CResult where
                     v .! 6
     | otherwise     = empty
 
-results :: V.Vector CResult
-results = unsafePerformIO $ do
-  csv <- BS.readFile "examples/criterion.csv"
+-- | Read a @.csv@ file from criterion's output.
+readCriterion :: MonadIO m => FilePath -> m (V.Vector CResult)
+readCriterion path = liftIO $ do
+  csv <- BS.readFile path
   let Right v = decode HasHeader csv
   return v
 
-myaxis :: Axis B V2 Double
-myaxis = barAxis &~ do
-  namedBarPlotOf (each . ito (_name &&& _mean)) results
-
-mymultiaxis :: Axis B V2 Double
-mymultiaxis = barAxis &~ do
-  multiBarPlot (over (each . _2 . each) (_name &&& _mean) . groupage $ toListOf each results)
-
-make :: Diagram B -> IO ()
-make = renderRasterific "examples/criterion.png" (mkWidth 600) . frame 30
-
-main :: IO ()
-main = make $ renderAxis mymultiaxis
-
-groupage :: [CResult] -> [(String, [CResult])]
-groupage = map collate . groupBy ((==) `on` fst) . map splitName
+-- | Group criterion results by name.
+groupCriterion :: [CResult] -> [(String, [CResult])]
+groupCriterion = map collate . groupBy ((==) `on` fst) . map splitName
   where
     splitName r = (a, r & name .~ tail b)
       where (a,b) = break (=='/') (r ^. name)
     collate []           = ("",[])
     collate as@((n,_):_) = (n, map snd as)
 
-------------------------------------------------------------------------
+-- Making criterion plots ----------------------------------------------
 
-multiBarPlot :: [(String, [(String, Double)])] -> AxisState B V2 Double
-multiBarPlot d = do
-  let (nms, xs) = unzip d
-  yMin .= Commit 0
-  -- axisTickLabels . _y . tickLabelFunction .=
-  --   atMajorTicks (\txtA n -> mkText txtA (show (toD n)))
-  axisTickLabels . _x . tickLabelFun .= stringLabels nms
-  addPlotable $ multiBar (map (map snd) xs)
+  -- => BarPlotOpts n -> [a] -> (a -> [n]) -> (a -> State (PlotProperties b V2 n) ()) -> m ()
 
-multiBar :: [[Double]] -> BarPlot Double
-multiBar dds = BarPlot
-  { _barData      = zip [1..] dds
-  , _barWidth     = 0.5
-  , _barSpacing   = 0.1
-  , _verticleBars = False
-  , _stacked      = False    -- whether the bars stacked (or side by side)
-  }
+-- | Given a filepath to a criterion @.csv@ file, make an axis.
+criterionAxis :: FilePath -> IO (Axis SVG V2 Double)
+criterionAxis path = execStateT ?? barAxis $ do
+  results <- readCriterion path
 
+  let rss = groupCriterion (F.toList results)
+  multiBars rss (map _mean . snd) $ do
+    runningBars
+    horizontal .= True
+    labelBars (rss ^.. each . _2 . each . name)
+    barWidth .= 0.6
+    onBars $ \cresults -> key (fst cresults)
 
--- ("pcg-fast",[("Word32",2.5478246508587825e-9),("Word32B",7.617835087754578e-9)])
--- ("pcg-single",[("Word32",2.489457565765152e-9)])
--- ("pcg-unique",[("Word32",2.5287319035400075e-9)])
--- ("mwc",[("Word64",9.031117576890663e-9),("Word32R",1.5986489045645512e-8),("Double",8.92557813101465e-9)])
--- ("mersenne",[("Word64",5.518793701316405e-9),("Double",7.210547645393152e-9)])
+  modify hideMinorTicks
+  xAxis . axisLabelText .= "average time (s)"
+  xAxis . majorGridLineVisible .= True
 
-namedBarPlotOf
-  :: (Typeable b,
-      Renderable (Text n) b,
-      Renderable (Path V2 n) b,
-      TypeableFloat n)
-  => IndexedFold String s n -> s -> AxisState b V2 n
-namedBarPlotOf l s = do
-  let (nms, xs) = unzip $ itoListOf l s
-  addPlotable $ simpleBarPlot xs
-  axisTickLabels . _x . tickLabelFun .= stringLabels nms
-  axisTickLabels . _x . tickLabelTextFun .= rotatedLabel
-  axisTicks . _x . majorTicksFun . mapped .= map fromIntegral [1 .. length xs]
-  yMin .= Commit 0
+-- instance HasOrientation p => HasOrientation (Plot p b) where
+--   orientation = rawPlot . orientation
 
-invertAlign :: TextAlignment n -> TextAlignment n
-invertAlign (BoxAlignedText x y) = BoxAlignedText y x
-invertAlign a = a
+-- Groups bars ---------------------------------------------------------
 
-rotatedLabel :: (Renderable (Text n) b, TypeableFloat n)
-  => TextAlignment n -> String -> QDiagram b V2 n Any
-rotatedLabel a l = (mkText (invertAlign a) l # rotateBy (1/12))
+-- groupedData :: [(String, [Double])]
+-- groupedData =
+--   [ ( "green"
+--     , [ 7, 14, 3, 17 ]
+--     )
+--   , ( "blue"
+--     , [ 12, 8, 12, 10 ]
+--     )
+--   , ( "orange"
+--     , [ 20, 2, 19, 7 ]
+--     )
+--   ]
 
-toD :: Real a => a -> Float
-toD = realToFrac
+-- groupedAxis :: Axis SVG V2 Double
+-- groupedAxis = barAxis &~ do
+--   multiBars groupedData snd $ do
+--     groupedBars' 0.4
+--     labelBars ["fun", "professional", "bright", "cost"]
+--     barWidth   *= 0.7
+--     horizontal .= True
 
-barAxis :: Axis B V2 Double
-barAxis = r2Axis &~ do
-  -- axisTickLabels . _x . tickLabelFunction .= stringLabels mkText nms
-  noGridLines
-  noMinorTicks
+--     onBars $ \ (l,_) -> do
+--       key l
+--       areaStyle . mapped . _lw .= none
+--       case readColourName l of
+--         Just c  -> plotColor .= c
+--         Nothing -> error l -- return ()
 
+-- simpleBarAxis :: Axis SVG V2 Double
+-- simpleBarAxis = barAxis &~ do
+--   Plots.Types.Bar.barPlot [5,3,6,7,2] $ orientation .= Vertical
+
+-- make :: Diagram SVG -> IO ()
+-- make = renderSVG "examples/criterion4.png" (mkWidth 1000) . frame 30
+
+main :: IO ()
+main = mainWith criterionAxis
+-- -- main = mainWith criterionAxis -- "examples/criterion.csv" >>= make . renderAxis
+-- -- main = criterionAxis "examples/criterion.csv" >>= make . renderAxis
 

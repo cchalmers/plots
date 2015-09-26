@@ -10,7 +10,20 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
-
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Types.Scatter
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- A scatter plot is a type of mathematical diagram using Cartesian
+-- coordinates to display values for typically two variables for a set
+-- of data.
+--
+----------------------------------------------------------------------------
 module Plots.Types.Scatter
   ( -- * Scatter plot
     ScatterPlot
