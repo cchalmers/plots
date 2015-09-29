@@ -1,4 +1,3 @@
--- {-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DeriveDataTypeable        #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
@@ -8,13 +7,8 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE FunctionalDependencies    #-}
-
 {-# LANGUAGE UndecidableInstances      #-}
-{-# LANGUAGE ConstraintKinds           #-}
-
 {-# LANGUAGE StandaloneDeriving        #-}
-
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Plots.Types.Line
   ( -- * Trail plot
@@ -78,23 +72,26 @@ import           Diagrams.Prelude  hiding (view)
 import           Plots.Style
 import           Plots.Types
 import           Plots.Axis
--- import           Plots.API
 
 ------------------------------------------------------------------------
 -- Trail and path
 ------------------------------------------------------------------------
 
+-- | Construct a localed trail from a list of folable of points.
 mkTrail :: (PointLike v n p, OrderedField n, F.Foldable f) => f p -> Located (Trail v n)
 mkTrail = mkTrailOf folded
 
+-- | Construct a localed trail from a fold over points.
 mkTrailOf :: (PointLike v n p, OrderedField n) => Fold s p -> s -> Located (Trail v n)
 mkTrailOf f ps = fromVertices $ toListOf (f . unpointLike) ps
 
+-- | Construct a localed trail from a fold over points.
+mkPath :: (PointLike v n p, OrderedField n, F.Foldable f, F.Foldable g) => g (f p) -> Path v n
+mkPath pss = toPath $ map mkTrail (F.toList pss)
+
+-- | Construct a localed trail from a fold over points.
 mkPathOf :: (PointLike v n p, OrderedField n) => Fold s t -> Fold t p -> s -> Path v n
 mkPathOf f1 f2 as = Path $ map (mkTrailOf f2) (toListOf f1 as)
-
-mkPath :: (PointLike v n p, OrderedField n, F.Foldable f, F.Foldable g) => g (f p) -> Path v n
-mkPath = mkPathOf folded folded
 
 instance (TypeableFloat n, Renderable (Path V2 n) b) => Plotable (Path V2 n) b where
   renderPlotable s _opts sty path
@@ -143,10 +140,6 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   defLegendPic GLinePlot {..} sty
       = (p2 (-10,0) ~~ p2 (10,0))
           # applyLineStyle sty
-
--- _LinePlot :: (Plotable (LinePlot v n) b, Typeable b)
---              => Prism' (Plot b v n) (LinePlot v n)
--- _LinePlot = _Plot
 
 ------------------------------------------------------------------------
 -- Line Plot
