@@ -29,6 +29,7 @@ module Plots.Types.Scatter
     ScatterPlot
 
     -- * Scatter plot lenses
+  , ScatterOptions
   , HasScatterOptions (..)
   , HasConnectingLine (..)
 
@@ -146,7 +147,7 @@ mkScatterOptions xs pf = ScatterOptions
 -- Scatter plot lenses
 ------------------------------------------------------------------------
 
--- | Class of things that have a 'LensLike' for a 'ScatterPlot'\'s
+-- | Class of things that have a 'LensLike' for a 'ScatterPlot' \'s
 --   connecting line.
 class HasConnectingLine f a where
   -- | 'LensLike' onto whether the scatter plot should have a connecting
@@ -323,7 +324,10 @@ scatterPlotOf
       Typeable n,
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b)
-  => Fold s p -> s -> State (Plot (ScatterOptions v n (Point v n)) b) () -> m ()
+  => Fold s p -- ^ fold over points
+  -> s        -- ^ data to fold
+  -> State (Plot (ScatterOptions v n (Point v n)) b) () -- ^ changes to plot options
+  -> m () -- ^ add plot to 'Axis'
 scatterPlotOf f s = scatterPlot (toListOf f s)
 
 -- | Version of 'scatterPlot' that accepts a 'Fold' over the data
@@ -334,14 +338,16 @@ scatterPlotOf'
       Typeable n,
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b)
-  => Fold s p -> s -> m ()
+  => Fold s p -- ^ fold over points
+  -> s -- ^ data to fold
+  -> m () -- ^ add plot to axis
 scatterPlotOf' f s = scatterPlot' (toListOf f s)
 
 ------------------------------------------------------------------------
 -- Bubble plot --
 ------------------------------------------------------------------------
 
--- | A bubble plot is a point together with a scalar.
+-- | A bubble plot is a scatter plot using point together with a scalar.
 type BubbleOptions v n = ScatterOptions v n (n, Point v n)
 
 -- | Scatter plots with extra numeric parameter. By default the extra
@@ -408,36 +414,38 @@ bubblePlotOf' f s = bubblePlot (toListOf f s)
 --   a point, @'Point' v n@
 --
 -- @
--- bubbleOptions :: Lens' (Plot (BubbleOptions v n) v) (BubbleOptions v n)
+-- 'bubbleOptions' :: 'Lens'' ('Plot' ('BubbleOptions' v n) v) ('BubbleOptions' v n)
 -- @
 bubbleOptions :: (InSpace v n a, HasScatterOptions f a (n, Point v n))
-              => LensLike' f a (ScatterOptions v n (n, Point v n))
+              => LensLike' f a (BubbleOptions v n)
 bubbleOptions = gscatterOptions
 
--- | Setter over the transform function for a 'bubblePlot'.
+-- | Setter over the transform function for a 'bubblePlot'. Default is 'scale'.
 --
---   Note that this is the less general version of @'_bubblePlot' .
+-- @
+-- 'bubbleOptions' :: 'Setter'' ('Plot' ('BubbleOptions' v n) v) (n -> 'Transformation' v n)
+-- @
+--
+--   Note that this is the less general version of @'bubblePlot' .
 --   'scatterTransform'@, which would give a 'LensLike' onto @(n,
 --   'Point' v n) -> 'Transformation' v n@.
 --
--- @
--- bubbleOptions :: 'Setter'' ('Plot' ('BubbleOptions' v n) v) (n -> 'Transformation' v n)
--- @
 bubbleTransform
   :: (InSpace v n a, HasScatterOptions f a (n, Point v n), Settable f)
   => LensLike' f a (n -> Transformation v n)
 bubbleTransform = bubbleOptions . scatterTransform . sets nOnly
   where nOnly f g (n,p) = f (\n' -> g (n', p)) n
 
--- | Setter over the style function for a 'bubblePlot'.
+-- | Setter over the style function for a 'bubblePlot'. Default is 'mempty'.
 --
---   Note that this is the less general version of @'_bubblePlot' .
+-- @
+-- 'bubbleStyle' :: 'Setter'' ('Plot' ('BubbleOptions' v n) v) (n -> 'Style' v n)
+-- @
+--
+--   Note that this is the less general version of @'bubblePlot' .
 --   'scatterTransform'@, which would give a 'LensLike' onto @(n,
 --   'Point' v n) -> 'Style' v n@.
 --
--- @
--- bubbleStyle :: 'Setter'' ('Plot' ('BubbleOptions' v n) v) (n -> 'Style' v n)
--- @
 bubbleStyle :: (InSpace v n a, Settable f, HasScatterOptions f a (n, Point v n))
              => LensLike' f a (n -> Style v n)
 bubbleStyle = bubbleOptions . scatterStyle . sets nOnly
@@ -447,9 +455,10 @@ bubbleStyle = bubbleOptions . scatterStyle . sets nOnly
 -- General scatter plot
 ------------------------------------------------------------------------
 
--- | A general scatter plot.
+-- | A general scatter plot allow using any data type @d@ to determine
+--   the 'scatterTransform' and 'scatterStyle'.
 gscatterPlot
-  :: (v ~ BaseSpace c,
+  :: (BaseSpace c ~ v,
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b,
