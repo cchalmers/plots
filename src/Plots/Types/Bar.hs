@@ -29,6 +29,8 @@ module Plots.Types.Bar
     BarPlot
   , barPlot
   , barPlot'
+  , namedBarPlot
+  , namedBarPlot'
   , floatingBarPlot
 
     -- * Bar layout
@@ -144,6 +146,9 @@ class HasOrientation a => HasBarLayout a where
 
 instance HasBarLayout (BarLayout n) where
   barLayout = id
+
+instance HasBarLayout a => HasBarLayout (Plot a b) where
+  barLayout = rawPlot . barLayout
 
 ------------------------------------------------------------------------
 -- Bar plot type
@@ -316,12 +321,36 @@ barPlot'
   -> m () -- ^ changes to the 'Axis'
 barPlot' ns = addPlotable' (mkBars def ns)
 
+-- | A add 'BarPlot' to an 'Axis' while naming the bars.
+namedBarPlot
+  :: (MonadState (Axis b V2 n) m,
+      Plotable (BarPlot n) b,
+      Foldable f)
+  => f (String,n)                  -- ^ bar heights with name
+  -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
+  -> m ()                          -- ^ changes to the 'Axis'
+namedBarPlot d s = do
+  addPlot bp
+  barLayoutAxisLabels (bp ^. barLayout) nms
+  where
+    (nms, xs) = unzip $ F.toList d
+    bp = mkPlot (mkBars def xs) & execState s
+
+-- | Simple version of 'namedBarPlot' without any modification to the 'Plot'.
+namedBarPlot'
+  :: (MonadState (Axis b V2 n) m,
+      Plotable (BarPlot n) b,
+      Foldable f)
+  => f (String,n)  -- ^ bar heights with name
+  -> m ()          -- ^ add plot to the 'Axis'
+namedBarPlot' ns = namedBarPlot ns (return ())
+
 -- | Same as 'barPlot' but with lower and upper bounds for the bars.
 floatingBarPlot
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
       Foldable f)
-  => f (n,n) -- ^ bar heights
+  => f (n,n) -- ^ bar limits
   -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()
 floatingBarPlot ns = addPlotable (mkFloatingBars def ns)
