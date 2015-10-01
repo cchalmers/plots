@@ -23,7 +23,6 @@
 ----------------------------------------------------------------------------
 module Plots.Axis.Render where
 
-import           Control.Lens               hiding (lmap, transform, ( # ))
 import           Control.Lens.Extras        (is)
 import           Data.Distributive
 import           Data.Monoid.Recommend
@@ -31,7 +30,7 @@ import           Data.Typeable
 import           Data.Foldable
 
 import           Diagrams.BoundingBox
-import           Diagrams.Prelude           as D hiding (under, view)
+import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 import           Linear                     hiding (translation)
 
@@ -42,6 +41,7 @@ import           Plots.Axis
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Ticks
+import           Plots.Axis.Line
 import           Plots.Legend
 import           Plots.Style
 import           Plots.Axis.ColourBar
@@ -80,7 +80,7 @@ class RenderAxis b v n where
 --     (xs, tv, t2) = workOutScale a
 --     --
 --     bb = fromCorners (P . l $ fmap fst xs) (P . l $ fmap snd xs)
---     legend = drawLegend bb (a ^. axisLegend) (plots' ^.. traversed)
+--     legend = drawLegend bb (a ^. legend) (plots' ^.. traversed)
 --                         -- (a ^.. axisPlots . traversed . genericPlot)
 --     --
 --     plots' = a ^. axisPlots . to applyTheme
@@ -112,7 +112,7 @@ renderR2Axis a = frame 40
     t = tv <> t'
     --
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
-    leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. axisLegend)
+    leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
     --
 
     -- The colour bar
@@ -587,7 +587,7 @@ renderPolarAxis a = frame 15
     -- t = tv <> t'
     --
     bb = fromCorners (p2 (-10,-10)) (p2 (10,10)) -- (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
-    leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. axisLegend)
+    leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
     --
 
     styledPlots = zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)

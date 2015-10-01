@@ -3,9 +3,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Axis
@@ -15,8 +13,8 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Low level module defining the axis type along with other
--- miscellaneous axis features.
+-- The 'Axis' is the main data type for "plots". It holds all the
+-- nessesary infomation to be rendered into a 'Diagram'.
 --
 ----------------------------------------------------------------------------
 module Plots.Axis
@@ -24,11 +22,12 @@ module Plots.Axis
     Axis
   , axes
   , axisPlots
-  , axisLegend
+  , currentPlots
+  , finalPlots
   , axisSize
   , axisScale
 
-    -- * Default axes
+    -- * Predefined axes
   , r2Axis
 
     -- ** Base space
@@ -45,11 +44,6 @@ module Plots.Axis
   , singleAxisScale
   , singleAxisBound
 
-    -- * Axis lines
-  , AxisLine
-  , HasAxisLine (..)
-  , AxisLineType (..)
-
     -- * Scaling
   , AxisScaling
   , HasAxisScaling (..)
@@ -64,6 +58,10 @@ module Plots.Axis
     -- ** y-axis
   , yAxis
   , yAxisLabel
+
+    -- ** z-axis
+  , zAxis
+  , zAxisLabel
   ) where
 
 import           Data.Complex
@@ -234,25 +232,78 @@ type instance BaseSpace V3      = V3
 -- Axis data type ------------------------------------------------------
 
 -- | Axis is the data type that holds all the nessessary information to render
---   a plot. The idea is to use one of the default axis, customise, add plots
---   and render using @drawAxis@.
+--   a plot. Common 'LensLike's used for the axis (see haddock's
+--   instances for a more comprehensive list):
+--
+--   * 'axisStyle' -- customise the 'AxisStyle'
+--   * 'legend' - customise the 'Legend'
+--   * 'colourBar' - customise the 'ColourBar'
+--   * 'currentPlots' - current plots in the 'Axis'
+--   * 'finalPlots' - changes to the plots just before rendering
+--   * 'axes' -- changes to each 'SingleAxis'
+--
+--          * 'xAxis' - the x-axis
+--          * 'yAxis' - the y-axis
+--          * 'zAxis' - the z-axis
+--
+--   The following 'LensLike's can be used on the on all the axes by
+--   applying it the to 'Axis' or can be used on a 'SingleAxis' by using
+--   it in conjuction with a specific axis (like 'xAxis').
+--
+--   * 'axisLabel' - customise the 'MinorTicks'
+--   * 'tickLabel' - customise the 'TickLabels'
+--   * 'minorTicks' - customise the 'MinorTicks'
+--   * 'majorTicks' - customise the 'MajorTicks'
+--   * 'gridLines' - customise the 'GridLines'
+--   * 'axisLine' - customise the 'AxisLine'
+--
 data Axis b c n = Axis
-  { -- These lenses are not being exported, they're just here for instances.
-    -- _axisAxisBounds :: Bounds v n
-    _axisAxisStyle :: AxisStyle b (BaseSpace c) n
-  , _axisColourBar :: ColourBar b n
-  -- , _axisPP         :: PlotProperties b (BaseSpace v) n
+  { _axisStyle :: AxisStyle b (BaseSpace c) n
+  , _colourBar :: ColourBar b n
+  , _legend    :: Legend b n
+  -- , _axisTitle      :: AxisTitle
 
-
-  , _axisLegend    :: Legend b n
   , _axisPlots     :: [DynamicPlot b (BaseSpace c) n]
-  -- , _axisTitle      :: Maybe String
+  , plotModifier   :: Endo (DynamicPlot b (BaseSpace c) n)
 
   -- the v in each axis is only used for @'Style' v n@
   , _axes          :: c (SingleAxis b (BaseSpace c) n)
   } deriving Typeable
 
-makeLenses ''Axis
+-- | Lens onto the separate axes of an axis. Allows changing the
+--   coordinate system as long as the 'BaseSpace' is the same.
+--
+-- @
+-- 'axes' :: 'Lens'' ('Axis' b c n) (c ('SingleAxis' b v n))
+-- @
+axes :: (v ~ BaseSpace c, v ~ BaseSpace c')
+     => Lens (Axis b c  n)
+             (Axis b c' n)
+             (c  (SingleAxis b v n))
+             (c' (SingleAxis b v n))
+axes = lens _axes (\(Axis a1 a2 a3 a4 a5 _) a6 -> Axis a1 a2 a3 a4 a5 a6)
+
+-- | The list of plots currently in the axis.
+axisPlots :: BaseSpace c ~ v => Lens' (Axis b c n) [DynamicPlot b v n]
+axisPlots = lens _axisPlots (\a ps -> a {_axisPlots = ps})
+
+-- | Traversal over the current plots in the axis.
+currentPlots :: BaseSpace c ~ v => Traversal' (Axis b c n) (DynamicPlot b v n)
+currentPlots = axisPlots . traversed
+
+-- | Setter over the final plot before the axis is rendered.
+--
+--   For example, to make all 'ScatterPlot's in the axis use a
+--   'connectingLine', you can add
+--
+-- @
+-- 'finalPlots' . 'connectingLine' .= 'True'
+-- @
+--
+--   at the begining of the axis and all scatter plots added will have a
+--   'connectingLine'.
+finalPlots :: BaseSpace c ~ v => Setter' (Axis b c n) (DynamicPlot b v n)
+finalPlots = sets $ \f a -> a {plotModifier = plotModifier a <> Endo f}
 
 -- Axis instances ------------------------------------------------------
 
@@ -278,11 +329,12 @@ instance (Applicative f, Traversable c) => HasTickLabels f (Axis b c n) b where
   tickLabel = axes . traverse . tickLabel
 
 instance Settable f => HasPlotStyle f (Axis b c n) b where
-  plotStyle = axisPlots . traverse . plotStyle
+  plotStyle = currentPlots . plotStyle
 
 instance HasLegend (Axis b c n) b where
-  legend = axisLegend
+  legend = lens _legend (\a l -> a {_legend = l})
 
+-- | The size used for the rendered axis.
 axisSize :: (Representable c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
 axisSize = axes . column singleAxisSize . iso mkSizeSpec getSpec
 
@@ -299,10 +351,10 @@ axisScale = axes . column singleAxisScale
 --   bounds = axisAxisBounds
 
 instance HasAxisStyle (Axis b v n) b where
-  axisStyle = axisAxisStyle
+  axisStyle = lens _axisStyle (\a sty -> a {_axisStyle = sty})
 
 instance HasColourBar (Axis b v n) b where
-  colourBar = axisColourBar
+  colourBar = lens _colourBar (\a cb -> a {_colourBar = cb})
 
 -- Axis functions ------------------------------------------------------
 
@@ -332,14 +384,14 @@ instance HasColourBar (Axis b v n) b where
 -- other plotting functions follow this naming convention where instead
 -- of @a@, it takes the data needed to make the plot.
 
--- | Add a 'Plotable' 'Plot' to an axis.
+-- | Add a 'Plotable' 'Plot' to an 'Axis'.
 addPlot
   :: (InSpace (BaseSpace c) n p, MonadState (Axis b c n) m, Plotable p b)
   => Plot p b -- ^ the plot
   -> m ()     -- ^ add plot to the 'Axis'
 addPlot p = axisPlots <>= [DynamicPlot p]
 
--- | Add something 'Plotable' to the axis with a statefull modification
+-- | Add something 'Plotable' to the 'Axis' with a statefull modification
 --   of the 'Plot'.
 addPlotable
   :: (InSpace (BaseSpace c) n p, MonadState (Axis b c n) m, Plotable p b)
@@ -367,11 +419,12 @@ r2Axis
      Renderable (Path V2 n) b)
   => Axis b V2 n
 r2Axis = Axis
-  { _axisAxisStyle  = fadedColours
-  , _axisColourBar  = defColourBar
+  { _axisStyle = fadedColours
+  , _colourBar = defColourBar
 
-  , _axisLegend     = def
-  , _axisPlots      = []
+  , _legend      = def
+  , _axisPlots   = []
+  , plotModifier = mempty
 
   , _axes = pure def
   }
@@ -382,16 +435,29 @@ r2Axis = Axis
 xAxis :: R1 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
 xAxis = axes . _x
 
+-- | The label for the x-axis. Shorthand for @'xAxis' . 'axisLabelText'@.
 xAxisLabel :: R1 c => Lens' (Axis b c n) String
 xAxisLabel = xAxis . axisLabelText
 
 -- The y-axis ----------------------------------------------------------
 
+-- | Lens onto the y-axis of an 'Axis'.
 yAxis :: R2 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
 yAxis = axes . _y
 
+-- | The label for the y-axis. Shorthand for @'yAxis' . 'axisLabelText'@.
 yAxisLabel :: R2 c => Lens' (Axis b c n) String
 yAxisLabel = yAxis . axisLabelText
+
+-- The z-axis ----------------------------------------------------------
+
+-- | Lens onto the z-axis of an 'Axis'.
+zAxis :: R3 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+zAxis = axes . _z
+
+-- | The label for the z-axis. Shorthand for @'zAxis' . 'axisLabelText'@.
+zAxisLabel :: R3 c => Lens' (Axis b c n) String
+zAxisLabel = zAxis . axisLabelText
 
 -- R3 Axis
 
