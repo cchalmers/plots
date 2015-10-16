@@ -2,166 +2,240 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE StandaloneDeriving        #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE UndecidableInstances      #-}
+
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Types.Histogram
+-- Copyright   :  (C) 2015 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+
+-- A histogram is a graphical representation of the distribution of
+-- numerical data. It is an estimate of the probability distribution of
+-- a continuous variable.
+--
+----------------------------------------------------------------------------
 
 module Plots.Types.Histogram
-  (  -- * GHistogramPlot plot
-     GHistogramPlot
-  -- , _HistogramPlot
-
+  (
     -- * Histogram plot
-  , HistogramPlot
-  , mkHistogramPlotOf
-  , mkHistogramPlot
+    HistogramPlot
 
-    -- * Helper functions
-  , createBarData'
+    -- ** Already computed histograms
+  , computedHistogram
 
-    -- * Histogram lenses
-  , setBin
+    -- ** Histogram options
+  , HistogramOptions
+  , HasHistogramOptions (..)
 
-    -- * Histogram
+    -- ** Plotting histograms
   , histogramPlot
   , histogramPlot'
-  -- , histogramPlotL
-
-    -- * Fold variant histogram
   , histogramPlotOf
   , histogramPlotOf'
-  -- , histogramPlotLOf
+
+    -- * Low level constructors
+  , mkComputedHistogram
+  , mkHistogramPlot
   ) where
 
-import           Control.Lens                    hiding (lmap, none, transform,
-                                                  ( # ))
 import           Control.Monad.State.Lazy
 
-import qualified Data.Foldable                   as F
-import           Data.Typeable
-import           Data.List
+import qualified Data.Foldable               as F
 import           Data.Function
+import           Data.Maybe
+import           Data.Typeable
 
+import qualified Data.Vector                 as V
+import qualified Statistics.Sample.Histogram as Stat
+
+import           Diagrams.Core.Transform     (fromSymmetric)
 import           Diagrams.Prelude
-import           Diagrams.Coordinates.Isomorphic
+import           Linear.V2                   (_yx)
 
+import           Plots.Axis
 import           Plots.Style
 import           Plots.Types
-import           Plots.Axis
+import           Plots.Utils
+
+
+-- | Construct a rectangle of size v with the bottom left at point p.
+rectBL :: (InSpace V2 n t, TrailLike t) => Point V2 n -> V2 n -> t
+rectBL p (V2 x y) =
+  trailLike $ fromOffsets [V2 x 0, V2 0 y, V2 (-x) 0] # closeTrail `at` p
 
 ------------------------------------------------------------------------
 -- GHistogram plot
 ------------------------------------------------------------------------
 
-data GHistogramPlot v n a = forall s. GHistogramPlot
-  { hData :: s
-  , hFold :: Fold s a
-  , hPos  :: a -> Point v n
-  , hFunc :: Int -> [P2 n] -> [P2 n]
-  , hBin  :: Int
-  } deriving Typeable
+-- | Simple histogram type supporting uniform bins.
+data HistogramPlot n = HistogramPlot
+  { hWidth  :: n
+  , hStart  :: n
+  , hValues :: [n]
+  , hOrient :: Orientation
+  }
 
--- change P2 n to Point v n.
--- need to add v ~ V2, both in mkHistogramPlot and BinY1.
--- also change the same in api.
+type instance V (HistogramPlot n) = V2
+type instance N (HistogramPlot n) = n
 
-type instance V (GHistogramPlot v n a) = v
-type instance N (GHistogramPlot v n a) = n
-
-instance (Metric v, OrderedField n) => Enveloped (GHistogramPlot v n a) where
-  getEnvelope GHistogramPlot {..} = foldMapOf (hFold . to hPos) getEnvelope hData
-
-instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (GHistogramPlot V2 n a) b where
-  renderPlotable s _opts sty GHistogramPlot {..} =
-      mconcat [drawbar (createBarData' z w) | z <- zs ]
+instance OrderedField n => Enveloped (HistogramPlot n) where
+  getEnvelope HistogramPlot {..} =
+    -- don't like this reduntent code
+    getEnvelope . orient hOrient _reflectXY id . (id :: Path v n -> Path v n) $
+      ifoldMap drawBar hValues
     where
-      ps = toListOf (hFold . to hPos . to (logPoint ls)) hData
-      w  = ( xmax - xmin )/ fromIntegral hBin
-      zs = hFunc hBin ps
-      t  = s ^. specTrans
-      ls = s ^. specScale
-      xmin = fst (head (sortBy (compare `on` fst) (map unp2 ps)))
-      xmax = fst (last (sortBy (compare `on` fst) (map unp2 ps)))
-      drawbar barpts = fromVertices barpts
-                         # mapLoc closeLine
-                         # stroke
-                         # applyAreaStyle sty
-                         # transform t
+      drawBar i h = rectBL (mkP2 x 0) (V2 hWidth h)
+        where x = hStart + fromIntegral i * hWidth
 
-  defLegendPic GHistogramPlot {..} sty
-      = square 5 # applyAreaStyle sty
+instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+    => Plotable (HistogramPlot n) b where
+  renderPlotable s _opts sty HistogramPlot {..} =
+    ifoldMap drawBar hValues
+      # orient hOrient _reflectXY id
+      # applyAreaStyle sty
+      # transform (s^.specTrans)
+    where
+      drawBar i h = rectBL (mkP2 x 0) (V2 hWidth h)
+        where x = hStart + fromIntegral i * hWidth
 
--- _HistogramPlot :: (Plotable (HistogramPlot v n) b, Typeable b)
---                    => Prism' (Plot b v n) (HistogramPlot v n)
--- _HistogramPlot = _Plot
+  defLegendPic HistogramPlot {..} sty
+    = centerXY
+    . applyAreaStyle sty'
+    . orient hOrient _reflectXY id
+    $ alignB (rect 4 7) ||| alignB (rect 4 10) ||| alignB (rect 4 6)
+    where
+      -- The legend bars don't look right if the line width is too big so we limit it
+      sty' = sty & areaStyle . _lw %~ atMost (local 0.8)
+
+instance HasOrientation (HistogramPlot n) where
+  orientation = lens hOrient $ \hp o -> hp {hOrient = o}
 
 ------------------------------------------------------------------------
 -- Simple histogram plot
 ------------------------------------------------------------------------
 
-type HistogramPlot v n = GHistogramPlot v n (Point v n)
+-- | Plot an already computed histogram with equally sized bins.
+computedHistogram
+  :: (MonadState (Axis b V2 n) m,
+      Plotable (HistogramPlot n) b,
+      Foldable f, Typeable b, TypeableFloat n)
+  => n   -- ^ start of first bin
+  -> n   -- ^ width of each bin
+  -> f n -- ^ heights of the bins
+  -> State (Plot (HistogramPlot n) b) ()
+  -> m ()
+computedHistogram x0 w xs = addPlotable (mkComputedHistogram x0 w xs)
 
--- | Plot a histogram by averaging x data with y bin = 0.
-mkHistogramPlot :: (PointLike v n p, F.Foldable f, Ord n, Fractional n, Enum n, Num n)
-              => f p -> HistogramPlot v n
-mkHistogramPlot = mkHistogramPlotOf folded
+-- | Construct a 'HistogramPlot' from raw histogram data.
+mkComputedHistogram
+  :: (Foldable f, OrderedField n)
+  => n -- ^ start of first bin
+  -> n -- ^ width of each bin
+  -> f n -- ^ heights of the bins
+  -> HistogramPlot n
+mkComputedHistogram x0 w xs = HistogramPlot x0 w (F.toList xs) Horizontal
 
--- | Plot a histogram using a given fold.
-mkHistogramPlotOf :: (PointLike v n p, Ord n, Fractional n, Enum n, Num n)
-                => Fold s p -> s -> HistogramPlot v n
-mkHistogramPlotOf f a = GHistogramPlot
-  { hData = a
-  , hFold = f . unpointLike
-  , hPos  = id
-  , hFunc = binY
-  , hBin  = 10
+----------------------------------------------------------------------------
+-- Building histograms
+----------------------------------------------------------------------------
+
+-- Histogram options ---------------------------------------------------
+
+-- | Options for binning histogram data. For now only very basic
+--   histograms building is supported.
+data HistogramOptions n = HistogramOptions
+  { hBins   :: Int
+  , hRange  :: Maybe (n, n)
+  , oOrient :: Orientation
   }
 
-------------------------------------------------------------------------
--- Helper functions
-------------------------------------------------------------------------
+type instance V (HistogramOptions n) = V2
+type instance N (HistogramOptions n) = n
 
-binY :: (Ord n, Fractional n, Enum n) => Int -> [P2 n] -> [P2 n]
-binY b xs =  map p2 (zip xpts ypts)
-              where xmin = fst (maximumBy (compare `on` fst) (map unp2 xs))
-                    xmax = fst (minimumBy (compare `on` fst) (map unp2 xs))
-                    xpts = [xmin, (xmin + w) .. xmax]
-                    ypts = [bin1D xs (xpt, (xpt + w)) | xpt <- xpts]
-                    w    = (xmax - xmin)/ fromIntegral b
+instance Default (HistogramOptions n) where
+  def = HistogramOptions
+    { hBins   = 10
+    , hRange  = Nothing
+    , oOrient = Vertical
+    }
 
-bin1D :: (Fractional a, Ord a) => [P2 a] -> (a, a) -> a
-bin1D xs (a,b) = mean [y | (x,y) <- (map unp2 xs), x > b, x < a]
+instance HasOrientation (HistogramOptions n) where
+  orientation = lens oOrient $ \ho o -> ho {oOrient = o}
 
+class HasOrientation a => HasHistogramOptions a where
+  -- | Options for building the histogram from data.
+  histogramOptions :: Lens' a (HistogramOptions (N a))
 
-createBarData' :: Fractional n => P2 n -> n -> [P2 n]
-createBarData' z w = map p2 [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
-        where xmax =  x + (w/2)
-              xmin =  x - (w/2)
-              (x, y) = unp2 z
+  -- | The number of bins (bars) to use for the histogram. Must be
+  --   positive.
+  --
+  --   'Default' is @10@.
+  numBins :: Lens' a Int
+  numBins = histogramOptions . lens hBins (\hb n -> hb {hBins = n})
 
-mean :: (Num a, Fractional a) => [a] -> a
-mean [] = 0.0
-mean xs = (sum xs)/ fromIntegral (length xs)
+  -- | The range of data to consider when building the histogram. Any
+  --   data outside the range is ignored.
+  --
+  --   'Default' is 'Nothing'.
+  binRange :: Lens' a (Maybe (N a, N a))
+  binRange = histogramOptions . lens hRange (\hb r -> hb {hRange = r})
 
-----------------------------------------------------------------------------
--- Histogram Lenses
-----------------------------------------------------------------------------
+instance HasHistogramOptions (HistogramOptions n) where
+  histogramOptions = id
 
-class HasHistogram a v n d | a -> v n, a -> d where
-  histogram :: Lens' a (GHistogramPlot v n d)
+instance HasHistogramOptions a => HasHistogramOptions (Plot a b) where
+  histogramOptions = rawPlot . histogramOptions
 
-  setBin :: Lens' a Int
-  setBin = histogram . lens hBin (\hb bin -> hb {hBin = bin})
+-- | Create a histogram by binning the data using the
+--   'HistogramOptions'.
+mkHistogramPlot
+  :: (Foldable f, RealFrac n)
+  => HistogramOptions n -> f n -> HistogramPlot n
+mkHistogramPlot HistogramOptions {..} xs =
+  HistogramPlot
+    { hWidth  = (b - a) / fromIntegral hBins
+    , hStart  = a
+    , hValues = V.toList ns
+    , hOrient = Vertical
+    }
+  where
+    ns    = Stat.histogram_ hBins a b v
+    v     = V.fromList (F.toList xs)
+    (a,b) = fromMaybe (range hBins v) hRange
 
-instance HasHistogram (GHistogramPlot v n d) v n d where
-  histogram = id
+-- Taken from Statistics, which was limited to 'Double'.
+range :: (Ord n, Fractional n)
+      => Int                    -- ^ Number of bins (must be positive).
+      -> V.Vector n             -- ^ Sample data (cannot be empty).
+      -> (n, n)
+range nBins xs
+    | nBins < 1 = error "Plots.Types.Histogram: invalid bin count"
+    | V.null xs = error "Plots.Types.Histogram: empty sample"
+    | lo == hi  = case abs lo / 10 of
+                    a | a < 1e-6   -> (-1,1)
+                      | otherwise  -> (lo - a, lo + a)
+    | otherwise = (lo-d, hi+d)
+  where
+    d | nBins == 1 = 0
+      | otherwise  = (hi - lo) / ((fromIntegral nBins - 1) * 2)
+    V2 lo hi       = minmaxOf folded xs
+{-# INLINE range #-}
 
-instance HasHistogram (Plot (GHistogramPlot v n d) b) v n d where
-  histogram = rawPlot
+-- |
+-- mkWeightedHistogram
+--   :: (Foldable f, OrderdField n)
+--   => HistogramOptions n -> [(n, n)] -> HistogramPlot n
+-- mkWeightedHistogram
 
 ------------------------------------------------------------------------
 -- Histogram
@@ -198,13 +272,12 @@ instance HasHistogram (Plot (GHistogramPlot v n d) b) v n d where
 -- @
 
 histogramPlot
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (HistogramPlot v n) b,
-      F.Foldable f, Enum n)
-  => f p -> State (Plot (HistogramPlot v n) b) () -> m ()
-histogramPlot d = addPlotable (mkHistogramPlot d)
+  :: (MonadState (Axis b V2 n) m, Plotable (HistogramPlot n) b, F.Foldable f, RealFrac n)
+  => f n
+  -> State (Plot (HistogramOptions n) b) ()
+  -> m ()
+histogramPlot ns s = addPlot (hoPlot & rawPlot %~ \ho -> mkHistogramPlot ho ns)
+  where hoPlot = mkPlot def &~ s
 
 -- | Make a 'HistogramPlot' and take a 'State' on the plot to alter it's
 --   options
@@ -217,54 +290,31 @@ histogramPlot d = addPlotable (mkHistogramPlot d)
 -- @
 
 histogramPlot'
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (HistogramPlot v n) b,
-      F.Foldable f, Enum n)
-  => f p -> m ()
-histogramPlot' d = addPlotable' (mkHistogramPlot d)
+  :: (MonadState (Axis b V2 n) m, Plotable (HistogramPlot n) b, F.Foldable f, RealFrac n)
+  => f n
+  -> m ()
+histogramPlot' d = histogramPlot d (return ())
 
--- | Add a 'HistogramPlot' with the given name for the legend entry.
---
--- @
---   myaxis = r2Axis &~ do
---     histogramPlotL "blue team" pointData1
---     histogramPlotL "red team" pointData2
--- @
-
--- histogramPlotL
---   :: (v ~ BaseSpace c,
---       PointLike v n p,
---       MonadState (Axis b c n) m,
---       Plotable (HistogramPlot v n) b,
---       F.Foldable f, Enum n)
---   => String -> f p -> m ()
--- histogramPlotL l d = addPlotableL l (mkHistogramPlot d)
-
--- Fold variants
-
+-- | Add a 'HistogramPlot' using a fold over the data.
 histogramPlotOf
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (HistogramPlot v n) b, Enum n)
-  => Fold s p -> s -> State (Plot (HistogramPlot v n) b) () -> m ()
-histogramPlotOf f s = addPlotable (mkHistogramPlotOf f s)
+  :: (MonadState (Axis b V2 n) m, Plotable (HistogramPlot n) b, RealFrac n)
+  => Fold s n -- ^ fold over the data
+  -> s        -- ^ data to fold
+  -> State (Plot (HistogramOptions n) b) () -- ^ change to the plot
+  -> m () -- ^ add plot to the 'Axis'
+histogramPlotOf f s = histogramPlot (toListOf f s)
 
+-- | Same as 'histogramPlotOf' without any changes to the plot.
 histogramPlotOf'
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (HistogramPlot v n) b, Enum n)
-  => Fold s p -> s -> m ()
-histogramPlotOf' f s = addPlotable' (mkHistogramPlotOf f s)
+  :: (MonadState (Axis b V2 n) m, Plotable (HistogramPlot n) b, RealFrac n)
+  => Fold s n -> s -> m ()
+histogramPlotOf' f s = histogramPlotOf f s (return ())
 
--- histogramPlotLOf
---   :: (v ~ BaseSpace c,
---       PointLike v n p,
---       MonadState (Axis b c n) m,
---       Plotable (HistogramPlot v n) b, Enum n)
---   => String -> Fold s p -> s -> m ()
--- histogramPlotLOf l f s = addPlotableL l (mkHistogramPlotOf f s)
+-- temporary functions that will be in next lib release
+
+_reflectionXY :: (Additive v, R2 v, Num n) => Transformation v n
+_reflectionXY = fromSymmetric $ (_xy %~ view _yx) <-> (_xy %~ view _yx)
+
+_reflectXY :: (InSpace v n t, R2 v, Transformable t) => t -> t
+_reflectXY = transform _reflectionXY
 
