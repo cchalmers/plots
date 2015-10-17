@@ -37,9 +37,10 @@ module Plots.Axis.Grid
 
   ) where
 
-import           Control.Lens     hiding (( # ))
+import           Control.Lens        hiding (( # ))
 import           Data.Data
 import           Data.Default
+import           Control.Monad.State
 
 import           Diagrams.Prelude
 
@@ -156,8 +157,8 @@ gridLineVisible = gridLines . vis where
 -- @
 --
 --   See 'HasGridLines' for more advanced visibility options.
-hideGridLines :: HasGridLines Identity a => a -> a
-hideGridLines = gridLineVisible .~ False
+hideGridLines :: (HasGridLines Identity a, MonadState a m) => m ()
+hideGridLines = gridLineVisible .= False
 
 -- | Show both major and minor grid lines.
 --
@@ -168,8 +169,8 @@ hideGridLines = gridLineVisible .~ False
 -- @
 --
 --   See 'HasGridLines' for more advanced visibility options.
-showGridLines :: HasGridLines Identity a => a -> a
-showGridLines = gridLineVisible .~ False
+showGridLines :: (HasGridLines Identity a, MonadState a m) => m ()
+showGridLines = gridLineVisible .= True
 
 -- | Traversal over both the major and minor grid styles. This can be used at seversal levels in the Axis:
 gridLineStyle :: (HasGridLines f a, Applicative f) => LensLike' f a (Style (V a) (N a))
