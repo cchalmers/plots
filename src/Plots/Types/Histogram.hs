@@ -37,6 +37,15 @@ module Plots.Types.Histogram
   , HistogramOptions
   , HasHistogramOptions (..)
 
+    -- ** Normalisation
+  , NormalisationMethod
+  , count
+  , probability
+  , countDensity
+  , pdf
+  , cumilative
+  , cdf
+
     -- ** Plotting histograms
   , histogramPlot
   , histogramPlot'
@@ -151,11 +160,52 @@ mkComputedHistogram x0 w xs = HistogramPlot x0 w (F.toList xs) Horizontal
 
 -- Histogram options ---------------------------------------------------
 
+-- | The way to normalise the data from a histogram. The default method
+--   is 'count'.
+newtype NormalisationMethod =
+  NM { runNM :: forall n. Fractional n => n -> V.Vector n -> V.Vector n }
+ -- width -> heights -> normalised heights
+
+instance Default NormalisationMethod where
+  def = count
+
+-- | The height of each bar is the number of observations. This is the
+--   'Default' method.
+count :: NormalisationMethod
+count = NM $ \_ v -> v
+
+-- | The sum of the heights of the bars is equal to 1.
+probability :: NormalisationMethod
+probability = NM $ \_ v -> v ^/ V.sum v
+
+-- | The height of each bar is @n / w@ where @n@ is the number of
+--   observations and @w@ is the width.
+countDensity :: NormalisationMethod
+countDensity = NM $ \w v -> v ^/ w
+
+-- | The total area of the bars is @1@. This gives a probability density
+--   function estimate.
+pdf :: NormalisationMethod
+pdf = NM $ \w v -> v ^/ (w * V.sum v)
+
+-- | The height of each bar is the cumulative number of observations in
+--   each bin and all previous bins. The height of the last bar is the
+--   total number of observations.
+cumilative :: NormalisationMethod
+cumilative = NM $ \_ -> V.scanl1 (+)
+
+-- | Cumulative density function estimate. The height of each bar is
+--   equal to the cumulative relative number of observations in the bin
+--   and all previous bins. The height of the last bar is 1.
+cdf :: NormalisationMethod
+cdf = NM $ \_ v -> V.scanl1 (+) v ^/ V.sum v
+
 -- | Options for binning histogram data. For now only very basic
 --   histograms building is supported.
 data HistogramOptions n = HistogramOptions
   { hBins   :: Int
   , hRange  :: Maybe (n, n)
+  , hNorm   :: NormalisationMethod
   , oOrient :: Orientation
   }
 
@@ -166,6 +216,7 @@ instance Default (HistogramOptions n) where
   def = HistogramOptions
     { hBins   = 10
     , hRange  = Nothing
+    , hNorm   = def
     , oOrient = Vertical
     }
 
@@ -181,14 +232,21 @@ class HasOrientation a => HasHistogramOptions a where
   --
   --   'Default' is @10@.
   numBins :: Lens' a Int
-  numBins = histogramOptions . lens hBins (\hb n -> hb {hBins = n})
+  numBins = histogramOptions . lens hBins (\ho n -> ho {hBins = n})
 
   -- | The range of data to consider when building the histogram. Any
   --   data outside the range is ignored.
   --
   --   'Default' is 'Nothing'.
   binRange :: Lens' a (Maybe (N a, N a))
-  binRange = histogramOptions . lens hRange (\hb r -> hb {hRange = r})
+  binRange = histogramOptions . lens hRange (\ho r -> ho {hRange = r})
+
+  -- | Should the resulting histogram be normalised so the total area is
+  --   1.
+  --
+  --   'Default' is False.
+  normaliseSample :: Lens' a NormalisationMethod
+  normaliseSample = histogramOptions . lens hNorm (\ho b -> ho {hNorm = b})
 
 instance HasHistogramOptions (HistogramOptions n) where
   histogramOptions = id
@@ -203,12 +261,13 @@ mkHistogramPlot
   => HistogramOptions n -> f n -> HistogramPlot n
 mkHistogramPlot HistogramOptions {..} xs =
   HistogramPlot
-    { hWidth  = (b - a) / fromIntegral hBins
+    { hWidth  = w
     , hStart  = a
-    , hValues = V.toList ns
+    , hValues = V.toList $ runNM hNorm w ns
     , hOrient = Vertical
     }
   where
+    w     = (b - a) / fromIntegral hBins
     ns    = Stat.histogram_ hBins a b v
     v     = V.fromList (F.toList xs)
     (a,b) = fromMaybe (range hBins v) hRange
