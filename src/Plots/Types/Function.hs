@@ -146,7 +146,7 @@ instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (Param
 
 instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
     => Plotable (ParametricPlot V2 n) b where
-  renderPlotable s _opts sty pa =
+  renderPlotable s sty pa =
     pathFromVertices p
       # transform (s^.specTrans)
       # stroke
@@ -157,9 +157,9 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
       a = pa ^. parametricDomain . _1
       b = pa ^. parametricDomain . _2
 
-  defLegendPic ParametricPlot {..} pp
+  defLegendPic sty ParametricPlot {..}
       = (p2 (-10,0) ~~ p2 (10,0))
-          # applyLineStyle pp
+          # applyLineStyle sty
 
 pathFromVertices :: (Metric v, OrderedField n, Fractional (v n)) => [Point v n] -> Path v n
 pathFromVertices = cubicSpline False
@@ -213,7 +213,7 @@ instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (Vecto
 
 instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
     => Plotable (VectorPlot V2 n) b where
-  renderPlotable s _opts _sty v = arrowAt' opts pt1 (V2 q r)
+  renderPlotable s _sty v = arrowAt' opts pt1 (V2 q r)
                           # transform (s^.specTrans)
                           # translate (r2 (x, y))
                           where
@@ -222,7 +222,7 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
                              (V2 q r) = v ^. vectorV
                              opts     = v ^. vectorArrows
 
-  defLegendPic VectorPlot {..} sty
+  defLegendPic sty VectorPlot {..}
       = (p2 (-10,0) ~~ p2 (10,0))
           # applyLineStyle sty
 

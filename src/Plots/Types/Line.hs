@@ -95,12 +95,12 @@ mkPathOf :: (PointLike v n p, OrderedField n) => Fold s t -> Fold t p -> s -> Pa
 mkPathOf f1 f2 as = Path $ map (mkTrailOf f2) (toListOf f1 as)
 
 instance (TypeableFloat n, Renderable (Path V2 n) b) => Plotable (Path V2 n) b where
-  renderPlotable s _opts sty path
+  renderPlotable s sty path
     = stroke path
         # transform (s^.specTrans)
         # applyLineStyle sty
 
-  defLegendPic _ sty
+  defLegendPic sty _
     = (p2 (-10,0) ~~ p2 (10,0))
         # applyLineStyle sty
 
@@ -124,7 +124,7 @@ instance (Metric v, OrderedField n) => Enveloped (GLinePlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GLinePlot V2 n a) b where
-  renderPlotable s _opts sty GLinePlot {..} =
+  renderPlotable s sty GLinePlot {..} =
       fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
         # transform t
         # applyLineStyle sty
@@ -138,7 +138,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
                     # moveTo (specPoint s $ sPos a)
       marker = sty ^. plotMarker
 
-  defLegendPic GLinePlot {..} sty
+  defLegendPic sty GLinePlot {..}
       = (p2 (-10,0) ~~ p2 (10,0))
           # applyLineStyle sty
 

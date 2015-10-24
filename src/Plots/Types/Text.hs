@@ -89,7 +89,7 @@ instance (Fractional n, OrderedField n, TypeableFloat n, Enum n) => Enveloped (T
 
 instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
     => Plotable (TextPlot n) b where
-  renderPlotable s _opts sty v = alignedText a b str # fontSize (local fsze)
+  renderPlotable s sty v = alignedText a b str # fontSize (local fsze)
                           # applyTextStyle sty
                           # transform (s^.specTrans)
 
@@ -106,7 +106,7 @@ instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n)
 -- a point in plot, translate and move doesnt work.
 -- Implement a font slant and font weight.
 
-  defLegendPic TextPlot {..} sty
+  defLegendPic sty TextPlot {..}
       = (p2 (-10,0) ~~ p2 (10,0))
           # applyLineStyle sty
 

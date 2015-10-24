@@ -34,8 +34,8 @@
 -- [@'StyledPlot' b v n@]
 -- A 'DynamicPlot' with a concrete 'PlotStyle', ready to be rendered.
 --
--- As well as other things like 'LegendEntries', 'HasOrientation' and
--- 'HasVisibility'.
+-- As well as other things like the 'Plotable' class, 'LegendEntries',
+-- 'HasOrientation' and 'HasVisibility'.
 --
 ----------------------------------------------------------------------------
 module Plots.Types
@@ -351,15 +351,12 @@ specPoint (AxisSpec bs tr ss _) p =
 -- Plotable class
 ------------------------------------------------------------------------
 
--- | General class for something that can be wrapped in 'Plot'. The 'plot'
---   function is rarely used by the end user.
+-- | Class defining how plots should be rendered.
 class (Typeable p, Enveloped p) => Plotable p b where
-  -- | Render a plot using the 'AxisSpec' to properly position and scale
-  --   the plot and 'PlotOptions' for style aspects.
+  -- | Render a plot according to the 'AxisSpec', using the 'PlotStyle'.
   renderPlotable
     :: InSpace v n p
     => AxisSpec v n
-    -> PlotOptions b v n
     -> PlotStyle b v n
     -> p
     -> QDiagram b v n Any
@@ -367,14 +364,14 @@ class (Typeable p, Enveloped p) => Plotable p b where
   -- | The default legend picture when the 'LegendPic' is
   --   'DefaultLegendPic'.
   defLegendPic :: (InSpace v n p, OrderedField n)
-    => p
-    -> PlotStyle b v n
+    => PlotStyle b v n
+    -> p
     -> QDiagram b v n Any
   defLegendPic = mempty
 
 instance (Typeable b, Typeable v, Metric v, Typeable n, OrderedField n)
   => Plotable (QDiagram b v n Any) b where
-  renderPlotable s _ _ dia = dia # transform (s^.specTrans)
+  renderPlotable s _ dia = dia # transform (s^.specTrans)
 
 ------------------------------------------------------------------------
 -- Visibility
@@ -520,8 +517,8 @@ renderStyledPlot
   :: AxisSpec v n
   -> StyledPlot b v n
   -> QDiagram b v n Any
-renderStyledPlot aSpec (StyledPlot p opts sty)
-  = renderPlotable aSpec opts sty p
+renderStyledPlot aSpec (StyledPlot p _ sty)
+  = renderPlotable aSpec sty p
 
 -- | Get the legend rendered entries from a single styled plot. The
 --   resulting entries are in no particular order. See also
@@ -535,7 +532,7 @@ singleStyledPlotLegend (StyledPlot p opts sty) =
     mk entry = (entry ^. legendPrecedence, pic, entry ^. legendText)
       where
         pic = case lPic entry of
-                DefaultLegendPic  -> defLegendPic p sty
+                DefaultLegendPic  -> defLegendPic sty p
                 CustomLegendPic f -> f sty
 
 -- | Render a list of legend entries, in order.

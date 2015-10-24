@@ -60,7 +60,7 @@ instance (OrderedField n) => Enveloped (GPointsPlot n) where
 
 instance (v ~ V2, Typeable b, TypeableFloat n, Renderable (Path v n) b)
     => Plotable (GPointsPlot n) b where
-  renderPlotable _ _opts sty GPointsPlot {..} =
+  renderPlotable _ sty GPointsPlot {..} =
       mconcat [marker # applyMarkerStyle sty # scale 0.1 # moveTo (p2 (r*(cosA theta),r*(sinA theta)))| (r,theta) <- sPoints]
    <> if sFill
          then doline <> doarea
@@ -70,7 +70,7 @@ instance (v ~ V2, Typeable b, TypeableFloat n, Renderable (Path v n) b)
        doline = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # applyLineStyle sty
        doarea = fromVertices (map p2 [(r*(cosA theta),r*(sinA theta)) | (r,theta)  <- sPoints]) # mapLoc closeLine # stroke # lw none # applyAreaStyle sty
 
-  defLegendPic GPointsPlot {..} sty
+  defLegendPic sty GPointsPlot {..}
       = sty ^. plotMarker
          & applyMarkerStyle sty
 

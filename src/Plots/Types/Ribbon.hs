@@ -112,7 +112,7 @@ instance (Metric v, OrderedField n) => Enveloped (GRibbonPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GRibbonPlot V2 n a) b where
-  renderPlotable s _opts sty GRibbonPlot {..} =
+  renderPlotable s sty GRibbonPlot {..} =
       fromVertices ps
         # mapLoc closeLine
         # stroke
@@ -132,7 +132,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       t  = s ^. specTrans
       ls = s ^. specScale
 
-  defLegendPic GRibbonPlot {..} sty
+  defLegendPic sty GRibbonPlot {..}
       = square 5 # applyAreaStyle sty
 
 -- _RibbonPlot :: (Plotable (RibbonPlot v n) b, Typeable b)

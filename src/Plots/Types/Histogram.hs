@@ -108,7 +108,7 @@ instance OrderedField n => Enveloped (HistogramPlot n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HistogramPlot n) b where
-  renderPlotable s _opts sty HistogramPlot {..} =
+  renderPlotable s sty HistogramPlot {..} =
     ifoldMap drawBar hValues
       # orient hOrient _reflectXY id
       # applyAreaStyle sty
@@ -117,7 +117,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       drawBar i h = rectBL (mkP2 x 0) (V2 hWidth h)
         where x = hStart + fromIntegral i * hWidth
 
-  defLegendPic HistogramPlot {..} sty
+  defLegendPic sty HistogramPlot {..}
     = centerXY
     . applyAreaStyle sty'
     . orient hOrient _reflectXY id

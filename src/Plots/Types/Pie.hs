@@ -72,7 +72,7 @@ instance (OrderedField n) => Enveloped (GPiePlot n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GPiePlot n) b where
-  renderPlotable _s _opts sty GPiePlot {..} =
+  renderPlotable _s sty GPiePlot {..} =
       annularWedge sLargeRadius sSmallRadius sDirection sAngle
         # lw none
         # applyAreaStyle sty
@@ -83,7 +83,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
                # applyLineStyle sty
         else mempty
 
-  defLegendPic GPiePlot {..} sty
+  defLegendPic sty GPiePlot {..}
       = square 5 # applyAreaStyle sty
 
 ------------------------------------------------------------------------

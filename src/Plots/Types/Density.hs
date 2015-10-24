@@ -76,7 +76,7 @@ instance (Metric v, OrderedField n) => Enveloped (GDensityPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n)
     => Plotable (GDensityPlot V2 n a) b where
-  renderPlotable s _opts sty GDensityPlot {..} =
+  renderPlotable s sty GDensityPlot {..} =
                dd # transform t
                   # stroke
             <> if dFill
@@ -95,7 +95,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
 -- dd :: Located (Trail' Line V2 n)
 -- # applyLineStyle pp
 
-  defLegendPic GDensityPlot {..} sty
+  defLegendPic sty GDensityPlot {..}
       = (p2 (-10,0) ~~ p2 (10,0))
           # applyLineStyle sty
 

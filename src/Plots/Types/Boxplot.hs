@@ -84,7 +84,7 @@ instance (Metric v, OrderedField n) => Enveloped (GBoxPlot v n a) where
 
 instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n, n ~ Double)
     => Plotable (GBoxPlot V2 n a) b where
-  renderPlotable s _opts sty GBoxPlot {..} =
+  renderPlotable s sty GBoxPlot {..} =
     if bFill
       then mconcat ([ draw' d | d <-(drawBoxPlot dd)] ++ [foo])
       else mconcat [ draw' d | d <-(drawBoxPlot dd)]
@@ -102,7 +102,7 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
       draw' d = d # transform t
                   # stroke
 
-  defLegendPic GBoxPlot {..} sty
+  defLegendPic sty GBoxPlot {..}
       = square 5 # applyAreaStyle sty
 
 -- _BoxPlot :: (Plotable (BoxPlot v n) b, Typeable b)

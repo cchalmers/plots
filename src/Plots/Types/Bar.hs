@@ -182,7 +182,7 @@ instance OrderedField n => Enveloped (BarPlot n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
-  renderPlotable s _opts sty BarPlot {..} =
+  renderPlotable s sty BarPlot {..} =
     ifoldMap drawBar bpData
       # orient bpLayout _reflectXY id
       # applyAreaStyle sty
@@ -191,7 +191,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       drawBar i (a,b) = rectB (mkP2 x a) (V2 (view barWidth bpLayout) (b - a))
         where x = view barStart bpLayout + fromIntegral i * view barSpacing bpLayout
 
-  defLegendPic BarPlot {..} sty
+  defLegendPic sty BarPlot {..}
     = centerXY
     . applyAreaStyle sty'
     . orient bpLayout _reflectXY id

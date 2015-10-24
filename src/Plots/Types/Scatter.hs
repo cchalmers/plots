@@ -107,7 +107,7 @@ instance (Metric v, OrderedField n) => Enveloped (ScatterPlot v n) where
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (ScatterPlot V2 n) b where
-  renderPlotable s _opts sty (ScatterPlot (ScatterOptions {..})) =
+  renderPlotable s sty (ScatterPlot (ScatterOptions {..})) =
     markers <> line
     where
       markers = foldMap mk oData # applyMarkerStyle sty
@@ -122,7 +122,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         | otherwise = fromVertices points # applyLineStyle sty
       points = map (specPoint s . oPos) oData
 
-  defLegendPic (ScatterPlot (ScatterOptions {..})) sty =
+  defLegendPic sty (ScatterPlot (ScatterOptions {..})) =
     sty ^. plotMarker
       & applyMarkerStyle sty
 
