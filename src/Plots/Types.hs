@@ -17,57 +17,48 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Primitive types for building plots.
+-- This module defines the various types for holding plots:
+--
+-- [@'PlotOptions' b v n@]
+-- Generic options all plots have.
+--
+-- [@'PlotMods' b v n@]
+-- Includes 'PlotOptions' along with modifications to the 'PlotStyle'.
+--
+-- [@'Plot' p b@]
+-- A 'rawPlot' @p@ grouped with a 'PlotMods'.
+--
+-- [@'DynamicPlot' b v n@]
+-- A wrapped up 'Plot' so it can be stored in an 'Axis'.
+--
+-- [@'StyledPlot' b v n@]
+-- A 'DynamicPlot' with a concrete 'PlotStyle', ready to be rendered.
+--
+-- As well as other things like 'LegendEntries', 'HasOrientation' and
+-- 'HasVisibility'.
 --
 ----------------------------------------------------------------------------
 module Plots.Types
   (
-    -- * Plot type
-    Plot
-  , mkPlot
-  , rawPlot
+
+    -- * Plot options
+    PlotOptions
+  , HasPlotOptions (..)
+  , key
+  , addLegendEntry
 
     -- ** Plot modifications
   , PlotMods
   , plotMods
 
-    -- * Plot options
-  , PlotOptions
-  , HasPlotOptions (..)
-  , key
-  , addLegendEntry
-
     -- * Plotable class
   , Plotable (..)
 
-  -- * Visibility
-  , HasVisibility (..)
-
-  -- * Orientation
-  , Orientation (..)
-  , HasOrientation (..)
-  , orient
-  , horizontal
-  , vertical
-
-  -- * Legend
-  , LegendEntry
-  , LegendPic (..)
-  , mkLegendEntry
-  , legendPicture
-  , legendText
-  , legendPrecedence
-
-    -- * Internal Plot types
-
-    -- ** Axis spec
-  , AxisSpec (..)
-  , specTrans
-  , specBounds
-  , specScale
-  , scaleNum
-  , specPoint
-  , specColourMap
+    -- * Plot types
+    -- ** Parameterised plot
+  , Plot
+  , mkPlot
+  , rawPlot
 
     -- ** Dynamic plot
   , DynamicPlot (..)
@@ -80,6 +71,34 @@ module Plots.Types
   , renderStyledPlot
   , singleStyledPlotLegend
   , styledPlotLegends
+
+  -- * Miscellaneous
+  -- ** Visibility
+  , HasVisibility (..)
+
+  -- ** Orientation
+  , Orientation (..)
+  , HasOrientation (..)
+  , orient
+  , horizontal
+  , vertical
+
+  -- ** Legend entries
+  , LegendEntry
+  , LegendPic (..)
+  , mkLegendEntry
+  , legendPicture
+  , legendText
+  , legendPrecedence
+
+    -- ** Axis spec
+  , AxisSpec (..)
+  , specTrans
+  , specBounds
+  , specScale
+  , scaleNum
+  , specPoint
+  , specColourMap
 
   ) where
 
@@ -193,6 +212,7 @@ type instance N (PlotOptions b v n) = n
 -- | Class of things that have 'PlotOptions'.
 class HasPlotOptions f a b | a -> b where
   {-# MINIMAL plotOptions #-}
+  -- | Lens onto the 'PlotOptions'.
   plotOptions :: LensLike' f a (PlotOptions b (V a) (N a))
 
   -- | The 'Name' applied to the plot. This gives a way to reference a
@@ -210,11 +230,6 @@ class HasPlotOptions f a b | a -> b where
   clipPlot = plotOptions . lens poClipPlot (\g a -> g {poClipPlot = a})
   {-# INLINE clipPlot #-}
 
-  -- -- | The plot style to be used for the current plot.
-  -- plotStyle :: Functor f => LensLike' f a (PlotStyle b (V t) (N t))
-  -- plotStyle = plotOptions . lens poStyle (\g a -> g {paStyle = a})
-  -- {-# INLINE plotOptionsStyle #-}
-
   -- | The legend entries to be used for the current plot.
   --
   --   'Default' is 'mempty'.
@@ -226,8 +241,7 @@ class HasPlotOptions f a b | a -> b where
   --   coordinates.
   --
   --   'Default' is 'mempty'.
-  plotTransform :: Functor f
-                     => LensLike' f a (Transformation (V a) (N a))
+  plotTransform :: Functor f => LensLike' f a (Transformation (V a) (N a))
   plotTransform = plotOptions . lens poTransform (\g a -> g {poTransform = a})
   {-# INLINE plotTransform #-}
 
@@ -377,39 +391,10 @@ class HasVisibility a where
   {-# INLINE hidden #-}
 
 ------------------------------------------------------------------------
--- Plot wrapper
-------------------------------------------------------------------------
-
--- XXX Currently unused
--- Could be used in future to group plotables together to use the same
--- plot style and options.
-
--- -- | Existential wrapper for something plotable. This only contains the
--- --   raw infomation for the plot, not the 'PlotOptions'.
--- data RawPlot b v n where
---   RawPlot :: (InSpace v n a, Plotable a b) => a -> RawPlot b v n
---   deriving Typeable
-
--- type instance V (RawPlot b v n) = v
--- type instance N (RawPlot b v n) = n
-
--- instance (Metric v, OrderedField n) => Enveloped (RawPlot b v n) where
---   getEnvelope (RawPlot a) = getEnvelope a
-
--- instance (Metric v, OrderedField n, Typeable (RawPlot b v n))
---     => Plotable (RawPlot b v n) b where
---   renderPlotable s po sty (RawPlot p) = renderPlotable s po sty p
---   defLegendPic (RawPlot a) pp         = defLegendPic a pp
-
--- _RawPlot :: Plotable a b => Prism' (RawPlot b (V a) (N a)) a
--- _RawPlot = prism' RawPlot (\(RawPlot a) -> cast a)
-
-------------------------------------------------------------------------
 -- Plot modification
 ------------------------------------------------------------------------
 
--- | Modifications to 'PlotOptions' and 'PlotStyle' without being tied
---   to a specific plot.
+-- | A 'PlotOptions' with modifications to a 'PlotStyle'.
 data PlotMods b v n
   = PlotMods (PlotOptions b v n) (PlotStyle b v n -> PlotStyle b v n)
 
@@ -430,12 +415,8 @@ instance (Additive v, Num n) => Default (PlotMods b v n) where
 -- Plot type
 ------------------------------------------------------------------------
 
--- | The main perpose of a 'PropertiedPlot' is so we can use lenses from
---   both the plot its self and the plots properites.
---
---   The 'PlotStyle' is not stored directly, because it isn't know until
---   the axis is rendered. Instead, the modification of the 'PlotStyle'
---   is used.
+-- | A parameterised plot, together with a 'PlotMods'. This type has an
+--   instance of many classes for modifying specific plots.
 data Plot p b =
   Plot p
        (PlotOptions b (V p) (N p))
@@ -472,7 +453,7 @@ plotMods f (Plot p opts ps) =
 -- DynamicPlot
 ------------------------------------------------------------------------
 
--- | Internal type for storing plots in an axis.
+-- | A wrapped up 'Plot', used to store plots in an 'Axis'.
 data DynamicPlot b v n where
   DynamicPlot :: (InSpace v n p, Plotable p b) => Plot p b -> DynamicPlot b v n
   deriving Typeable
@@ -566,28 +547,4 @@ styledPlotLegends
   = map (\(_,p,t) -> (p,t))
   . sortOn (view _1)
   . concatMap singleStyledPlotLegend
-
--- instance (HasLinearMap (V p), Num (N p)) => Transformable (PropertiedPlot p b) where
---   transform = over plotTransform . transform
-
--- instance v ~ V p => HasBounds (PropertiedPlot p b) v where
---   bounds = plotBounds
-
--- type BaseV t = BaseSpace (V t)
-
--- -- | Move origin by applying to @plotTransform@.
--- instance (BaseV p ~ V p, Additive (V p), Num (N p)) => HasOrigin (PropertiedPlot p b) where
---   moveOriginTo = over plotTransform . moveOriginTo
-
--- instance BaseV p ~ V p => HasPlotStyle (PropertiedPlot p b) b where
---   plotStyle = plotPropertiesStyle
-
--- instance Qualifiable (PropertiedPlot p b) where
---   n .>> p = over plotName (n .>>) p
-
--- instance HasOrientation p => HasOrientation (PropertiedPlot p b) where
---   orientation = _pp . orientation
-
--- instance (Metric v, OrderedField n) => Enveloped (ModifiedPlot b v n) where
---   getEnvelope (ModifiedPlot p _) = getEnvelope p
 
