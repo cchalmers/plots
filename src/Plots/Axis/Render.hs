@@ -23,11 +23,8 @@
 ----------------------------------------------------------------------------
 module Plots.Axis.Render where
 
-import           Control.Lens.Extras        (is)
-import           Data.Distributive
-import           Data.Monoid.Recommend
-import           Data.Typeable
 import           Data.Foldable
+import           Data.Typeable
 
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude
@@ -37,18 +34,18 @@ import           Linear                     hiding (translation)
 import           Diagrams.Coordinates.Polar
 
 import           Plots.Axis
--- import           Plots.Axis.ColourBar
+import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
-import           Plots.Axis.Ticks
 import           Plots.Axis.Line
+import           Plots.Axis.Scale
+import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Style
-import           Plots.Axis.ColourBar
 import           Plots.Types
 import           Plots.Utils
 
-import Prelude
+import           Prelude
 
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b (BaseSpace v) n Any
@@ -104,11 +101,11 @@ renderR2Axis a = frame 40
               <> drawAxis ey ex LeftLabels
               <> plots
   where
-    spec  = AxisSpec xs t (a^.axisScale) (a ^. axisColourMap)
+    spec  = AxisSpec xs t (a^.axes . column logScale) (a ^. axisColourMap)
     plots = foldMap (renderStyledPlot spec) styledPlots
-    drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axisScale) t ll ll2
+    drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axes.column logScale) t ll ll2
     --
-    (xs, tv, t') = workOutScale (boundingBox styledPlots) a
+    (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
     t = tv <> t'
     --
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
@@ -120,9 +117,9 @@ renderR2Axis a = frame 40
     -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
     cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
     --
-
     styledPlots = zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
 
+-- | The position of axis labels for a
 data LabelPosition
   = NoLabels
   | LowerLabels
@@ -137,7 +134,7 @@ axisOnBasis
   => Point v n        -- start of axis
   -> v (n, n)         -- calculated bounds
   -> SingleAxis b v n -- axis data
-  -> v AxisScale      -- log scale?
+  -> v LogScale       -- log scale
   -> T2 n             -- transformation to apply to positions of things
   -> E v              -- direction of axis
   -> E v              -- orthogonal direction of axis
@@ -189,8 +186,8 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
                        & papply t
                        & ep eO +~ negate' (a ^. tickLabelGap)
 
-    -- grid = mempty
-    -- grid
+    -- the grid
+
     grid = majorLines <> minorLines
       where
         majorLines
@@ -212,7 +209,8 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
         --
         -- gridD = a ^. axisGridLines ^. el e -- :: GridLines N
 
-    -- ticks
+    -- the ticks
+
     ticks = foldMap drawTicks ys
 
     drawTicks (pos,y) = maTicks <> miTicks
@@ -252,6 +250,7 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
                    # transform t
 
     -- axis lines
+
     line
       | a ^. axisLineVisible . to not = mempty
       | otherwise = foldMap mkline (map snd ys) -- merge with ticks?
@@ -307,150 +306,14 @@ primStroke path =
        mempty
        mempty
 
-------------------------------------------------------------------------
--- Calculating the bounds and scales
-------------------------------------------------------------------------
-
--- Rules for choosing scales:
---   - The default is to have each axis the same length:
---       - for Width and Height specs, this is easy:
---           - adjust each of the bounds so they're the same length
---             (via inverseScale to bound diffs)
---           - work out the uniform scale needed to make it w or h
---           - return inverseScale <> uniform scale
---           - if aspect ratios are set, use this instead of inverse of diffs
---
---  - if width and height are from spec (Dims):
---      - do same with bounds
---      - scale w and h independently
---          - this means aspect ratios are not kept
---          - to do this we need to adjust the bounds (hard for 3d?)
---
-
-workOutScale :: (v ~ BaseSpace v, HasLinearMap v, V (v n) ~ v, Distributive v, OrderedField n, Applicative v, Metric v)
-  => BoundingBox v n
-  -> Axis b v n
-  -> (BaseSpace v (n,n),
-      Transformation (BaseSpace v) n,
-      Transformation (BaseSpace v) n)
-workOutScale bb a = (enlargedBounds, aspectScaling, specScaling)
- where
-    enlargedBounds = workOutUsedBounds
-                       aScaling
-                       -- disgusting
-                       (view lensP . uncurry (liftA2 (,)) <$> getCorners bb)
-                       bnd
-
-    -- the vector that points from the lower bound to the upper bound of the
-    -- axis
-    v  = uncurry (flip (-)) <$> enlargedBounds
-    v' = apply aspectScaling v
-    specScaling = requiredScaling spec v'
-    aspectScaling
-      -- if any of the aspect ratios are committed we use the aspect ratio from
-      -- aScaling
-      | anyOf (folded . scaleAspectRatio) (is _Commit) aScaling
-          = vectorScaling (view (scaleAspectRatio . _recommend) <$> aScaling)
-      -- otherwise all ratios are just recommend, ignore them and scale such
-      -- that each axis is the same length
-      | otherwise = inv $ vectorScaling v
-    --
-    spec     = a ^. axisSize
-    aScaling = a ^. axes . column axisScaling
-    -- bb       = a ^. axisPlots . folded . to boundingBox
-    bnd      = Bounds $ a ^. axes . column singleAxisBound -- :: _ -- . to Bound
-
--- messy tempory fix while stuff is getting worked out
-workOutUsedBounds :: (Applicative v, Distributive v, Num n)
-  => v (AxisScaling n) -> Maybe (v (n, n)) -> Bounds v n -> v (n, n)
-workOutUsedBounds aScale mBox bnd =
-  workOutUsedBound <$> aScale <*> distribute mBox <*> (\(Bounds a) -> a) bnd
-
-workOutUsedBound :: Num n => AxisScaling n -> Maybe (n, n) -> Bound n -> (n, n)
-workOutUsedBound aScale mBox (Bound rL rU) = enlarged
-  where
-    -- TODO: - make better
-    --       - seperate enlarge axis for lower and upper bounds
-    --       - absolute units as well as scale factor (requires refactoring)
-    enlarged = case aScale ^. axisScaleEnlarge of
-      Nothing            -> (l', u')
-
-      -- committed enlargements enlarge all bounds
-      Just (Commit s)    -> (l' - s * r', u' + s * r')
-
-      -- recommended enlargements only apply to non-committed bounds
-      Just (Recommend s) -> ( if isn't _Commit rL
-                               then l' - s * r'
-                               else l'
-                            , if isn't _Commit rU
-                                then u' + s * r'
-                                else u'
-                            ) -- I'm sure there's a better way
-
-    -- unenlarged bounds
-
-    r' = u' - l'
-     -- mBox is the concatination of bounding boxes of all axis plots
-    (l', u') = case mBox of
-
-      -- infered bounds (from bounding box) only used for non-committed bounds
-      Just (l,u) -> (fromCommit l rL, fromCommit u rU)
-
-      -- recommended bounds are used when no infered bounds exist
-      Nothing    -> (getRecommend rL, getRecommend rU)
-
 -- utilities
 
 translationE :: (Num n, HasLinearMap v) => E v -> n -> Transformation v n
 translationE (E l) x = translation (zero & l .~ x)
 
-vectorScaling :: (Additive v, Fractional n) => v n -> Transformation v n
-vectorScaling v = fromLinear f f
-  where f = liftI2 (*) v <-> liftI2 (flip (/)) v
-
 scaleE :: (Additive v, Fractional n) => E v -> n -> Transformation v n
 scaleE e s = fromLinear f f
   where f = (el e *~ s) <-> (el e //~ s)
-
--- old code
-
--- workOutScale
---   :: (HasLinearMap v, V (v n) ~ v, FoldableWithIndex (E v) v, Distributive v, OrderedField n)
---   => (v n -> V2 n)   -- linear map
---   -> SizeSpec2D n    -- size spec axis should fit in
---   -> AxisScaling v n -- scaling options
---   -> BoundingBox v n -- bounding box of plots
---   -> Bounds v n      -- axis bounds
---   -> (v (n, n), Transformation v n, T2 n)
--- workOutScale l spec2d aScaling bb bnd = (enlargedBounds, aspectScaling, specScaling)
---   where
---     enlargedBounds = workOutUsedBounds
---                        aScaling
---                        -- disgusting
---                        (view lensP . uncurry (liftA2 (,)) <$> getCorners bb)
---                        bnd
---     V2 x y = l . apply aspectScaling $ v
---
---     -- the vector that points from the lower bound to the upper bound of the
---     -- axis
---     v = uncurry (flip (-)) <$> enlargedBounds
---
---     aspectScaling
---       -- if any of the aspect ratios are committed we use the aspect ratio from
---       -- aScaling
---       | anyOf (folded . aspectRatio) (is _Commit) aScaling
---           = vectorScaling (view (aspectRatio . recommend) <$> aScaling)
---       -- otherwise all ratios are just recommend, ignore them and scale such
---       -- that each axis is the same length
---       | otherwise
---           = inv $ vectorScaling v
---
---     specScaling = case spec2d of
---       Absolute -> mempty
---       Width w  -> scaling (w / x)
---       Height h -> scaling (h / y)
---       Dims w h -> scalingX (w / x) <> scalingY (h / y)
-
 
 getAxisLinePos :: (Num n, Ord n) => (n, n) -> AxisLineType -> [(AxisPos, n)]
 getAxisLinePos (a,b) aType = case aType of
@@ -462,10 +325,6 @@ getAxisLinePos (a,b) aType = case aType of
                         | otherwise -> 0]
   RightAxisLine  -> [(UpperAxis, b)]
   NoAxisLine     -> []
-
-              -- MiddleAxisLabel -> (x0 + x1) / 2
-              -- LowerAxisLabel  -> x0
-              -- UpperAxisLabel  -> x1
 
 data AxisPos = LowerAxis | MiddleAxis | UpperAxis
 

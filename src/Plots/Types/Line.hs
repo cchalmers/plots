@@ -72,6 +72,7 @@ import           Diagrams.Prelude  hiding (view)
 import           Plots.Style
 import           Plots.Types
 import           Plots.Axis
+import           Plots.Axis.Scale
 
 ------------------------------------------------------------------------
 -- Trail and path

@@ -107,9 +107,11 @@ module Plots
     -- | Axis labels and tick labels .
   , module Plots.Axis.Labels
 
-    -- | Rendering system for polar and r2 axis, and system for
-    --   calculating bounds and scale.
+    -- | Rendering system for polar and r2 axis.
   , module Plots.Axis.Render
+
+    -- | The scaling/size options for an axis.
+  , module Plots.Axis.Scale
 
     -- | Ticks properties and placement.
   , module Plots.Axis.Ticks
@@ -122,27 +124,28 @@ module Plots
   ) where
 
 import           Plots.Axis
+import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Render
+import           Plots.Axis.Scale
 import           Plots.Axis.Ticks
-import           Plots.Axis.ColourBar
 
-import           Plots.Types
-import           Plots.Style
 import           Plots.CmdLine
+import           Plots.Style
+import           Plots.Types
 import           Plots.Utils
 
-import           Plots.Types.Scatter
-import           Plots.Types.Line
-import           Plots.Types.Ribbon
-import           Plots.Types.Histogram
-import           Plots.Types.Function
 import           Plots.Types.Boxplot
 import           Plots.Types.Density
-import           Plots.Types.Smooth
-import           Plots.Types.Text
+import           Plots.Types.Function
+import           Plots.Types.Histogram
+import           Plots.Types.Line
+import           Plots.Types.Others
 import           Plots.Types.Pie
 import           Plots.Types.Points
-import           Plots.Types.Others
+import           Plots.Types.Ribbon
+import           Plots.Types.Scatter
+import           Plots.Types.Smooth
+import           Plots.Types.Text
 

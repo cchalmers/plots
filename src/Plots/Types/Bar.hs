@@ -198,9 +198,9 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     $ d
     where
       -- Multiple bars get two bars next to each other for the legend. A
-      -- single bar only gets one bar.
+      -- single bar only gets one bar in the legend.
       d | has (ix 1) bpData = alignB (rect 4 7) ||| strutX 3 ||| alignB (rect 4 10)
-        | otherwise        = rect 4 10
+        | otherwise         = rect 4 10
 
       -- The legend bars don't look right if the line width is too big so we limit it
       sty' = sty & areaStyle . _lw %~ atMost (local 0.8)

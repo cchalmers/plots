@@ -25,7 +25,6 @@ module Plots.Axis
   , currentPlots
   , finalPlots
   , axisSize
-  , axisScale
 
     -- * Predefined axes
   , r2Axis
@@ -40,45 +39,41 @@ module Plots.Axis
 
     -- * Single axis
   , SingleAxis
-  , singleAxisSize
-  , singleAxisScale
-  , singleAxisBound
-
-    -- * Scaling
-  , AxisScaling
-  , HasAxisScaling (..)
-  , ScaleMode (..)
-  , UniformScaleStrategy (..)
 
     -- * Specific axes
     -- ** x-axis
   , xAxis
   , xAxisLabel
+  , xMin
+  , xMax
 
     -- ** y-axis
   , yAxis
   , yAxisLabel
+  , yMin
+  , yMax
 
     -- ** z-axis
   , zAxis
   , zAxisLabel
+  , zMin
+  , zMax
   ) where
 
+import           Control.Monad.State
 import           Data.Complex
 import           Data.Default
-import           Data.Functor.Rep
-import           Data.Monoid.Recommend
 import           Data.Typeable
 
 import           Diagrams.Coordinates.Polar
 import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 
-import           Control.Monad.State
 import           Plots.Axis.ColourBar
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Line
+import           Plots.Axis.Scale
 import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Style
@@ -87,84 +82,20 @@ import           Plots.Types
 import           Linear
 
 ------------------------------------------------------------------------
--- Axis scale
-------------------------------------------------------------------------
-
-data ScaleMode
-  = AutoScale
-  | NoScale
-  | Stretch
-  | UniformScale UniformScaleStrategy
-  deriving (Show, Read)
-
-data UniformScaleStrategy
-  = AutoUniformScale
-  | UnitOnly
-  | ChangeVerticalLimits
-  | ChangeHorizontalLimits
-  deriving (Show, Read)
-
-data AxisScaling n = Scaling
-  { asRatio     :: Recommend n
-  , asPostScale :: Maybe n
-  , asMode      :: ScaleMode
-  , asEnlarge   :: Maybe (Recommend n)
-  }
-
-type instance N (AxisScaling n) = n
-
--- XXX document / sort out this
-
-class HasAxisScaling a where
-  axisScaling :: Lens' a (AxisScaling (N a))
-
-  scaleAspectRatio :: Lens' a (Recommend (N a))
-  scaleAspectRatio = axisScaling . lens asRatio (\as r -> as {asRatio = r})
-
-  scalePostScale :: Lens' a (Maybe (N a))
-  scalePostScale = axisScaling
-                 . lens asPostScale (\as r -> as {asPostScale = r})
-
-  scaleMode :: Lens' a ScaleMode
-  scaleMode = axisScaling . lens asMode (\as r -> as {asMode = r})
-
-  axisScaleEnlarge :: Lens' a (Maybe (Recommend (N a)))
-  axisScaleEnlarge = axisScaling . lens asEnlarge (\as r -> as {asEnlarge = r})
-
-instance HasAxisScaling (AxisScaling n) where
-  axisScaling = id
-
-instance Fractional n => Default (AxisScaling n) where
-  def = Scaling
-    { asRatio     = Recommend 1
-    , asPostScale = Nothing
-    , asMode      = AutoScale
-    , asEnlarge   = Just $ Recommend 0.1
-    }
-
-------------------------------------------------------------------------
 -- Axis data type
 ------------------------------------------------------------------------
 
 -- Single axis ---------------------------------------------------------
 
+-- | Render infomation for a single axis line.
 data SingleAxis b v n = SingleAxis
 -- note the the v is only present for Style v n
-  {
-  -- labels
-    saLabel     :: AxisLabel b v n
+  { saLabel     :: AxisLabel b v n
   , saLine      :: AxisLine v n
   , saTickLabel :: TickLabels b v n
-
-  -- markers
+  , saScaling   :: AxisScaling n
   , saGridLines :: GridLines v n
   , saTicks     :: Ticks v n
-
-  -- size / scale
-  , saScaling   :: AxisScaling n
-  , saSize      :: Maybe n -- used for SizeSpec
-  , saBounds    :: Bound n
-  , saScale     :: AxisScale
   }
 
 type instance V (SingleAxis b v n) = v
@@ -179,9 +110,6 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b)
     , saGridLines  = def
     , saTicks      = def
     , saScaling    = def
-    , saSize       = Just 300
-    , saBounds     = def
-    , saScale      = def
     }
 
 instance Functor f => HasTicks f (SingleAxis b v n) where
@@ -199,20 +127,20 @@ instance Functor f => HasAxisLabel f (SingleAxis b v n) b where
 instance Functor f => HasTickLabels f (SingleAxis b v n) b where
   tickLabel = lens saTickLabel (\sa tl -> sa {saTickLabel = tl})
 
-instance HasAxisScaling (SingleAxis b v n) where
-  axisScaling = lens saScaling (\sa tl -> sa {saScaling = tl})
-
 instance Functor f => HasAxisLine f (SingleAxis b v n) where
   axisLine = lens saLine (\sa l -> sa {saLine = l})
 
 instance Functor f => HasGridLines f (SingleAxis b v n) where
   gridLines = lens saGridLines (\sa l -> sa {saGridLines = l})
 
-singleAxisScale :: Lens' (SingleAxis b v n) AxisScale
-singleAxisScale = lens saScale (\sa s -> sa {saScale = s})
+instance Functor f => HasAxisScaling f (SingleAxis b v n) where
+  axisScaling = lens saScaling (\sa s -> sa {saScaling = s})
 
-singleAxisBound :: Lens' (SingleAxis b v n) (Bound n)
-singleAxisBound = lens saBounds (\sa b -> sa {saBounds = b})
+-- singleAxisScale :: Lens' (SingleAxis b v n) AxisScale
+-- singleAxisScale = lens saScale (\sa s -> sa {saScale = s})
+
+-- singleAxisBound :: Lens' (SingleAxis b v n) (Bound n)
+-- singleAxisBound = lens saBounds (\sa b -> sa {saBounds = b})
 
 ------------------------------------------------------------------------
 -- Axis type
@@ -235,12 +163,12 @@ type instance BaseSpace V3      = V3
 --   a plot. Common 'LensLike's used for the axis (see haddock's
 --   instances for a more comprehensive list):
 --
---   * 'axisStyle' -- customise the 'AxisStyle'
---   * 'legend' - customise the 'Legend'
---   * 'colourBar' - customise the 'ColourBar'
---   * 'currentPlots' - current plots in the 'Axis'
---   * 'finalPlots' - changes to the plots just before rendering
---   * 'axes' -- changes to each 'SingleAxis'
+-- * 'axisStyle'    - customise the 'AxisStyle'
+-- * 'legend'       - customise the 'Legend'
+-- * 'colourBar'    - customise the 'ColourBar'
+-- * 'currentPlots' - current plots in the 'Axis'
+-- * 'finalPlots'   - changes to the plots just before rendering
+-- * 'axes'         - changes to each 'SingleAxis'
 --
 --          * 'xAxis' - the x-axis
 --          * 'yAxis' - the y-axis
@@ -248,26 +176,27 @@ type instance BaseSpace V3      = V3
 --
 --   The following 'LensLike's can be used on the on all the axes by
 --   applying it the to 'Axis' or can be used on a 'SingleAxis' by using
---   it in conjuction with a specific axis (like 'xAxis').
+--   it in combination with a specific axis (like 'xAxis').
 --
---   * 'axisLabel' - customise the 'MinorTicks'
---   * 'tickLabel' - customise the 'TickLabels'
---   * 'minorTicks' - customise the 'MinorTicks'
---   * 'majorTicks' - customise the 'MajorTicks'
---   * 'gridLines' - customise the 'GridLines'
---   * 'axisLine' - customise the 'AxisLine'
+--   * 'axisLabel'   - customise the 'MinorTicks'
+--   * 'tickLabel'   - customise the 'TickLabels'
+--   * 'minorTicks'  - customise the 'MinorTicks'
+--   * 'majorTicks'  - customise the 'MajorTicks'
+--   * 'gridLines'   - customise the 'GridLines'
+--   * 'axisLine'    - customise the 'AxisLine'
+--   * 'axisScaling' - customise the 'AxisScaling'
 --
 data Axis b c n = Axis
-  { _axisStyle :: AxisStyle b (BaseSpace c) n
-  , _colourBar :: ColourBar b n
-  , _legend    :: Legend b n
+  { _axisStyle   :: AxisStyle b (BaseSpace c) n
+  , _colourBar   :: ColourBar b n
+  , _legend      :: Legend b n
   -- , _axisTitle      :: AxisTitle
 
-  , _axisPlots     :: [DynamicPlot b (BaseSpace c) n]
-  , plotModifier   :: Endo (DynamicPlot b (BaseSpace c) n)
+  , _axisPlots   :: [DynamicPlot b (BaseSpace c) n]
+  , plotModifier :: Endo (DynamicPlot b (BaseSpace c) n)
 
-  -- the v in each axis is only used for @'Style' v n@
-  , _axes          :: c (SingleAxis b (BaseSpace c) n)
+  -- the v in each axis is only used for the style
+  , _axes        :: c (SingleAxis b (BaseSpace c) n)
   } deriving Typeable
 
 -- | Lens onto the separate axes of an axis. Allows changing the
@@ -328,6 +257,9 @@ instance (Applicative f, Traversable c) => HasAxisLabel f (Axis b c n) b where
 instance (Applicative f, Traversable c) => HasTickLabels f (Axis b c n) b where
   tickLabel = axes . traverse . tickLabel
 
+instance (Applicative f, Traversable c) => HasAxisScaling f (Axis b c n) where
+  axisScaling = axes . traverse . axisScaling
+
 instance Settable f => HasPlotStyle f (Axis b c n) b where
   plotStyle = currentPlots . plotStyle
 
@@ -335,20 +267,8 @@ instance HasLegend (Axis b c n) b where
   legend = lens _legend (\a l -> a {_legend = l})
 
 -- | The size used for the rendered axis.
-axisSize :: (Representable c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
-axisSize = axes . column singleAxisSize . iso mkSizeSpec getSpec
-
-singleAxisSize :: Lens' (SingleAxis b v n) (Maybe n)
-singleAxisSize = lens saSize (\sa s -> sa {saSize = s})
-
-axisScale :: Representable c => Lens' (Axis b c n) (c AxisScale)
-axisScale = axes . column singleAxisScale
-
--- axisLine :: E v -> Lens' (Axis b v n) (AxisLine n)
--- axisLine (E l) = axisLines . l
-
--- instance HasBounds (Axis b v n) v where
---   bounds = axisAxisBounds
+axisSize :: (HasLinearMap c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
+axisSize = axes . column renderSize . iso mkSizeSpec getSpec -- column axisScaling . asSizeSpec -- iso mkSizeSpec getSpec
 
 instance HasAxisStyle (Axis b v n) b where
   axisStyle = lens _axisStyle (\a sty -> a {_axisStyle = sty})
@@ -395,7 +315,7 @@ addPlot p = axisPlots <>= [DynamicPlot p]
 --   of the 'Plot'.
 addPlotable
   :: (InSpace (BaseSpace c) n p, MonadState (Axis b c n) m, Plotable p b)
-  => p -- ^ the plot
+  => p -- ^ the raw plot
   -> State (Plot p b) () -- ^ changes to the plot
   -> m () -- ^ add plot to the 'Axis'
 addPlotable p s = addPlot $ execState s (mkPlot p)
@@ -403,7 +323,7 @@ addPlotable p s = addPlot $ execState s (mkPlot p)
 -- | Simple version of 'AddPlotable' without any changes 'Plot'.
 addPlotable'
   :: (InSpace (BaseSpace v) n p, MonadState (Axis b v n) m, Plotable p b)
-  => p    -- ^ the plot
+  => p    -- ^ the raw plot
   -> m () -- ^ add plot to the 'Axis'
 addPlotable' p = addPlotable p (return ())
 
@@ -439,6 +359,16 @@ xAxis = axes . _x
 xAxisLabel :: R1 c => Lens' (Axis b c n) String
 xAxisLabel = xAxis . axisLabelText
 
+-- | The minimum x value for the axis. If the value if 'Nothing' (the
+--   'Default'), the bounds will be infered by the plots in the axis.
+xMin :: R1 c => Lens' (Axis b c n) (Maybe n)
+xMin = xAxis . boundMin
+
+-- | The minimum x value for the axis. If the value if 'Nothing' (the
+--   'Default'), the bounds will be infered by the plots in the axis.
+xMax :: R1 c => Lens' (Axis b c n) (Maybe n)
+xMax = xAxis . boundMax
+
 -- The y-axis ----------------------------------------------------------
 
 -- | Lens onto the y-axis of an 'Axis'.
@@ -449,6 +379,16 @@ yAxis = axes . _y
 yAxisLabel :: R2 c => Lens' (Axis b c n) String
 yAxisLabel = yAxis . axisLabelText
 
+-- | The minimum y value for the axis. If the value if 'Nothing' (the
+--   'Default'), the bounds will be infered by the plots in the axis.
+yMin :: R2 c => Lens' (Axis b c n) (Maybe n)
+yMin = yAxis . boundMin
+
+-- | The minimum y value for the axis. If the value if 'Nothing' (the
+--   'Default'), the bounds will be infered by the plots in the axis.
+yMax :: R2 c => Lens' (Axis b c n) (Maybe n)
+yMax = yAxis . boundMax
+
 -- The z-axis ----------------------------------------------------------
 
 -- | Lens onto the z-axis of an 'Axis'.
@@ -458,6 +398,16 @@ zAxis = axes . _z
 -- | The label for the z-axis. Shorthand for @'zAxis' . 'axisLabelText'@.
 zAxisLabel :: R3 c => Lens' (Axis b c n) String
 zAxisLabel = zAxis . axisLabelText
+
+-- | The minimum z value for the axis. If the value if 'Nothing' (the
+--   'Default'), the bounds will be infered by the plots in the axis.
+zMin :: R3 c => Lens' (Axis b c n) (Maybe n)
+zMin = zAxis . boundMin
+
+-- | The minimum z value for the axis. If the value if 'Nothing' (the
+--   'Default'), the bounds will be infered by the plots in the axis.
+zMax :: R3 c => Lens' (Axis b c n) (Maybe n)
+zMax = zAxis . boundMax
 
 -- R3 Axis
 

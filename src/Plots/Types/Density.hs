@@ -54,6 +54,7 @@ import               Diagrams.Prelude
 import               Plots.Style
 import               Plots.Types
 import               Plots.Axis
+import               Plots.Axis.Scale
 
 ------------------------------------------------------------------------
 -- General density plot

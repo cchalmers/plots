@@ -40,24 +40,6 @@ module Plots.Types
     -- * Plotable class
   , Plotable (..)
 
-  -- * Miscellaneous
-
-  -- * Bounds
-  , Bound (..)
-  , Bounds (..)
-  , HasBounds (..)
-  , getBounds
-  , getBound
-  , upperBound
-  , lowerBound
-  , boundsMin, boundsMax
-
-  -- * Logarithmic scaling
-  , AxisScale (..)
-  , logNumber
-  , logPoint
-  , logDeform
-
   -- * Visibility
   , HasVisibility (..)
 
@@ -103,11 +85,8 @@ module Plots.Types
 
 import           Control.Monad.State
 import           Data.Bool
-import           Data.Functor.Rep
-import           Data.Monoid.Recommend
 import           Data.Orphans          ()
 import           Data.Typeable
--- import           Diagrams.BoundingBox
 import           Data.List             (sortOn)
 import           Diagrams.Prelude      as D
 
@@ -115,98 +94,16 @@ import           Diagrams.Prelude      as D
 import           Data.Foldable         (Foldable)
 #endif
 
-import           Linear
 import           Plots.Style
-import           Plots.Utils
-
--- Bounds
-
--- | A 'Bound' allows you to 'Commit' an upper or lower bound while having a
---   fallback 'Recommend' value.
-data Bound n = Bound
-  { _lowerBound :: Recommend n
-  , _upperBound :: Recommend n
-  }
-  deriving Show
-
-makeLenses ''Bound
-
-newtype Bounds v n = Bounds (v (Bound n))
-
-makeWrapped ''Bounds
-
-type instance V (Bounds v n) = v
-type instance N (Bounds v n) = n
-
-instance Num n => Default (Bound n) where
-  def = Bound (Recommend 0) (Recommend 5)
-
-instance Ord n => Semigroup (Bound n) where
-  Bound l1 u1 <> Bound l2 u2 = Bound (liftRecommend min l1 l2) (liftRecommend max u1 u2)
-
-class HasBounds a c | a -> c where
-  bounds :: Lens' a (Bounds c (N a))
-
-instance HasBounds (Bounds V2 n) V2 where
-  bounds = id
-  {-# INLINE bounds #-}
-
-instance HasBounds (Bounds V3 n) V3 where
-  bounds = id
-  {-# INLINE bounds #-}
-
-getBounds :: Bound n -> (n, n)
-getBounds (Bound l u) = (getRecommend l, getRecommend u)
-
-getBound :: HasBounds a c => E c -> a -> (N a, N a)
-getBound e a = getBounds $ a ^. bounds . _Wrapped' . el e
-
--- boundsMin :: (V a ~ v, N a ~ n, Representable v, HasBounds a) => Lens' a (v (Recommend n))
--- boundsMin = bounds . _Wrapped' . column lowerBound
-
--- | Lens to the minimum point of a 'Bounds'.
-boundsMin :: (InSpace v n a, Representable v, HasBounds a v) => Lens' a (Point v n)
-boundsMin = bounds . _Wrapped' . column (lowerBound . _recommend) . iso P (\(P a) -> a)
-
--- | Lens to the maximum point of a 'Bounds'.
-boundsMax :: (InSpace v n a, HasBasis v, HasBounds a v) => Lens' a (Point v n)
-boundsMax = bounds . _Wrapped' . column (upperBound . _recommend) . iso P (\(P a) -> a)
-
--- Logarithmic scaling -------------------------------------------------
-
--- | Should the axis be on a logarithmic scale.
-data AxisScale = LinearAxis | LogAxis
-  deriving (Show, Eq)
-
--- | Log the number for 'LogAxis', do nothing for 'LinearAxis'.
-logNumber :: Floating a => AxisScale -> a -> a
-logNumber LinearAxis = id
-logNumber LogAxis    = log
-{-# INLINE logNumber #-}
-
--- | Transform a point according to the axis scale. Does nothing for
---   linear scales.
-logPoint :: (Additive v, Floating n) => v AxisScale -> Point v n -> Point v n
-logPoint v = _Point %~ liftI2 logNumber v
-{-# INLINE logPoint #-}
-
--- | Deform an object according to the axis scale. Does nothing for
---   linear scales.
-logDeform :: (InSpace v n a, Additive v, Foldable v, Floating n, Deformable a a)
-          => v AxisScale -> a -> a
-logDeform v
-  | allOf folded (== LinearAxis) v = id
-  | otherwise                      = deform (Deformation $ logPoint v)
-
-instance Default AxisScale where
-  def = LinearAxis
+import           Plots.Axis.Scale
 
 -- Orientation ---------------------------------------------------------
 
 data Orientation = Horizontal | Vertical
   deriving (Show, Eq, Ord, Typeable)
 
--- Take two functions for each outcome for an orientation.
+-- | Pick the first @a@ if the object has 'Horizontal' orientation and
+--   the second @a@ if the object has a 'Vertical' orientation.
 orient :: HasOrientation o => o -> a -> a -> a
 orient o h v =
   case view orientation o of
@@ -414,7 +311,7 @@ addLegendEntry l = legendEntries <>= [l]
 data AxisSpec v n = AxisSpec
   { _specBounds    :: v (n, n)
   , _specTrans     :: Transformation v n
-  , _specScale     :: v AxisScale
+  , _specScale     :: v LogScale
   , _specColourMap :: ColourMap
   }
 
@@ -425,7 +322,7 @@ type instance N (AxisSpec v n) = n
 
 -- | Scale a number by log10-ing it and linearly scaling it so it's
 --   within the same range.
-scaleNum :: Floating n => (n, n) -> AxisScale -> n -> n
+scaleNum :: Floating n => (n, n) -> LogScale -> n -> n
 scaleNum (a,b) s x = case s of
   LinearAxis -> x
   LogAxis    -> subtract a $ (b / logBase 10 d) * (logBase 10 x)

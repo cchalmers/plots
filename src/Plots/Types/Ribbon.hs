@@ -91,6 +91,7 @@ import           Diagrams.Coordinates.Isomorphic
 import           Plots.Style
 import           Plots.Types
 import           Plots.Axis
+import           Plots.Axis.Scale
 
 ------------------------------------------------------------------------
 -- GPoints plot
