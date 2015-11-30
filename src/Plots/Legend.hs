@@ -225,19 +225,26 @@ drawLegend bb entries l
                           bb
                           (l ^. legendAnchor)
                           (l ^. legendGap)
-                          ledge
+                          (ledge <> back)
   where
     w = l ^. legendTextWidth
     h = l ^. legendSpacing
     --
-    ledge = orient (l ^. legendOrientation) hcat vcat
-          $ map mkLabels entries
+    ledge = map mkLabels entries
+              # orient (l ^. legendOrientation) hcat vcat
+              # alignTL
+
+    back = rect w (h * fromIntegral (length entries))
+             # applyStyle (l ^. legendStyle)
+             # alignTL
+             # translate (V2 (-5) 0) -- (-3))
 
     -- mkLabels :: (QDiagram b V2 n Any, String) -> QDiagram b V2 n Any
-    mkLabels (pic, txt) = pic ||| strutX 5 ||| label where
+    mkLabels (pic, txt) = pic' ||| strutX 5 ||| label where
+      pic'  = pic # withEnvelope (fromCorners (pure (-h/2)) (pure (h/2)))
       label = view legendTextFunction l txt
                 # applyStyle (l ^. legendTextStyle)
-                # withEnvelope (fromCorners origin (mkP2 w h))
+                # withEnvelope (fromCorners origin (mkP2 w h) # moveTo (mkP2 0 (-h/2)))
 
 -- wrapPic :: RealFloat n => V2 n -> QDiagram b V2 n Any -> QDiagram b V2 n Any
 -- wrapPic ((^/ 2) -> v) d
