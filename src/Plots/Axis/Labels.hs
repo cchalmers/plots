@@ -28,6 +28,7 @@ module Plots.Axis.Labels
   , TickLabels
   , HasTickLabels (..)
   , tickLabelPositions
+  , atMajorTicks
   ) where
 
 import           Control.Lens       hiding (( # ))
