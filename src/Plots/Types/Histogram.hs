@@ -287,7 +287,7 @@ range nBins xs
   where
     d | nBins == 1 = 0
       | otherwise  = (hi - lo) / ((fromIntegral nBins - 1) * 2)
-    V2 lo hi       = minmaxOf folded xs
+    (lo,hi)        = minMaxOf folded xs
 {-# INLINE range #-}
 
 -- |

@@ -40,6 +40,7 @@ library
     Plots.Types.Density
     Plots.Types.Function
     Plots.Types.Histogram
+    Plots.Types.HeatMap
     Plots.Types.Line
     Plots.Types.Others
     Plots.Types.Pie

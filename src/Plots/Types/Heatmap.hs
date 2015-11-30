@@ -1,14 +1,15 @@
-{-# LANGUAGE DeriveDataTypeable    #-}
-{-# LANGUAGE BangPatterns          #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE BangPatterns           #-}
+{-# LANGUAGE DeriveDataTypeable     #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 
-module Plots.Types.Heatmap where
+module Plots.Types.HeatMap where
   -- ( HeatMap
   -- , simpleHeatMap
   --   -- * Prism
@@ -24,92 +25,19 @@ module Plots.Types.Heatmap where
 
 import           Control.Lens                    hiding (transform, ( # ))
 
+import           Control.Monad.State
+import qualified Data.Foldable                   as F
 import           Data.Typeable
-import qualified Data.Vector.Unboxed as U
-import           Data.Vector.Unboxed ((!))
-import qualified Data.Foldable as F
+import           Data.Vector.Unboxed             ((!))
+import qualified Data.Vector.Unboxed             as U
 
+import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
 
+import           Plots.Axis
 import           Plots.Style
-import           Plots.Utils
 import           Plots.Types
-
-type ColourRange = (Colour Double, Colour Double)
-
-data HeatPlot n = HeatPlot
-  { hData      ::   [[n]]
-  , hColorMap  ::    ColourRange
-  , hGrid      ::    Bool
-  }
-type instance V (HeatMap n) = V2
-type instance N (HeatMap n) = n
-
-instance OrderedField n => Enveloped (HeatPlot n) where
-  getEnvelope HeatMap {..} = getEnvelope $
-    boundingBox (fromVertices [(p2 (0.5,0.5)), (p2 (0.5, ymax)), (p2 (xmax, ymax)), (p2 (ymax, 0.5))])
-    where
-      ymax = (length hmata) + 0.5
-      xmax = (max [length x | x <- hData]) + 0.5
-
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (HeatMap n) b where
-  renderPlotable s HeatMap {..} pp =
-      mconcat [rect' i j | i <- [1 .. (max [length x | x <- hData])], j<- [1 .. (length hmata)]]
-        # transform t
-   <> if hGrid
-        then mconcat ([drawgridh] ++ [drawgridv])
-               # transform t
-        else mempty
-    where
-      drawgridh =  [fromVertices [p2 (x1, 0.5), p2 (x1, ymax)] #stroke | x1 <- [0.5, 1.5 .. ymax]]
-      drawgridv =  [fromVertices [p2 (0.5, y1), p2 (xmax, y1)] #stroke | y1 <- [0.5, 1.5 .. ymax]]
-      ymax = (length hmata) + 0.5
-      xmax = (max [length x | x <- hData]) + 0.5
-      t  = s ^. specTrans
-      ls = s ^. specScale
-      rect' i j = fromVertices [p2 (imin, jmin), p2 (imin ,jmax), p2 (imax, jmax), p2 (imax, jmin)] # mapLoc closeLine # stroke # lw none # fc (colr (i,j))
-                  where imin = (fromIntegral i) - 0.5
-                        imax = (fromIntegral i) + 0.5
-                        jmin = (fromIntegral j) - 0.5
-                        jmax = (fromIntegral j) + 0.5
-      colr (i,j) = createColour hColorMap (clnd !! i !! j)
-      clnd = hData
-      fromVertices ps
-        # mapLoc closeLine
-        # stroke
-        # lw none
-        # applyBarStyle pp
-        # transform t
-  defLegendPic HeatMap {..} pp
-      = square 5 # applyBarStyle pp
-
-createColour (sRGB24 x y z,sRGB24 a b c) -1 = none
-createColour (sRGB24 x y z,sRGB24 a b c) n  = sRGB24 (x+(n*(a-x))) (y+(n*(b-y))) (z+(n*(c-z)))
-
-
-mkHeatMap :: (Num n, GV.Vector v a)
-  => v a -> (Int,Int) -> (a -> Style V2 n) -> GHeatMap v a n
-mkHeatMap v (w,h) f
-  = GHeatMap
-      { _heatMapVector   = v
-      , _heatMapExtent   = V2 w h
-      , _heatMapStart    = origin
-      , _heatMapSize     = V2 1 1
-      , _heatMapStyleMap = f
-      }
-
-{-
-myCircle = rect 1 3 #fillTexture gradient #lw none
-
-gradient = mkLinearGradient stops ((-1) ^& (-1)) (1 ^& 1) GradPad
-stops =  mkStops [(teal, 0, 1),(orange, 1, 1)]
-
--- | Squares for heat map. Since some renderers leave gaps for adjacent
---   blocks, squares are overlapped to avoid this.
-
-
-------------------------------------------------------------------------------
+import           Plots.Utils
 
 -- data HeatMap n = HeatMap
 --   { hmFunction :: Int -> Int -> Double
@@ -123,210 +51,255 @@ stops =  mkStops [(teal, 0, 1),(orange, 1, 1)]
 -- any problems. On the other hand it's not an ideal representation for
 -- heat maps of functions. Maybe we need two primitives.
 
-heatSquares :: (TypeableFloat n, Renderable (Path V2 n) b) => n -> ColourRange -> QDiagram b V2 n Any
-heatSquares (V2 x y) f =
-  alaf Dual F.foldMap mk ps
-    # lwO 0
--- foldMap is reversed using Dual so the squares are placed in the correct order
-  where
-    ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
-    mk v@(V2 i j) =
-      rect w h
-        # alignBL
-        # translate (fromIntegral <$> v)
-        # fc (f v)
-        where
-          -- Squares that are not on the top left edge are slightly
-          -- bigger to remove phantom gaps
-          w | i == x    = 1
-            | otherwise = 1.5
-          h | j == y    = 1
-            | otherwise = 1.5
-
-mkHeatPlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> ParametricPlot v n
-mkParametricPlot f
-  = HeatPlot
-        { hData      =    [[n]]
-        , hColorMap  =    ColourRange
-        , hGrid      =    False
-        }
+-- | Squares for heat map. Since some renderers leave gaps for adjacent
+--   blocks, squares are overlapped to avoid this.
+-- heatSquares
+--   :: (TypeableFloat n, Renderable (Path V2 n) b)
+--   => n
+--   -> ColourRange
+--   -> QDiagram b V2 n Any
+-- heatSquares (V2 x y) f =
+--   alaf Dual F.foldMap mk ps
+--     # lwO 0
+-- -- foldMap is reversed using Dual so the squares are placed in the correct order
+--   where
+--     ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
+--     mk v@(V2 i j) =
+--       rect w h
+--         # alignBL
+--         # translate (fromIntegral <$> v)
+--         # fc (f v)
+--         where
+--           -- Squares that are not on the top left edge are slightly
+--           -- bigger to remove phantom gaps
+--           w | i == x    = 1
+--             | otherwise = 1.5
+--           h | j == y    = 1
+--             | otherwise = 1.5
 
 ------------------------------------------------------------------------
 -- Heatmap Lenses
 ------------------------------------------------------------------------
 
-class HasHeatmap a v n | a -> v n where
-  heat :: Lens' a (HeatPlot v n)
+-- class HasHeatmap a v n | a -> v n where
+--   heat :: Lens' a (HeatPlot v n)
 
-  setColourMap :: Lens' a ColourRange
-  setColourMap = heatmp . lens hmColorMap (\s b -> (s {hColorMap = b}))
-
-  drawGrid :: Lens' a Bool
-  drawGrid = heatmp . lens hmGrid (\s b -> (s {hGrid = b}))
-
-instance HasVector (HeatPlot v n) v n where
-  heat = id
-
-instance HasVector (PropertiedPlot (HeatPlot v n) b) v n where
-  heat = _pp
+--   drawGrid :: Lens' a Bool
+--   drawGrid = heatmp . lens hmGrid (\s b -> (s {hGrid = b}))
 
 ------------------------------------------------------------------------
 -- Heatmap
 ------------------------------------------------------------------------
 
-data GHeatMapPlot v n a = forall s. GHeatMapPlot
-  { sData :: s
-  , sFold :: Fold s a
-  , sPos  :: a -> Point v n
-  , sHeat :: [P2 n] -> [[n]]
-  , sGrid :: Bool
--- change P2 n to Point v n
--- Look at Histogram.hs for more details
--- Extend Bool
-  } deriving Typeable
-
-type instance V (GHeatMapPlot v n a) = v
-type instance N (GHeatMapPlot v n a) = n
-
-instance (Metric v, OrderedField n) => Enveloped (GHeatMapPlot v n a) where
-  getEnvelope GHeatMapPlot {..} = foldMapOf (sFold . to sPos) getEnvelope sData
-
-instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (GHeatMapPlot V2 n a) b where
-  renderPlotable s HeatMapPlot {..} pp =
-      F.foldMap mk ps
-        # transform t
-        # lwO 0.01
-        # lc grey
-        # withEnvelope (getEnvelope hm)
-    where
-      mk z@(V2 i j) =
-        square 1 # fcA (pp ^. plotColourMap . ixColour (toRational $ normise n))
-                 -- # translate (2*x')
-                 # moveTo p
-        where
-          n  = hmFunction i j
-          p  = hmStart .+^ (hmSize * x' + 0.5)
-          x' = fromIntegral <$> z
-          -- p = transform t $ sPos a
-      ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
-      V2 x y = hmExtent
-      t = s ^. specTrans
-      -- p0 = apply t $ hmStart ^. _Point
-      V2 vMin vMax = minmaxOf each (map (\(V2 i j) -> hmFunction i j) ps)
-      normise v = (v - vMin) / (vMax - vMin)
-
-  defLegendPic HeatMapPlot {..} pp
-      = square 5 # applyBarStyle pp
-
-------------------------------------------------------------------------
--- HeatMap Plot
-------------------------------------------------------------------------
-
-type HeatMapPlot v n = GHeatMapPlot v n (Point v n)
-
-mkHeatMapPlot :: (PointLike v n p, F.Foldable f, Ord n, Floating n, Enum n, Num n)
-              => f p -> HeatMapPlot v n
-mkHeatMapPlot = mkHeatMapPlotOf folded
-
-
-mkHeatMapPlotOf :: (PointLike v n p, Ord n, Floating n, Enum n, Num n)
-                => Fold s p -> s -> HeatMapPlot v n
-mkHeatMapPlotOf f a = GHeatMapPlot
-  { sData = a
-  , sFold = f . unpointLike
-  , sPos  = id
-  , sHEat = genHeatMap
-  , sGrid = True
+-- | 2D Array of 'Double's.
+data HeatMatrix = HeatMatrix
+  { hmSize :: !(V2 Int)
+  , hmFun  :: V2 Int -> Double
   }
 
-_HeatMapPlot :: (Plotable (SmoothPlot v n) b, Typeable b)
-                   => Prism' (Plot b v n) (HeatMapPlot v n)
-_HeatMapPlot = _Plot
+-- | Create a heat matrix from an extent and a function to extract the
+--   values.
+mkHeatMatrix :: V2 Int -> (V2 Int -> Double) -> HeatMatrix
+mkHeatMatrix = HeatMatrix
 
------------------------------------------------------------------------------
+-- | Create a heat matrix from a list of lists of values. All sublists
+--   should have the same length
+mkHeatMatrix' :: Foldable f => f (f Double) -> HeatMatrix
+mkHeatMatrix' xss =
+  case F.length <$> preview folded xss of
+    Just y  -> HeatMatrix (V2 x y) f
+    Nothing -> HeatMatrix zero (const 0)
+  where
+    x           = F.length xss
+    v           = U.fromList $ toListOf (folded . folded) xss
+    f (V2 i j)  = v ! (x*j + i)
 
--- | Indexed traversal over the values of a heat map.
--- heatPoints :: IndexedTraversal' (V2 Int) (HeatMap n) Double
--- heatPoints f hm@HeatMap {..} = go 0 0 <&> \vs ->
---   let v       = U.fromListN (x*y) vs
---       hIx i j = v ! (x*j + i)
---   in  hm { hmFunction = hIx }
+-- | Normalise a heat matrix so all values lie in the (0,1) range. Also
+--   returns the lower and upper limit of the original heat matrix.
+normaliseHeatMatrix :: HeatMatrix -> ((Double, Double), HeatMatrix)
+normaliseHeatMatrix hm = (range, hm { hmFun = (/ (b - a)) . (+a) . hmFun hm })
+  where range@(a,b) = minMaxOf hmPoints hm
+        -- XXX what if range = 0?
+
+-- | Indexed traversal over the values of a 'HeatMatrix'.
+hmPoints :: IndexedTraversal' (V2 Int) HeatMatrix Double
+hmPoints f (HeatMatrix e@(V2 x y) ixF) = go 0 0 <&> \vs ->
+  let v             = U.fromListN (x*y) vs
+      ixF' (V2 i j) = U.unsafeIndex v (x*j + i)
+  in  HeatMatrix e ixF'
+  where
+    -- V2 x y = hmExtent
+    go !i !j
+      | i >= x    = go 0 (j+1)
+      | j >= y    = pure []
+      | otherwise = (:) <$> indexed f (V2 i j) (ixF $ V2 i j) <*> go (i+1) j
+{-# INLINE hmPoints #-}
+
+-- Rendering heat matrices --------------------------------------------
+
+-- | Render the heat map as an embedded image.
+-- imageHeatRender
+--   :: Renderable (Image n) b
+--   => HeatMatrix
+--   -> ColourMap
+--   -> QDiagram b v n Any
+-- imageHeatRender = undefined
+
+-- | Render the heat map as squares.
+pathHeatRender
+  :: (Renderable (Path V2 n) b, TypeableFloat n)
+  => HeatMatrix
+  -> ColourMap
+  -> QDiagram b V2 n Any
+pathHeatRender hm cm = ifoldMapOf hmPoints mk hm # lwO 0
+  where
+    V2 x y = hmSize hm
+    mk v@(V2 i j) a =
+      rect w h
+        # alignBL
+        # translate (fromIntegral <$> v)
+        # fcA (cm ^. ixColour (toRational a))
+      where
+        -- Squares that are not on the top left edge are slightly
+        -- bigger to remove phantom gaps
+        w | i == x    = 1
+          | otherwise = 1.5
+        h | j == y    = 1
+          | otherwise = 1.5
+
+-- -- | Render the heat map as an embedded image.
+-- pathHeatRender'
+--   :: Renderable (Path V2 n) b
+--   => HeatMatrix
+--   -> ColourMap
+--   -> QDiagram b v n Any
+-- pathHeatRender' (HeatMatrix (V2 x y) f) = alaf Dual F.foldMap mk ps # lwO 0
+-- pathHeatRender' hm cm = alaf Dual F.ifoldMapOf heatMatrixPoints mk ps # lwO 0
 --   where
---     V2 x y = hmExtent
---     go !i !j
---       | i >= x    = go 0 (j+1)
---       | j >= y    = pure []
---       | otherwise = (:) <$> indexed f (V2 i j) (hmFunction i j) <*> go (i+1) j
--- {-# INLINE heatPoints #-}
+--     mk v@(V2 x y) a =
+--       rect w h
+--         # alignBL
+--         # translate (fromIntegral <$> v)
+--         # fcA (cm ^. ixColour (toRational a))
 
--- instance HasGenericPlot (GHeatMap v a b n) where
---   genericPlot = heatMapGeneric
+    -- where
 
--- | Make a heat map from a vector. Each pixel has height and width 1 and the plot
--- mkHeatMap :: (Num n, GV.Vector v a)
---   => v a -> (Int,Int) -> (a -> Style V2 n) -> GHeatMap v a n
--- mkHeatMap v (w,h) f
---   = GHeatMap
---       { _heatMapVector   = v
---       , _heatMapExtent   = V2 w h
---       , _heatMapStart    = origin
---       , _heatMapSize     = V2 1 1
---       , _heatMapStyleMap = f
---       }
-
--- colourToStyle :: (Typeable n, Floating n) => AlphaColour Double -> Style V2 n
--- colourToStyle c = mempty # fcA c
-
-
--- mkGHeatMap :: (Typeable n, Floating n, P2Like Int p, GV.Vector v a, Foldable f)
---   => f (p, a) -> (Int,Int) -> a -> (a -> AlphaColour Double) -> GHeatMap v a n
--- mkGHeatMap xs (w,h) x0 f = mkHeatMap v (w,h) (colourToStyle . f)
+-- | Squares for heat map. Since some renderers leave gaps for adjacent
+--   blocks, squares are overlapped to avoid this.
+-- heatSquares
+--   :: (TypeableFloat n, Renderable (Path V2 n) b)
+--   => V2 n
+--   -> ColourRange
+--   -> QDiagram b V2 n Any
+-- heatSquares (V2 x y) f = alaf Dual F.foldMap mk ps # lwO 0
+-- -- foldMap is reversed using Dual so the squares are placed in the correct order
 --   where
---   v = GV.create $ do
---         mv <- GMV.replicate (w*h) x0
---         F.forM_ xs $ \(a, b) -> do
---           let P (V2 x y) = a ^. unpointLike
---               i          = y*h + x
+--     ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
+--     mk v@(V2 i j) =
+--       rect w h
+--         # alignBL
+--         # translate (fromIntegral <$> v)
+--         # fc (f v)
+--         where
+--           -- Squares that are not on the top left edge are slightly
+--           -- bigger to remove phantom gaps
+--           w | i == x    = 1
+--             | otherwise = 1.5
+--           h | j == y    = 1
+--             | otherwise = 1.5
 
---           GMV.write mv i b
+-- ------------------------------------------------------------------------
+-- -- Heat matrix
+-- ------------------------------------------------------------------------
 
---         return mv
+data HeatMap b n = HeatMap
+  { hMatrix      :: HeatMatrix
+  , hStart       :: P2 n
+  , hSize        :: V2 n
+  , hGridSty     :: Style V2 n
+  , hGridVisible :: Bool
+  , hLimits      :: Maybe (Double,Double)
+  , hDraw        :: HeatMatrix -> ColourMap -> QDiagram b V2 n Any
+  } deriving Typeable
 
--- data HeatMap
+type instance V (HeatMap b n) = V2
+type instance N (HeatMap b n) = n
 
--- intHeatMap
---   :: P2 n   -- ^ start
---   -> V2 Int -- ^ extent
---   -> V2 n   -- ^ size of each box
---   -> (Int -> Int -> Double) -- ^ mapping function
---   -> HeatMap n
--- intHeatMap p0 x s f =
---   HeatMap
---     { hmFunction = f
---     , hmExtent   = x
---     , hmStart    = p0
---     , hmSize     = s
---     }
+-- | Class of things that let you change the heatmap options.
+class HasHeatmap f a b | a -> b where
+  -- | Lens onto the heatmap options.
+  heatMapOptions :: LensLike' f a (HeatMap b (N a))
 
-  -- { hmFunction :: Int -> Int -> Double
-  -- , hmExtent   :: V2 Int  -- total x and y boxes
-  -- , hmStart    :: P2 n
-  -- , hmSize     :: V2 n    --
+  -- | Whether there should be grid lines draw for the heat map. Default
+  --   is 'False'.
+  heatMapGridVisible :: Functor f => LensLike' f a Bool
+  heatMapGridVisible = heatMapOptions . lens hGridVisible (\s b -> (s {hGridVisible = b}))
 
--- heatMap
---  :: Fractional n
---   => P2 n   -- ^ start
---  -> V2 n   -- ^ extent
---  -> V2 Int -- ^ number of boxes
---  -> V2 n   -- ^ size of each box
---  -> (n -> n -> Double) -- ^ mapping function
---  -> HeatMap n
--- heatMap p0@(P (V2 xp yp)) extnt ns s f' = intHeatMap p0 ns s f
---   where
---     V2 dx dy = extnt / fmap fromIntegral ns
---     f x y = f' (xp + x' * dx) (yp + y' * dy)
---       where
---         x' = fromIntegral x
---         y' = fromIntegral y
--}
+  -- | The style applied to the grid lines for the heat map, if they're
+  --   visible.
+  heatMapGridStyle :: Functor f => LensLike' f a (Style V2 (N a))
+  heatMapGridStyle = heatMapOptions . lens hGridSty (\s b -> (s {hGridSty = b}))
+
+  -- | The size of each individual square in the heat map.
+  heatMapSize :: Functor f => LensLike' f a (V2 (N a))
+  heatMapSize = heatMapOptions . lens hSize (\s b -> (s {hSize = b}))
+
+  -- | The starting point for the heat map.
+  heatMapStart :: Functor f => LensLike' f a (P2 (N a))
+  heatMapStart = heatMapOptions . lens hStart (\s b -> (s {hStart = b}))
+
+  -- | Limits @(a,b)@ used on the data such that @a@ is the start of the
+  --   'ColourMap' and @b@ is the end of the 'ColourMap'. Default is @(0,1)@.
+  heatMapLimits :: Functor f => LensLike' f a (Maybe (Double, Double))
+  heatMapLimits = heatMapOptions . lens hLimits (\s b -> (s {hLimits = b}))
+
+  -- | Funtion used to render the heat map.
+  heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram b V2 (N a) Any)
+  heatMapRender = heatMapOptions . lens hDraw (\s b -> (s {hDraw = b}))
+
+instance OrderedField n => Enveloped (HeatMap b n) where
+  getEnvelope HeatMap {..} = getEnvelope (fromCorners hStart (hStart .+^ hSize))
+
+instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+    => Plotable (HeatMap b n) b where
+  renderPlotable s _sty HeatMap {..} =
+      grid <> hDraw matrix' (s^.specColourMap)
+    where
+      --- TODO
+      grid = mempty
+
+      --- XXX need to give _range to the axis somehow (for colour bar range)
+      (_range, matrix') = normaliseHeatMatrix hMatrix
+
+  -- XXX make better
+  defLegendPic sty HeatMap {..} = square 5 # applyAreaStyle sty
+
+-- | Construct a 'Heatmap' using the given 'HeatMatrix'.
+mkHeatMap :: (Renderable (Path V2 n) b, TypeableFloat n)
+          => HeatMatrix -> HeatMap b n
+mkHeatMap mat = HeatMap
+  { hMatrix      = mat
+  , hStart       = origin
+  , hSize        = fmap fromIntegral $ hmSize mat
+  , hGridSty     = mempty
+  , hGridVisible = False
+  , hLimits      = Nothing
+  , hDraw        = pathHeatRender
+  }
+
+-- | Add a 'HeatMap' plot.
+heatMap
+  :: (VectorLike V2 Int i,
+      TypeableFloat n,
+      Typeable b,
+      MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b)
+  => i             -- ^ extent of array
+  -> (i -> Double) -- ^ heat from index
+  -> State (Plot (HeatMap b n) b) ()
+                   -- ^ changes to plot options
+  -> m ()          -- ^ add plot to 'Axis'
+heatMap i f = addPlotable (mkHeatMap hm)
+  where
+  hm = mkHeatMatrix (view unvectorLike i) (f . view vectorLike)
+
