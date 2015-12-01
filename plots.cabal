@@ -11,8 +11,8 @@ stability:           Experimental
 category:            Graphics
 build-type:          Simple
 cabal-version:       >=1.10
-extra-source-files:  README.md plots/*.png plots/*.svg
-extra-doc-files:     plots/*.png plots/*.svg
+extra-source-files:  README.md plots/*.png
+extra-doc-files:     plots/*.png
 description:         Diagrams based plotting library.
 
 source-repository head
@@ -80,6 +80,7 @@ library
     time,
     vector,
     profunctors,
+    JuicyPixels,
     intervals,
     base-orphans
 

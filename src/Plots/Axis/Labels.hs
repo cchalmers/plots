@@ -222,7 +222,7 @@ tickLabelPositions
 tickLabelPositions = tickLabelFunction . mapped . mapped
 
 -- | Numbers are shown as 'Float's to reduce the chance of numbers like
---   1.30000000008. (This is not an idea solution.)
+--   1.30000000008. (This is not an ideal solution.)
 floatShow :: Real n => n -> String
 floatShow = show . (realToFrac :: Real n => n -> Float)
 

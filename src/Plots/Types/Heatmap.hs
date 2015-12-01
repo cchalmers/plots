@@ -33,59 +33,13 @@ import qualified Data.Vector.Unboxed             as U
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
+-- import           Diagrams.TwoD.Image
+import Codec.Picture
 
 import           Plots.Axis
 import           Plots.Style
 import           Plots.Types
 import           Plots.Utils
-
--- data HeatMap n = HeatMap
---   { hmFunction :: Int -> Int -> Double
---   , hmExtent   :: V2 Int  -- total x and y boxes
---   , hmStart    :: P2 n
---   , hmSize     :: V2 n    -- width and height of each box
---   } deriving Typeable
-
--- I'm still unsure of the "right" way to do this. On the one hand, by
--- restricting it to int users can read off data from an array without
--- any problems. On the other hand it's not an ideal representation for
--- heat maps of functions. Maybe we need two primitives.
-
--- | Squares for heat map. Since some renderers leave gaps for adjacent
---   blocks, squares are overlapped to avoid this.
--- heatSquares
---   :: (TypeableFloat n, Renderable (Path V2 n) b)
---   => n
---   -> ColourRange
---   -> QDiagram b V2 n Any
--- heatSquares (V2 x y) f =
---   alaf Dual F.foldMap mk ps
---     # lwO 0
--- -- foldMap is reversed using Dual so the squares are placed in the correct order
---   where
---     ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
---     mk v@(V2 i j) =
---       rect w h
---         # alignBL
---         # translate (fromIntegral <$> v)
---         # fc (f v)
---         where
---           -- Squares that are not on the top left edge are slightly
---           -- bigger to remove phantom gaps
---           w | i == x    = 1
---             | otherwise = 1.5
---           h | j == y    = 1
---             | otherwise = 1.5
-
-------------------------------------------------------------------------
--- Heatmap Lenses
-------------------------------------------------------------------------
-
--- class HasHeatmap a v n | a -> v n where
---   heat :: Lens' a (HeatPlot v n)
-
---   drawGrid :: Lens' a Bool
---   drawGrid = heatmp . lens hmGrid (\s b -> (s {hGrid = b}))
 
 ------------------------------------------------------------------------
 -- Heatmap
@@ -137,13 +91,27 @@ hmPoints f (HeatMatrix e@(V2 x y) ixF) = go 0 0 <&> \vs ->
 
 -- Rendering heat matrices --------------------------------------------
 
--- | Render the heat map as an embedded image.
--- imageHeatRender
---   :: Renderable (Image n) b
---   => HeatMatrix
---   -> ColourMap
---   -> QDiagram b v n Any
--- imageHeatRender = undefined
+-- | Render an heatmap as an image.
+pixelHeatRender
+  :: (Renderable (DImage n Embedded) b, TypeableFloat n)
+  => HeatMatrix
+  -> ColourMap
+  -> QDiagram b V2 n Any
+pixelHeatRender hm cm =
+  scale (1/4) . alignBL . image $ DImage (ImageRaster (ImageRGB8 img)) (x*4) (y*4) mempty
+  where
+    img    = heatImage hm cm
+    V2 x y = hmSize hm
+
+heatImage :: HeatMatrix -> ColourMap -> Image PixelRGB8
+heatImage hm cm = generateImage (\i j -> getPx (V2 (i `div` 4) (j `div` 4))) x y
+  where
+    V2 x y  = hmSize hm * 4
+    getPx v = colourToPixel . fromAlphaColour $ cm ^. ixColour (realToFrac $ hmFun hm v)
+
+colourToPixel :: Colour Double -> PixelRGB8
+colourToPixel c = PixelRGB8 r g b
+  where RGB r g b = toSRGB24 c
 
 -- | Render the heat map as squares.
 pathHeatRender
@@ -167,50 +135,9 @@ pathHeatRender hm cm = ifoldMapOf hmPoints mk hm # lwO 0
         h | j == y    = 1
           | otherwise = 1.5
 
--- -- | Render the heat map as an embedded image.
--- pathHeatRender'
---   :: Renderable (Path V2 n) b
---   => HeatMatrix
---   -> ColourMap
---   -> QDiagram b v n Any
--- pathHeatRender' (HeatMatrix (V2 x y) f) = alaf Dual F.foldMap mk ps # lwO 0
--- pathHeatRender' hm cm = alaf Dual F.ifoldMapOf heatMatrixPoints mk ps # lwO 0
---   where
---     mk v@(V2 x y) a =
---       rect w h
---         # alignBL
---         # translate (fromIntegral <$> v)
---         # fcA (cm ^. ixColour (toRational a))
-
-    -- where
-
--- | Squares for heat map. Since some renderers leave gaps for adjacent
---   blocks, squares are overlapped to avoid this.
--- heatSquares
---   :: (TypeableFloat n, Renderable (Path V2 n) b)
---   => V2 n
---   -> ColourRange
---   -> QDiagram b V2 n Any
--- heatSquares (V2 x y) f = alaf Dual F.foldMap mk ps # lwO 0
--- -- foldMap is reversed using Dual so the squares are placed in the correct order
---   where
---     ps = [ V2 i j | i <- [0..x-1], j <- [0..y-1] ]
---     mk v@(V2 i j) =
---       rect w h
---         # alignBL
---         # translate (fromIntegral <$> v)
---         # fc (f v)
---         where
---           -- Squares that are not on the top left edge are slightly
---           -- bigger to remove phantom gaps
---           w | i == x    = 1
---             | otherwise = 1.5
---           h | j == y    = 1
---             | otherwise = 1.5
-
--- ------------------------------------------------------------------------
--- -- Heat matrix
--- ------------------------------------------------------------------------
+------------------------------------------------------------------------
+-- Heat matrix
+------------------------------------------------------------------------
 
 data HeatMap b n = HeatMap
   { hMatrix      :: HeatMatrix
@@ -226,7 +153,7 @@ type instance V (HeatMap b n) = V2
 type instance N (HeatMap b n) = n
 
 -- | Class of things that let you change the heatmap options.
-class HasHeatmap f a b | a -> b where
+class HasHeatMap f a b | a -> b where
   -- | Lens onto the heatmap options.
   heatMapOptions :: LensLike' f a (HeatMap b (N a))
 
@@ -257,13 +184,20 @@ class HasHeatmap f a b | a -> b where
   heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram b V2 (N a) Any)
   heatMapRender = heatMapOptions . lens hDraw (\s b -> (s {hDraw = b}))
 
+instance HasHeatMap f (HeatMap b n) b where
+  heatMapOptions = id
+
+instance (Functor f, HasHeatMap f a b) => HasHeatMap f (Plot a b) b where
+  heatMapOptions = rawPlot . heatMapOptions
+
 instance OrderedField n => Enveloped (HeatMap b n) where
   getEnvelope HeatMap {..} = getEnvelope (fromCorners hStart (hStart .+^ hSize))
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HeatMap b n) b where
   renderPlotable s _sty HeatMap {..} =
-      grid <> hDraw matrix' (s^.specColourMap)
+      transform (s^.specTrans) $
+        grid <> hDraw matrix' (s^.specColourMap)
     where
       --- TODO
       grid = mempty
@@ -287,7 +221,12 @@ mkHeatMap mat = HeatMap
   , hDraw        = pathHeatRender
   }
 
--- | Add a 'HeatMap' plot.
+-- | Add a 'HeatMap' plot using the extent of the heatmap and a generating function.
+--
+-- @
+-- 'heatMap' :: 'V2' 'Int'     -> ('V2' 'Int' -> 'Double')     -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
+-- 'heatMap' :: ('Int', 'Int') -> (('Int', 'Int') -> 'Double') -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
+-- @
 heatMap
   :: (VectorLike V2 Int i,
       TypeableFloat n,
