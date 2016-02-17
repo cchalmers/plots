@@ -1,18 +1,9 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 import Plots
-import Plots.Axis
-import Plots.Types hiding (B)
-import Plots.Themes
-
-import Data.List
 
 import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
-import Diagrams.Backend.CmdLine
-
-import Data.Array
-import Data.Monoid.Recommend
+import Diagrams.Backend.Rasterific.CmdLine
 
 
 mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
@@ -26,21 +17,15 @@ myaxis = r2Axis &~ do
 --    densityPlot' mydata1 $ do
 --      fillArea .= True
 --      addLegendEntry "mydata1"
-   
-    boxPlot mydata1
-    boxPlot mydata2
-    boxPlot mydata3
 
-    scatterPlot mydata1
-    scatterPlot mydata2
-    scatterPlot mydata3
+    boxPlot' mydata1
+    boxPlot' mydata2
+    boxPlot' mydata3
 
-
-make :: Diagram B -> IO ()
-make = renderRasterific "test.png" (mkWidth 600) . frame 20
+    scatterPlot' mydata1
+    scatterPlot' mydata2
+    scatterPlot' mydata3
 
 main :: IO ()
-main = make $ renderAxis myaxis
-
-
+main = r2AxisMain myaxis
 
