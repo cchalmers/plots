@@ -1,31 +1,40 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 
 import Plots
-import Plots.Axis
-import Plots.Types hiding (B)
 
-import Data.List
-
-import Dataset
 import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
-
-mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
-mydata2 = mydata1 & each . _1 *~ 0.5
-mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
+import Diagrams.Coordinates.Isomorphic
+import Diagrams.Backend.Rasterific.CmdLine
+import Control.Monad.State
+import qualified Data.Foldable as F
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-     makearea' (fst foo1) (snd foo1)
-     makearea' (fst foo2) (snd foo2)
-     makearea' (fst foo3) (snd foo3)
+  areaPlot foo1 $ key "foo 1"
+  areaPlot foo2 $ key "foo 2"
+  areaPlot foo3 $ key "foo 3"
 
-make :: Diagram B -> IO ()
-make = renderRasterific "test.png" (mkWidth 600) . frame 20
+-- Prototype for area plot function.
+areaPlot
+  :: (PointLike V2 n p,
+      MonadState (Axis b V2 n) m,
+      Plotable (RibbonPlot V2 n) b,
+      F.Foldable f)
+  => f p -> State (Plot (RibbonPlot V2 n) b) () -> m ()
+areaPlot a = ribbonPlot (ps ++ psBase)
+  where ps     = a ^.. folded . unpointLike
+        psBase = reverse $ set (each . _y) 0 ps
+
+-- make :: Diagram B -> IO ()
+-- make = renderRasterific "test.png" (mkWidth 600) . frame 20
 
 main :: IO ()
-main = make $ renderAxis myaxis
+main = r2AxisMain myaxis
 
-foo1 = ([(111.0,0.1),(140.0,1.2),(150.0,2.3)],"typeA")
-foo2 = ([(155.0,3.5),(167.0,5.1),(200.0,6.4),(211.0,7.5)],"typeB")
-foo3 = ([(191.0,5.8),(233.0,8.5),(250.0,9.1),(270.0,9.6)],"typeC")
+foo1 :: [(Double, Double)]
+foo1 = [(10,0.1),(20,1.8),(30,2.0)]
+foo2 :: [(Double, Double)]
+foo2 = [(10.0,3.5),(20,4.1),(30,6.4)]
+foo3 :: [(Double, Double)]
+foo3 = [(10,5.8),(20,8.2),(30,9.1)]
