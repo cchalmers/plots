@@ -1,6 +1,15 @@
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package wreq --package cassava
+
+-- example usage
+-- ./stocks.hs -o stocks.png  -w300
+--              ^ output file  ^ width of output (use -h for height)
+
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 import Plots
+import Diagrams
 import Network.Wreq
 import Control.Lens
 import Data.Csv hiding ((.=))
@@ -12,13 +21,10 @@ import Control.Monad.State (MonadState, execStateT)
 import Data.Foldable
 import Control.Monad.IO.Class
 import Data.Time.Clock.POSIX
--- import Plots.Axis
-
-import Diagrams.Backend.Rasterific
+import Diagrams.Backend.Rasterific.CmdLine
 import Data.Time
 import Control.Monad
 
-import Diagrams
 import Data.Maybe
 
 -- Incomplete example using mtl to perform IO in the axis do notation.
@@ -40,31 +46,35 @@ filterStocks = mapMaybe f
       guard $ date > start
       return $ (date ^. realUTC, d)
 
+stock :: MonadIO m => String -> m (Response ByteString)
+stock s = liftIO $ get ("http://ichart.yahoo.com/table.csv?s=" ++ s)
+
 myaxis :: IO (Axis B V2 Double)
 myaxis = execStateT ?? r2Axis $ do
-  goog <- liftIO $ get "http://ichart.yahoo.com/table.csv?s=GOOG"
-  appl <- liftIO $ get "http://ichart.yahoo.com/table.csv?s=AAPL"
-  for_ [goog, appl] $
-    linePlotOf (responseBody . to (filterStocks . parseStocks) . each)
-  axisTickLabels . _x . tickLabelFun .= autoTimeLabels
+  goog <- stock "GOOG"
+  appl <- stock "AAPL"
+  let stocks = responseBody . to (filterStocks . parseStocks) . each
+  linePlotOf stocks goog $ key "google"
+  linePlotOf stocks appl $ key "apple"
+  xAxis . tickLabelFunction .= autoTimeLabels
 
   xAxisLabel .= "date"
   yAxisLabel .= "closing (dollars)"
 
 main :: IO ()
-main = myaxis >>= make . renderAxis
+main = mainWith myaxis
 
-make :: Diagram B -> IO ()
-make = renderRasterific "examples/stocks.png" (mkWidth 600) . frame 30
+-- make :: Diagram B -> IO ()
+-- make = renderRasterific "examples/stocks.png" (mkWidth 600) . frame 30
 
 ------------------------------------------------------------------------
 
-linePlotOf
-  :: (PointLike V2 n p, TypeableFloat n, MonadState (Axis b V2 n) m, Renderable (Path V2 n) b)
-  => Fold s p -- ^ Fold over data
-  -> s        -- ^ Data
-  -> m ()     -- ^ Monad action on axis
-linePlotOf f s = addPlotable (Path [mkTrailOf f s])
+-- linePlotOf
+--   :: (PointLike V2 n p, TypeableFloat n, MonadState (Axis b V2 n) m, Renderable (Path V2 n) b)
+--   => Fold s p -- ^ Fold over data
+--   -> s        -- ^ Data
+--   -> m ()     -- ^ Monad action on axis
+-- linePlotOf f s = addPlotable (Path [mkTrailOf f s])
 
 ------------------------------------------------------------------------
 -- Time
