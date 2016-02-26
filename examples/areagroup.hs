@@ -1,5 +1,12 @@
+#!/usr/bin/env stack
+-- stack --install-ghc runghc
+
+-- example usage
+-- ./stocks.hs -o stocks.png  -w300
+--              ^ output file  ^ width of output (use -h for height)
+
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GADTs            #-}
 
 import Plots
 
@@ -9,8 +16,13 @@ import Diagrams.Backend.Rasterific.CmdLine
 import Control.Monad.State
 import qualified Data.Foldable as F
 
+-- Simple example showing how you might do an area plot.
+
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
+  -- don't extend the axis beyond infered bounds
+  axisExtend .= AbsoluteExtend 0
+
   areaPlot foo1 $ key "foo 1"
   areaPlot foo2 $ key "foo 2"
   areaPlot foo3 $ key "foo 3"
@@ -25,9 +37,6 @@ areaPlot
 areaPlot a = ribbonPlot (ps ++ psBase)
   where ps     = a ^.. folded . unpointLike
         psBase = reverse $ set (each . _y) 0 ps
-
--- make :: Diagram B -> IO ()
--- make = renderRasterific "test.png" (mkWidth 600) . frame 20
 
 main :: IO ()
 main = r2AxisMain myaxis
