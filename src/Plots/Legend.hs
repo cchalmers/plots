@@ -220,8 +220,8 @@ drawLegend
   -> Legend b n
   -> QDiagram b V2 n Any
 drawLegend bb entries l
-  | l ^. hidden = mempty
-  | otherwise   = alignTo (l ^. legendPosition)
+  | l ^. hidden || null entries = mempty
+  | otherwise = alignTo (l ^. legendPosition)
                           bb
                           (l ^. legendAnchor)
                           (l ^. legendGap)
