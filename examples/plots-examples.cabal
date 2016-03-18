@@ -7,6 +7,153 @@ library
   exposed-modules:
   hs-source-dirs:   .
   build-depends:    plots
-
   ghc-options:       -Wall
   default-language:  Haskell2010
+
+executable Dataset
+  main-is: Dataset.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable area
+  main-is: area.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable areagroup
+  main-is: areagroup.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots, mtl
+
+executable bar
+  main-is: bar.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras
+
+executable boxplot
+  main-is: boxplot.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable boxplotpoint
+  main-is: boxplotpoint.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable criterion
+  main-is: criterion.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable density
+  main-is: density.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable functionline
+  main-is: functionline.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable heat
+  main-is: heat.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable histogram
+  main-is: histogram.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable histogramgroup
+  main-is: histogramgroup.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable limits
+  main-is: limits.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable line
+  main-is: line.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable normalbar
+  main-is: normalbar.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable others
+  main-is: others.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable pointarea
+  main-is: pointarea.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable points
+  main-is: points.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable polar
+  main-is: polar.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable randompie
+  main-is: randompie.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable ratiobar
+  main-is: ratiobar.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable ribbon
+  main-is: ribbon.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable ribbonopacity
+  main-is: ribbonopacity.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable rings
+  main-is: rings.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable scatter
+  main-is: scatter.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable scatter-2
+  main-is: scatter-2.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable scatter-3
+  main-is: scatter-3.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable simplepie
+  main-is: simplepie.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable smoothsimple
+  main-is: smoothsimple.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable splitbar
+  main-is: splitbar.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable stackedbar
+  main-is: stackedbar.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable steps
+  main-is: steps.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable stocks
+  main-is: stocks.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable table
+  main-is: table.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable text
+  main-is: text.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable variedpie
+  main-is: variedpie.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+
+executable vectorfield
+  main-is: vectorfield.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
