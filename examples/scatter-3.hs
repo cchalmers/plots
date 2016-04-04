@@ -3,7 +3,6 @@
 
 import Plots
 import Plots.Axis
-import Plots.Themes
 import Plots.Types hiding (B)
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
@@ -20,7 +19,7 @@ import Control.Monad.State
 -- 'PropertiedPlot' state with do notation:
 --
 -- @
--- scatterPlot'
+-- scatterPlot
 --   :: [P2 Double]                         -- data points
 --   -> PlotState (ScatterPlot V2 Double) B -- state to alter the plot options
 --   -> AxisState B V2 Double               -- state that adds plot to axis
@@ -52,17 +51,17 @@ mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-  gscatterPlot' mydata1 (view _xy) $ do
-    addLegendEntry "data 1"
+  -- get the colour map of the axis
+  cm <- use axisColourMap
+
+  gscatterPlot mydata1 (view _xy) $ do
+    key "data 1"
     plotColor .= black
 
     -- scale the point according to the z coordinate
-    scatterTransform ?= \x -> scaling (x ^. _z)
+    scatterTransform .= \x -> scaling (x ^. _z)
 
-    -- use the colour map of the axis
-    cm <- use plotColourMap
-
-    scatterStyle ?= \x ->
+    scatterStyle .= \x ->
           -- index for colour map (divide by 5 because this is the max z value)
       let i = toRational (x ^. _z) / 5
           -- colour taken from colour map
@@ -71,14 +70,14 @@ myaxis = r2Axis &~ do
                  # lw none
 
     connectingLine .= True
-  scatterPlotLOf "data 2" (each . _xy) mydata2
-  scatterPlotL "data 3" mydata3
+  scatterPlotOf (each . _xy) mydata2 $ key "data 2"
+  scatterPlot mydata3 $ key "data 3"
 
   -- add a connecting line for anything matching the '_ScatterPlot' traversal
-  axisPlots . each . _ScatterPlot' . connectingLine .= True
+  connectingLine .= True
 
-_ScatterPlot' :: Plotable (ScatterPlot v n) b => Traversal' (Plot' b v n) (ScatterPlot v n)
-_ScatterPlot' = _Plot'
+-- _ScatterPlot' :: Plotable (ScatterPlot v n) b => Traversal' (Plot' b v n) (ScatterPlot v n)
+-- _ScatterPlot' = _Plot'
 
 make :: Diagram B -> IO ()
 make = renderRasterific "examples/scatter-3.png" (mkWidth 600) . frame 20
@@ -88,6 +87,6 @@ main = make $ renderAxis myaxis
 
 ------------------------------------------------------------------------
 
-gscatterPlot' :: (v ~ BaseSpace c, PointLike v n p, Plotable (GScatterPlot v n a) b, Foldable f)
-             => f a -> (a -> p) -> PlotState (GScatterPlot v n a) b -> AxisState b c n
-gscatterPlot' d f = addPlotable' (mkGScatterPlot d f)
+-- gscatterPlot' :: (v ~ BaseSpace c, PointLike v n p, Plotable (GScatterPlot v n a) b, Foldable f)
+--              => f a -> (a -> p) -> PlotState (GScatterPlot v n a) b -> AxisState b c n
+-- gscatterPlot' d f = addPlotable' (mkGScatterPlot d f)

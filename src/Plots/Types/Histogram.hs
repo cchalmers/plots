@@ -179,7 +179,7 @@ probability :: NormalisationMethod
 probability = NM $ \_ v -> v ^/ V.sum v
 
 -- | The height of each bar is @n / w@ where @n@ is the number of
---   observations and @w@ is the width.
+--   observations and @w@ is the total width.
 countDensity :: NormalisationMethod
 countDensity = NM $ \w v -> v ^/ w
 

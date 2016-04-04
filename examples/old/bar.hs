@@ -3,7 +3,6 @@
 import Plots
 import Plots.Axis
 import Plots.Types hiding (B)
-import Plots.Themes
 
 import Data.List
 
@@ -21,13 +20,13 @@ mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
 
-  noGridLines
-  noMinorTicks
-  
+  hideGridLines
+  hideMinorTicks
+
   barPlot (1.0,3.2) 0.5
 
   barPlot' (2.0,5.2) 0.5 $ do
-    addLegendEntry "dragon" 
+    addLegendEntry "dragon"
     plotColor .= blue
     strokeEdge .= False
 
@@ -39,10 +38,10 @@ myaxis = r2Axis &~ do
 
 -- take a [colour] and data as [Double]
   barPlotSplit 6 [0.8, 3.4, 5.6] 0.7
-  
+
   xMax .= Commit 7
   yMin .= Commit 0
-  
+
   axisTickLabels . _x . tickLabelFun .= stringLabels xs
      where xs = ["simple", "withLegend", "normal", "stacked", "ratio", "split"]
 

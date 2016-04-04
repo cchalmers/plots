@@ -1,8 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 import Plots
-import Plots.Axis
-import Plots.Themes
 import Plots.Types hiding (B)
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
@@ -13,17 +11,15 @@ mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-  scatterPlot' mydata1 $ do
-    addLegendEntry "data 1"
+  scatterPlot mydata1 $ do
+    key "data 1"
     plotColor .= purple
     plotMarker %= scale 2
-  scatterPlotL "data 2" mydata2
-  scatterPlotL "data 3" mydata3
+  scatterPlot mydata2 $ key "data 2"
+  scatterPlot mydata3 $ key "data 3"
 
-  axisPlots . each . _ScatterPlot' . connectingLine .= True
+  connectingLine .= True
 
-_ScatterPlot' :: Plotable (ScatterPlot v n) b => Traversal' (Plot' b v n) (ScatterPlot v n)
-_ScatterPlot' = _Plot'
 
 make :: Diagram B -> IO ()
 make = renderRasterific "examples/scatter-2.png" (mkWidth 600) . frame 20

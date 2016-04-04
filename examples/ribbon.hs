@@ -15,8 +15,8 @@ mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-   ribbonPlot' (mydata1 ++ reverse mydata2) $ do
-     addLegendEntry "ribbon test"
+   ribbonPlot (mydata1 ++ reverse mydata2) $ do
+     key "ribbon test"
      plotColor .= green
 
 make :: Diagram B -> IO ()

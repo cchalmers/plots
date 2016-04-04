@@ -50,6 +50,8 @@ module Plots.Axis.Ticks
   , hideTicks
   , majorTickPositions
   , minorTickPositions
+  , linearMajorTicks
+  , linearMinorTicks
   ) where
 
 import           Control.Lens     hiding (transform, ( # ))
