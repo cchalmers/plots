@@ -2,20 +2,20 @@ module Dataset
   ( -- * Trail plot
     iris
 
-   ,sepalLength 
-   ,sepalWidth  
-   ,petalLength 
-   ,petalWidth  
-   ,species    
-   ,typeall     
+   ,sepalLength
+   ,sepalWidth
+   ,petalLength
+   ,petalWidth
+   ,species
+   ,typeall
 
 --sets of 10--
 
-   ,datadoubleA 
-   ,datadoubleB  
-   ,datadoubleB2 
-   ,datastringA  
-   ,datastringB 
+   ,datadoubleA
+   ,datadoubleB
+   ,datadoubleB2
+   ,datastringA
+   ,datastringB
   ) where
 
 iris = [(5.1,3.5,1.4,0.2,"setosa","A"),

@@ -4,15 +4,11 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  exposed-modules:
+  exposed-modules:  Dataset
   hs-source-dirs:   .
   build-depends:    plots
-  ghc-options:       -Wall
-  default-language:  Haskell2010
-
-executable Dataset
-  main-is: Dataset.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+                  , base
+  ghc-options:      -Wall
   default-language: Haskell2010
 
 executable area
@@ -25,170 +21,170 @@ executable areagroup
   build-depends: base, diagrams-lib, diagrams-rasterific, plots, mtl
   default-language: Haskell2010
 
-executable bar
-  main-is: bar.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras
-  default-language: Haskell2010
+-- executable bar
+--   main-is: bar.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras
+--   default-language: Haskell2010
 
 executable boxplot
   main-is: boxplot.hs
   build-depends: base, diagrams-lib, diagrams-rasterific, plots
   default-language: Haskell2010
 
-executable boxplotpoint
-  main-is: boxplotpoint.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable boxplotpoint
+--   main-is: boxplotpoint.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
 executable criterion
   main-is: criterion.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+  build-depends: base, diagrams-core, diagrams-lib, diagrams-rasterific, plots, mtl, linear, monoid-extras, diagrams-svg, vector, bytestring, cassava
   default-language: Haskell2010
 
-executable density
-  main-is: density.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable density
+--   main-is: density.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots, array, monoid-extras
+--   default-language: Haskell2010
 
-executable functionline
-  main-is: functionline.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable functionline
+--   main-is: functionline.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras
+--   default-language: Haskell2010
 
-executable heat
-  main-is: heat.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable heat
+--   main-is: heat.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable histogram
-  main-is: histogram.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable histogram
+--   main-is: histogram.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable histogramgroup
-  main-is: histogramgroup.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable histogramgroup
+--   main-is: histogramgroup.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable limits
-  main-is: limits.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable limits
+--   main-is: limits.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable line
-  main-is: line.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable line
+--   main-is: line.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable normalbar
-  main-is: normalbar.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable normalbar
+--   main-is: normalbar.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras
+--   default-language: Haskell2010
 
-executable others
-  main-is: others.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable others
+--   main-is: others.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable pointarea
-  main-is: pointarea.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable pointarea
+--   main-is: pointarea.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable points
-  main-is: points.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable points
+--   main-is: points.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras, array
+--   default-language: Haskell2010
 
-executable polar
-  main-is: polar.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable polar
+--   main-is: polar.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable randompie
-  main-is: randompie.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable randompie
+--   main-is: randompie.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable ratiobar
-  main-is: ratiobar.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable ratiobar
+--   main-is: ratiobar.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable ribbon
-  main-is: ribbon.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable ribbon
+--   main-is: ribbon.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable ribbonopacity
-  main-is: ribbonopacity.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable ribbonopacity
+--   main-is: ribbonopacity.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable rings
-  main-is: rings.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable rings
+--   main-is: rings.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
 executable scatter
   main-is: scatter.hs
   build-depends: base, diagrams-lib, diagrams-rasterific, plots
   default-language: Haskell2010
 
-executable scatter-2
-  main-is: scatter-2.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable scatter-2
+--   main-is: scatter-2.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable scatter-3
-  main-is: scatter-3.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable scatter-3
+--   main-is: scatter-3.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable simplepie
-  main-is: simplepie.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable simplepie
+--   main-is: simplepie.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable smoothsimple
-  main-is: smoothsimple.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable smoothsimple
+--   main-is: smoothsimple.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable splitbar
-  main-is: splitbar.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable splitbar
+--   main-is: splitbar.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable stackedbar
-  main-is: stackedbar.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable stackedbar
+--   main-is: stackedbar.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
-executable steps
-  main-is: steps.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable steps
+--   main-is: steps.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
 executable stocks
   main-is: stocks.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots, wreq, lens, cassava, vector, bytestring, mtl, transformers, time
   default-language: Haskell2010
 
-executable table
-  main-is: table.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable table
+--   main-is: table.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots, table
+--   default-language: Haskell2010
 
 executable text
   main-is: text.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras, array
   default-language: Haskell2010
 
-executable variedpie
-  main-is: variedpie.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots
-  default-language: Haskell2010
+-- executable variedpie
+--   main-is: variedpie.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   default-language: Haskell2010
 
 executable vectorfield
   main-is: vectorfield.hs
