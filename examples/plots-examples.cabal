@@ -176,10 +176,10 @@ executable stocks
 --   build-depends: base, diagrams-lib, diagrams-rasterific, plots, table
 --   default-language: Haskell2010
 
-executable text
-  main-is: text.hs
-  build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras, array
-  default-language: Haskell2010
+-- executable text
+--   main-is: text.hs
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras, array
+--   default-language: Haskell2010
 
 -- executable variedpie
 --   main-is: variedpie.hs
