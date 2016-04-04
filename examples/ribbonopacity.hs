@@ -14,22 +14,25 @@ mydata2 = mydata1 & each . _1 *~ 0.5
 mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 
 -- Could add helper functions in plots to make this easier
-fillOpacity = barStyle . mapped . _opacity
+fillOpacity' = areaStyle . _opacity
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-     ribbonPlot' ((fst foo1) ++ reverse (zeroy (fst foo1))) $ do
-       addLegendEntry (snd foo1)
-       plotColor .= white
-       fillOpacity .= 0.7
-       strokeEdge .= False
-     ribbonPlot' ((fst foo2) ++ reverse (zeroy (fst foo2))) $ do
-       addLegendEntry (snd foo1)
-       fillOpacity .= 0.5
-     ribbonPlot' ((fst foo3) ++ reverse (zeroy (fst foo3))) $ do
-       addLegendEntry (snd foo1)
-       fillOpacity .= 0.5
-       strokeEdge .= False
+  -- ribbonPlot' ((fst foo1) ++ reverse (zeroy (fst foo1))) $ do
+  ribbonPlot ((fst foo1) ++ reverse ((fst foo1))) $ do
+    key (snd foo1)
+    plotColor .= white
+    fillOpacity' .= 0.7
+    strokeEdge .= False
+  ribbonPlot ((fst foo2) ++ reverse ((fst foo2))) $ do
+  -- ribbonPlot' ((fst foo2) ++ reverse (zeroy (fst foo2))) $ do
+    key (snd foo1)
+    fillOpacity' .= 0.5
+  -- ribbonPlot' ((fst foo3) ++ reverse (zeroy (fst foo3))) $ do
+  ribbonPlot ((fst foo3) ++ reverse (fst foo3)) $ do
+    key (snd foo1)
+    fillOpacity' .= 0.5
+    strokeEdge .= False
 
 make :: Diagram B -> IO ()
 make = renderRasterific "test.png" (mkWidth 600) . frame 20

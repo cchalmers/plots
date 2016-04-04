@@ -31,7 +31,7 @@ to2 f g = to (f &&& g)
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-  scatterPlotOf (with fooX (<) 20 . each . to2 fooX fooY) mytable
+  scatterPlotOf' (with fooX (<) 20 . each . to2 fooX fooY) mytable
 
 make :: Diagram B -> IO ()
 make = renderRasterific "examples/table.png" (mkWidth 600)
