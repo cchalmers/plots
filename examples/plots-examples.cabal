@@ -51,15 +51,15 @@ executable criterion
 --   build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras
 --   default-language: Haskell2010
 
--- executable heat
---   main-is: heat.hs
---   build-depends: base, diagrams-lib, diagrams-rasterific, plots
---   default-language: Haskell2010
+executable heat
+  main-is: heat.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+  default-language: Haskell2010
 
--- executable histogram
---   main-is: histogram.hs
---   build-depends: base, diagrams-lib, diagrams-rasterific, plots
---   default-language: Haskell2010
+executable histogram
+  main-is: histogram.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras, plots-examples
+  default-language: Haskell2010
 
 -- executable histogramgroup
 --   main-is: histogramgroup.hs
@@ -71,10 +71,10 @@ executable criterion
 --   build-depends: base, diagrams-lib, diagrams-rasterific, plots
 --   default-language: Haskell2010
 
--- executable line
---   main-is: line.hs
---   build-depends: base, diagrams-lib, diagrams-rasterific, plots
---   default-language: Haskell2010
+executable line
+  main-is: line.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+  default-language: Haskell2010
 
 -- executable normalbar
 --   main-is: normalbar.hs
@@ -108,18 +108,18 @@ executable criterion
 
 -- executable ratiobar
 --   main-is: ratiobar.hs
---   build-depends: base, diagrams-lib, diagrams-rasterific, plots
+--   build-depends: base, diagrams-lib, diagrams-rasterific, plots, monoid-extras
 --   default-language: Haskell2010
 
--- executable ribbon
---   main-is: ribbon.hs
---   build-depends: base, diagrams-lib, diagrams-rasterific, plots
---   default-language: Haskell2010
+executable ribbon
+  main-is: ribbon.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+  default-language: Haskell2010
 
--- executable ribbonopacity
---   main-is: ribbonopacity.hs
---   build-depends: base, diagrams-lib, diagrams-rasterific, plots
---   default-language: Haskell2010
+executable ribbonopacity
+  main-is: ribbonopacity.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+  default-language: Haskell2010
 
 -- executable rings
 --   main-is: rings.hs
@@ -131,15 +131,15 @@ executable scatter
   build-depends: base, diagrams-lib, diagrams-rasterific, plots
   default-language: Haskell2010
 
--- executable scatter-2
---   main-is: scatter-2.hs
---   build-depends: base, diagrams-lib, diagrams-rasterific, plots
---   default-language: Haskell2010
+executable scatter-2
+  main-is: scatter-2.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots
+  default-language: Haskell2010
 
--- executable scatter-3
---   main-is: scatter-3.hs
---   build-depends: base, diagrams-lib, diagrams-rasterific, plots
---   default-language: Haskell2010
+executable scatter-3
+  main-is: scatter-3.hs
+  build-depends: base, diagrams-lib, diagrams-rasterific, plots, mtl
+  default-language: Haskell2010
 
 -- executable simplepie
 --   main-is: simplepie.hs
@@ -174,7 +174,7 @@ executable stocks
 -- executable table
 --   main-is: table.hs
 --   build-depends: base, diagrams-lib, diagrams-rasterific, plots, table
---   default-language: Haskell2010
+  -- default-language: Haskell2010
 
 -- executable text
 --   main-is: text.hs

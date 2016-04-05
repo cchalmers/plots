@@ -8,20 +8,22 @@ import Data.List
 
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
+import Diagrams.Backend.CmdLine
 
-mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
-mydata2 = mydata1 & each . _1 *~ 0.5
-mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
+import Dataset
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-   ribbonPlot (mydata1 ++ reverse mydata2) $ do
-     key "ribbon test"
-     plotColor .= green
+
+  histogramPlot sepalLength $ do
+     key "sepal length"
+     plotColor .= blue
+     areaStyle . _opacity .= 0.5
+
+  yMin .= Just 0
 
 make :: Diagram B -> IO ()
-make = renderRasterific "test2.png" (mkWidth 600) . frame 20
+make = renderRasterific "test.png" (mkWidth 600) . frame 20
 
 main :: IO ()
 main = make $ renderAxis myaxis
-
