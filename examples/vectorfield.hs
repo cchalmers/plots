@@ -1,12 +1,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+module VectorFile where
+
 import Plots
-
-import Data.List
-
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
-import Diagrams.Backend.CmdLine
+import Diagrams.Backend.Rasterific.CmdLine
 
 
 myaxis :: Axis B V2 Double
@@ -34,5 +33,4 @@ make :: Diagram B -> IO ()
 make = renderRasterific "test.png" (mkWidth 600) . frame 20
 
 main :: IO ()
-main = make $ renderAxis myaxis
-
+main = mainWith (renderAxis myaxis)

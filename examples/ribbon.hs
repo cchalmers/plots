@@ -8,6 +8,7 @@ import Data.List
 
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
+import Diagrams.Backend.Rasterific.CmdLine
 
 mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
 mydata2 = mydata1 & each . _1 *~ 0.5
@@ -19,9 +20,5 @@ myaxis = r2Axis &~ do
      key "ribbon test"
      plotColor .= green
 
-make :: Diagram B -> IO ()
-make = renderRasterific "test2.png" (mkWidth 600) . frame 20
-
 main :: IO ()
-main = make $ renderAxis myaxis
-
+main = mainWith (renderAxis myaxis)

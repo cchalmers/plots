@@ -38,5 +38,3 @@ make = renderRasterific "examples/table.png" (mkWidth 600)
 
 main :: IO ()
 main = make $ renderAxis myaxis
-
-

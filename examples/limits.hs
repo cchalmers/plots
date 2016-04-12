@@ -3,12 +3,9 @@
 module Limits where
 
 import Plots
--- import Plots.Axis
--- import Plots.Themes
--- import Plots.Types
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
--- import Data.Monoid.Recommend
+import Diagrams.Backend.Rasterific.CmdLine
 
 mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
 mydata2 = mydata1 & each . _1 *~ 0.5
@@ -39,10 +36,5 @@ myaxis = r2Axis &~ do
   xAxis . axisLabelPosition .= UpperAxisLabel
   yAxis . axisLabelStyle . _fontSize .= local 12
 
-make :: Diagram B -> IO ()
-make = renderRasterific "examples/limits.png" (mkWidth 600) . frame 20
-
 main :: IO ()
-main = make $ renderAxis myaxis
-
-
+main = mainWith (renderAxis myaxis)

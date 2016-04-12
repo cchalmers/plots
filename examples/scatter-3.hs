@@ -2,10 +2,9 @@
 {-# LANGUAGE TypeFamilies #-}
 
 import Plots
-import Plots.Axis
-import Plots.Types hiding (B)
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific
+import Diagrams.Backend.Rasterific.CmdLine
 import Control.Monad.State
 
 -- # Plot properties
@@ -79,11 +78,8 @@ myaxis = r2Axis &~ do
 -- _ScatterPlot' :: Plotable (ScatterPlot v n) b => Traversal' (Plot' b v n) (ScatterPlot v n)
 -- _ScatterPlot' = _Plot'
 
-make :: Diagram B -> IO ()
-make = renderRasterific "examples/scatter-3.png" (mkWidth 600) . frame 20
-
 main :: IO ()
-main = make $ renderAxis myaxis
+main = mainWith $ renderAxis myaxis
 
 ------------------------------------------------------------------------
 
