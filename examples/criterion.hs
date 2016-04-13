@@ -12,35 +12,21 @@
 {-# LANGUAGE TupleSections #-}
 
 -- | This example requires cassava for csv parsing.
--- module Criterion where
---
+module Criterion where
+
+import Plots
+import Plots.Types.Bar
+import Diagrams.Prelude
+import Diagrams.Backend.Rasterific.CmdLine
+
 import Data.Csv hiding ((.=))
--- import Data.Typeable
 import qualified Data.ByteString.Lazy as BS
 import qualified Data.Vector as V
--- import System.IO.Unsafe
 import Control.Applicative (empty)
--- import Diagrams.Backend.SVG
--- import Diagrams.Backend.SVG.CmdLine
-import Plots
-import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
-import Diagrams.Backend.Rasterific.CmdLine
--- import Diagrams.TwoD.Text
--- import Control.Arrow ((&&&))
--- import Plots.Axis
--- import Data.Monoid.Recommend
 import Data.Function (on)
 import Data.List (groupBy)
--- import Diagrams.Core.Transform
 import Control.Monad.State (execStateT, modify, MonadIO, liftIO)
--- import Linear.V2
--- import Data.Bool
--- import qualified Debug.Trace as Debug
--- import Diagrams.Backend.Rasterific.CmdLine hiding (output)
-import Plots.Types.Bar
 import qualified Data.Foldable as Foldable
--- import Data.Monoid (Endo (..))
 
 -- Misc stuff ----------------------------------------------------------
 
@@ -152,5 +138,5 @@ criterionAxis path = execStateT ?? barAxis $ do
 
 main :: IO ()
 main = do
-  dia <- renderAxis <$> criterionAxis "examples/criterion.csv"
-  mainWith dia
+  dia <- criterionAxis "examples/criterion.csv"
+  r2AxisMain dia

@@ -2,7 +2,6 @@
 
 import Plots
 import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
 import Diagrams.Backend.Rasterific.CmdLine
 
 mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
@@ -21,4 +20,4 @@ myaxis = r2Axis &~ do
   connectingLine .= True
 
 main :: IO ()
-main = mainWith $ renderAxis myaxis
+main = r2AxisMain myaxis

@@ -1,13 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 import Plots
-import Plots.Axis
-import Plots.Types hiding (B)
-
-import Data.List
-
 import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
 import Diagrams.Backend.Rasterific.CmdLine
 
 mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
@@ -21,4 +15,4 @@ myaxis = r2Axis &~ do
      plotColor .= green
 
 main :: IO ()
-main = mainWith (renderAxis myaxis)
+main = r2AxisMain myaxis

@@ -3,7 +3,6 @@
 
 import Plots
 import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
 import Diagrams.Backend.Rasterific.CmdLine
 import Control.Monad.State
 
@@ -79,7 +78,7 @@ myaxis = r2Axis &~ do
 -- _ScatterPlot' = _Plot'
 
 main :: IO ()
-main = mainWith $ renderAxis myaxis
+main = r2AxisMain myaxis
 
 ------------------------------------------------------------------------
 

@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 import Plots
-
 import Diagrams.Prelude
 import Diagrams.Backend.Rasterific.CmdLine
 
@@ -25,4 +24,3 @@ zero_y = set (each . _y) 0
 
 main :: IO ()
 main = r2AxisMain myaxis
-

@@ -1,13 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 import Plots
-import Plots.Axis
-import Plots.Types hiding (B)
-
-import Data.List
-
 import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
 import Diagrams.Backend.Rasterific.CmdLine
 
 mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
@@ -35,11 +29,8 @@ myaxis = r2Axis &~ do
     fillOpacity' .= 0.5
     strokeEdge .= False
 
-make :: Diagram B -> IO ()
-make = renderRasterific "test.png" (mkWidth 600) . frame 20
-
 main :: IO ()
-main = mainWith (renderAxis myaxis)
+main = r2AxisMain myaxis
 
 foo1 = ([(111.0,0.1),(140.0,1.2),(150.0,2.3)],"typeA")
 foo2 = ([(155.0,3.5),(167.0,5.1),(200.0,6.4),(211.0,7.5)],"typeB")
