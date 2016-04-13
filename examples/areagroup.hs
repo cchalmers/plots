@@ -1,18 +1,11 @@
-#!/usr/bin/env stack
--- stack --install-ghc runghc
-
--- example usage
--- ./stocks.hs -o stocks.png  -w300
---              ^ output file  ^ width of output (use -h for height)
-
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
 
 import Plots
-
 import Diagrams.Prelude
-import Diagrams.Coordinates.Isomorphic
 import Diagrams.Backend.Rasterific.CmdLine
+
+import Diagrams.Coordinates.Isomorphic (PointLike, unpointLike)
 import Control.Monad.State
 import qualified Data.Foldable as F
 

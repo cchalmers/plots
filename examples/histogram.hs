@@ -1,14 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 import Plots
-import Plots.Axis
-import Plots.Types hiding (B)
-
-import Data.List
-
 import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
-import Diagrams.Backend.CmdLine
+import Diagrams.Backend.Rasterific.CmdLine
 
 import Dataset
 
@@ -22,8 +16,5 @@ myaxis = r2Axis &~ do
 
   yMin .= Just 0
 
-make :: Diagram B -> IO ()
-make = renderRasterific "test.png" (mkWidth 600) . frame 20
-
 main :: IO ()
-main = make $ renderAxis myaxis
+main = r2AxisMain myaxis

@@ -10,40 +10,27 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TupleSections #-}
+
 -- | This example requires cassava for csv parsing.
--- module Criterion where
-import Data.Csv hiding ((.=))
-import Data.Typeable
-import qualified Data.ByteString.Lazy as BS
-import Diagrams.Prelude
-import qualified Data.Vector as V
-import System.IO.Unsafe
-import Control.Applicative
-import Diagrams.Backend.SVG
-import Diagrams.Backend.SVG.CmdLine
+module Criterion where
+
 import Plots
--- import Plots.Types.Bar
-import Diagrams.TwoD.Text
-import Control.Arrow ((&&&))
-import Plots.Axis
-import Diagrams.Backend.SVG
-import Data.Monoid.Recommend
--- import Control.Arrow
-import Data.Function
-import Data.List (groupBy)
-import Diagrams.Core.Transform
-import Control.Monad.State
-import Linear.V2
-import Data.Bool
-import qualified Debug.Trace as Debug
-import Diagrams.Backend.CmdLine hiding (output)
 import Plots.Types.Bar
-import qualified Data.Foldable as F
-import Data.Monoid (Endo (..))
+import Diagrams.Prelude
+import Diagrams.Backend.Rasterific.CmdLine
+
+import Data.Csv hiding ((.=))
+import qualified Data.ByteString.Lazy as BS
+import qualified Data.Vector as V
+import Control.Applicative (empty)
+import Data.Function (on)
+import Data.List (groupBy)
+import Control.Monad.State (execStateT, modify, MonadIO, liftIO)
+import qualified Data.Foldable as Foldable
 
 -- Misc stuff ----------------------------------------------------------
 
-barAxis :: Axis SVG V2 Double
+barAxis :: Axis B V2 Double
 barAxis = r2Axis &~ gridLineVisible .= False
 
 -- Criterion csv parsing -----------------------------------------------
@@ -96,11 +83,11 @@ groupCriterion = map collate . groupBy ((==) `on` fst) . map splitName
   -- => BarPlotOpts n -> [a] -> (a -> [n]) -> (a -> State (PlotProperties b V2 n) ()) -> m ()
 
 -- | Given a filepath to a criterion @.csv@ file, make an axis.
-criterionAxis :: FilePath -> IO (Axis SVG V2 Double)
+criterionAxis :: FilePath -> IO (Axis B V2 Double)
 criterionAxis path = execStateT ?? barAxis $ do
   results <- readCriterion path
 
-  let rss = groupCriterion (F.toList results)
+  let rss = groupCriterion (Foldable.toList results)
   multiBars rss (map _mean . snd) $ do
     runningBars
     horizontal .= True
@@ -130,7 +117,7 @@ criterionAxis path = execStateT ?? barAxis $ do
 --     )
 --   ]
 
--- groupedAxis :: Axis SVG V2 Double
+-- groupedAxis :: Axis B V2 Double
 -- groupedAxis = barAxis &~ do
 --   multiBars groupedData snd $ do
 --     groupedBars' 0.4
@@ -145,15 +132,11 @@ criterionAxis path = execStateT ?? barAxis $ do
 --         Just c  -> plotColor .= c
 --         Nothing -> error l -- return ()
 
--- simpleBarAxis :: Axis SVG V2 Double
+-- simpleBarAxis :: Axis B V2 Double
 -- simpleBarAxis = barAxis &~ do
 --   Plots.Types.Bar.barPlot [5,3,6,7,2] $ orientation .= Vertical
 
--- make :: Diagram SVG -> IO ()
--- make = renderSVG "examples/criterion4.png" (mkWidth 1000) . frame 30
-
 main :: IO ()
-main = mainWith criterionAxis
--- -- main = mainWith criterionAxis -- "examples/criterion.csv" >>= make . renderAxis
--- -- main = criterionAxis "examples/criterion.csv" >>= make . renderAxis
-
+main = do
+  dia <- criterionAxis "examples/criterion.csv"
+  r2AxisMain dia

@@ -1,15 +1,10 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 import Plots
-import Plots.Axis
-import Plots.Types hiding (B)
-import Data.Typeable
-
-import Data.List
-
--- import Dataset
 import Diagrams.Prelude
-import Diagrams.Backend.Rasterific
+import Diagrams.Backend.Rasterific.CmdLine
+
+import Data.Typeable
 
 mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
 mydata2 = mydata1 & each . _1 *~ 0.5
@@ -31,9 +26,5 @@ _LinePlot' :: (Plotable (LinePlot v n) b, Typeable b)
            => Traversal' (DynamicPlot b v n) (LinePlot v n)
 _LinePlot' = _DynamicPlot . rawPlot
 
-make :: Diagram B -> IO ()
-make = renderRasterific "test.png" (mkWidth 600) . frame 20
-
 main :: IO ()
-main = make $ renderAxis myaxis
-
+main = r2AxisMain myaxis

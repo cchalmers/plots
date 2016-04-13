@@ -135,4 +135,3 @@ realToUTC = posixSecondsToUTCTime . realToFrac
 
 realUTC :: (Real a, Fractional a) => Iso' UTCTime a
 realUTC = iso (realToFrac . utcTimeToPOSIXSeconds) realToUTC
-
