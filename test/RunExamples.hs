@@ -5,8 +5,7 @@ import           Development.Shake
 main :: IO ()
 main = shake shakeOptions $ do
   "examples_output/*.png" %> \out -> do
-    let src    = "examples" </> takeBaseName out -<.> "hs"
-        outDir = takeDirectory out
+    let src = "examples" </> takeBaseName out -<.> "hs"
     need [src]
     command_ [] "stack" ["runghc", src, "--", "-o", out, "-w", "600"]
 
