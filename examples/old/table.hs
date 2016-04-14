@@ -1,3 +1,10 @@
+#!/usr/bin/env stack
+-- stack --install-ghc runghc --package tables --allow-newer
+
+-- example usage
+-- ./stocks.hs -o stocks.png  -w300
+--              ^ output file  ^ width of output (use -h for height)
+
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE GADTs #-}
@@ -7,7 +14,7 @@ import Data.Data
 import Data.Table
 import Plots
 import Diagrams.Prelude hiding (with)
-import Diagrams.Backend.Rasterific
+import Diagrams.Backend.Rasterific.CmdLine
 import Control.Arrow
 
 data Foo = Foo
@@ -33,8 +40,5 @@ myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
   scatterPlotOf' (with fooX (<) 20 . each . to2 fooX fooY) mytable
 
-make :: Diagram B -> IO ()
-make = renderRasterific "examples/table.png" (mkWidth 600)
-
 main :: IO ()
-main = make $ renderAxis myaxis
+main = mainWith myaxis

@@ -11,6 +11,6 @@ main = shake shakeOptions $ do
 
   action $ do
     sourceFiles <- getDirectoryFiles "" ["examples/*.hs"]
-    let examplesToSkip = ["table"]
-        isValid file = not $ any (`isInfixOf` file) examplesToSkip
-    need ["examples_output" </> takeBaseName file -<.> "png" | file <- sourceFiles, isValid file]
+    -- let examplesToSkip = ["table"]
+    --     isValid file = not $ any (`isInfixOf` file) examplesToSkip
+    need ["examples_output" </> takeBaseName file -<.> "png" | file <- sourceFiles]
