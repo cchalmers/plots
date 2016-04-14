@@ -211,6 +211,15 @@ type instance V (PlotOptions b v n) = v
 type instance N (PlotOptions b v n) = n
 type instance BackendType (PlotOptions b v n) = b
 
+makeLensesFor
+  [ ("poName",      "_plotName")
+  , ("poClipPlot",  "_clipPlot")
+  , ("poLegend",    "_legendEntries")
+  , ("poVisible",   "_plotVisible")
+  , ("poTransform", "_plotTransform")
+  ]
+  ''PlotOptions
+
 -- | Class of things that have 'PlotOptions'.
 class HasPlotOptions f a where
   {-# MINIMAL plotOptions #-}
@@ -222,21 +231,21 @@ class HasPlotOptions f a where
   --
   --   'Default' is 'mempty'.
   plotName :: Functor f => LensLike' f a Name
-  plotName = plotOptions . lens poName (\g a -> g { poName = a})
+  plotName = plotOptions . _plotName
   {-# INLINE plotName #-}
 
   -- | Whether the plot should be clipped to the bounds of the axes.
   --
   --   'Default' is 'True'.
   clipPlot :: Functor f => LensLike' f a Bool
-  clipPlot = plotOptions . lens poClipPlot (\g a -> g {poClipPlot = a})
+  clipPlot = plotOptions . _clipPlot
   {-# INLINE clipPlot #-}
 
   -- | The legend entries to be used for the current plot.
   --
   --   'Default' is 'mempty'.
   legendEntries :: Functor f => LensLike' f a [LegendEntry (BackendType a) (V a) (N a)]
-  legendEntries = plotOptions . lens poLegend (\g a -> g {poLegend = a})
+  legendEntries = plotOptions . _legendEntries
   {-# INLINE legendEntries #-}
 
   -- | The transform applied to the plot once it's in the axis
@@ -244,7 +253,7 @@ class HasPlotOptions f a where
   --
   --   'Default' is 'mempty'.
   plotTransform :: Functor f => LensLike' f a (Transformation (V a) (N a))
-  plotTransform = plotOptions . lens poTransform (\g a -> g {poTransform = a})
+  plotTransform = plotOptions . _plotTransform
   {-# INLINE plotTransform #-}
 
   -- | Whether or not the plot should be shown. The 'BoundingBox' of the
@@ -252,7 +261,7 @@ class HasPlotOptions f a where
   --
   --   'Default' is 'True'.
   plotVisible :: Functor f => LensLike' f a Bool
-  plotVisible = plotOptions . lens poVisible (\po b -> po { poVisible = b})
+  plotVisible = plotOptions . _plotVisible
   {-# INLINE plotVisible #-}
 
 instance (Additive v, Num n) => Default (PlotOptions b v n) where
