@@ -229,11 +229,12 @@ data AxisStyle b v n = AxisStyle ColourMap [PlotStyle b v n]
 
 type instance V (AxisStyle b v n) = v
 type instance N (AxisStyle b v n) = n
+type instance BackendType (AxisStyle b v n) = b
 
 -- | Class of things that have an 'AxisStyle'.
-class HasAxisStyle a b | a -> b where
+class HasAxisStyle a where
   -- | Lens onto the 'AxisStyle'.
-  axisStyle :: Lens' a (AxisStyle b (V a) (N a))
+  axisStyle :: Lens' a (AxisStyle (BackendType a) (V a) (N a))
 
   -- | The 'ColourMap' is used to draw the 'Plots.Axis.ColourBar' and
   --   render plots like 'Plots.HeatMap'.
@@ -243,11 +244,11 @@ class HasAxisStyle a b | a -> b where
 
   -- | Traversal over the 'PlotStyle's in an 'AxisStyle'. There are always
   --   an infinite number of 'PlotStyle's in an 'AxisStyle'.
-  axisStyles :: IndexedTraversal' Int a (PlotStyle b (V a) (N a))
+  axisStyles :: IndexedTraversal' Int a (PlotStyle (BackendType a) (V a) (N a))
   axisStyles = axisStyle . stys . traversed
     where stys f (AxisStyle c ss) = f ss <&> \ss' -> AxisStyle c ss'
 
-instance HasAxisStyle (AxisStyle b v n) b where
+instance HasAxisStyle (AxisStyle b v n) where
   axisStyle = id
 
 ------------------------------------------------------------------------
