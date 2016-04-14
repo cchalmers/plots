@@ -79,6 +79,7 @@ import qualified Data.Map         as M
 import           Data.Typeable
 import           Diagrams.Prelude
 import           Linear
+import           Plots.Utils           (BackendType)
 
 -- | A plot style is made up of separate styles ('lineStyle',
 --   'markerStyle', 'areaStyle' and 'textStyle') a 'plotColour' and a
@@ -97,11 +98,12 @@ data PlotStyle b v n = PlotStyle
 
 type instance V (PlotStyle b v n) = v
 type instance N (PlotStyle b v n) = n
+type instance BackendType (PlotStyle b v n) = b
 
 -- | Class for objects that contain a 'PlotStyle'.
-class HasPlotStyle f a b | a -> b where
+class HasPlotStyle f a where
   -- | Lens onto the 'PlotStyle'.
-  plotStyle :: LensLike' f a (PlotStyle b (V a) (N a))
+  plotStyle :: LensLike' f a (PlotStyle (BackendType a) (V a) (N a))
 
   -- | The 'plotColor' is the overall colour of the plot. This is passed
   --   to the other styles ('lineStyle', 'markerStyle' etc.) to give an
@@ -160,7 +162,7 @@ class HasPlotStyle f a b | a -> b where
   -- | This diagram is used as any markers in a plot (like
   --   'Plots.Types.Scatter'). The 'markerStyle' will be applied to this
   --   marker when the plot gets rendered.
-  plotMarker :: Functor f => LensLike' f a (QDiagram b (V a) (N a) Any)
+  plotMarker :: Functor f => LensLike' f a (QDiagram (BackendType a) (V a) (N a) Any)
   plotMarker = plotStyle . lens _plotMarker (\p f -> p {_plotMarker = f})
 
   -- | A traversal over all the styles ('lineStyle', 'markerStyle',
@@ -181,35 +183,35 @@ class HasPlotStyle f a b | a -> b where
         <*> f _textStyle
         <*> pure _plotMarker
 
-instance HasPlotStyle f (PlotStyle b v n) b where
+instance HasPlotStyle f (PlotStyle b v n) where
   plotStyle = id
 
 -- Applying styles -----------------------------------------------------
 
 -- | Apply the 'lineStyle' from a 'PlotStyle'.
 applyLineStyle
-  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
+  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle (BackendType a) (V a) (N a))) a, HasStyle t)
   => a -> t -> t
 applyLineStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. lineStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'markerStyle' from a 'PlotStyle'.
 applyMarkerStyle
-  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
+  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle (BackendType a) (V a) (N a))) a, HasStyle t)
   => a -> t -> t
 applyMarkerStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. markerStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'areaStyle from a 'PlotStyle'.
 applyAreaStyle
-  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
+  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle (BackendType a) (V a) (N a))) a, HasStyle t)
   => a -> t -> t
 applyAreaStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. areaStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'textStyle' from a 'PlotStyle'.
 applyTextStyle
-  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
+  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle (BackendType a) (V a) (N a))) a, HasStyle t)
   => a -> t -> t
 applyTextStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. textStyleFunction) (sty ^. plotColour)

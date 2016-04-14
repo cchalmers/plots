@@ -78,6 +78,7 @@ import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Style
 import           Plots.Types
+import           Plots.Utils           (BackendType)
 
 import           Linear
 
@@ -238,6 +239,7 @@ finalPlots = sets $ \f a -> a {plotModifier = plotModifier a <> Endo f}
 
 type instance V (Axis b v n) = BaseSpace v
 type instance N (Axis b v n) = n
+type instance BackendType (Axis b v n) = b
 
 instance (Applicative f, Traversable c) => HasTicks f (Axis b c n) where
   bothTicks = axes . traverse . bothTicks
@@ -260,7 +262,7 @@ instance (Applicative f, Traversable c) => HasTickLabels f (Axis b c n) b where
 instance (Applicative f, Traversable c) => HasAxisScaling f (Axis b c n) where
   axisScaling = axes . traverse . axisScaling
 
-instance Settable f => HasPlotStyle f (Axis b c n) b where
+instance Settable f => HasPlotStyle f (Axis b c n) where
   plotStyle = currentPlots . plotStyle
 
 instance HasLegend (Axis b c n) b where

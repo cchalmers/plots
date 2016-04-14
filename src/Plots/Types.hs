@@ -115,6 +115,7 @@ import           Data.Foldable         (Foldable)
 
 import           Plots.Style
 import           Plots.Axis.Scale
+import           Plots.Utils           (BackendType)
 
 -- Orientation ---------------------------------------------------------
 
@@ -208,12 +209,13 @@ data PlotOptions b v n = PlotOptions
 
 type instance V (PlotOptions b v n) = v
 type instance N (PlotOptions b v n) = n
+type instance BackendType (PlotOptions b v n) = b
 
 -- | Class of things that have 'PlotOptions'.
-class HasPlotOptions f a b | a -> b where
+class HasPlotOptions f a where
   {-# MINIMAL plotOptions #-}
   -- | Lens onto the 'PlotOptions'.
-  plotOptions :: LensLike' f a (PlotOptions b (V a) (N a))
+  plotOptions :: LensLike' f a (PlotOptions (BackendType a) (V a) (N a))
 
   -- | The 'Name' applied to the plot. This gives a way to reference a
   --   specific plot in a rendered axis.
@@ -233,7 +235,7 @@ class HasPlotOptions f a b | a -> b where
   -- | The legend entries to be used for the current plot.
   --
   --   'Default' is 'mempty'.
-  legendEntries :: Functor f => LensLike' f a [LegendEntry b (V a) (N a)]
+  legendEntries :: Functor f => LensLike' f a [LegendEntry (BackendType a) (V a) (N a)]
   legendEntries = plotOptions . lens poLegend (\g a -> g {poLegend = a})
   {-# INLINE legendEntries #-}
 
@@ -264,7 +266,7 @@ instance (Additive v, Num n) => Default (PlotOptions b v n) where
     -- , poPlotPostProduction  = id
     }
 
-instance HasPlotOptions f (PlotOptions b v n) b where
+instance HasPlotOptions f (PlotOptions b v n) where
   plotOptions = id
   {-# INLINE plotOptions #-}
 
@@ -296,7 +298,7 @@ instance Qualifiable (PlotOptions b v n) where
 -- @
 --
 --  If you only care about the name of the legend, use 'key'.
-key :: (HasPlotOptions Identity a b, MonadState a m, Num (N a)) => String -> m ()
+key :: (HasPlotOptions Identity a, MonadState a m, Num (N a)) => String -> m ()
 key = addLegendEntry . mkLegendEntry
 
 -- | Add a 'LegendEntry' to something with 'PlotOptions'. Here are some
@@ -309,8 +311,8 @@ key = addLegendEntry . mkLegendEntry
 --
 --  If you only care about the name of the legend, use 'key'.
 addLegendEntry
-  :: (HasPlotOptions Identity a b, MonadState a m, Num (N a))
-  => LegendEntry b (V a) (N a)
+  :: (HasPlotOptions Identity a, MonadState a m, Num (N a))
+  => LegendEntry (BackendType a) (V a) (N a)
   -> m ()
 addLegendEntry l = legendEntries <>= [l]
 
@@ -397,11 +399,12 @@ data PlotMods b v n
 
 type instance V (PlotMods b v n) = v
 type instance N (PlotMods b v n) = n
+type instance BackendType (PlotMods b v n) = b
 
-instance Functor f => HasPlotOptions f (PlotMods b v n) b where
+instance Functor f => HasPlotOptions f (PlotMods b v n) where
   plotOptions f (PlotMods opts sty) = f opts <&> \opts' -> PlotMods opts' sty
 
-instance Settable f => HasPlotStyle f (PlotMods b v n) b where
+instance Settable f => HasPlotStyle f (PlotMods b v n) where
   plotStyle = sty . mapped where
     sty f (PlotMods opts s) = f s <&> \s' -> PlotMods opts s'
 
@@ -422,11 +425,12 @@ data Plot p b =
 
 type instance V (Plot p b) = V p
 type instance N (Plot p b) = N p
+type instance BackendType (Plot p b) = b
 
-instance Functor f => HasPlotOptions f (Plot p b) b where
+instance Functor f => HasPlotOptions f (Plot p b) where
   plotOptions f (Plot p opts sty) = f opts <&> \opts' -> Plot p opts' sty
 
-instance Settable f => HasPlotStyle f (Plot p b) b where
+instance Settable f => HasPlotStyle f (Plot p b) where
   plotStyle = sty . mapped where
     sty f (Plot p opts s) = f s <&> \s' -> Plot p opts s'
 
@@ -457,16 +461,17 @@ data DynamicPlot b v n where
 
 type instance V (DynamicPlot b v n) = v
 type instance N (DynamicPlot b v n) = n
+type instance BackendType (DynamicPlot b v n) = b
 
 -- | Prism for a 'DynamicPlot'.
 _DynamicPlot :: (Plotable p b, Typeable b) => Prism' (DynamicPlot b (V p) (N p)) (Plot p b)
 _DynamicPlot = prism' DynamicPlot (\(DynamicPlot p) -> cast p)
 
-instance Functor f => HasPlotOptions f (DynamicPlot b v n) b where
+instance Functor f => HasPlotOptions f (DynamicPlot b v n) where
   plotOptions f (DynamicPlot (Plot p opts sty)) =
     f opts <&> \opts' -> DynamicPlot (Plot p opts' sty)
 
-instance Settable f => HasPlotStyle f (DynamicPlot b v n) b where
+instance Settable f => HasPlotStyle f (DynamicPlot b v n) where
   plotStyle = sty . mapped where
     sty :: Setter' (DynamicPlot b v n) (PlotStyle b v n -> PlotStyle b v n)
     sty f (DynamicPlot (Plot p opts s)) = f s <&> \s' -> DynamicPlot (Plot p opts s')
@@ -495,8 +500,9 @@ data StyledPlot b v n where
 
 type instance V (StyledPlot b v n) = v
 type instance N (StyledPlot b v n) = n
+type instance BackendType (StyledPlot b v n) = b
 
-instance Functor f => HasPlotOptions f (StyledPlot b v n) b where
+instance Functor f => HasPlotOptions f (StyledPlot b v n) where
   plotOptions f (StyledPlot p opts sty) =
     f opts <&> \opts' -> StyledPlot p opts' sty
 
@@ -504,7 +510,7 @@ instance (Metric v, OrderedField n) => Enveloped (StyledPlot b v n) where
   getEnvelope (StyledPlot p opts _) =
     getEnvelope p & transform (poTransform opts)
 
-instance Functor f => HasPlotStyle f (StyledPlot b v n) b where
+instance Functor f => HasPlotStyle f (StyledPlot b v n) where
   plotStyle f (StyledPlot p opts sty) =
     f sty <&> StyledPlot p opts
 
