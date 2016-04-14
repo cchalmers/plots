@@ -162,25 +162,20 @@ instance Default (LegendPic b v n) where
 -- | Data type for holding a legend entry.
 data LegendEntry b v n = LegendEntry
   { lPic        :: LegendPic b v n
-  , lText       :: String
-  , lPrecedence :: n
-  } deriving Typeable
-
 -- | The picture used in the legend entry.
-legendPicture :: Lens' (LegendEntry b v n) (LegendPic b v n)
-legendPicture = lens lPic (\l pic -> l {lPic = pic})
-
+  , lText       :: String
 -- | The text used in the legend entry.
-legendText :: Lens' (LegendEntry b v n) String
-legendText = lens lText (\l txt -> l {lText = txt})
-
+  , lPrecedence :: n
 -- | The order in which the legend entries are rendered. If precedence
 --   are equal, they entries are put in the order they are added to the
 --   axis.
 --
 --   Default is @0@.
-legendPrecedence :: Lens' (LegendEntry b v n) n
-legendPrecedence = lens lPrecedence (\l n -> l {lPrecedence = n})
+  } deriving Typeable
+
+makeLensesFor [ ("lPic", "legendPicture")
+              , ("lText", "legendText")
+              , ("lPrecedence", "legendPrecedence") ] ''LegendEntry
 
 type instance V (LegendEntry b v n) = v
 type instance N (LegendEntry b v n) = n
