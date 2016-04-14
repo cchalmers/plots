@@ -29,7 +29,7 @@ module Plots.Style
   ( -- * The axis style
     AxisStyle
   , HasAxisStyle (..)
-  -- , axisStyles
+  , axisStyles
 
     -- ** Predefined styles
   , fadedColours
@@ -225,38 +225,6 @@ applyTextStyle (view plotStyle -> sty) =
 
 instance (Metric v, Traversable v, OrderedField n) => Transformable (PlotStyle b v n) where
   transform t = (plotMarker %~ transform t) . (plotStyles %~ transform t)
-
-------------------------------------------------------------------------
--- Axis Style
-------------------------------------------------------------------------
-
--- | The 'AxisStyle' determines the 'Style's of the plots in an axis.
---   There are various predifined styles to change the look of the plot.
-data AxisStyle b v n = AxisStyle ColourMap [PlotStyle b v n]
-
-type instance V (AxisStyle b v n) = v
-type instance N (AxisStyle b v n) = n
-type instance BackendType (AxisStyle b v n) = b
-
--- | Class of things that have an 'AxisStyle'.
-class HasAxisStyle a where
-  -- | Lens onto the 'AxisStyle'.
-  axisStyle :: Lens' a (AxisStyle (BackendType a) (V a) (N a))
-
-  -- | The 'ColourMap' is used to draw the 'Plots.Axis.ColourBar' and
-  --   render plots like 'Plots.HeatMap'.
-  axisColourMap :: Lens' a ColourMap
-  axisColourMap = axisStyle . cm
-    where cm f (AxisStyle c ss) = f c <&> \c' -> AxisStyle c' ss
-
-  -- | Traversal over the 'PlotStyle's in an 'AxisStyle'. There are always
-  --   an infinite number of 'PlotStyle's in an 'AxisStyle'.
-  axisStyles :: IndexedTraversal' Int a (PlotStyle (BackendType a) (V a) (N a))
-  axisStyles = axisStyle . stys . traversed
-    where stys f (AxisStyle c ss) = f ss <&> \ss' -> AxisStyle c ss'
-
-instance HasAxisStyle (AxisStyle b v n) where
-  axisStyle = id
 
 ------------------------------------------------------------------------
 -- Predefined themes
@@ -501,3 +469,46 @@ hot = colourMap [(0, red), (1, yellow), (2, blue), (3, grey)]
 greys :: ColourMap
 greys = colourMap [(0, white), (1, black), (2, blue), (3, grey)]
 
+------------------------------------------------------------------------
+-- Axis Style
+------------------------------------------------------------------------
+
+-- | The 'AxisStyle' determines the 'Style's of the plots in an axis.
+--   There are various predifined styles to change the look of the plot.
+data AxisStyle b v n = AxisStyle
+  { _axisColourMap :: ColourMap
+  , _axisStyles    :: [PlotStyle b v n]
+  }
+
+type instance V (AxisStyle b v n) = v
+type instance N (AxisStyle b v n) = n
+type instance BackendType (AxisStyle b v n) = b
+
+makeClassyFor
+  "HasAxisStyle" "axisStyle"
+  [ ("_axisColourMap", "axisColourMap")
+  , ("_axisStyles",    "__axisStyles")
+  ]
+  ''AxisStyle
+
+-- | Class of things that have an 'AxisStyle'.
+-- class HasAxisStyle a where
+--   -- | Lens onto the 'AxisStyle'.
+--   axisStyle :: Lens' a (AxisStyle (BackendType a) (V a) (N a))
+
+--   -- | The 'ColourMap' is used to draw the 'Plots.Axis.ColourBar' and
+--   --   render plots like 'Plots.HeatMap'.
+--   axisColourMap :: Lens' a ColourMap
+--   axisColourMap = axisStyle . cm
+--     where cm f (AxisStyle c ss) = f c <&> \c' -> AxisStyle c' ss
+
+  -- | Traversal over the 'PlotStyle's in an 'AxisStyle'. There are always
+  --   an infinite number of 'PlotStyle's in an 'AxisStyle'.
+axisStyles :: HasAxisStyle a (BackendType a) (V a) (N a) =>
+              IndexedTraversal' Int a (PlotStyle (BackendType a) (V a) (N a))
+axisStyles = axisStyle . __axisStyles . traversed
+-- axisStyles = axisStyle . stys . traversed
+--   where stys f (AxisStyle c ss) = f ss <&> \ss' -> AxisStyle c ss'
+
+-- instance HasAxisStyle (AxisStyle b v n) where
+--   axisStyle = id

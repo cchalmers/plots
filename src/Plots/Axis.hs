@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Axis
@@ -272,7 +273,8 @@ instance HasLegend (Axis b c n) b where
 axisSize :: (HasLinearMap c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
 axisSize = axes . column renderSize . iso mkSizeSpec getSpec -- column axisScaling . asSizeSpec -- iso mkSizeSpec getSpec
 
-instance HasAxisStyle (Axis b v n) where
+-- Not sure why I need undecidable instances here
+instance (BaseSpace c ~ v) => HasAxisStyle (Axis b c n) b v n where
   axisStyle = lens _axisStyle (\a sty -> a {_axisStyle = sty})
 
 instance HasColourBar (Axis b v n) where
