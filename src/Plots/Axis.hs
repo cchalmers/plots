@@ -275,7 +275,7 @@ axisSize = axes . column renderSize . iso mkSizeSpec getSpec -- column axisScali
 instance HasAxisStyle (Axis b v n) where
   axisStyle = lens _axisStyle (\a sty -> a {_axisStyle = sty})
 
-instance HasColourBar (Axis b v n) b where
+instance HasColourBar (Axis b v n) where
   colourBar = lens _colourBar (\a cb -> a {_colourBar = cb})
 
 -- Axis functions ------------------------------------------------------

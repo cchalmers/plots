@@ -25,6 +25,7 @@ import Plots.Axis.Ticks
 import Plots.Style
 import Plots.Legend
 import Plots.Types
+import Plots.Utils (BackendType)
 import Data.Typeable
 
 -- | Options for drawing a colour bar. Note that for an axis, the
@@ -46,6 +47,7 @@ data ColourBar b n = ColourBar
 
 type instance V (ColourBar b n) = V2
 type instance N (ColourBar b n) = n
+type instance BackendType (ColourBar b n) = b
 
 defColourBar :: (Renderable (Text n) b, Renderable (Path V2 n) b, TypeableFloat n, Enum n)
              => ColourBar b n
@@ -65,9 +67,9 @@ defColourBar = ColourBar
   }
 
 
-class HasColourBar a b | a -> b where
+class HasColourBar a where
   -- | Lens onto the 'ColourBar'.
-  colourBar :: Lens' a (ColourBar b (N a))
+  colourBar :: Lens' a (ColourBar (BackendType a) (N a))
 
   -- | Whether the colour bar should be visible when rendering.
   colourBarVisible :: Lens' a Bool
@@ -106,7 +108,7 @@ class HasColourBar a b | a -> b where
   colourBarStyle :: Lens' a (Style V2 (N a))
   colourBarStyle = colourBar . lens cbStyle (\c a -> c {cbStyle = a})
 
-instance HasColourBar (ColourBar b n) b where
+instance HasColourBar (ColourBar b n) where
   colourBar = id
 
 instance HasOrientation (ColourBar b n) where
