@@ -100,6 +100,21 @@ type instance V (PlotStyle b v n) = v
 type instance N (PlotStyle b v n) = n
 type instance BackendType (PlotStyle b v n) = b
 
+makeLensesFor
+  [ ("_plotColor",    "__plotColor")
+  , ("_lineStyle",    "__lineStyleFunction")
+  , ("_markerStyle",  "__markerStyleFunction")
+  , ("_areaStyle",    "__areaStyleFunction")
+  , ("_textStyle",    "__textStyleFunction")
+  , ("_plotMarker",   "__plotMarker")
+  -- For the traversal
+  , ("_lineStyle",    "__plotStyleFunctions")
+  , ("_markerStyle",  "__plotStyleFunctions")
+  , ("_areaStyle",    "__plotStyleFunctions")
+  , ("_textStyle",    "__plotStyleFunctions")
+  ]
+  ''PlotStyle
+
 -- | Class for objects that contain a 'PlotStyle'.
 class HasPlotStyle f a where
   -- | Lens onto the 'PlotStyle'.
@@ -109,11 +124,11 @@ class HasPlotStyle f a where
   --   to the other styles ('lineStyle', 'markerStyle' etc.) to give an
   --   overall colour for the plot.
   plotColour :: Functor f => LensLike' f a (Colour Double)
-  plotColour = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
+  plotColour = plotStyle . __plotColor
 
   -- | Alias for 'plotColour'.
   plotColor :: Functor f => LensLike' f a (Colour Double)
-  plotColor = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
+  plotColor = plotStyle . __plotColor
 
   -- | This style is applied to any plots made up of lines only (like
   --   'Path' plots). This is a less general version of
@@ -125,7 +140,7 @@ class HasPlotStyle f a where
   --   when 'applyLineStyle' is used.
   lineStyleFunction :: Functor f => LensLike' f a (Colour Double ->
     Style (V a) (N a))
-  lineStyleFunction = plotStyle . lens _lineStyle (\p f -> p {_lineStyle = f})
+  lineStyleFunction = plotStyle . __lineStyleFunction
 
   -- | This style is applied to any markers in the plot (usually the
   --   'plotMarker'). This is a less general version of
@@ -136,7 +151,7 @@ class HasPlotStyle f a where
   -- | A version 'lineStyle' with access to the current 'plotColour' when
   --   'applyMarkerStyle' is used.
   markerStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) (N a))
-  markerStyleFunction = plotStyle . lens _markerStyle (\p f -> p {_markerStyle = f})
+  markerStyleFunction = plotStyle . __markerStyleFunction
 
   -- | This style is applied to any filled areas in a plot (like
   --   'Plots.Types.Bar' or 'Plots.Styles.Ribbon'). This is a less
@@ -147,7 +162,7 @@ class HasPlotStyle f a where
   -- | A version 'areaStyle' with access to the current 'plotColour' when
   --   'applyAreaStyle' is used.
   areaStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) (N a))
-  areaStyleFunction = plotStyle . lens _areaStyle (\p f -> p {_areaStyle = f})
+  areaStyleFunction = plotStyle . __areaStyleFunction
 
   -- | This style is applied to text plots. This is a less general
   --   version of 'textStyleFunction'.
@@ -157,13 +172,13 @@ class HasPlotStyle f a where
   -- | A version 'textStyle' with access to the current 'plotColour' when
   --   'applyAreaStyle' is used.
   textStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) (N a))
-  textStyleFunction = plotStyle . lens _textStyle (\p f -> p {_textStyle = f})
+  textStyleFunction = plotStyle . __textStyleFunction
 
   -- | This diagram is used as any markers in a plot (like
   --   'Plots.Types.Scatter'). The 'markerStyle' will be applied to this
   --   marker when the plot gets rendered.
   plotMarker :: Functor f => LensLike' f a (QDiagram (BackendType a) (V a) (N a) Any)
-  plotMarker = plotStyle . lens _plotMarker (\p f -> p {_plotMarker = f})
+  plotMarker = plotStyle . __plotMarker
 
   -- | A traversal over all the styles ('lineStyle', 'markerStyle',
   --  'areaStyle' and 'textStyle') of a 'PlotStyle'. This is a less
@@ -173,15 +188,7 @@ class HasPlotStyle f a where
 
   -- | A version of 'plotStyles' with access to the 'plotColour'.
   plotStyleFunctions :: Applicative f => LensLike' f a (Colour Double -> Style (V a) (N a))
-  plotStyleFunctions = plotStyle . t
-    where
-      t f PlotStyle {..} = PlotStyle
-        <$> pure _plotColor
-        <*> f _lineStyle
-        <*> f _markerStyle
-        <*> f _areaStyle
-        <*> f _textStyle
-        <*> pure _plotMarker
+  plotStyleFunctions = plotStyle . __plotStyleFunctions
 
 instance HasPlotStyle f (PlotStyle b v n) where
   plotStyle = id
