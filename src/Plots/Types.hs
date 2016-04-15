@@ -216,10 +216,10 @@ makeLensesFor
   ''PlotOptions
 
 -- | Class of things that have 'PlotOptions'.
-class HasPlotOptions f a where
+class HasPlotOptions a where
   {-# MINIMAL plotOptions #-}
   -- | Lens onto the 'PlotOptions'.
-  plotOptions :: LensLike' f a (PlotOptions (BackendType a) (V a) (N a))
+  plotOptions :: Lens' a (PlotOptions (BackendType a) (V a) (N a))
 
   -- | The 'Name' applied to the plot. This gives a way to reference a
   --   specific plot in a rendered axis.
@@ -270,7 +270,7 @@ instance (Additive v, Num n) => Default (PlotOptions b v n) where
     -- , poPlotPostProduction  = id
     }
 
-instance HasPlotOptions f (PlotOptions b v n) where
+instance HasPlotOptions (PlotOptions b v n) where
   plotOptions = id
   {-# INLINE plotOptions #-}
 
@@ -302,7 +302,7 @@ instance Qualifiable (PlotOptions b v n) where
 -- @
 --
 --  If you only care about the name of the legend, use 'key'.
-key :: (HasPlotOptions Identity a, MonadState a m, Num (N a)) => String -> m ()
+key :: (HasPlotOptions a, MonadState a m, Num (N a)) => String -> m ()
 key = addLegendEntry . mkLegendEntry
 
 -- | Add a 'LegendEntry' to something with 'PlotOptions'. Here are some
@@ -315,7 +315,7 @@ key = addLegendEntry . mkLegendEntry
 --
 --  If you only care about the name of the legend, use 'key'.
 addLegendEntry
-  :: (HasPlotOptions Identity a, MonadState a m, Num (N a))
+  :: (HasPlotOptions a, MonadState a m, Num (N a))
   => LegendEntry (BackendType a) (V a) (N a)
   -> m ()
 addLegendEntry l = legendEntries <>= [l]
@@ -405,7 +405,7 @@ type instance V (PlotMods b v n) = v
 type instance N (PlotMods b v n) = n
 type instance BackendType (PlotMods b v n) = b
 
-instance Functor f => HasPlotOptions f (PlotMods b v n) where
+instance HasPlotOptions (PlotMods b v n) where
   plotOptions f (PlotMods opts sty) = f opts <&> \opts' -> PlotMods opts' sty
 
 instance Settable f => HasPlotStyle f (PlotMods b v n) where
@@ -432,7 +432,7 @@ type instance V (Plot p b) = V p
 type instance N (Plot p b) = N p
 type instance BackendType (Plot p b) = b
 
-instance Functor f => HasPlotOptions f (Plot p b) where
+instance HasPlotOptions (Plot p b) where
   plotOptions f (Plot p (PlotMods opts sty)) = f opts <&> \opts' -> Plot p (PlotMods opts' sty)
 
 instance Settable f => HasPlotStyle f (Plot p b) where
@@ -467,7 +467,7 @@ type instance BackendType (DynamicPlot b v n) = b
 _DynamicPlot :: (Plotable p b, Typeable b) => Prism' (DynamicPlot b (V p) (N p)) (Plot p b)
 _DynamicPlot = prism' DynamicPlot (\(DynamicPlot p) -> cast p)
 
-instance Functor f => HasPlotOptions f (DynamicPlot b v n) where
+instance HasPlotOptions (DynamicPlot b v n) where
   plotOptions f (DynamicPlot (Plot p (PlotMods opts sty))) =
     f opts <&> \opts' -> DynamicPlot (Plot p (PlotMods opts' sty))
 
@@ -502,7 +502,7 @@ type instance V (StyledPlot b v n) = v
 type instance N (StyledPlot b v n) = n
 type instance BackendType (StyledPlot b v n) = b
 
-instance Functor f => HasPlotOptions f (StyledPlot b v n) where
+instance HasPlotOptions (StyledPlot b v n) where
   plotOptions f (StyledPlot p opts sty) =
     f opts <&> \opts' -> StyledPlot p opts' sty
 
