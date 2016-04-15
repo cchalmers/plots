@@ -491,24 +491,6 @@ makeClassyFor
   ]
   ''AxisStyle
 
--- | Class of things that have an 'AxisStyle'.
--- class HasAxisStyle a where
---   -- | Lens onto the 'AxisStyle'.
---   axisStyle :: Lens' a (AxisStyle (BackendType a) (V a) (N a))
-
---   -- | The 'ColourMap' is used to draw the 'Plots.Axis.ColourBar' and
---   --   render plots like 'Plots.HeatMap'.
---   axisColourMap :: Lens' a ColourMap
---   axisColourMap = axisStyle . cm
---     where cm f (AxisStyle c ss) = f c <&> \c' -> AxisStyle c' ss
-
-  -- | Traversal over the 'PlotStyle's in an 'AxisStyle'. There are always
-  --   an infinite number of 'PlotStyle's in an 'AxisStyle'.
 axisStyles :: HasAxisStyle a (BackendType a) (V a) (N a) =>
               IndexedTraversal' Int a (PlotStyle (BackendType a) (V a) (N a))
 axisStyles = axisStyle . __axisStyles . traversed
--- axisStyles = axisStyle . stys . traversed
---   where stys f (AxisStyle c ss) = f ss <&> \ss' -> AxisStyle c ss'
-
--- instance HasAxisStyle (AxisStyle b v n) where
---   axisStyle = id
