@@ -9,6 +9,8 @@
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Types
@@ -64,6 +66,7 @@ module Plots.Types
     -- ** Dynamic plot
   , DynamicPlot (..)
   , _DynamicPlot
+  , dynamicPlot
   , dynamicPlotMods
 
     -- ** Styled plot
@@ -419,6 +422,17 @@ type instance BackendType (DynamicPlot b v n) = b
 -- | Prism for a 'DynamicPlot'.
 _DynamicPlot :: (Plotable p b, Typeable b) => Prism' (DynamicPlot b (V p) (N p)) (Plot p b)
 _DynamicPlot = prism' DynamicPlot (\(DynamicPlot p) -> cast p)
+
+-- Traversal over the dynamic plot without the Plotable constraint
+-- _DynamicPlot has.
+dynamicPlot :: forall p b. (Typeable p, Typeable b)
+            => Traversal' (DynamicPlot b (V p) (N p)) (Plot p b)
+dynamicPlot f d@(DynamicPlot p) =
+  case eq p of
+    Just Refl -> f p <&> \p' -> DynamicPlot p'
+    Nothing   -> pure d
+  where eq :: Typeable a => a -> Maybe (a :~: Plot p b)
+        eq _ = eqT
 
 instance HasPlotOptions (DynamicPlot b v n) b v n where
   plotOptions f (DynamicPlot (Plot p (PlotMods opts sty))) =

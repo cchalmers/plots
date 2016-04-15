@@ -112,13 +112,18 @@ data BarLayout n = BarLayout
   , bStart   :: n
   }
 
+makeLensesFor [ ("bOrient",  "_barOrient")
+              , ("bWidth",   "_barWidth")
+              , ("bSpacing", "_barSpacing")
+              , ("bStart",   "_barStart") ] ''BarLayout
+
 instance Fractional n => Default (BarLayout n) where
   def = BarLayout Horizontal 0.8 1 1
 
 type instance N (BarLayout n) = n
 
 instance HasOrientation (BarLayout n) where
-  orientation = lens bOrient (\bl o -> bl {bOrient = o})
+  orientation = _barOrient
 
 -- | Class of things that have a modifiable 'BarLayout'.
 class HasOrientation a => HasBarLayout a where
@@ -130,19 +135,19 @@ class HasOrientation a => HasBarLayout a where
   --
   --   Default is @0.8@
   barWidth :: Lens' a (N a)
-  barWidth = barLayout . lens bWidth (\bl w -> bl {bWidth = w})
+  barWidth = barLayout . _barWidth
 
   -- | The spacing between each bar or group of bars.
   --
   --   Default is @1@
   barSpacing :: Lens' a (N a)
-  barSpacing = barLayout . lens bSpacing (\bl s -> bl {bSpacing = s})
+  barSpacing = barLayout . _barSpacing
 
   -- | The distance from the axis to centre of the first bar.
   --
   --   Default is @1@
   barStart :: Lens' a (N a)
-  barStart = barLayout . lens bStart (\bl x -> bl {bStart = x})
+  barStart = barLayout . _barStart
 
 instance HasBarLayout (BarLayout n) where
   barLayout = id
