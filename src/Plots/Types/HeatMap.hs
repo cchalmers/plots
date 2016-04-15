@@ -151,11 +151,12 @@ data HeatMap b n = HeatMap
 
 type instance V (HeatMap b n) = V2
 type instance N (HeatMap b n) = n
+type instance BackendType (HeatMap b n) = b
 
 -- | Class of things that let you change the heatmap options.
-class HasHeatMap f a b | a -> b where
+class HasHeatMap f a where
   -- | Lens onto the heatmap options.
-  heatMapOptions :: LensLike' f a (HeatMap b (N a))
+  heatMapOptions :: LensLike' f a (HeatMap (BackendType a) (N a))
 
   -- | Whether there should be grid lines draw for the heat map. Default
   --   is 'False'.
@@ -181,13 +182,13 @@ class HasHeatMap f a b | a -> b where
   heatMapLimits = heatMapOptions . lens hLimits (\s b -> (s {hLimits = b}))
 
   -- | Funtion used to render the heat map.
-  heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram b V2 (N a) Any)
+  heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram (BackendType a) V2 (N a) Any)
   heatMapRender = heatMapOptions . lens hDraw (\s b -> (s {hDraw = b}))
 
-instance HasHeatMap f (HeatMap b n) b where
+instance HasHeatMap f (HeatMap b n) where
   heatMapOptions = id
 
-instance (Functor f, HasHeatMap f a b) => HasHeatMap f (Plot a b) b where
+instance (Functor f, HasHeatMap f a, b ~ BackendType a) => HasHeatMap f (Plot a b) where
   heatMapOptions = rawPlot . heatMapOptions
 
 instance OrderedField n => Enveloped (HeatMap b n) where
