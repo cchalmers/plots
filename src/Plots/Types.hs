@@ -387,11 +387,10 @@ type instance N (Plot p b) = N p
 type instance BackendType (Plot p b) = b
 
 instance (v ~ V p, n ~ N p) => HasPlotOptions (Plot p b) b v n where
-  plotOptions f (Plot p (PlotMods opts sty)) = f opts <&> \opts' -> Plot p (PlotMods opts' sty)
+  plotOptions = plotMods . plotOptions
 
 instance Settable f => HasPlotStyle f (Plot p b) where
-  plotStyle = sty . mapped where
-    sty f (Plot p (PlotMods opts s)) = f s <&> \s' -> Plot p (PlotMods opts s')
+  plotStyle = plotMods . plotStyle
 
 instance HasOrientation p => HasOrientation (Plot p b) where
   orientation = rawPlot . orientation
