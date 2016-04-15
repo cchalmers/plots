@@ -149,6 +149,8 @@ data HeatMap b n = HeatMap
   , hDraw        :: HeatMatrix -> ColourMap -> QDiagram b V2 n Any
   } deriving Typeable
 
+makeLensesFor [("hStart", "_start"), ("hSize", "_size"), ("hGridVisible", "_gridVisible"), ("hGridSty", "_gridSty"), ("hLimits", "_limits"), ("hDraw", "_draw")] ''HeatMap
+
 type instance V (HeatMap b n) = V2
 type instance N (HeatMap b n) = n
 type instance BackendType (HeatMap b n) = b
@@ -161,29 +163,29 @@ class HasHeatMap f a where
   -- | Whether there should be grid lines draw for the heat map. Default
   --   is 'False'.
   heatMapGridVisible :: Functor f => LensLike' f a Bool
-  heatMapGridVisible = heatMapOptions . lens hGridVisible (\s b -> (s {hGridVisible = b}))
+  heatMapGridVisible = heatMapOptions . _gridVisible
 
   -- | The style applied to the grid lines for the heat map, if they're
   --   visible.
   heatMapGridStyle :: Functor f => LensLike' f a (Style V2 (N a))
-  heatMapGridStyle = heatMapOptions . lens hGridSty (\s b -> (s {hGridSty = b}))
+  heatMapGridStyle = heatMapOptions . _gridSty
 
   -- | The size of each individual square in the heat map.
   heatMapSize :: Functor f => LensLike' f a (V2 (N a))
-  heatMapSize = heatMapOptions . lens hSize (\s b -> (s {hSize = b}))
+  heatMapSize = heatMapOptions . _size
 
   -- | The starting point for the heat map.
   heatMapStart :: Functor f => LensLike' f a (P2 (N a))
-  heatMapStart = heatMapOptions . lens hStart (\s b -> (s {hStart = b}))
+  heatMapStart = heatMapOptions . _start
 
   -- | Limits @(a,b)@ used on the data such that @a@ is the start of the
   --   'ColourMap' and @b@ is the end of the 'ColourMap'. Default is @(0,1)@.
   heatMapLimits :: Functor f => LensLike' f a (Maybe (Double, Double))
-  heatMapLimits = heatMapOptions . lens hLimits (\s b -> (s {hLimits = b}))
+  heatMapLimits = heatMapOptions . _limits
 
   -- | Funtion used to render the heat map.
   heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram (BackendType a) V2 (N a) Any)
-  heatMapRender = heatMapOptions . lens hDraw (\s b -> (s {hDraw = b}))
+  heatMapRender = heatMapOptions . _draw
 
 instance HasHeatMap f (HeatMap b n) where
   heatMapOptions = id
