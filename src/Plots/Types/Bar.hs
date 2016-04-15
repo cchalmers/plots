@@ -83,6 +83,14 @@ import           Linear.V2               (_yx)
 
 import           Diagrams.Prelude
 
+-- temporary functions that will be in next lib release
+
+_reflectionXY :: (Additive v, R2 v, Num n) => Transformation v n
+_reflectionXY = fromSymmetric $ (_xy %~ view _yx) <-> (_xy %~ view _yx)
+
+_reflectXY :: (InSpace v n t, R2 v, Transformable t) => t -> t
+_reflectXY = transform _reflectionXY
+
 -- Single bar ----------------------------------------------------------
 
 -- | Data for a single bar. The bar is drawn as
@@ -214,6 +222,59 @@ instance HasBarLayout (BarPlot n) where
   barLayout = lens bpLayout (\bp l -> bp {bpLayout = l})
 
 ------------------------------------------------------------------------
+-- Multi bar state API
+------------------------------------------------------------------------
+
+-- Multi bar state -----------------------------------------------------
+
+-- | The 'MultiBarState' is used to set the various options available
+--   when building multiple bar plots together. The main functions used
+--   to modify this state:
+--
+--   * To choose the way the bars are grouped together choose one of
+--
+--       * 'groupedBars'      - Together in grouped (the default)
+--       * 'stackedBars'      - On on top of another
+--       * 'stackedEqualBars' - 'stackedBars' with the same height
+--       * 'runningBars'      - each group of bars follows the last
+--
+--   * Modify the 'PlotOptions' and 'PlotStyle' of groups of bars with
+--     'onBars'.
+--
+--   * Modify the layout of the (groups of) bars with
+--
+--       * 'orientation' - Horizontal or vertical bars
+--       * 'barWidth'    - Width of each (group of) bar(s)
+--       * 'barSpacing'  - Space between each (group of) bar(s)
+--       * 'barStart'    - Start of centre of first bar
+--
+--   * Add labels to each (group of) bars with 'labelBars'.
+--
+data MultiBarState b n a = MultiBarState
+  { mbsLayout :: BarLayout n
+    -- ^ options for building bar plots
+
+  , mbsMods :: [(a, Endo (PlotMods b V2 n))]
+    -- ^ the data along with an adjustment to the plot properties
+
+  , mbsLabels  :: [String]
+    -- ^ labels to be placed at the bottom of each bar
+
+  , mbsBarFun :: BarLayout n -> [[n]] -> [BarPlot n]
+    -- ^ function used to build bar plots
+  }
+
+makeLensesFor [("mbsLayout", "_mbsLayout"), ("mbsLabels", "_mbsLabels"), ("mbsBarFun", "multiFun")] ''MultiBarState
+
+type instance N (MultiBarState b n a) = n
+
+instance HasOrientation (MultiBarState b n a) where
+  orientation = barLayout . orientation
+
+instance HasBarLayout (MultiBarState b n a) where
+  barLayout = _mbsLayout
+
+------------------------------------------------------------------------
 -- Constructing bar plots
 ------------------------------------------------------------------------
 
@@ -295,13 +356,6 @@ mkGroupedBars w bl xs =
     start' = bStart bl - (n - 1) * width' / 2
     width' = bWidth bl / n
 
--- temporary functions that will be in next lib release
-
-_reflectionXY :: (Additive v, R2 v, Num n) => Transformation v n
-_reflectionXY = fromSymmetric $ (_xy %~ view _yx) <-> (_xy %~ view _yx)
-
-_reflectXY :: (InSpace v n t, R2 v, Transformable t) => t -> t
-_reflectXY = transform _reflectionXY
 
 ----------------------------------------------------------------------------------
 -- Single bar state API
@@ -360,61 +414,8 @@ floatingBarPlot
   -> m ()
 floatingBarPlot ns = addPlotable (mkFloatingBars def ns)
 
-------------------------------------------------------------------------
--- Multi bar state API
-------------------------------------------------------------------------
-
--- Multi bar state -----------------------------------------------------
-
--- | The 'MultiBarState' is used to set the various options available
---   when building multiple bar plots together. The main functions used
---   to modify this state:
---
---   * To choose the way the bars are grouped together choose one of
---
---       * 'groupedBars'      - Together in grouped (the default)
---       * 'stackedBars'      - On on top of another
---       * 'stackedEqualBars' - 'stackedBars' with the same height
---       * 'runningBars'      - each group of bars follows the last
---
---   * Modify the 'PlotOptions' and 'PlotStyle' of groups of bars with
---     'onBars'.
---
---   * Modify the layout of the (groups of) bars with
---
---       * 'orientation' - Horizontal or vertical bars
---       * 'barWidth'    - Width of each (group of) bar(s)
---       * 'barSpacing'  - Space between each (group of) bar(s)
---       * 'barStart'    - Start of centre of first bar
---
---   * Add labels to each (group of) bars with 'labelBars'.
---
-data MultiBarState b n a = MultiBarState
-  { mbsLayout :: BarLayout n
-    -- ^ options for building bar plots
-
-  , mbsMods :: [(a, Endo (PlotMods b V2 n))]
-    -- ^ the data along with an adjustment to the plot properties
-
-  , mbsLabels  :: [String]
-    -- ^ labels to be placed at the bottom of each bar
-
-  , mbsBarFun :: BarLayout n -> [[n]] -> [BarPlot n]
-    -- ^ function used to build bar plots
-  }
-
-type instance N (MultiBarState b n a) = n
-
-instance HasOrientation (MultiBarState b n a) where
-  orientation = barLayout . orientation
-
-instance HasBarLayout (MultiBarState b n a) where
-  barLayout = lens mbsLayout (\mbs l -> mbs {mbsLayout = l})
 
 -- Adding to axis ------------------------------------------------------
-
-multiFun :: Lens' (MultiBarState b n a) (BarLayout n -> [[n]] -> [BarPlot n])
-multiFun = lens mbsBarFun (\mbs f -> mbs {mbsBarFun = f})
 
 -- | Bars that are grouped together such that each group is a single
 --   'barWidth'. The bars in a group are touching, see groupedBars' to
@@ -519,7 +520,7 @@ class HasLabels a where
   labels :: Lens' a [String]
 
 instance HasLabels (MultiBarState b n a) where
-  labels = lens mbsLabels (\mbs ls -> mbs {mbsLabels = ls})
+  labels = _mbsLabels
 
 -- | Labels to use for each bar (or group of bars) along the axis.
 labelBars :: HasLabels a => [String] -> State a ()
