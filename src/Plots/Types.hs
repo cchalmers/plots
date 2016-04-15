@@ -421,38 +421,34 @@ instance (Additive v, Num n) => Default (PlotMods b v n) where
 
 -- | A parameterised plot, together with a 'PlotMods'. This type has an
 --   instance of many classes for modifying specific plots.
-data Plot p b =
-  Plot p
-       (PlotOptions b (V p) (N p))
-       (PlotStyle b (V p) (N p) -> PlotStyle b (V p) (N p))
-  deriving Typeable
+data Plot p b = Plot
+  { _plot :: p
+  , _plotMods :: PlotMods b (V p) (N p)
+  } deriving Typeable
+
+makeLensesFor [("_plotMods", "plotMods")] ''Plot
 
 type instance V (Plot p b) = V p
 type instance N (Plot p b) = N p
 type instance BackendType (Plot p b) = b
 
 instance Functor f => HasPlotOptions f (Plot p b) where
-  plotOptions f (Plot p opts sty) = f opts <&> \opts' -> Plot p opts' sty
+  plotOptions f (Plot p (PlotMods opts sty)) = f opts <&> \opts' -> Plot p (PlotMods opts' sty)
 
 instance Settable f => HasPlotStyle f (Plot p b) where
   plotStyle = sty . mapped where
-    sty f (Plot p opts s) = f s <&> \s' -> Plot p opts s'
+    sty f (Plot p (PlotMods opts s)) = f s <&> \s' -> Plot p (PlotMods opts s')
 
 instance HasOrientation p => HasOrientation (Plot p b) where
   orientation = rawPlot . orientation
 
 -- | Make a 'Plot' with 'Default' 'PlotOptions'.
 mkPlot :: (Additive (V p), Num (N p)) => p -> Plot p b
-mkPlot p = Plot p def id
+mkPlot p = Plot p def
 
 -- | Lens onto the raw 'Plotable' inside a 'Plot'.
 rawPlot :: SameSpace p p' => Lens (Plot p b) (Plot p' b) p p'
-rawPlot f (Plot p opts ps) = f p <&> \p' -> Plot p' opts ps
-
--- | The modifications to the 'PlotOptions' and 'PlotStyle' in a 'Plot'.
-plotMods :: Lens' (Plot p b) (PlotMods b (V p) (N p))
-plotMods f (Plot p opts ps) =
-  f (PlotMods opts ps) <&> \(PlotMods opts' ps') -> Plot p opts' ps'
+rawPlot f (Plot p (PlotMods opts ps)) = f p <&> \p' -> Plot p' (PlotMods opts ps)
 
 ------------------------------------------------------------------------
 -- DynamicPlot
@@ -472,18 +468,18 @@ _DynamicPlot :: (Plotable p b, Typeable b) => Prism' (DynamicPlot b (V p) (N p))
 _DynamicPlot = prism' DynamicPlot (\(DynamicPlot p) -> cast p)
 
 instance Functor f => HasPlotOptions f (DynamicPlot b v n) where
-  plotOptions f (DynamicPlot (Plot p opts sty)) =
-    f opts <&> \opts' -> DynamicPlot (Plot p opts' sty)
+  plotOptions f (DynamicPlot (Plot p (PlotMods opts sty))) =
+    f opts <&> \opts' -> DynamicPlot (Plot p (PlotMods opts' sty))
 
 instance Settable f => HasPlotStyle f (DynamicPlot b v n) where
   plotStyle = sty . mapped where
     sty :: Setter' (DynamicPlot b v n) (PlotStyle b v n -> PlotStyle b v n)
-    sty f (DynamicPlot (Plot p opts s)) = f s <&> \s' -> DynamicPlot (Plot p opts s')
+    sty f (DynamicPlot (Plot p (PlotMods opts s))) = f s <&> \s' -> DynamicPlot (Plot p (PlotMods opts s'))
 
 -- | The modifications to the 'PlotOptions' and 'PlotStyle' in a 'DynamicPlot'.
 dynamicPlotMods :: Lens' (DynamicPlot b v n) (PlotMods b v n)
-dynamicPlotMods f (DynamicPlot (Plot p opts ps)) =
-  f (PlotMods opts ps) <&> \(PlotMods opts' ps') -> DynamicPlot (Plot p opts' ps')
+dynamicPlotMods f (DynamicPlot (Plot p (PlotMods opts ps))) =
+  f (PlotMods opts ps) <&> \(PlotMods opts' ps') -> DynamicPlot (Plot p (PlotMods opts' ps'))
 
 ------------------------------------------------------------------------
 -- StyledPlot
@@ -520,7 +516,7 @@ instance Functor f => HasPlotStyle f (StyledPlot b v n) where
 
 -- | Give a 'DynamicPlot' a concrete 'PlotStyle'.
 styleDynamic :: PlotStyle b v n -> DynamicPlot b v n -> StyledPlot b v n
-styleDynamic sty (DynamicPlot (Plot p opts styF)) = StyledPlot p opts (styF sty)
+styleDynamic sty (DynamicPlot (Plot p (PlotMods opts styF))) = StyledPlot p opts (styF sty)
 
 -- | Render a 'StyledPlot' given an and 'AxisSpec'.
 renderStyledPlot
