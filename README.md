@@ -11,7 +11,6 @@ There are several example plots in the `examples/` directory. To build the examp
 ```yaml
 packages:
 - '.'
-- 'examples/lib'
 - 'test'
 ```
 
