@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
+{-# LANGUAGE TemplateHaskell        #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Types.Scatter
@@ -82,15 +83,6 @@ import           Plots.Types
 
 -- | A general data type for scatter plots. Allows storing different
 --   types of data as well as allowing transforms depending on the data.
-data ScatterPlot v n where
-  ScatterPlot :: Typeable a => ScatterOptions v n a -> ScatterPlot v n
-  deriving Typeable
-
-type instance V (ScatterPlot v n) = v
-type instance N (ScatterPlot v n) = n
-
--- | A general data type for scatter plots. Allows storing different
---   types of data as well as allowing transforms depending on the data.
 data ScatterOptions v n a = ScatterOptions
   { oData :: [a]
   , oPos  :: a -> Point v n
@@ -99,8 +91,19 @@ data ScatterOptions v n a = ScatterOptions
   , oLine :: Bool
   } deriving Typeable
 
+makeLensesFor [("oLine", "_oLine")] ''ScatterOptions
+
 type instance V (ScatterOptions v n a) = v
 type instance N (ScatterOptions v n a) = n
+
+-- | A general data type for scatter plots. Allows storing different
+--   types of data as well as allowing transforms depending on the data.
+data ScatterPlot v n =
+  forall a . Typeable a => ScatterPlot { _scatterOptions :: ScatterOptions v n a }
+  deriving Typeable
+
+type instance V (ScatterPlot v n) = v
+type instance N (ScatterPlot v n) = n
 
 instance (Metric v, OrderedField n) => Enveloped (ScatterPlot v n) where
   getEnvelope (ScatterPlot (ScatterOptions {..})) = getEnvelope (map oPos oData)
@@ -157,7 +160,7 @@ class HasConnectingLine f a where
   connectingLine :: Functor f => LensLike' f a Bool
 
 instance HasConnectingLine f (ScatterOptions v n a) where
-  connectingLine = lens oLine (\o b -> o {oLine = b})
+  connectingLine = _oLine
 
 instance HasConnectingLine f (ScatterPlot v n) where
   connectingLine f (ScatterPlot o@(ScatterOptions {..}))
@@ -216,17 +219,6 @@ instance (Applicative f, Typeable b, Typeable v, Typeable n, Typeable a)
 instance (Applicative f, Typeable b, Typeable (BaseSpace c), Typeable n, Typeable a)
     => HasScatterOptions f (Axis b c n) a where
   gscatterOptions = axisPlots . traverse . gscatterOptions
-
--- Traversal over the dynamic plot without the Plotable constraint
--- _DynamicPlot has.
-dynamicPlot :: forall p b. (Typeable p, Typeable b)
-            => Traversal' (DynamicPlot b (V p) (N p)) (Plot p b)
-dynamicPlot f d@(DynamicPlot p) =
-  case eq p of
-    Just Refl -> f p <&> \p' -> DynamicPlot p'
-    Nothing   -> pure d
-  where eq :: Typeable a => a -> Maybe (a :~: Plot p b)
-        eq _ = eqT
 
 -- Pure scatter lenses -------------------------------------------------
 

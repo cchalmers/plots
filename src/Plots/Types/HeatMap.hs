@@ -24,6 +24,7 @@ module Plots.Types.HeatMap where
   -- ) where
 
 import           Control.Lens                    hiding (transform, ( # ))
+import           Language.Haskell.TH.Syntax      (mkName)
 
 import           Control.Monad.State
 import qualified Data.Foldable                   as F
@@ -140,64 +141,32 @@ pathHeatRender hm cm = ifoldMapOf hmPoints mk hm # lwO 0
 ------------------------------------------------------------------------
 
 data HeatMap b n = HeatMap
-  { hMatrix      :: HeatMatrix
-  , hStart       :: P2 n
-  , hSize        :: V2 n
-  , hGridSty     :: Style V2 n
-  , hGridVisible :: Bool
-  , hLimits      :: Maybe (Double,Double)
-  , hDraw        :: HeatMatrix -> ColourMap -> QDiagram b V2 n Any
+  { hMatrix             :: HeatMatrix
+  , _heatMapStart       :: P2 n
+  , _heatMapSize        :: V2 n
+  , _heatMapGridStyle   :: Style V2 n
+  , _heatMapGridVisible :: Bool
+  , _heatMapGridLimits  :: Maybe (Double,Double)
+  , _heatMapRender      :: HeatMatrix -> ColourMap -> QDiagram b V2 n Any
   } deriving Typeable
+
+makeLensesWith (classyRules & lensClass . mapped . _Just . _2 .~ mkName "heatMapOptions") ''HeatMap
 
 type instance V (HeatMap b n) = V2
 type instance N (HeatMap b n) = n
+type instance BackendType (HeatMap b n) = b
 
--- | Class of things that let you change the heatmap options.
-class HasHeatMap f a b | a -> b where
-  -- | Lens onto the heatmap options.
-  heatMapOptions :: LensLike' f a (HeatMap b (N a))
-
-  -- | Whether there should be grid lines draw for the heat map. Default
-  --   is 'False'.
-  heatMapGridVisible :: Functor f => LensLike' f a Bool
-  heatMapGridVisible = heatMapOptions . lens hGridVisible (\s b -> (s {hGridVisible = b}))
-
-  -- | The style applied to the grid lines for the heat map, if they're
-  --   visible.
-  heatMapGridStyle :: Functor f => LensLike' f a (Style V2 (N a))
-  heatMapGridStyle = heatMapOptions . lens hGridSty (\s b -> (s {hGridSty = b}))
-
-  -- | The size of each individual square in the heat map.
-  heatMapSize :: Functor f => LensLike' f a (V2 (N a))
-  heatMapSize = heatMapOptions . lens hSize (\s b -> (s {hSize = b}))
-
-  -- | The starting point for the heat map.
-  heatMapStart :: Functor f => LensLike' f a (P2 (N a))
-  heatMapStart = heatMapOptions . lens hStart (\s b -> (s {hStart = b}))
-
-  -- | Limits @(a,b)@ used on the data such that @a@ is the start of the
-  --   'ColourMap' and @b@ is the end of the 'ColourMap'. Default is @(0,1)@.
-  heatMapLimits :: Functor f => LensLike' f a (Maybe (Double, Double))
-  heatMapLimits = heatMapOptions . lens hLimits (\s b -> (s {hLimits = b}))
-
-  -- | Funtion used to render the heat map.
-  heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram b V2 (N a) Any)
-  heatMapRender = heatMapOptions . lens hDraw (\s b -> (s {hDraw = b}))
-
-instance HasHeatMap f (HeatMap b n) b where
-  heatMapOptions = id
-
-instance (Functor f, HasHeatMap f a b) => HasHeatMap f (Plot a b) b where
+instance (HasHeatMap p b n, b ~ BackendType p, n ~ N p) => HasHeatMap (Plot p b) b n where
   heatMapOptions = rawPlot . heatMapOptions
 
 instance OrderedField n => Enveloped (HeatMap b n) where
-  getEnvelope HeatMap {..} = getEnvelope (fromCorners hStart (hStart .+^ hSize))
+  getEnvelope HeatMap {..} = getEnvelope (fromCorners _heatMapStart (_heatMapStart .+^ _heatMapSize))
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HeatMap b n) b where
   renderPlotable s _sty HeatMap {..} =
       transform (s^.specTrans) $
-        grid <> hDraw matrix' (s^.specColourMap)
+        grid <> _heatMapRender matrix' (s^.specColourMap)
     where
       --- TODO
       grid = mempty
@@ -212,13 +181,13 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
 mkHeatMap :: (Renderable (Path V2 n) b, TypeableFloat n)
           => HeatMatrix -> HeatMap b n
 mkHeatMap mat = HeatMap
-  { hMatrix      = mat
-  , hStart       = origin
-  , hSize        = fmap fromIntegral $ hmSize mat
-  , hGridSty     = mempty
-  , hGridVisible = False
-  , hLimits      = Nothing
-  , hDraw        = pathHeatRender
+  { hMatrix             = mat
+  , _heatMapStart       = origin
+  , _heatMapSize        = fmap fromIntegral $ hmSize mat
+  , _heatMapGridStyle   = mempty
+  , _heatMapGridVisible = False
+  , _heatMapGridLimits  = Nothing
+  , _heatMapRender      = pathHeatRender
   }
 
 -- | Add a 'HeatMap' plot using the extent of the heatmap and a generating function.

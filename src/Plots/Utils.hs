@@ -6,7 +6,9 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Plots.Utils
-  ( liftRecommend
+  ( BackendType
+
+  , liftRecommend
   , fromCommit
   , pathFromVertices
   , minMaxOf
@@ -21,6 +23,10 @@ import           Control.Lens
 import           Control.Monad.State
 import           Data.Monoid.Recommend
 import           Diagrams.Prelude           hiding (diff)
+
+-- Backend type family -------------------------------------------------
+
+type family BackendType a :: *
 
 -- | Similar to '(%=)' but takes a state modification instead of a
 --   function.

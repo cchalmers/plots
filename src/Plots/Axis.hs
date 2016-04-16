@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Axis
@@ -78,6 +79,7 @@ import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Style
 import           Plots.Types
+import           Plots.Utils           (BackendType)
 
 import           Linear
 
@@ -238,6 +240,7 @@ finalPlots = sets $ \f a -> a {plotModifier = plotModifier a <> Endo f}
 
 type instance V (Axis b v n) = BaseSpace v
 type instance N (Axis b v n) = n
+type instance BackendType (Axis b v n) = b
 
 instance (Applicative f, Traversable c) => HasTicks f (Axis b c n) where
   bothTicks = axes . traverse . bothTicks
@@ -260,7 +263,7 @@ instance (Applicative f, Traversable c) => HasTickLabels f (Axis b c n) b where
 instance (Applicative f, Traversable c) => HasAxisScaling f (Axis b c n) where
   axisScaling = axes . traverse . axisScaling
 
-instance Settable f => HasPlotStyle f (Axis b c n) b where
+instance Settable f => HasPlotStyle f (Axis b c n) where
   plotStyle = currentPlots . plotStyle
 
 instance HasLegend (Axis b c n) b where
@@ -270,10 +273,11 @@ instance HasLegend (Axis b c n) b where
 axisSize :: (HasLinearMap c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
 axisSize = axes . column renderSize . iso mkSizeSpec getSpec -- column axisScaling . asSizeSpec -- iso mkSizeSpec getSpec
 
-instance HasAxisStyle (Axis b v n) b where
+-- Not sure why I need undecidable instances here
+instance (BaseSpace c ~ v) => HasAxisStyle (Axis b c n) b v n where
   axisStyle = lens _axisStyle (\a sty -> a {_axisStyle = sty})
 
-instance HasColourBar (Axis b v n) b where
+instance HasColourBar (Axis b v n) where
   colourBar = lens _colourBar (\a cb -> a {_colourBar = cb})
 
 -- Axis functions ------------------------------------------------------
