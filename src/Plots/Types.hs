@@ -8,6 +8,7 @@
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Types
@@ -372,6 +373,16 @@ class (Typeable p, Enveloped p) => Plotable p b where
 instance (Typeable b, Typeable v, Metric v, Typeable n, OrderedField n)
   => Plotable (QDiagram b v n Any) b where
   renderPlotable s _ dia = dia # transform (s^.specTrans)
+
+instance (TypeableFloat n, Renderable (Path V2 n) b) => Plotable (Path V2 n) b where
+  renderPlotable s sty path
+    = stroke path
+        # transform (s^.specTrans)
+        # applyLineStyle sty
+
+  defLegendPic sty _
+    = (p2 (-10,0) ~~ p2 (10,0))
+        # applyLineStyle sty
 
 ------------------------------------------------------------------------
 -- Visibility

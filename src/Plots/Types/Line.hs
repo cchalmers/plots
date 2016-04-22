@@ -94,16 +94,6 @@ mkPath pss = toPath $ map mkTrail (F.toList pss)
 mkPathOf :: (PointLike v n p, OrderedField n) => Fold s t -> Fold t p -> s -> Path v n
 mkPathOf f1 f2 as = Path $ map (mkTrailOf f2) (toListOf f1 as)
 
-instance (TypeableFloat n, Renderable (Path V2 n) b) => Plotable (Path V2 n) b where
-  renderPlotable s sty path
-    = stroke path
-        # transform (s^.specTrans)
-        # applyLineStyle sty
-
-  defLegendPic sty _
-    = (p2 (-10,0) ~~ p2 (10,0))
-        # applyLineStyle sty
-
 ------------------------------------------------------------------------
 -- GLine plot
 ------------------------------------------------------------------------
