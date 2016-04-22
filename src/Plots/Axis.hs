@@ -264,7 +264,7 @@ instance Settable f => HasPlotOptions f (Axis b c n) b where
   plotOptions = finalPlots . plotOptions
 
 instance Settable f => HasPlotStyle f (Axis b c n) b where
-  plotStyle = currentPlots . plotStyle
+  plotStyle = finalPlots . plotStyle
 
 instance HasLegend (Axis b c n) b where
   legend = lens _legend (\a l -> a {_legend = l})
