@@ -9,70 +9,159 @@
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# LANGUAGE StandaloneDeriving        #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Types.Line
+-- Copyright   :  (C) 2016 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- A line plot is simply a 'Path' used as a plot. This module contains
+-- helpers adding path plots. For line plots with markers, see
+-- 'Plots.Types.Scatter'.
+--
+----------------------------------------------------------------------------
 
 module Plots.Types.Line
-  ( -- * Trail plot
-    mkTrail
+  ( -- Plot trails/paths
+    trailPlot
+  , trailPlot'
+  , pathPlot
+  , pathPlot'
+
+    -- * Line plots from points
+  , linePlot
+  , linePlot'
+  , smoothLinePlot
+  , smoothLinePlot'
+
+    -- * Contruction utilities
+
+    -- ** Trails
+  , mkTrail
   , mkTrailOf
 
-    -- * Path plot
+    -- ** Paths
   , mkPath
   , mkPathOf
 
-    -- * GLinePlot plot
-  , GLinePlot
-  -- , _LinePlot
-  , mkGLinePlotOf
-  , mkGLinePlot
 
-    -- * Line plot
-  , LinePlot
-  , mkLinePlotOf
-  , mkLinePlot
-
-    -- * Helper functions
-  , createStepData
-
-    -- * Lenses
-  , dotsonPoint
-  , pathStyle
-
-    -- * Line Plot
-  , linePlot
-  , linePlot'
-  -- , linePlot''
-  -- , linePlotL
-  , linePlotOf
-  , linePlotOf'
-  -- , linePlotLOf
-
-  -- , pathPlot''
-
-  --, createstep
-    -- * Step plot
-  , stepPlot
-  , stepPlot'
-  -- , stepPlotL
-
-    -- * Gline plot
-  , glinePlot
-  , glinePlot'
-  -- , glinePlotL
   ) where
 
-import           Control.Lens     hiding (transform, ( # ), lmap)
 import           Control.Monad.State.Lazy
 
 import qualified Data.Foldable    as F
-import           Data.Typeable
 
 import           Diagrams.Coordinates.Isomorphic
-import           Diagrams.Prelude  hiding (view)
+import           Diagrams.Prelude
 
-import           Plots.Style
-import           Plots.Types
 import           Plots.Axis
-import           Plots.Axis.Scale
+import           Plots.Types
+
+------------------------------------------------------------------------
+-- Trails and Paths
+------------------------------------------------------------------------
+
+-- | Add a 'Trail' as a 'Plot' to an 'Axis'.
+trailPlot
+  :: (BaseSpace c ~ v,
+      Metric v,
+      Plotable (Path v n) b,
+      MonadState (Axis b c n) m)
+  => Trail v n -- ^ trail to plot
+  -> State (Plot (Path v n) b) () -- ^ changes to plot options
+  -> m () -- ^ add plot to the 'Axis'
+trailPlot = pathPlot . toPath
+
+-- | Add a 'Trail' as a 'Plot' to an 'Axis' without changes to the plot
+--   options.
+trailPlot'
+  :: (BaseSpace c ~ v,
+      Metric v,
+      Plotable (Path v n) b,
+      MonadState (Axis b c n) m)
+  => Trail v n -- ^ trail to plot
+  -> m () -- ^ add plot to the 'Axis'
+trailPlot' = pathPlot' . toPath
+
+-- | Add a 'Path' as a 'Plot' to an 'Axis'.
+pathPlot
+  :: (BaseSpace c ~ v,
+      Plotable (Path v n) b,
+      MonadState (Axis b c n) m)
+  => Path v n -- ^ path to plot
+  -> State (Plot (Path v n) b) () -- ^ changes to plot options
+  -> m () -- ^ add plot to the 'Axis'
+pathPlot = addPlotable
+
+-- | Add a 'Path' as a 'Plot' to an 'Axis' without changes to the plot
+--   options.
+pathPlot'
+  :: (BaseSpace c ~ v,
+      Plotable (Path v n) b,
+      MonadState (Axis b c n) m)
+  => Path v n -- ^ path to plot
+  -> m () -- ^ add plot to the 'Axis'
+pathPlot' = addPlotable'
+
+------------------------------------------------------------------------
+-- From list of points
+------------------------------------------------------------------------
+
+-- | Add a 'Path' plot from a list of points.
+linePlot
+  :: (BaseSpace c ~ v,
+      Metric v,
+      F.Foldable f,
+      PointLike v n p,
+      Plotable (Path v n) b,
+      MonadState (Axis b c n) m)
+  => f p -- ^ points to turn into trail
+  -> State (Plot (Path v n) b) () -- ^ changes to plot options
+  -> m () -- ^ add plot to the 'Axis'
+linePlot = addPlotable . toPath . mkTrail
+
+-- | Add a 'Path' plot from a list of points.
+linePlot'
+  :: (BaseSpace c ~ v,
+      Metric v,
+      F.Foldable f,
+      PointLike v n p,
+      Plotable (Path v n) b,
+      MonadState (Axis b c n) m)
+  => f p -- ^ points to turn into trail
+  -> m () -- ^ add plot to the 'Axis'
+linePlot' = addPlotable' . toPath . mkTrail
+
+-- | Add a smooth 'Path' plot from a list of points using 'cubicSpline'.
+smoothLinePlot
+  :: (BaseSpace c ~ v,
+      F.Foldable f,
+      Metric v,
+      PointLike v n p,
+      Plotable (Path v n) b,
+      Fractional (v n), -- needs fixing in diagrams-lib
+      MonadState (Axis b c n) m)
+  => f p -- ^ points to turn into trail
+  -> State (Plot (Path v n) b) () -- ^ changes to plot options
+  -> m () -- ^ add plot to the 'Axis'
+smoothLinePlot = addPlotable . cubicSpline False . toListOf (folded . unpointLike)
+
+-- | Add a smooth 'Path' plot from a list of points using 'cubicSpline'
+--   without changes to the plot options.
+smoothLinePlot'
+  :: (BaseSpace c ~ v,
+      F.Foldable f,
+      Metric v,
+      PointLike v n p,
+      Plotable (Path v n) b,
+      Fractional (v n), -- needs fixing in diagrams-lib
+      MonadState (Axis b c n) m)
+  => f p -- ^ points to turn into trail
+  -> m () -- ^ add plot to the 'Axis'
+smoothLinePlot' xs = smoothLinePlot xs (return ())
 
 ------------------------------------------------------------------------
 -- Trail and path
@@ -93,300 +182,4 @@ mkPath pss = toPath $ map mkTrail (F.toList pss)
 -- | Construct a localed trail from a fold over points.
 mkPathOf :: (PointLike v n p, OrderedField n) => Fold s t -> Fold t p -> s -> Path v n
 mkPathOf f1 f2 as = Path $ map (mkTrailOf f2) (toListOf f1 as)
-
-------------------------------------------------------------------------
--- GLine plot
-------------------------------------------------------------------------
-
-data GLinePlot v n a = forall s. GLinePlot
-  { sData :: s
-  , sFold :: Fold s a
-  , sPos  :: a -> Point v n
-  , sSty  :: Maybe (a -> Style V2 n)
-  , cPnt  :: Bool
-  } deriving Typeable
-
-type instance V (GLinePlot v n a) = v
-type instance N (GLinePlot v n a) = n
-
-instance (Metric v, OrderedField n) => Enveloped (GLinePlot v n a) where
-  getEnvelope GLinePlot {..} = foldMapOf (sFold . to sPos) getEnvelope sData
-
-instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (GLinePlot V2 n a) b where
-  renderPlotable s sty GLinePlot {..} =
-      fromVertices (toListOf (sFold . to sPos . to (logPoint ls)) sData)
-        # transform t
-        # applyLineStyle sty
-   <> if cPnt
-        then foldMapOf sFold mk sData # applyMarkerStyle sty
-        else mempty
-    where
-      t = s ^. specTrans
-      ls = s ^. specScale
-      mk a = marker # maybe id (applyStyle . ($ a)) sSty
-                    # moveTo (specPoint s $ sPos a)
-      marker = sty ^. plotMarker
-
-  defLegendPic sty GLinePlot {..}
-      = (p2 (-10,0) ~~ p2 (10,0))
-          # applyLineStyle sty
-
-------------------------------------------------------------------------
--- Line Plot
-------------------------------------------------------------------------
-
-type LinePlot v n = GLinePlot v n (Point v n)
-
--- | Make a line plot.
-mkLinePlot :: (PointLike v n p, F.Foldable f, Num n)
-              => f p -> LinePlot v n
-mkLinePlot = mkLinePlotOf folded
-
--- | Make a line plot using the given fold.
-mkLinePlotOf :: (PointLike v n p, Num n)
-                => Fold s p -> s -> LinePlot v n
-mkLinePlotOf f a = GLinePlot
-  { sData = a
-  , sFold = f . unpointLike
-  , sPos  = id
-  , sSty  = Nothing
-  , cPnt  = False
-  }
-
-------------------------------------------------------------------------
--- Helper functions
-------------------------------------------------------------------------
-
--- | Create a data for step plots.
-createStepData :: [(a,a)] -> [(a,a)]
-createStepData [] = []
-createStepData (x1:[]) = x1:[]
-createStepData (x1:x2:xs) = (x1):(fst x1, snd x2):(x2):(createStepData (x2:xs))
-
-
--- type StepPlot v n = GLinePlot v n (Point v n)
-
--- mkStepPlotOf :: (PointLike v n p, Fractional n)
---                => Fold s p -> s -> StepPlot v n
--- mkStepPlotOf f a = GLinePlot
---   { sData = a
---   , sFold = f . unpointLike
---   , sPos  = id
---   , sSty  = Nothing
---   , cPnt  = False
---   }
-
--- mkStepPlot :: (PointLike v n p, F.Foldable f, Fractional n)
---              => f p -> StepPlot v n
--- mkStepPlot = mkStepPlotOf folded
-
-------------------------------------------------------------------------
--- General Line Plot
-------------------------------------------------------------------------
-
--- | Plot a general line plot.
-mkGLinePlot :: (PointLike v n p, F.Foldable f, Fractional n)
-               => f a -> (a -> p) -> GLinePlot v n a
-mkGLinePlot = mkGLinePlotOf folded
-
--- | Plot a general line plot give a fold
-mkGLinePlotOf :: (PointLike v n p, Fractional n)
-                 => Fold s a -> s -> (a -> p) -> GLinePlot v n a
-mkGLinePlotOf f a pf = GLinePlot
-  { sData = a
-  , sFold = f
-  , sPos  = view unpointLike . pf
-  , sSty  = Nothing
-  , cPnt = False
-  }
-
-
-------------------------------------------------------------------------
--- Line plot lenses
-------------------------------------------------------------------------
-
-class HasPath a v n d | a -> v n, a -> d where
-  line :: Lens' a (GLinePlot v n d)
-
-  pathStyle :: Lens' a (Maybe (d -> Style V2 n))
-  pathStyle  = line . lens sSty (\sp sty -> sp {sSty = sty})
-
-  dotsonPoint :: Lens' a Bool
-  dotsonPoint = line . lens cPnt (\s b -> (s {cPnt = b}))
-
-instance HasPath (GLinePlot v n d) v n d where
-  line = id
-
-instance HasPath (Plot (GLinePlot v n d) b) v n d where
-  line = rawPlot
-
-------------------------------------------------------------------------
--- Line plot
-------------------------------------------------------------------------
-
--- $ line
--- line plots display data as dots. There are several representations
--- for line plots for extra parameters. Line plots have the
--- following lenses:
---
--- @
--- * 'dotsonPoint' :: 'Lens'' ('LinePlot' v n) 'Bool' - False
--- * 'lineStyle'   :: 'Maybe' ('Point' v n -> 'Style' 'V2' n) - Nothing
--- @
---
--- | Add a 'LinePlot' to the 'AxisState' from a data set.
---
--- @
---   myaxis = r2Axis ~&
---     linePlot data1
--- @
--- === __Example__
---
--- <<plots/line.png#diagram=line&width=300>>
---
--- @
---
--- myaxis :: Axis B V2 Double
--- myaxis = r2Axis &~ do
---          linePlot  mydata1
---          linePlot' mydata2 $ do
---               addLegendEntry "data 2"
---               plotColor .= black
---               dotsonPoint .= False
---          linePlotL "data 3" mydata3
---
---          axisPlots . each . _LinePlot' . dotsonPoint .= True
---
--- @
-
-linePlot
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (LinePlot v n) b,
-      F.Foldable f)
-  => f p -> State (Plot (LinePlot v n) b) () -> m ()
-linePlot d = addPlotable (mkLinePlot d)
-
--- | Make a 'LinePlot' and take a 'State' on the plot to alter it's
---   options
---
-linePlot'
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (LinePlot v n) b,
-      F.Foldable f)
-  => f p -> m ()
-linePlot' d = addPlotable' (mkLinePlot d)
-
--- | Add a 'LinePlot' with the given name for the legend entry.
---
--- @
---   myaxis = r2Axis &~ do
---     linePlotL "blue team" pointData1
---     linePlotL "red team" pointData2
--- @
--- linePlotL
---   :: (v ~ BaseSpace c,
---       PointLike v n p,
---       MonadState (Axis b c n) m,
---       Plotable (LinePlot v n) b,
---       F.Foldable f)
---   => String -> f p -> m ()
--- linePlotL l d = addPlotableL l (mkLinePlot d)
-
-
--- | mkTrail version of line plot
-
--- linePlot''
---   :: (v ~ BaseSpace c,
---       PointLike v n p,
---       MonadState (Axis b c n) m,
---       R2Backend b n,
---       Plotable (Path v n) b,
---       F.Foldable f)
---   => f p -> State (Plot (LinePlot v n) b) () -> m ()
--- linePlot'' d = addPlotable (mkPath $ Identity d)
-
--- pathPlot'' :: (R2Backend b n, MonadState (Axis b V2 n) m) => Path V2 n -> m ()
--- pathPlot'' = addPlotable
-
--- Fold variants
-
-linePlotOf
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (LinePlot v n) b)
-  => Fold s p -> s -> State (Plot (LinePlot v n) b) () -> m ()
-linePlotOf f s = addPlotable (mkLinePlotOf f s)
-
-linePlotOf'
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (LinePlot v n) b)
-  => Fold s p -> s -> m ()
-linePlotOf' f s = addPlotable' (mkLinePlotOf f s)
-
--- linePlotLOf
---   :: (v ~ BaseSpace c,
---       PointLike v n p,
---       MonadState (Axis b c n) m,
---       Plotable (LinePlot v n) b)
---   => String -> Fold s p -> s -> m ()
--- linePlotLOf l f s = addPlotableL l (mkLinePlotOf f s)
-
-------------------------------------------------------------------------
---Step
-------------------------------------------------------------------------
-
-stepPlot :: (RealFloat n, Typeable n, Typeable b, Renderable (Path V2 n) b,
-             MonadState (Axis b c n) m, BaseSpace c ~ V2)
-         => [(n, n)] -> State (Plot (LinePlot V2 n) b) () -> m ()
-stepPlot  a   = linePlot (createStepData a)
-
-stepPlot' :: (RealFloat n, Typeable n, Typeable b, Renderable (Path V2 n) b,
-              MonadState (Axis b c n) m, BaseSpace c ~ V2) =>
-             [(n, n)] -> m ()
-stepPlot' a   = linePlot' (createStepData a)
-
--- stepPlotL :: (RealFloat n, Typeable n, Typeable b, Renderable (Path V2 n) b,
---               MonadState (Axis b c n) m, BaseSpace c ~ V2) =>
---              String -> [(n, n)] -> m ()
--- stepPlotL l a = linePlotL l (createStepData a)
-
-------------------------------------------------------------------------
--- General Line Plot
-------------------------------------------------------------------------
-
-
-glinePlot
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (GLinePlot v n a) b,
-      F.Foldable f)
-  => f a -> (a -> p) -> State (Plot (GLinePlot v n a) b) () -> m ()
-glinePlot d pf = addPlotable (mkGLinePlot d pf)
-
-glinePlot'
-  :: (v ~ BaseSpace c,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (GLinePlot v n a) b,
-      F.Foldable f)
-  => f a -> (a -> p) -> m ()
-glinePlot' d pf = addPlotable' (mkGLinePlot d pf)
-
--- glinePlotL
---   :: (v ~ BaseSpace c,
---       PointLike v n p,
---       MonadState (Axis b c n) m,
---       Plotable (GLinePlot v n a) b,
---       F.Foldable f)
---   => String -> f a -> (a -> p) -> m ()
--- glinePlotL l d pf = addPlotableL l (mkGLinePlot d pf)
 
