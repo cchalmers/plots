@@ -260,6 +260,9 @@ instance (Applicative f, Traversable c) => HasTickLabels f (Axis b c n) b where
 instance (Applicative f, Traversable c) => HasAxisScaling f (Axis b c n) where
   axisScaling = axes . traverse . axisScaling
 
+instance Settable f => HasPlotOptions f (Axis b c n) b where
+  plotOptions = finalPlots . plotOptions
+
 instance Settable f => HasPlotStyle f (Axis b c n) b where
   plotStyle = currentPlots . plotStyle
 
