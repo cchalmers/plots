@@ -183,24 +183,24 @@ instance HasDensity (Plot (GDensityPlot v n d) b) v n d where
 
 -- | Add a 'DenistyPlot' to the 'AxisState' from a data set.
 --
--- @
---   myaxis = r2Axis ~&
---     densityPlot data1
--- @
---
 -- === __Example__
 --
--- <<plots/density.png#diagram=density&width=300>>
+-- <<diagrams/src_Plots_Types_Density_densityExample.svg#diagram=densityExample&width=300>>
 --
--- @
--- myaxis :: Axis B V2 Double
--- myaxis = r2Axis &~ do
+-- > import Plots
+-- > import Plots.Types.Density
+-- >
+-- > mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
+-- > mydata2 = mydata1 & each . _1 *~ 0.5
+-- > mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
+-- >
+-- > densityAxis :: Axis B V2 Double
+-- > densityAxis = r2Axis &~ do
+-- >   densityPlot mydata1 $ key "data 1"
+-- >   densityPlot mydata2 $ key "data 2"
+-- >   densityPlot mydata3 $ key "data 3"
 --
---     densityPlotL mydata1
---     densityPlotL mydata2
---     densityPlotL mydata3
--- @
-
+-- > densityExample = renderAxis densityAxis
 densityPlot
   :: (v ~ BaseSpace c,
       PointLike v n p,

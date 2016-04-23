@@ -76,6 +76,9 @@ import           Plots.Axis
 import           Plots.Style
 import           Plots.Types
 
+-- config
+-- > import Plots
+
 ------------------------------------------------------------------------
 -- General scatter plot
 ------------------------------------------------------------------------
@@ -279,19 +282,20 @@ scatterOptions = gscatterOptions
 --
 -- === __Example__
 --
--- <<plots/scatter.png#diagram=scatter&width=300>>
+-- <<diagrams/src_Plots_Types_Scatter_scatterExample.svg#diagram=scatterExample&width=600>>
 --
--- @
--- mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
--- mydata2 = mydata1 & each . _1 *~ 0.5
--- mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
+-- > import Plots
+-- > mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
+-- > mydata2 = mydata1 & each . _1 *~ 0.5
+-- > mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 --
--- myaxis :: Axis B V2 Double
--- myaxis = r2Axis &~ do
---   scatterPlot mydata1 $ key "data 1"
---   scatterPlot mydata2 $ key "data 2"
---   scatterPlot mydata3 $ key "data 3"
--- @
+-- > scatterAxis :: Axis B V2 Double
+-- > scatterAxis = r2Axis &~ do
+-- >   scatterPlot mydata1 $ key "data 1"
+-- >   scatterPlot mydata2 $ key "data 2"
+-- >   scatterPlot mydata3 $ key "data 3"
+--
+-- > scatterExample = renderAxis scatterAxis
 scatterPlot
   :: (BaseSpace c ~ v,
       PointLike v n p,
@@ -307,6 +311,23 @@ scatterPlot xs = gscatterPlot (xs ^.. folded . unpointLike) id
 
 -- | Version of 'scatterPlot' without any changes to the
 --   'ScatterOptions'.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Scatter_scatterExample'.svg#diagram=scatterExample'&width=600>>
+--
+-- > import Plots
+-- > mydata4 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
+-- > mydata5 = mydata1 & each . _1 *~ 0.5
+-- > mydata6 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
+--
+-- > scatterAxis' :: Axis B V2 Double
+-- > scatterAxis' = r2Axis &~ do
+-- >   scatterPlot' mydata4
+-- >   scatterPlot' mydata5
+-- >   scatterPlot' mydata6
+--
+-- > scatterExample' = renderAxis scatterAxis'
 scatterPlot'
   :: (BaseSpace c ~ v,
       PointLike v n p,

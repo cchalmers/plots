@@ -123,17 +123,13 @@ instance HasPoints (Plot (GPointsPlot n) b) n where
 --
 -- === __Example__
 --
--- <<plots/points.png#diagram=points&width=300>>
+-- <<diagram=points&width=300>>
 --
--- @
---
--- myaxis :: Axis B Polar Double
--- myaxis = polarAxis &~ do
---    pointsPlot mydata1
---    pointsPlot mydata2
---    pointsPlot mydata3
---
--- @
+-- > myaxis :: Axis B Polar Double
+-- > myaxis = polarAxis &~ do
+-- >    pointsPlot mydata1
+-- >    pointsPlot mydata2
+-- >    pointsPlot mydata3
 
 pointsPlot
   :: (v ~ BaseSpace c, v ~ V2,

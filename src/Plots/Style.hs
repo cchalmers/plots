@@ -13,7 +13,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Style
--- Copyright   :  (C) 2015 Christopher Chalmers
+-- Copyright   :  (C) 2016 Christopher Chalmers
 -- License     :  BSD-style (see the file LICENSE)
 -- Maintainer  :  Christopher Chalmers
 -- Stability   :  experimental
@@ -248,6 +248,9 @@ class HasAxisStyle a b | a -> b where
 instance HasAxisStyle (AxisStyle b v n) b where
   axisStyle = id
 
+instance Applicative f => HasPlotStyle f (AxisStyle b v n) b where
+  plotStyle = axisStyles
+
 ------------------------------------------------------------------------
 -- Predefined themes
 ------------------------------------------------------------------------
@@ -256,9 +259,22 @@ instance HasAxisStyle (AxisStyle b v n) b where
 -- There are only a few themes for now. Eventually there will be a wider
 -- range of themes with better support for customisation.
 
+-- code to display axis styles
+-- > import Plots
+-- > showcase :: AxisStyle B V2 Double -> Diagram B
+-- > showcase sty = hsep 0.4 . take 8 $ map drawSty stys
+-- >   where
+-- >     stys = sty ^.. axisStyles
+-- >     drawSty s = applyMarkerStyle s (s^.plotMarker) <> applyLineStyle s lineBehind
+-- >     lineBehind = (p2 (-1,0) ~~ p2 (1,0))
+--
+-- > fadedColourPic   = showcase fadedColours
+-- > vividColourPic   = showcase vividColours
+-- > blackAndWhitePic = showcase blackAndWhite
+
 -- | Theme using 'funColours' with faded fills and thick lines.
 --
--- <<plots/faded-colours.svg#diagram=black-and-white&width=300>>
+-- <<diagrams/src_Plots_Style_fadedColourPic.svg#diagram=fadedColourPic&width=600>>
 fadedColours :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
 fadedColours = AxisStyle hot $
   zipWith mkStyle (cycle colours1) (cycle $ map stroke filledMarkers)
@@ -270,7 +286,7 @@ fadedColours = AxisStyle hot $
 
 -- | Theme using 'funColours' with no lines on 'areaStyle.
 --
--- <<plots/vivid-colours.svg#diagram=black-and-white&width=300>>
+-- <<diagrams/src_Plots_Style_vividColourPic.svg#diagram=vividColourPic&width=600>>
 vividColours :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
 vividColours = AxisStyle hot $
   zipWith mkStyle (cycle colours2) (cycle $ map (scale 1.2 . stroke) filledMarkers)
@@ -282,7 +298,7 @@ vividColours = AxisStyle hot $
 
 -- | Theme without any colours, useful for black and white documents.
 --
--- <<plots/black-and-white.svg#diagram=black-and-white&width=300>>
+-- <<diagrams/src_Plots_Style_blackAndWhitePic.svg#diagram=blackAndWhitePic&width=600>>
 blackAndWhite :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
 blackAndWhite = AxisStyle greys $
   zipWith3 mkStyle (cycle colours) (cycle lineStyles) (cycle $ map stroke filledMarkers)
@@ -387,13 +403,6 @@ star' x = trailLike . (`at` mkP2 (-x/6) (x/6))
         . iterate (rotateBy (-1/5)) $ spoke
   where
     spoke = fromOffsets . map r2 $ [(x/6,x/2), (x/6,-x/2)]
-
--- showcase :: Renderable (Path V2 n) b => Theme -> Diagram b V2 n
--- showcase theme
---   = vcat' (with & sep .~ 0.4) . take 8
---   $ zipWith (\c m -> styleF c m <> lineBehind c) cs ms
---   where
---     lineBehind c = (p2 (-1,0) ~~ p2 (1,0)) # lc c # lwG 0.2
 
 ------------------------------------------------------------------------
 -- Colour maps

@@ -158,6 +158,38 @@ mkComputedHistogram x0 w xs = HistogramPlot x0 w (F.toList xs) Horizontal
 -- Building histograms
 ----------------------------------------------------------------------------
 
+-- example setup
+-- > import Plots
+-- > sampleData :: [Double]
+-- > sampleData =
+-- >   [5.1,4.9,4.7,4.6,5.0,5.4,4.6,5.0,4.4,4.9
+-- >   ,5.4,4.8,4.8,4.3,5.8,5.7,5.4,5.1,5.7,5.1
+-- >   ,5.4,5.1,4.6,5.1,4.8,5.0,5.0,5.2,5.2,4.7
+-- >   ,4.8,5.4,5.2,5.5,4.9,5.0,5.5,4.9,4.4,5.1
+-- >   ,5.0,4.5,4.4,5.0,5.1,4.8,5.1,4.6,5.3,5.0
+-- >   ,7.0,6.4,6.9,5.5,6.5,5.7,6.3,4.9,6.6,5.2
+-- >   ,5.0,5.9,6.0,6.1,5.6,6.7,5.6,5.8,6.2,5.6
+-- >   ,5.9,6.1,6.3,6.1,6.4,6.6,6.8,6.7,6.0,5.7
+-- >   ,5.5,5.5,5.8,6.0,5.4,6.0,6.7,6.3,5.6,5.5
+-- >   ,5.5,6.1,5.8,5.0,5.6,5.7,5.7,6.2,5.1,5.7
+-- >   ,6.3,5.8,7.1,6.3,6.5,7.6,4.9,7.3,6.7,7.2
+-- >   ,6.5,6.4,6.8,5.7,5.8,6.4,6.5,7.7,7.7,6.0
+-- >   ,6.9,5.6,7.7,6.3,6.7,7.2,6.2,6.1,6.4,7.2
+-- >   ,7.4,7.9,6.4,6.3,6.1,7.7,6.3,6.4,6.0,6.9
+-- >   ,6.7,6.9,5.8,6.8,6.7,6.7,6.3,6.5,6.2,5.9
+-- >   ]
+--
+-- > mkNmExample nm = r2Axis &~ do
+-- >   yMin ?= 0
+-- >   histogramPlot sampleData $ do
+-- >     normaliseSample .= nm
+-- > countDia = renderAxis $ mkNmExample count
+-- > probabilityDia = renderAxis $ mkNmExample probability
+-- > countDensityDia = renderAxis $ mkNmExample countDensity
+-- > pdfDia = renderAxis $ mkNmExample pdf
+-- > cumilativeDia = renderAxis $ mkNmExample cumilative
+-- > cdfDia = renderAxis $ mkNmExample cdf
+
 -- Histogram options ---------------------------------------------------
 
 -- | The way to normalise the data from a histogram. The default method
@@ -171,32 +203,56 @@ instance Default NormalisationMethod where
 
 -- | The height of each bar is the number of observations. This is the
 --   'Default' method.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Histogram_countDia.svg#diagram=countDia&width=600>>
 count :: NormalisationMethod
 count = NM $ \_ v -> v
 
 -- | The sum of the heights of the bars is equal to 1.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Histogram_probabilityDia.svg#diagram=probabilityDia&width=600>>
 probability :: NormalisationMethod
 probability = NM $ \_ v -> v ^/ V.sum v
 
 -- | The height of each bar is @n / w@ where @n@ is the number of
 --   observations and @w@ is the total width.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Histogram_countDensityDia.svg#diagram=countDensityDia&width=600>>
 countDensity :: NormalisationMethod
 countDensity = NM $ \w v -> v ^/ w
 
 -- | The total area of the bars is @1@. This gives a probability density
 --   function estimate.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Histogram_pdfDia.svg#diagram=pdfDia&width=600>>
 pdf :: NormalisationMethod
 pdf = NM $ \w v -> v ^/ (w * V.sum v)
 
 -- | The height of each bar is the cumulative number of observations in
 --   each bin and all previous bins. The height of the last bar is the
 --   total number of observations.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Histogram_cumilativeDia.svg#diagram=cumilativeDia&width=600>>
 cumilative :: NormalisationMethod
 cumilative = NM $ \_ -> V.scanl1 (+)
 
 -- | Cumulative density function estimate. The height of each bar is
 --   equal to the cumulative relative number of observations in the bin
 --   and all previous bins. The height of the last bar is 1.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Histogram_cdfDia.svg#diagram=cdfDia&width=600>>
 cdf :: NormalisationMethod
 cdf = NM $ \_ v -> V.scanl1 (+) v ^/ V.sum v
 
@@ -310,48 +366,32 @@ range nBins xs
 
 -- | Add a 'HistogramPlot' to the 'AxisState' from a data set.
 --
--- @
---   myaxis = r2Axis ~&
---     histogramPlot data1
--- @
---
 -- === __Example__
 --
--- <<plots/histogram.png#diagram=histogram&width=300>>
+-- <<diagrams/src_Plots_Types_Histogram_histogramExample.svg#diagram=histogramExample&width=600>>
 --
--- @
--- fillOpacity = barStyle . mapped . _opacity
+-- > import Plots
+-- > histogramAxis :: Axis B V2 Double
+-- > histogramAxis = r2Axis &~ do
+-- >   histogramPlot sampleData $ do
+-- >     key "histogram"
+-- >     plotColor .= blue
+-- >     areaStyle . _opacity .= 0.5
 --
--- myaxis :: Axis B V2 Double
--- myaxis = r2Axis &~ do
---  histogramPlot' mydata1 $ do
---     addLegendEntry "histogram"
---     plotColor .= blue
---     fillOpacity .= 0.5
--- @
-
+-- > histogramExample = renderAxis histogramAxis
 histogramPlot
   :: (MonadState (Axis b V2 n) m, Plotable (HistogramPlot n) b, F.Foldable f, RealFrac n)
-  => f n
-  -> State (Plot (HistogramOptions n) b) ()
-  -> m ()
+  => f n -- ^ data
+  -> State (Plot (HistogramOptions n) b) () -- ^ changes to plot options
+  -> m () -- ^ add plot to axis
 histogramPlot ns s = addPlot (hoPlot & rawPlot %~ \ho -> mkHistogramPlot ho ns)
   where hoPlot = mkPlot def &~ s
 
--- | Make a 'HistogramPlot' and take a 'State' on the plot to alter it's
---   options
---
--- @
---   myaxis = r2Axis &~ do
---     histogramPlot' pointData1 $ do
---       setBin .= 30
---       addLegendEntry "data 1"
--- @
-
+-- | Make a 'HistogramPlot' without changes to the plot options.
 histogramPlot'
   :: (MonadState (Axis b V2 n) m, Plotable (HistogramPlot n) b, F.Foldable f, RealFrac n)
-  => f n
-  -> m ()
+  => f n -- ^ data
+  -> m () -- ^ add plot to axis
 histogramPlot' d = histogramPlot d (return ())
 
 -- | Add a 'HistogramPlot' using a fold over the data.

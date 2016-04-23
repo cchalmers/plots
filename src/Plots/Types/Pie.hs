@@ -168,39 +168,34 @@ instance HasPie (Plot (GPiePlot n) b) n where
 
 -- | Add a 'PiePlot' to the 'AxisState' from a data set.
 --
--- @
---   myaxis = polarAxis ~&
---     wedgePlot data1
--- @
---
 -- === __Example__
 --
--- <<plots/variedpie.png#diagram=variedpie&width=300>>
+-- <<diagram=pieExample&width=300>>
 --
--- @
+-- > import Plots
+-- > import Plots.Types.Pie
 --
--- myaxis = polarAxis &~ do
+-- > pieAxis = polarAxis &~ do
+-- >     wedgePlotFrom' 7 xDir (2/11 @@ turn) $ do
+-- >        strokeArc .= True
+-- >        plotColor .= sRGB24  255 127 0
+-- >     wedgePlotFrom' 4.3 (rotate (2/11 @@ turn) xDir) (4/11 @@ turn) $ do
+-- >        strokeArc .= True
+-- >        plotColor .=  sRGB24 166 86  40
+-- >     wedgePlotFrom' 8.1 (rotate (6/11 @@ turn) xDir)  (3/11 @@ turn) $ do
+-- >        strokeArc .= True
+-- >        plotColor .= sRGB24 247 129 191
+-- >     annularWedgePlotFrom' 3.1  0.1 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
+-- >        strokeArc .= True
+-- >        plotColor .= sRGB24 117 69 69
+-- >     annularWedgePlotFrom' 5.7  3.1 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
+-- >        strokeArc .= True
+-- >        plotColor .= sRGB24 154 65 65
+-- >     annularWedgePlotFrom' 9.5  5.7 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
+-- >        strokeArc .= True
+-- >        plotColor .= sRGB24 198  49   49
 --
---     wedgePlotFrom' 7 xDir (2/11 @@ turn) $ do
---        strokeArc .= True
---        plotColor .= sRGB24  255 127 0
---     wedgePlotFrom' 4.3 (rotate (2/11 @@ turn) xDir) (4/11 @@ turn) $ do
---        strokeArc .= True
---        plotColor .=  sRGB24 166 86  40
---     wedgePlotFrom' 8.1 (rotate (6/11 @@ turn) xDir)  (3/11 @@ turn) $ do
---        strokeArc .= True
---        plotColor .= sRGB24 247 129 191
---     annularWedgePlotFrom' 3.1  0.1 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
---        strokeArc .= True
---        plotColor .= sRGB24 117 69 69
---     annularWedgePlotFrom' 5.7  3.1 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
---        strokeArc .= True
---        plotColor .= sRGB24 154 65 65
---     annularWedgePlotFrom' 9.5  5.7 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
---        strokeArc .= True
---        plotColor .= sRGB24 198  49   49
--- @
-
+-- > pieExample = renderAxis pieAxis
 wedgePlot
   :: (v ~ BaseSpace c, v ~ V2,
       PointLike v n (Polar n),

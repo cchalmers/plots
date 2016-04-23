@@ -213,16 +213,20 @@ instance HasSmooth (Plot (GSmoothPlot v n d) b) v n d where
 --
 -- === __Example__
 --
--- <<plots/smoothsimple.png#diagram=smoothsimple&width=300>>
+-- <<diagrams/src_Plots_Types_Smooth_smoothExample.svg#diagram=smoothExample&width=600>>
 --
--- @
--- myaxis :: Axis B V2 Double
--- myaxis = r2Axis &~ do
---    smoothPlot mydata1
---    smoothPlot mydata2
---    smoothPlot mydata3
--- @
-
+-- > import Plots
+-- > mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
+-- > mydata2 = mydata1 & each . _1 *~ 0.5
+-- > mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
+--
+-- > smoothAxis :: Axis B V2 Double
+-- > smoothAxis = r2Axis &~ do
+-- >   smoothPlot mydata1 $ key "data 1"
+-- >   smoothPlot mydata2 $ key "data 2"
+-- >   smoothPlot mydata3 $ key "data 3"
+--
+-- > smoothExample = renderAxis smoothAxis
 smoothPlot
   :: (v ~ BaseSpace c,
       PointLike v n p,
