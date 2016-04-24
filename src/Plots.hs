@@ -40,6 +40,9 @@ module Plots
     -- | Scatter and bubble. Scatter and bubble plot api.
   , module Plots.Types.Scatter
 
+    -- | Bar plots, individual or grouped.
+  , module Plots.Types.Bar
+
     -- ** Line plot
     -- | Line plots display 'Path's as a plot.
 
@@ -136,6 +139,7 @@ import           Plots.Style
 import           Plots.Types
 import           Plots.Utils
 
+import           Plots.Types.Bar
 import           Plots.Types.Boxplot
 import           Plots.Types.Density
 import           Plots.Types.Function

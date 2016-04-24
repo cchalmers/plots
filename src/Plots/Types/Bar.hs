@@ -303,6 +303,20 @@ _reflectXY = transform _reflectionXY
 ----------------------------------------------------------------------------------
 
 -- | A add 'BarPlot' to an 'Axis'.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_barExample.svg#diagram=barExample&width=600>>
+--
+-- > import Plots
+-- > barAxis :: Axis B V2 Double
+-- > barAxis = r2Axis &~ do
+-- >   yMin ?= 0
+-- >   barPlot [13.5, 3.0, 6.9, 7.2, 4.6] $ do
+-- >     vertical .= True
+-- >     barWidth //= 2
+--
+-- > barExample = renderAxis barAxis
 barPlot
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
@@ -313,6 +327,18 @@ barPlot
 barPlot ns = addPlotable (mkBars def ns)
 
 -- | Simple version of 'barPlot' without any modification to the 'Plot'.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_barExample'.svg#diagram=barExample'&width=600>>
+--
+-- > import Plots
+-- > barAxis' :: Axis B V2 Double
+-- > barAxis' = r2Axis &~ do
+-- >   yMin ?= 0
+-- >   barPlot' [13.5, 3.0, 6.9, 7.2, 4.6]
+--
+-- > barExample' = renderAxis barAxis'
 barPlot'
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
@@ -322,6 +348,20 @@ barPlot'
 barPlot' ns = addPlotable' (mkBars def ns)
 
 -- | A add 'BarPlot' to an 'Axis' while naming the bars.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_namedBarExample.svg#diagram=namedBarExample&width=600>>
+--
+-- > import Plots
+-- > namedBarAxis :: Axis B V2 Double
+-- > namedBarAxis = r2Axis &~ do
+-- >   yMin ?= 0
+-- >   namedBarPlot [("eggs", 12), ("bacon", 5), ("sausage", 9), ("beans", 3)] $ do
+-- >     vertical .= True
+-- >     barWidth //= 2
+-- >
+-- > namedBarExample = renderAxis namedBarAxis
 namedBarPlot
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
@@ -337,6 +377,18 @@ namedBarPlot d s = do
     bp = mkPlot (mkBars def xs) & execState s
 
 -- | Simple version of 'namedBarPlot' without any modification to the 'Plot'.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_namedBarExample'.svg#diagram=namedBarExample'&width=600>>
+--
+-- > import Plots
+-- > namedBarAxis' :: Axis B V2 Double
+-- > namedBarAxis' = r2Axis &~ do
+-- >   yMin ?= 0
+-- >   namedBarPlot' [("eggs", 12), ("bacon", 5), ("sausage", 9), ("beans", 3)]
+--
+-- > namedBarExample' = renderAxis namedBarAxis'
 namedBarPlot'
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
@@ -406,6 +458,32 @@ instance HasOrientation (MultiBarState b n a) where
 instance HasBarLayout (MultiBarState b n a) where
   barLayout = lens mbsLayout (\mbs l -> mbs {mbsLayout = l})
 
+-- > import Plots
+--
+-- > groupedExample s = r2Axis &~ do
+-- >   yMin ?= 0
+-- >   xAxis . gridLineVisible .= False
+-- >   xAxisLabel .= "breakfast item"
+-- >   minorTickVisible .= False
+-- >   multiBars sortedData snd $ do
+-- >     vertical .= True
+-- >     barWidth //= 2
+-- >     labelBars (map fst breakfastData)
+-- >     onBars $ \(nm,_) -> key nm
+-- >     s
+-- >
+-- >   -- show y values without decimal point
+-- >   yAxis . tickLabelFunction .= atMajorTicks (show . round)
+-- >   -- we should really force all major ticks to like on integers too
+--
+-- > groupedBarsExample  = renderAxis $ groupedExample groupedBars
+-- > groupedBarsExample' = renderAxis $ groupedExample (groupedBars' 0.7)
+-- > stackedBarsExample  = renderAxis $ groupedExample  stackedBars
+-- > stackedEqualBarsExample = renderAxis $ groupedExample (stackedEqualBars 10)
+-- > runningBarsExample  = renderAxis $ groupedExample $ do
+-- >   runningBars
+-- >   labelBars (map fst breakfastData ++ map fst breakfastData)
+
 -- Adding to axis ------------------------------------------------------
 
 multiFun :: Lens' (MultiBarState b n a) (BarLayout n -> [[n]] -> [BarPlot n])
@@ -414,6 +492,11 @@ multiFun = lens mbsBarFun (\mbs f -> mbs {mbsBarFun = f})
 -- | Bars that are grouped together such that each group is a single
 --   'barWidth'. The bars in a group are touching, see groupedBars' to
 --   reduce the width of individual bars.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_groupedBarsExample.svg#diagram=groupedBarsExample&width=600>>
+
 groupedBars :: Fractional n => State (MultiBarState b n a) ()
 groupedBars = groupedBars' 1
 
@@ -421,25 +504,75 @@ groupedBars = groupedBars' 1
 --   'barWidth'. The parameter is the multiplier for the width of
 --   individual bars, where @'groupedBars' 1 = groupedBars@ corresponds
 --   to bars in a group touching. reduce the width of individual bars.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_groupedBarsExample'.svg#diagram=groupedBarsExample'&width=600>>
+--
 groupedBars' :: Fractional n => n -> State (MultiBarState b n a) ()
 groupedBars' n = multiFun .= mkGroupedBars n
 
 -- | Bars stacked on top of each other.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_stackedBarsExample.svg#diagram=stackedBarsExample&width=600>>
+--
 stackedBars :: Num n => State (MultiBarState b n a) ()
 stackedBars = multiFun .= mkStackedBars
 
 -- | Bars stacked on top of each other where every bar is the given
 --   height.
+--
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_stackedEqualBarsExample.svg#diagram=stackedEqualBarsExample&width=600>>
+--
 stackedEqualBars :: Fractional n => n -> State (MultiBarState b n a) ()
 stackedEqualBars n = multiFun .= mkStackedEqualBars n
 
 -- | Normal 'bars' where each data set follows the last.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_runningBarsExample.svg#diagram=runningBarsExample&width=600>>
+--
 runningBars :: Num n => State (MultiBarState b n a) ()
 runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
 
 -- | Construct multiple bars, grouped together. See 'MultiBarState' for
 --   details on how to customise how the bars are drawn.
 --
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Bar_multiBarExample.svg#diagram=multiBarExample&width=600>>
+--
+-- > import Plots
+-- > breakfastData :: [(String, V2 Double)]
+-- > breakfastData = [("eggs", V2 7 5), ("bacon", V2 5 4), ("sausage", V2 2 7), ("beans", V2 2 1)]
+--
+-- > sortedData = [ ("girls", breakfastData^..each._2._x)
+-- >              , ("boys",  breakfastData^..each._2._y)
+-- >              ]
+--
+-- > multiBarAxis :: Axis B V2 Double
+-- > multiBarAxis = r2Axis &~ do
+-- >   yMin ?= 0
+-- >   xAxis . gridLineVisible .= False
+-- >   xAxisLabel .= "breakfast item"
+-- >   minorTickVisible .= False
+-- >   multiBars sortedData snd $ do
+-- >     vertical .= True
+-- >     barWidth //= 2
+-- >     labelBars (map fst breakfastData)
+-- >     onBars $ \(nm,_) -> key nm
+-- >
+-- >   -- show y values without decimal point
+-- >   yAxis . tickLabelFunction .= atMajorTicks (show . round)
+-- >   -- we should really force all major ticks to like on integers too
+--
+-- > multiBarExample = renderAxis multiBarAxis
 multiBars
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
