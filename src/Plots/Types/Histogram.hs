@@ -72,7 +72,7 @@ import           Linear.V2                   (_yx)
 import           Plots.Axis
 import           Plots.Style
 import           Plots.Types
-import           Plots.Utils
+import           Plots.Util
 
 
 -- | Construct a rectangle of size v with the bottom left at point p.

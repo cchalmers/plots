@@ -49,7 +49,7 @@ library
     Plots.Types.Scatter
     Plots.Types.Smooth
     Plots.Types.Text
-    Plots.Utils
+    Plots.Util
     Diagrams.Coordinates.Isomorphic
     Diagrams.Coordinates.Polar
   hs-source-dirs:      src

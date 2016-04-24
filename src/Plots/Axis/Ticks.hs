@@ -60,7 +60,7 @@ import           Data.Default
 import           Data.Foldable    as F
 import           Data.List        ((\\))
 import           Data.Ord
-import           Plots.Utils
+import           Plots.Util
 
 import           Diagrams.Prelude
 

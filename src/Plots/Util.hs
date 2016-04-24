@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Plots.Utils
+module Plots.Util
   ( liftRecommend
   , fromCommit
   , pathFromVertices

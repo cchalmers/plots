@@ -39,7 +39,7 @@ import Codec.Picture
 import           Plots.Axis
 import           Plots.Style
 import           Plots.Types
-import           Plots.Utils
+import           Plots.Util
 
 ------------------------------------------------------------------------
 -- Heatmap

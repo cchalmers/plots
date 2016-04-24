@@ -95,7 +95,7 @@ import           Plots.Axis
 -- import           Diagrams.BoundingBox
 -- import           Diagrams.LinearMap
 -- import           Linear.V3
--- import           Plots.Utils
+-- import           Plots.Util
 
 ------------------------------------------------------------------------
 -- Function plot options

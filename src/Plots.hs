@@ -137,7 +137,7 @@ import           Plots.Axis.Ticks
 import           Plots.CmdLine
 import           Plots.Style
 import           Plots.Types
-import           Plots.Utils
+import           Plots.Util
 
 import           Plots.Types.Bar
 import           Plots.Types.Boxplot

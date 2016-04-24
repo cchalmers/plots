@@ -73,7 +73,7 @@ import           Plots.Types
 import           Plots.Axis
 import           Plots.Axis.Ticks
 import           Plots.Axis.Labels
-import           Plots.Utils
+import           Plots.Util
 
 import qualified Data.List               as List
 import           Diagrams.Core.Transform (fromSymmetric)
