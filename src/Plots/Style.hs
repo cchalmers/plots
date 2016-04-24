@@ -187,6 +187,10 @@ instance HasPlotStyle f (PlotStyle b v n) b where
 -- Applying styles -----------------------------------------------------
 
 -- | Apply the 'lineStyle' from a 'PlotStyle'.
+--
+-- @
+-- applyLineStyle :: (InSpace v n t, HasStyle t) => PlotStyle b v n -> t -> t
+-- @
 applyLineStyle
   :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
   => a -> t -> t
@@ -194,6 +198,10 @@ applyLineStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. lineStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'markerStyle' from a 'PlotStyle'.
+--
+-- @
+-- applyMarkerStyle :: (InSpace v n t, HasStyle t) => PlotStyle b v n -> t -> t
+-- @
 applyMarkerStyle
   :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
   => a -> t -> t
@@ -201,6 +209,10 @@ applyMarkerStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. markerStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'areaStyle from a 'PlotStyle'.
+--
+-- @
+-- applyLineStyle :: (InSpace v n t, HasStyle t) => PlotStyle b v n -> t -> t
+-- @
 applyAreaStyle
   :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
   => a -> t -> t
@@ -208,6 +220,10 @@ applyAreaStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. areaStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'textStyle' from a 'PlotStyle'.
+--
+-- @
+-- applyTextStyle :: (InSpace v n t, HasStyle t) => PlotStyle b v n -> t -> t
+-- @
 applyTextStyle
   :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
   => a -> t -> t
