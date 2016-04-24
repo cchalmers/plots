@@ -1,14 +1,9 @@
-{-# LANGUAGE DeriveDataTypeable        #-}
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE RankNTypes                #-}
-{-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE FunctionalDependencies    #-}
-{-# LANGUAGE UndecidableInstances      #-}
-{-# LANGUAGE StandaloneDeriving        #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Types.Line
