@@ -60,6 +60,7 @@ import           Data.Default
 import           Data.Foldable    as F
 import           Data.List        ((\\))
 import           Data.Ord
+import           Plots.Types
 import           Plots.Util
 
 import           Diagrams.Prelude
@@ -166,6 +167,9 @@ class HasMajorTicks f a where
 instance HasMajorTicks f (MajorTicks v n) where
   majorTicks = id
 
+instance HasVisibility (MajorTicks v n) where
+  visible = majorTickVisible
+
 ------------------------------------------------------------------------
 -- Minor ticks
 ------------------------------------------------------------------------
@@ -228,6 +232,9 @@ class HasMinorTicks f a where
 
 instance HasMinorTicks f (MinorTicks v n) where
   minorTicks = id
+
+instance HasVisibility (MinorTicks v n) where
+  visible = minorTickVisible
 
 ------------------------------------------------------------------------
 -- Both ticks

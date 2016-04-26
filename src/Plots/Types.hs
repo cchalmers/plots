@@ -76,6 +76,7 @@ module Plots.Types
   -- * Miscellaneous
   -- ** Visibility
   , HasVisibility (..)
+  , hide
 
   -- ** Orientation
   , Orientation (..)
@@ -397,6 +398,30 @@ class HasVisibility a where
   hidden :: Lens' a Bool
   hidden = visible . involuted not
   {-# INLINE hidden #-}
+
+instance HasVisibility (PlotOptions b v n) where
+  visible = plotVisible
+
+instance HasVisibility (PlotMods b v n) where
+  visible = plotVisible
+
+instance HasVisibility (Plot p b) where
+  visible = plotVisible
+
+instance HasVisibility (DynamicPlot b v n) where
+  visible = plotVisible
+
+instance HasVisibility (StyledPlot b v n) where
+  visible = plotVisible
+
+-- | Set 'visible' to 'False' for the given setter.
+--
+-- @
+-- hide minorTicks          :: State (Axis b v n) ()
+-- hide (xAxis . gridLines) :: State (Axis b v n) ()
+-- @
+hide :: (MonadState s m, HasVisibility a) => ASetter' s a -> m ()
+hide l = l . visible .= False
 
 ------------------------------------------------------------------------
 -- Plot modification
