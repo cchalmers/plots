@@ -216,19 +216,19 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
     drawTicks (pos,y) = maTicks <> miTicks
       where
         maTicks
-          | a ^. majorTickVisible . to not = mempty
+          | a ^. majorTicksVisible . to not = mempty
           | otherwise = foldMap (positionTick majorTick) majorTickXs'
                        # stroke
-                       # applyStyle (a ^. majorTickStyle)
+                       # applyStyle (a ^. majorTicksStyle)
         --
         miTicks
-          | a ^. minorTickVisible . to not = mempty
+          | a ^. minorTicksVisible . to not = mempty
           | otherwise = foldMap (positionTick minorTick) minorTickXs'
                        # stroke
-                       # applyStyle (a ^. minorTickStyle)
+                       # applyStyle (a ^. minorTicksStyle)
         --
-        minorTick = someTick (a ^. minorTickAlign) (a ^. minorTickLength)
-        majorTick = someTick (a ^. majorTickAlign) (a ^. majorTickLength)
+        minorTick = someTick (a ^. minorTicksAlignment) (a ^. minorTicksLength)
+        majorTick = someTick (a ^. majorTicksAlignment) (a ^. majorTicksLength)
         --
         someTick tType d = pathFromVertices $
           case tType  of
@@ -274,9 +274,9 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
                                  else id
     --
     -- ticksD       = a ^. axisTicks . el e
-    majorTickXs  = view majorTickFunction a b
+    majorTickXs  = view majorTicksFunction a b
     majorTickXs' = map coscaleNum majorTickXs
-    minorTickXs  = view minorTickFunction a majorTickXs b
+    minorTickXs  = view minorTicksFunction a majorTickXs b
     minorTickXs' = map coscaleNum minorTickXs
     -- majorTickXs = logNumber (ls ^. el e) <$> (ticksD ^. majorTicksFun) b
     -- minorTickXs = logNumber (ls ^. el e) <$> (ticksD ^. minorTicksFun) majorTickXs b
