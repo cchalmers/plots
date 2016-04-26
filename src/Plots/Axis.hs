@@ -43,19 +43,19 @@ module Plots.Axis
     -- * Specific axes
     -- ** x-axis
   , xAxis
-  , xAxisLabel
+  , xLabel
   , xMin
   , xMax
 
     -- ** y-axis
   , yAxis
-  , yAxisLabel
+  , yLabel
   , yMin
   , yMax
 
     -- ** z-axis
   , zAxis
-  , zAxisLabel
+  , zLabel
   , zMin
   , zMax
   ) where
@@ -371,8 +371,8 @@ xAxis :: R1 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
 xAxis = axes . _x
 
 -- | The label for the x-axis. Shorthand for @'xAxis' . 'axisLabelText'@.
-xAxisLabel :: R1 c => Lens' (Axis b c n) String
-xAxisLabel = xAxis . axisLabelText
+xLabel :: R1 c => Lens' (Axis b c n) String
+xLabel = xAxis . axisLabelText
 
 -- | The minimum x value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
@@ -391,8 +391,8 @@ yAxis :: R2 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
 yAxis = axes . _y
 
 -- | The label for the y-axis. Shorthand for @'yAxis' . 'axisLabelText'@.
-yAxisLabel :: R2 c => Lens' (Axis b c n) String
-yAxisLabel = yAxis . axisLabelText
+yLabel :: R2 c => Lens' (Axis b c n) String
+yLabel = yAxis . axisLabelText
 
 -- | The minimum y value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
@@ -411,8 +411,8 @@ zAxis :: R3 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
 zAxis = axes . _z
 
 -- | The label for the z-axis. Shorthand for @'zAxis' . 'axisLabelText'@.
-zAxisLabel :: R3 c => Lens' (Axis b c n) String
-zAxisLabel = zAxis . axisLabelText
+zLabel :: R3 c => Lens' (Axis b c n) String
+zLabel = zAxis . axisLabelText
 
 -- | The minimum z value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.

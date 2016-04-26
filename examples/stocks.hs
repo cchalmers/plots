@@ -58,8 +58,8 @@ myaxis = execStateT ?? r2Axis $ do
   linePlotOf stocks appl $ key "apple"
   xAxis . tickLabelFunction .= autoTimeLabels
 
-  xAxisLabel .= "date"
-  yAxisLabel .= "closing (dollars)"
+  xLabel .= "date"
+  yLabel .= "closing (dollars)"
 
 main :: IO ()
 main = mainWith myaxis

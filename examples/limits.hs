@@ -25,8 +25,8 @@ myaxis = r2Axis &~ do
 
   -- Coordinate labels are stored in the 'Axis' under axisLabels.
   -- Changing the label text is easy:
-  xAxisLabel .= "x-axis"
-  yAxisLabel .= "y-axis"
+  xLabel .= "x-axis"
+  yLabel .= "y-axis"
 
   -- More advanced things like changing text rendering or position of
   -- axis label can be changed by lenses onto the 'AxisLabel' for that

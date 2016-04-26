@@ -461,7 +461,7 @@ instance HasBarLayout (MultiBarState b n a) where
 -- > groupedExample s = r2Axis &~ do
 -- >   yMin ?= 0
 -- >   xAxis . gridLineVisible .= False
--- >   xAxisLabel .= "breakfast item"
+-- >   xLabel .= "breakfast item"
 -- >   minorTickVisible .= False
 -- >   multiBars sortedData snd $ do
 -- >     vertical .= True
@@ -558,7 +558,7 @@ runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
 -- > multiBarAxis = r2Axis &~ do
 -- >   yMin ?= 0
 -- >   xAxis . gridLineVisible .= False
--- >   xAxisLabel .= "breakfast item"
+-- >   xLabel .= "breakfast item"
 -- >   minorTickVisible .= False
 -- >   multiBars sortedData snd $ do
 -- >     vertical .= True
@@ -612,9 +612,9 @@ barLayoutAxisLabels
 barLayoutAxisLabels bl ls =
   unless (null ls) $
     axes . orient bl _y _x &= do
-      majorTickPositions .= xs
-      minorTickVisible   .= False
-      tickLabelPositions .= zip xs ls
+      majorTickPositions  .= xs
+      minorTicks . visible .= False
+      tickLabelPositions   .= zip xs ls
   where
     xs = map ((+ view barStart bl) . (* view barSpacing bl) . fromIntegral)
              [0 .. length ls - 1]
