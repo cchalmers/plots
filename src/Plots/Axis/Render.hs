@@ -146,7 +146,7 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
 
     -- axis labels (x,y etc.)
     axLabels
-      | null txt || lp == NoLabels || a ^. axisLabelVisible . to not
+      | null txt || lp == NoLabels || a ^. axisLabel . hidden
                   = mempty
       | otherwise = (a ^. axisLabelTextFunction) txtAlign txt
                       # moveTo p'
@@ -168,7 +168,7 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
 
     -- tick labels
     tickLabels
-      | lp == NoLabels || a ^. tickLabelVisible . to not = mempty
+      | lp == NoLabels || a ^. tickLabel . hidden = mempty
       | otherwise = foldMap drawLabels (map snd $ take 1 ys)
                       # applyStyle (a ^. tickLabelStyle)
       where
@@ -216,13 +216,13 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
     drawTicks (pos,y) = maTicks <> miTicks
       where
         maTicks
-          | a ^. majorTicksVisible . to not = mempty
+          | a ^. majorTicks . hidden = mempty
           | otherwise = foldMap (positionTick majorTick) majorTickXs'
                        # stroke
                        # applyStyle (a ^. majorTicksStyle)
         --
         miTicks
-          | a ^. minorTicksVisible . to not = mempty
+          | a ^. minorTicks . hidden = mempty
           | otherwise = foldMap (positionTick minorTick) minorTickXs'
                        # stroke
                        # applyStyle (a ^. minorTicksStyle)
@@ -252,7 +252,7 @@ axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> gri
     -- axis lines
 
     line
-      | a ^. axisLineVisible . to not = mempty
+      | a ^. axisLine . hidden = mempty
       | otherwise = foldMap mkline (map snd ys) -- merge with ticks?
              # transform t
              # stroke

@@ -78,18 +78,6 @@ class HasAxisLine f a where
   axisLineArrowOpts :: Functor f => LensLike' f a (Maybe (ArrowOpts (N a)))
   axisLineArrowOpts = axisLine . lens alArrowOpts (\al sty -> al {alArrowOpts = sty})
 
-  -- | Whether the axis line should be visible.
-  --
-  --   Note this is different from 'NoAxisLine'. Other parts that are
-  --   tied to the axis line will still be present when
-  --   'axisLineVisible' is 'False'. But if 'NoAxisLine' is set, there
-  --   never any line for those things to attach to, so they don't
-  --   exist.
-  --
-  --   'Default' is 'True'.
-  axisLineVisible :: Functor f => LensLike' f a Bool
-  axisLineVisible = axisLine . lens alVisible (\al b -> al {alVisible = b})
-
   -- | The 'Style' applied to the axis line
   axisLineStyle :: Functor f => LensLike' f a (Style (V a) (N a))
   axisLineStyle = axisLine . lens alStyle (\al sty -> al {alStyle = sty})
@@ -97,8 +85,13 @@ class HasAxisLine f a where
 instance HasAxisLine f (AxisLine v n) where
   axisLine = id
 
+--   Note this is different from 'NoAxisLine'. Other parts that are
+--   tied to the axis line will still be present when
+--   'axisLineVisible' is 'False'. But if 'NoAxisLine' is set, there
+--   never any line for those things to attach to, so they don't
+--   exist.
 instance HasVisibility (AxisLine v n) where
-  visible = axisLineVisible
+  visible = lens alVisible (\al b -> al {alVisible = b})
 
 instance Typeable n => Default (AxisLine v n) where
   def = AxisLine

@@ -69,10 +69,6 @@ class HasColourBar a b | a -> b where
   -- | Lens onto the 'ColourBar'.
   colourBar :: Lens' a (ColourBar b (N a))
 
-  -- | Whether the colour bar should be visible when rendering.
-  colourBarVisible :: Lens' a Bool
-  colourBarVisible = colourBar . lens cbVisible (\c a -> c {cbVisible = a})
-
   -- -- | Placement of ticks given the range of the colour bar.
   -- colourBarTickFun :: Lens' a ((N a, N a) -> [N a])
   -- colourBarTickFun = colourBar . lens cbTickFun (\c a -> c {cbTickFun = a})
@@ -116,7 +112,7 @@ instance Typeable n => HasStyle (ColourBar b n) where
   applyStyle sty = colourBarStyle %~ applyStyle sty
 
 instance HasVisibility (ColourBar b n) where
-  visible = colourBarVisible
+  visible = lens cbVisible (\c a -> c {cbVisible = a})
 
 -- | Draw a standalone colour bar.
 drawColourBar

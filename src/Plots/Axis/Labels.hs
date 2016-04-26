@@ -108,10 +108,6 @@ class HasAxisLabel f a b | a -> b where
   axisLabelPlacement :: Functor f => LensLike' f a AxisLabelPosition
   axisLabelPlacement = axisLabel . lens alPos (\al sty -> al {alPos = sty})
 
-  -- | Whether the axis label should be visible.
-  axisLabelVisible :: Functor f => LensLike' f a Bool
-  axisLabelVisible = axisLabel . lens alVisible (\al b -> al {alVisible = b})
-
 instance HasAxisLabel f (AxisLabel b v n) b where
   axisLabel = id
 
@@ -119,7 +115,7 @@ instance Typeable n => HasStyle (AxisLabel b v n) where
   applyStyle = over axisLabelStyle . applyStyle
 
 instance HasVisibility (AxisLabel b v n) where
-  visible = axisLabelVisible
+  visible = lens alVisible (\al b -> al {alVisible = b})
 
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (AxisLabel b V2 n) where
@@ -190,12 +186,6 @@ class HasTickLabels f a b | a -> b where
   tickLabelGap :: Functor f => LensLike' f a (N a)
   tickLabelGap = tickLabel . lens tlGap (\tl n -> tl {tlGap = n})
 
-  -- | Whether the axis label should be visible.
-  --
-  --   'Default' is 'True'.
-  tickLabelVisible :: Functor f => LensLike' f a Bool
-  tickLabelVisible = tickLabel . lens tlVisible (\tl b -> tl {tlVisible = b})
-
 instance HasTickLabels f (TickLabels b v n) b where
   tickLabel = id
 
@@ -210,7 +200,7 @@ instance (TypeableFloat n, Renderable (Text n) b)
     }
 
 instance HasVisibility (TickLabels b v n) where
-  visible = tickLabelVisible
+  visible = lens tlVisible (\tl b -> tl {tlVisible = b})
 
 -- | Setter over the final positions the major ticks. This is not as
 --   general as 'minorTicksFunction' because you don't have access to

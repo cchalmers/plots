@@ -45,8 +45,6 @@ module Plots.Axis.Ticks
   , outsideTicks
 
     -- * Helper functions
-  , hideMajorTicks
-  , hideMinorTicks
   , hideTicks
   , majorTickPositions
   , minorTickPositions
@@ -158,17 +156,11 @@ class HasMajorTicks f a where
   majorTicksStyle :: Functor f => LensLike' f a (Style (V a) (N a))
   majorTicksStyle = majorTicks . lens matStyle (\mat sty -> mat {matStyle = sty})
 
-  -- | Whether the major ticks should be 'visible'.
-  --
-  --   Default is 'True'.
-  majorTicksVisible :: Functor f => LensLike' f a Bool
-  majorTicksVisible = majorTicks . lens matVisible (\mat b -> mat {matVisible = b})
-
 instance HasMajorTicks f (MajorTicks v n) where
   majorTicks = id
 
 instance HasVisibility (MajorTicks v n) where
-  visible = majorTicksVisible
+  visible = lens matVisible (\mat b -> mat {matVisible = b})
 
 ------------------------------------------------------------------------
 -- Minor ticks
@@ -224,17 +216,11 @@ class HasMinorTicks f a where
   minorTicksStyle :: Functor f => LensLike' f a (Style (V a) (N a))
   minorTicksStyle = minorTicks . lens mitStyle (\mit sty -> mit {mitStyle = sty})
 
-  -- | The style used to render the minor ticks.
-  --
-  --   Default is 'True'.
-  minorTicksVisible :: Functor f => LensLike' f a Bool
-  minorTicksVisible = minorTicks . lens mitVisible (\mit sty -> mit {mitVisible = sty})
-
 instance HasMinorTicks f (MinorTicks v n) where
   minorTicks = id
 
 instance HasVisibility (MinorTicks v n) where
-  visible = minorTicksVisible
+  visible = lens mitVisible (\mit sty -> mit {mitVisible = sty})
 
 ------------------------------------------------------------------------
 -- Both ticks
@@ -286,33 +272,8 @@ ticksStyle = bothTicks . styles
 ticksVisible :: (HasTicks f a, Applicative f) => LensLike' f a Bool
 ticksVisible = bothTicks . visibles
   where
-    visibles f a = (\m mn -> a & majorTicksVisible .~ m & minorTicksVisible .~ mn)
-              <$> f (a ^. majorTicksVisible) <*> f (a ^. minorTicksVisible)
-
--- | Hides the 'Minor' ticks when trying to render something. This can
---   be used on multiple types:
---
--- @
--- 'hideMinorTicks' :: 'Axis' b c n       -> 'Axis' b c n
--- 'hideMinorTicks' :: 'SingleAxis' b v n -> 'SingleAxis' b v n
--- 'hideMinorTicks' :: 'Ticks' v n        -> 'Ticks' v n
--- 'hideMinorTicks' :: 'MinorTicks' v n   -> 'MinorTicks' v n
--- @
-hideMinorTicks :: HasMinorTicks Identity a => a -> a
-hideMinorTicks = minorTicksVisible .~ False
-
--- | Hides the 'Major' ticks when trying to render something. This can
---   be used on multiple types:
---
--- @
--- 'hideMajorTicks' :: 'Axis' b c n       -> 'Axis' b c n
--- 'hideMajorTicks' :: 'SingleAxis' b v n -> 'SingleAxis' b v n
--- 'hideMajorTicks' :: 'Ticks' v n        -> 'Ticks' v n
--- 'hideMajorTicks' :: 'MajorTicks' v n   -> 'MajorTicks' v n
--- 'hideMajorTicks' :: 'ColourBar' b n    -> 'ColourBar' b n
--- @
-hideMajorTicks :: HasMajorTicks Identity a => a -> a
-hideMajorTicks = majorTicksVisible .~ False
+    visibles f a = (\m mn -> a & majorTicks . visible .~ m & minorTicks. visible .~ mn)
+              <$> f (a ^. majorTicks . visible) <*> f (a ^. minorTicks . visible)
 
 -- | Hides the 'Minor' ticks when trying to render something. This can
 --   be used on multiple types:

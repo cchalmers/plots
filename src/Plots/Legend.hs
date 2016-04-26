@@ -178,10 +178,6 @@ class HasLegend a b | a -> b where
   legendOrientation :: Lens' a Orientation
   legendOrientation = legend . lens lOrientation (\l a -> l {lOrientation = a})
 
-  -- | Whether the legend should be visible.
-  legendVisible :: Lens' a Bool
-  legendVisible = legend . lens lVisible (\l a -> l {lVisible = a})
-
 instance HasLegend (Legend b n) b where
   legend = id
 
@@ -200,7 +196,7 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
     }
 
 instance HasVisibility (Legend b n) where
-  visible = legendVisible
+  visible = lens lVisible (\l a -> l {lVisible = a})
 
 instance TypeableFloat n => HasStyle (Legend b n) where
   applyStyle sty = over legendStyle (applyStyle sty)
