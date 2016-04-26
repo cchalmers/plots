@@ -7,7 +7,9 @@
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
 -----------------------------------------------------------------------------
 -- |
@@ -68,6 +70,7 @@ module Plots.Types
 
     -- ** Styled plot
   , StyledPlot
+  , styledPlot
   , styleDynamic
   , renderStyledPlot
   , singleStyledPlotLegend
@@ -543,6 +546,16 @@ instance (Metric v, OrderedField n) => Enveloped (StyledPlot b v n) where
 instance Functor f => HasPlotStyle f (StyledPlot b v n) b where
   plotStyle f (StyledPlot p opts sty) =
     f sty <&> StyledPlot p opts
+
+-- | Traversal over a raw plot of a styled plot. The type of the plot
+--   must match for the traversal to be succesful.
+styledPlot :: forall p b. (Typeable p, Typeable b) => Traversal' (StyledPlot b (V p) (N p)) p
+styledPlot f s@(StyledPlot p opts sty) =
+  case eq p of
+    Just Refl -> f p <&> \p' -> StyledPlot p' opts sty
+    Nothing   -> pure s
+  where eq :: Typeable a => a -> Maybe (a :~: p)
+        eq _ = eqT
 
 -- | Give a 'DynamicPlot' a concrete 'PlotStyle'.
 styleDynamic :: PlotStyle b v n -> DynamicPlot b v n -> StyledPlot b v n

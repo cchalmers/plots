@@ -10,11 +10,11 @@ mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
+  connectingLine .= True
+
   scatterPlot mydata1 $ key "data 1"
   scatterPlot mydata2 $ key "data 2"
   scatterPlot mydata3 $ key "data 3"
-
-  connectingLine .= True
 
 main :: IO ()
 main = r2AxisMain myaxis

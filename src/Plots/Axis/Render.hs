@@ -117,7 +117,8 @@ renderR2Axis a = frame 40
     -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
     cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
     --
-    styledPlots = zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
+    styledPlots = map (appEndo $ a ^. plotModifier)
+                $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
 
 -- | The position of axis labels for a
 data LabelPosition

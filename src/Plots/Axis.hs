@@ -24,6 +24,7 @@ module Plots.Axis
   , axisPlots
   , currentPlots
   , finalPlots
+  , plotModifier
   , axisSize
 
     -- * Predefined axes
@@ -199,7 +200,7 @@ data Axis b c n = Axis
   -- , _axisTitle      :: AxisTitle
 
   , _axisPlots   :: [DynamicPlot b (BaseSpace c) n]
-  , plotModifier :: Endo (DynamicPlot b (BaseSpace c) n)
+  , _plotModifier :: Endo (StyledPlot b (BaseSpace c) n)
 
   -- the v in each axis is only used for the style
   , _axes        :: c (SingleAxis b (BaseSpace c) n)
@@ -223,22 +224,33 @@ axisPlots :: BaseSpace c ~ v => Lens' (Axis b c n) [DynamicPlot b v n]
 axisPlots = lens _axisPlots (\a ps -> a {_axisPlots = ps})
 
 -- | Traversal over the current plots in the axis.
+--
+--   For example, to make all 'ScatterPlot's currently in the axis use a
+--   'connectingLine', you can write
+--
+-- @
+-- 'finalPlots' . 'connectingLine' .= 'True'
+-- @
 currentPlots :: BaseSpace c ~ v => Traversal' (Axis b c n) (DynamicPlot b v n)
 currentPlots = axisPlots . traversed
 
 -- | Setter over the final plot before the axis is rendered.
 --
 --   For example, to make all 'ScatterPlot's in the axis use a
---   'connectingLine', you can add
+--   'connectingLine' (both currently in the axis and ones added later),
+--   you can add
 --
 -- @
 -- 'finalPlots' . 'connectingLine' .= 'True'
 -- @
 --
---   at the begining of the axis and all scatter plots added will have a
---   'connectingLine'.
-finalPlots :: BaseSpace c ~ v => Setter' (Axis b c n) (DynamicPlot b v n)
-finalPlots = sets $ \f a -> a {plotModifier = plotModifier a <> Endo f}
+finalPlots :: BaseSpace c ~ v => Setter' (Axis b c n) (StyledPlot b v n)
+finalPlots = sets $ \f a -> a {_plotModifier = _plotModifier a <> Endo f}
+
+-- | Lens onto the modifier set by 'finalPlots'. This gets applied to
+--   all plots in the axis, just before they are rendered.
+plotModifier :: BaseSpace c ~ v => Lens' (Axis b c n) (Endo (StyledPlot b v n))
+plotModifier = lens _plotModifier (\a f -> a {_plotModifier = f})
 
 -- Axis instances ------------------------------------------------------
 
@@ -357,9 +369,9 @@ r2Axis = Axis
   { _axisStyle = fadedColours
   , _colourBar = defColourBar
 
-  , _legend      = def
-  , _axisPlots   = []
-  , plotModifier = mempty
+  , _legend       = def
+  , _axisPlots    = []
+  , _plotModifier = mempty
 
   , _axes = pure def
   }

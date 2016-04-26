@@ -174,9 +174,14 @@ instance (Applicative f, Typeable b, Typeable v, Typeable n)
   connectingLine = (dynamicPlot :: Traversal' (DynamicPlot b v n) (Plot (ScatterPlot v n) b))
                  . connectingLine
 
-instance (Applicative f, Typeable b, Typeable (BaseSpace c), Typeable n)
+instance (Applicative f, Typeable b, Typeable v, Typeable n)
+    => HasConnectingLine f (StyledPlot b v n) where
+  connectingLine = (styledPlot :: Traversal' (StyledPlot b v n) (ScatterPlot v n))
+                 . connectingLine
+
+instance (Settable f, Typeable b, Typeable (BaseSpace c), Typeable n)
     => HasConnectingLine f (Axis b c n) where
-  connectingLine = axisPlots . traversed . connectingLine
+  connectingLine = finalPlots . connectingLine
 
 -- Options -------------------------------------------------------------
 
