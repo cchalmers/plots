@@ -133,6 +133,12 @@ instance Functor f => HasAxisLine f (SingleAxis b v n) where
 instance Functor f => HasGridLines f (SingleAxis b v n) where
   gridLines = lens saGridLines (\sa l -> sa {saGridLines = l})
 
+instance Functor f => HasMajorGridLines f (SingleAxis b v n) where
+  majorGridLines = gridLines . majorGridLines
+
+instance Functor f => HasMinorGridLines f (SingleAxis b v n) where
+  minorGridLines = gridLines . minorGridLines
+
 instance Functor f => HasAxisScaling f (SingleAxis b v n) where
   axisScaling = lens saScaling (\sa s -> sa {saScaling = s})
 
@@ -250,6 +256,12 @@ instance (Applicative f, Traversable c) => HasMinorTicks f (Axis b c n) where
 
 instance (Applicative f, Traversable c) => HasGridLines f (Axis b c n) where
   gridLines = axes . traverse . gridLines
+
+instance (Applicative f, Traversable c) => HasMajorGridLines f (Axis b c n) where
+  majorGridLines = axes . traverse . majorGridLines
+
+instance (Applicative f, Traversable c) => HasMinorGridLines f (Axis b c n) where
+  minorGridLines = axes . traverse . minorGridLines
 
 instance (Applicative f, Traversable c) => HasAxisLabel f (Axis b c n) b where
   axisLabel = axes . traverse . axisLabel

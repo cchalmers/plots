@@ -23,9 +23,14 @@ module Plots.Axis.Grid
     GridLines
   , HasGridLines (..)
 
+  , MajorGridLines
+  , HasMajorGridLines (..)
+  , MinorGridLines
+  , HasMinorGridLines (..)
+
     -- * Extra traversals
-  , gridLineStyle
-  , gridLineVisible
+  , gridLinesStyle
+  , gridLinesVisible
 
   , hideGridLines
   , showGridLines
@@ -43,6 +48,7 @@ import           Data.Default
 import           Control.Monad.State
 
 import           Diagrams.Prelude
+import           Plots.Types
 
 -- | A grid line function takes the positions of the respective ticks
 --   (minor ticks for minor grid lines, major ticks for major grid
@@ -53,74 +59,109 @@ import           Diagrams.Prelude
 --   and 'minorGridLineFunction' to control how the lines are drawn.
 type GridLineFunction n = [n] -> (n, n) -> [n]
 
-data GridLines v n = GridLines
+------------------------------------------------------------------------
+-- Major grid lines
+------------------------------------------------------------------------
+
+data MajorGridLines v n = MajorGridLines
   { magFun     :: GridLineFunction n
-  , migFun     :: GridLineFunction n
   , magStyle   :: Style v n
-  , migStyle   :: Style v n
   , magVisible :: Bool
-  , migVisible :: Bool
   } deriving Typeable
 
-type instance V (GridLines v n) = v
-type instance N (GridLines v n) = n
+type instance V (MajorGridLines v n) = v
+type instance N (MajorGridLines v n) = n
 
-class HasGridLines f a where
+class HasMajorGridLines f a where
   -- | The options for how to draw the grid lines. This can be used on
   --   various levels of the axis:
   --
   -- @
-  -- 'gridLines' :: 'Traversal'' ('Axis' b c n)       ('GridLines' ('BaseSpace' c) n)
-  -- 'gridLines' :: 'Lens''      ('SingleAxis' b v n) ('GridLines' v n)
-  -- 'gridLines' :: 'Lens''      ('GridLines' v n)    ('GridLines' v n)
+  -- 'majorGridLines' :: 'Traversal'' ('Axis' b c n)       ('GridLines' ('BaseSpace' c) n)
+  -- 'majorGridLines' :: 'Lens''      ('SingleAxis' b v n) ('GridLines' v n)
+  -- 'majorGridLines' :: 'Lens''      ('GridLines' v n)    ('GridLines' v n)
   -- @
-  gridLines :: LensLike' f a (GridLines (V a) (N a))
+  majorGridLines :: LensLike' f a (MajorGridLines (V a) (N a))
 
   -- | The function to calculate location of the major grid lines given
   --   location of the major ticks and bounds.
-  majorGridLineFunction :: Functor f => LensLike' f a (GridLineFunction (N a))
-  majorGridLineFunction = gridLines . lens magFun (\gl maf -> gl {magFun = maf})
+  majorGridLinesFunction :: Functor f => LensLike' f a (GridLineFunction (N a))
+  majorGridLinesFunction = majorGridLines . lens magFun (\gl maf -> gl {magFun = maf})
+
+  -- | The style applied to the major grid lines.
+  majorGridLinesStyle :: Functor f => LensLike' f a (Style (V a) (N a))
+  majorGridLinesStyle = majorGridLines . lens magStyle (\gl sty -> gl {magStyle = sty})
+
+instance HasMajorGridLines f (MajorGridLines v n) where
+  majorGridLines = id
+
+instance (Typeable n, Floating n) => Default (MajorGridLines v n) where
+  def = MajorGridLines
+    { magFun     = onTicksGridLineFunction
+    , magStyle   = mempty # lwO 0.1
+    , magVisible = True
+    }
+
+instance HasVisibility (MajorGridLines v n) where
+  visible = lens magVisible (\gl b -> gl {magVisible = b})
+
+instance Typeable n => HasStyle (MajorGridLines v n) where
+  applyStyle s = majorGridLinesStyle %~ applyStyle s
+
+------------------------------------------------------------------------
+-- Minor grid lines
+------------------------------------------------------------------------
+
+data MinorGridLines v n = MinorGridLines
+  { migFun     :: GridLineFunction n
+  , migStyle   :: Style v n
+  , migVisible :: Bool
+  } deriving Typeable
+
+type instance V (MinorGridLines v n) = v
+type instance N (MinorGridLines v n) = n
+
+class HasMinorGridLines f a where
+  -- | The options for how to draw the grid lines. This can be used on
+  --   various levels of the axis:
+  --
+  -- @
+  -- 'minorGridLines' :: 'Traversal'' ('Axis' b c n)       ('GridLines' ('BaseSpace' c) n)
+  -- 'minorGridLines' :: 'Lens''      ('SingleAxis' b v n) ('GridLines' v n)
+  -- 'minorGridLines' :: 'Lens''      ('GridLines' v n)    ('GridLines' v n)
+  -- @
+  minorGridLines :: LensLike' f a (MinorGridLines (V a) (N a))
 
   -- | The function to calculate location of the minor grid lines given
   --   location of the minor ticks and bounds.
-  minorGridLineFunction :: Functor f => LensLike' f a (GridLineFunction (N a))
-  minorGridLineFunction = gridLines . lens migFun (\gl mif -> gl {migFun = mif})
+  minorGridLinesFunction :: Functor f => LensLike' f a (GridLineFunction (N a))
+  minorGridLinesFunction = minorGridLines . lens migFun (\gl mif -> gl {migFun = mif})
 
-  -- | The style applied to the major grid lines.
-  majorGridLineStyle :: Functor f => LensLike' f a (Style (V a) (N a))
-  majorGridLineStyle = gridLines . lens magStyle (\gl sty -> gl {magStyle = sty})
 
   -- | The style applied to the minor grid lines.
-  minorGridLineStyle :: Functor f => LensLike' f a (Style (V a) (N a))
-  minorGridLineStyle = gridLines . lens migStyle (\gl sty -> gl {migStyle = sty})
+  minorGridLinesStyle :: Functor f => LensLike' f a (Style (V a) (N a))
+  minorGridLinesStyle = minorGridLines . lens migStyle (\gl sty -> gl {migStyle = sty})
 
-  -- | Whether the major grid lines should be visible.
-  --
-  --   Default is 'True'.
-  majorGridLineVisible :: Functor f => LensLike' f a Bool
-  majorGridLineVisible = gridLines . lens magVisible (\gl b -> gl {magVisible = b})
+instance HasMinorGridLines f (MinorGridLines v n) where
+  minorGridLines = id
 
-  -- | Whether the minor grid lines should be visible.
-  --
-  --   Default is 'False'.
-  minorGridLineVisible :: Functor f => LensLike' f a Bool
-  minorGridLineVisible = gridLines . lens migVisible (\gl b -> gl {migVisible = b})
-
-instance HasGridLines f (GridLines v n) where
-  gridLines = id
-
-instance (Typeable n, Floating n) => Default (GridLines v n) where
-  def = GridLines
+instance (Typeable n, Floating n) => Default (MinorGridLines v n) where
+  def = MinorGridLines
     { migFun     = onTicksGridLineFunction
-    , magFun     = onTicksGridLineFunction
     , migStyle   = mempty # lwO 0.4
-    , magStyle   = mempty # lwO 0.1
-    , magVisible = True
     , migVisible = False
     }
 
-instance Typeable n => HasStyle (GridLines v n) where
-  applyStyle s = gridLineStyle %~ applyStyle s
+-- | Hidden by default.
+instance HasVisibility (MinorGridLines v n) where
+  visible = lens migVisible (\gl b -> gl {migVisible = b})
+
+instance Typeable n => HasStyle (MinorGridLines v n) where
+  applyStyle s = minorGridLinesStyle %~ applyStyle s
+
+------------------------------------------------------------------------
+-- Grid lines helpers
+------------------------------------------------------------------------
 
 -- | Place grid lines at the same position as the respective ticks. This
 --   is the 'Default'.
@@ -141,12 +182,46 @@ emptyGridLineFunction _ _ = []
 -- 'gridLinesVisible' :: 'Traversal'' ('SingleAxis' b v n) 'Bool'
 -- 'gridLinesVisible' :: 'Traversal'' ('GridLines' v n) 'Bool'
 -- @
-gridLineVisible :: (HasGridLines f a, Applicative f) => LensLike' f a Bool
-gridLineVisible = gridLines . vis where
+gridLinesVisible :: (HasGridLines f a, Applicative f) => LensLike' f a Bool
+gridLinesVisible = gridLines . vis where
   vis :: Traversal' (GridLines v n) Bool
   vis f a =
-       (\m mn -> a & majorGridLineVisible .~ m & minorGridLineVisible .~ mn)
-         <$> f (a ^. majorGridLineVisible) <*> f (a ^. minorGridLineVisible)
+       (\m mn -> a & majorGridLines . visible .~ m & minorGridLines . visible .~ mn)
+         <$> f (a ^. majorGridLines . visible) <*> f (a ^. minorGridLines . visible)
+
+------------------------------------------------------------------------
+-- Both grid lines
+------------------------------------------------------------------------
+
+-- | Type holding infomation about both major and minor grid lines.
+data GridLines v n = GridLines
+  { majGrid     :: MajorGridLines v n
+  , minGrid     :: MinorGridLines v n
+  } deriving Typeable
+
+type instance V (GridLines v n) = v
+type instance N (GridLines v n) = n
+
+class (HasMinorGridLines f a, HasMajorGridLines f a) => HasGridLines f a where
+  gridLines :: LensLike' f a (GridLines (V a) (N a))
+
+instance Functor f => HasGridLines f (GridLines v n) where
+  gridLines = id
+
+instance (Typeable n, Floating n) => Default (GridLines v n) where
+  def = GridLines
+    { majGrid = def
+    , minGrid = def
+    }
+
+instance Functor f => HasMajorGridLines f (GridLines v n) where
+  majorGridLines = lens majGrid (\g a -> g {majGrid = a})
+
+instance Functor f => HasMinorGridLines f (GridLines v n) where
+  minorGridLines = lens minGrid (\g a -> g {minGrid = a})
+
+instance Typeable n => HasStyle (GridLines v n) where
+  applyStyle s = (majorGridLines %~ applyStyle s) . (minorGridLines %~ applyStyle s)
 
 -- | Hide both major and minor grid lines.
 --
@@ -155,10 +230,10 @@ gridLineVisible = gridLines . vis where
 -- 'hideGridLines' :: 'SingleAxis' b c n -> 'SingleAxis' b c n
 -- 'hideGridLines' :: 'GridLines' b c n  -> 'GirdLines' b c n
 -- @
---
---   See 'HasGridLines' for more advanced visibility options.
 hideGridLines :: (HasGridLines Identity a, MonadState a m) => m ()
-hideGridLines = gridLineVisible .= False
+hideGridLines = do
+  minorGridLines . visible .= False
+  majorGridLines . visible .= False
 
 -- | Show both major and minor grid lines.
 --
@@ -167,16 +242,15 @@ hideGridLines = gridLineVisible .= False
 -- 'showGridLines' :: 'SingleAxis' b c n -> 'SingleAxis' b c n
 -- 'showGridLines' :: 'GridLines' b c n  -> 'GirdLines' b c n
 -- @
---
---   See 'HasGridLines' for more advanced visibility options.
 showGridLines :: (HasGridLines Identity a, MonadState a m) => m ()
-showGridLines = gridLineVisible .= True
+showGridLines = do
+  minorGridLines . visible .= True
+  majorGridLines . visible .= True
 
 -- | Traversal over both the major and minor grid styles. This can be used at seversal levels in the Axis:
-gridLineStyle :: (HasGridLines f a, Applicative f) => LensLike' f a (Style (V a) (N a))
-gridLineStyle = gridLines . styles where
+gridLinesStyle :: (HasGridLines f a, Applicative f) => LensLike' f a (Style (V a) (N a))
+gridLinesStyle = gridLines . styles where
   styles :: Traversal' (GridLines v n) (Style v n)
   styles f a =
-    (\m mn -> a & majorGridLineStyle .~ m & minorGridLineStyle .~ mn)
-      <$> f (a ^. majorGridLineStyle) <*> f (a ^. minorGridLineStyle)
-
+    (\m mn -> a & majorGridLinesStyle .~ m & minorGridLinesStyle .~ mn)
+      <$> f (a ^. majorGridLinesStyle) <*> f (a ^. minorGridLinesStyle)

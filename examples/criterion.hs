@@ -31,7 +31,7 @@ import qualified Data.Foldable as Foldable
 -- Misc stuff ----------------------------------------------------------
 
 barAxis :: Axis B V2 Double
-barAxis = r2Axis &~ gridLineVisible .= False
+barAxis = r2Axis &~ hideGridLines
 
 -- Criterion csv parsing -----------------------------------------------
 
