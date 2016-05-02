@@ -12,19 +12,12 @@ mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 
 myaxis :: Axis B V2 Double
 myaxis = r2Axis &~ do
-  linePlot'  mydata1
+  linePlot' mydata1
   linePlot mydata2 $ do
     key "data 2"
     plotColor .= black
-    dotsonPoint .= True
 
   linePlot mydata3 $ key "data 3"
-
-  axisPlots . each . _LinePlot' . dotsonPoint .= True
-
-_LinePlot' :: (Plotable (LinePlot v n) b, Typeable b)
-           => Traversal' (DynamicPlot b v n) (LinePlot v n)
-_LinePlot' = _DynamicPlot . rawPlot
 
 main :: IO ()
 main = r2AxisMain myaxis

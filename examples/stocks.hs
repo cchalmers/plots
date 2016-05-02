@@ -53,9 +53,9 @@ myaxis :: IO (Axis B V2 Double)
 myaxis = execStateT ?? r2Axis $ do
   goog <- stock "GOOG"
   appl <- stock "AAPL"
-  let stocks = responseBody . to (filterStocks . parseStocks) . each
-  linePlotOf stocks goog $ key "google"
-  linePlotOf stocks appl $ key "apple"
+  let stocks r = filterStocks . parseStocks $ r ^. responseBody
+  linePlot (stocks goog) $ key "google"
+  linePlot (stocks appl) $ key "apple"
   xAxis . tickLabelFunction .= autoTimeLabels
 
   xLabel .= "date"

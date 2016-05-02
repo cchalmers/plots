@@ -95,9 +95,9 @@ criterionAxis path = execStateT ?? barAxis $ do
     barWidth .= 0.6
     onBars $ \cresults -> key (fst cresults)
 
-  modify hideMinorTicks
+  minorTicks . visible .= False
   xAxis . axisLabelText .= "average time (s)"
-  xAxis . majorGridLineVisible .= True
+  xAxis . majorGridLines . visible .= True
 
 -- instance HasOrientation p => HasOrientation (Plot p b) where
 --   orientation = rawPlot . orientation
