@@ -66,6 +66,7 @@ module Plots.Types
     -- ** Dynamic plot
   , DynamicPlot (..)
   , _DynamicPlot
+  , dynamicPlot
   , dynamicPlotMods
 
     -- ** Styled plot
@@ -501,6 +502,16 @@ type instance N (DynamicPlot b v n) = n
 _DynamicPlot :: (Plotable p b, Typeable b) => Prism' (DynamicPlot b (V p) (N p)) (Plot p b)
 _DynamicPlot = prism' DynamicPlot (\(DynamicPlot p) -> cast p)
 
+-- | Traversal over the dynamic plot without the Plotable constraint
+--   '_DynamicPlot' has.
+dynamicPlot :: forall p b. (Typeable p, Typeable b)
+            => Traversal' (DynamicPlot b (V p) (N p)) (Plot p b)
+dynamicPlot f d@(DynamicPlot p) =
+  case eq p of
+    Just Refl -> f p <&> \p' -> DynamicPlot p'
+    Nothing   -> pure d
+  where eq :: Typeable a => a -> Maybe (a :~: Plot p b)
+        eq _ = eqT
 instance Functor f => HasPlotOptions f (DynamicPlot b v n) b where
   plotOptions f (DynamicPlot (Plot p opts sty)) =
     f opts <&> \opts' -> DynamicPlot (Plot p opts' sty)

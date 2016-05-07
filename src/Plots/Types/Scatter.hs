@@ -225,16 +225,6 @@ instance (Applicative f, Typeable b, Typeable (BaseSpace c), Typeable n, Typeabl
     => HasScatterOptions f (Axis b c n) a where
   gscatterOptions = axisPlots . traverse . gscatterOptions
 
--- Traversal over the dynamic plot without the Plotable constraint
--- _DynamicPlot has.
-dynamicPlot :: forall p b. (Typeable p, Typeable b)
-            => Traversal' (DynamicPlot b (V p) (N p)) (Plot p b)
-dynamicPlot f d@(DynamicPlot p) =
-  case eq p of
-    Just Refl -> f p <&> \p' -> DynamicPlot p'
-    Nothing   -> pure d
-  where eq :: Typeable a => a -> Maybe (a :~: Plot p b)
-        eq _ = eqT
 
 -- Pure scatter lenses -------------------------------------------------
 
