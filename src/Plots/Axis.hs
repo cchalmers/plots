@@ -97,6 +97,7 @@ data SingleAxis b v n = SingleAxis
   , saScaling   :: AxisScaling n
   , saGridLines :: GridLines v n
   , saTicks     :: Ticks v n
+  , saVisible   :: Bool
   }
 
 type instance V (SingleAxis b v n) = v
@@ -111,6 +112,7 @@ instance (TypeableFloat n, Enum n, Renderable (Text n) b)
     , saGridLines  = def
     , saTicks      = def
     , saScaling    = def
+    , saVisible    = True
     }
 
 instance Functor f => HasTicks f (SingleAxis b v n) where
@@ -142,6 +144,9 @@ instance Functor f => HasMinorGridLines f (SingleAxis b v n) where
 
 instance Functor f => HasAxisScaling f (SingleAxis b v n) where
   axisScaling = lens saScaling (\sa s -> sa {saScaling = s})
+
+instance HasVisibility (SingleAxis b v n) where
+  visible = lens saVisible (\sa b -> sa {saVisible = b})
 
 -- singleAxisScale :: Lens' (SingleAxis b v n) AxisScale
 -- singleAxisScale = lens saScale (\sa s -> sa {saScale = s})

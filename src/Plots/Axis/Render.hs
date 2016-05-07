@@ -141,8 +141,11 @@ axisOnBasis
   -> E v              -- orthogonal direction of axis
   -> LabelPosition    -- where (if at all) should labels be placed?
   -> QDiagram b V2 n Any   -- resulting axis
-axisOnBasis p bs a ls t e eO lp = tickLabels <> axLabels <> ticks <> line <> grid
+axisOnBasis p bs a ls t e eO lp
+  | a ^. hidden = phantom axis
+  | otherwise   = axis
   where
+    axis = tickLabels <> axLabels <> ticks <> line <> grid
     tStroke = stroke . transform t
 
     -- axis labels (x,y etc.)
