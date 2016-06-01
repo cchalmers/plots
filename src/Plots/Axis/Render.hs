@@ -11,7 +11,7 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Axis.Render
--- Copyright   :  (C) 2015 Christopher Chalmers
+-- Copyright   :  (C) 2016 Christopher Chalmers
 -- License     :  BSD-style (see the file LICENSE)
 -- Maintainer  :  Christopher Chalmers
 -- Stability   :  experimental
@@ -25,11 +25,12 @@ module Plots.Axis.Render where
 
 import           Data.Foldable
 import           Data.Typeable
+import           Data.Bool
 
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
-import           Linear                     hiding (translation)
+import           Linear                     hiding (translation, rotate)
 
 import           Diagrams.Coordinates.Polar
 
@@ -46,6 +47,50 @@ import           Plots.Types
 import           Plots.Util
 
 import           Prelude
+
+-- | Build a list of styled plots from the axis, ready to be rendered.
+--   This takes into account any 'AxisStyle' changes and applies the
+--   'finalPlots' modifications.
+buildPlots :: BaseSpace c ~ v => Axis b c n -> [StyledPlot b v n]
+buildPlots a = map (appEndo $ a ^. plotModifier)
+             $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
+             -- TODO: correct order
+
+-- -- | Build the axis spec from the axis parameters. The AxisSpec contains
+-- --   the size infomation needed to render the axis.
+-- buildAxisSpec :: BaseSpace c ~ v => Axis b c n -> (AxisSpec v n, [StyledPlot])
+-- buildAxisSpec a = AxisSpec
+--   { _specBounds = xs
+--   , _specTrans  = t
+--   , _specScale  = (a^.axes . column logScale)
+--   , _specColourMap = (a ^. axisColourMap)
+--   }
+--     (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
+
+
+--     -- First we need to gather infomation from the axis, this is done by
+--     -- building the styled plots (not yet rendered). The bounding box of
+--     -- these styled plots is used along with the axis scaling infomation
+--     -- from the axes to calculate the bounds and transforms needed to
+--     -- build the rest of the axis.
+--     styledPlots  = buildPlots a
+--     (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
+--     t            = tv <> t'
+
+--     -- To render the plots we need to give the AxisSpec to the styled
+--     -- plots.
+--     spec          = AxisSpec xs t (a^.axes . column logScale) (a ^. axisColourMap)
+--     renderedPlots = foldMap (renderStyledPlot spec) styledPlots
+
+--     -- Now we draw each of the individual axes.
+--     drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axes.column logScale) t ll ll2
+
+--     -- Alls that's left are the legend, colour bar and title.  The
+--     -- rendering gubbins of these are in their respective modules.
+--     bb   = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
+--     leg  = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
+--     cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
+--     -- ttl = drawTitle bb (a^.title)
 
 class RenderAxis b v n where
   renderAxis :: Axis b v n -> QDiagram b (BaseSpace v) n Any
@@ -86,9 +131,13 @@ class RenderAxis b v n where
 --     --
 --     l = a ^. axisLinearMap
 
+-- | The 'RenderAxis' class provides a default way to render an axis for
+--  each space.
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
           Renderable (Text n) b)
     => RenderAxis b V2 n where
+  -- | Render an axis and its plots, as well as the legend and colour
+  --   bar.
   renderAxis = renderR2Axis
 
 renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
@@ -117,8 +166,7 @@ renderR2Axis a = frame 40
     -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
     cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
     --
-    styledPlots = map (appEndo $ a ^. plotModifier)
-                $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
+    styledPlots = buildPlots a
 
 -- | The position of axis labels for a
 data LabelPosition
@@ -429,29 +477,285 @@ renderPolarAxis
 renderPolarAxis a = frame 15
                $ leg
               -- <> colourBar
-              <> circles
+              -- <> circles
               <> rAxis
               <> plots
   where
-    spec = AxisSpec (pure (-10, 10)) mempty (pure LinearAxis) (a ^. axisColourMap)
+    spec = AxisSpec (pure (-20, 20)) mempty (pure LinearAxis) (a ^. axisColourMap)
     plots    = foldMap (renderStyledPlot spec) styledPlots # scale 6
 
     -- drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --
-    rAxis = (rline <> rticks) # scale 6
+    -- rAxis = (rline <> rticks) # scale 6
+    rAxis = drawPolarAxis spec' (a ^. axes)
+    spec' = AxisSpec (pure (-20, 20)) mempty (pure LinearAxis) (a ^. axisColourMap)
 
-    rline = origin ~~ (10 *^ unitX) # lwO 2
-    rticks = foldMap moveTo (map (\x -> mkP2 x 0) [1..9]) tick # lwO 1
-    tick = unit_Y ~~ unitY & scale 0.2
+    -- rline = origin ~~ (10 *^ unitX) # lwO 2
+    -- rticks = foldMap moveTo (map (\x -> mkP2 x 0) [1..9]) tick # lwO 1
+    -- tick = unit_Y ~~ unitY & scale 0.2
     --
-    circles = foldMap circle [1,3..9] # lwO 1 # lc grey # scale 6 # opacity 0.5
+    -- circles = foldMap circle [1,3..9] # lwO 1 # lc grey # scale 6 # opacity 0.5
     --
     -- (xs, tv, t') = workOutScale a
     -- t = tv <> t'
     --
-    bb = fromCorners (p2 (-10,-10)) (p2 (10,10)) -- (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
+    bb = fromCorners (p2 (-20,-20)) (p2 (20,20)) -- (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
     --
 
-    styledPlots = zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
+    styledPlots = map (appEndo $ a ^. plotModifier)
+                $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
 
+
+    -- -- First we need to gather infomation from the axis, this is done by
+    -- -- building the styled plots (not yet rendered). The bounding box of
+    -- -- these styled plots is used along with the axis scaling infomation
+    -- -- from the axes to calculate the bounds and transforms needed to
+    -- -- build the rest of the axis.
+    -- styledPlots  = buildPlots a
+    -- (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
+    -- t            = tv <> t'
+
+    -- -- To render the plots we need to give the AxisSpec to the styled
+    -- -- plots.
+    -- spec          = AxisSpec xs t (a^.axes . column logScale) (a ^. axisColourMap)
+    -- renderedPlots = foldMap (renderStyledPlot spec) styledPlots
+
+    -- -- Now we draw each of the individual axes.
+    -- drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axes.column logScale) t ll ll2
+
+    -- -- Alls that's left are the legend, colour bar and title.  The
+    -- -- rendering gubbins of these are in their respective modules.
+    -- bb   = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
+    -- leg  = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
+    -- cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
+    -- -- ttl = drawTitle bb (a^.title)
+
+drawPolarAxis :: forall b n. (Renderable (Path V2 n) b, TypeableFloat n)
+              => AxisSpec V2 n -> Polar (SingleAxis b V2 n) -> QDiagram b V2 n Any
+drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
+
+  r = 100
+
+  ----------------------------------------------------------------------
+  -- Radial axis
+  ----------------------------------------------------------------------
+
+  -- The radial axis consists of an axis line from the centre to the
+  -- edge. The ticks and tickLabels are along this line. The grid lines
+  -- are made up of circles that pass through the line, centered at the
+  -- center of the plot.
+  rAx
+    | rA ^. hidden = mempty
+    | otherwise = rAxLine <> rAxLabel <> rAxTicks <> rAxTickLabels <> rAxGridLines
+
+  rAxLine = line # whenever (rA ^. axisLine . hidden) phantom
+    where
+      -- XXX for now the radial axis is on the theta=0 line. Need some
+      -- way to change this
+      line = (origin ~~ mkP2 r 0) # applyStyle (rA^.axisLineStyle)
+
+  -- Radial axis label -------------------------------------------------
+
+  rAxLabel
+    | null rTxt || rA ^. axisLabel . hidden = mempty
+    | otherwise = view axisLabelTextFunction rA rLabelAlign rTxt
+                    # translate rLabelPos
+                    # applyStyle (rA ^. axisLabelStyle)
+
+  rLabelPos = V2 x (- view axisLabelGap rA) where
+    x = case rA ^. axisLabelPosition of
+          MiddleAxisLabel -> r/2
+          LowerAxisLabel  -> 0
+          UpperAxisLabel  -> r
+  rTxt = rA ^. axisLabelText
+  rLabelAlign = BaselineText
+
+  -- Radial axis ticks -------------------------------------------------
+
+  -- The positions of major and minor ticks along the radial axis
+  majorTickRs = view majorTicksFunction rA (0,r)
+  minorTickRs = view minorTicksFunction rA majorTickRs (0,r)
+
+  -- Major and minor ticks are placed along the line at the calculated
+  -- positions majorTickRs
+  rAxTicks      = rAxMajorTicks <> rAxMinorTicks
+  rAxMajorTicks
+    | rA ^. majorTicks . hidden = mempty
+    | otherwise = foldMap (\x -> rAxMajorTick # translateX x) majorTickRs
+  rAxMinorTicks
+    | rA ^. minorTicks . hidden = mempty
+    | otherwise = foldMap (\x -> rAxMinorTick # translateX x) minorTickRs
+
+  -- The paths used for individual major and minor ticks
+  rAxMajorTick = someTick (rA ^. majorTicksAlignment) (rA ^. majorTicksLength)
+  rAxMinorTick = someTick (rA ^. minorTicksAlignment) (rA ^. minorTicksLength)
+
+  someTick tType d = case tType of
+    TickSpec (fromRational -> aa) (fromRational -> bb)
+             -> mkP2 0 (-d*bb) ~~ mkP2 0 (d*aa)
+    AutoTick -> mkP2 0 (-d)    ~~ mkP2 0 d
+
+  -- Radial grid2lines -------------------------------------------------
+
+  rAxGridLines
+    -- | rA ^. girdLines . hidden = mempty
+    | otherwise                = rMajorGridLines <> rMinorGridLines
+
+  majorGridRs :: [n]
+  majorGridRs    = view majorGridLinesFunction rA majorTickRs (0,r)
+
+  rMajorGridLines :: QDiagram b V2 n Any
+  rMajorGridLines
+    | rA ^. majorGridLines . hidden = mempty
+    | otherwise  = foldMap circle (filter (>0) majorGridRs)
+                     # applyStyle (rA ^. majorGridLinesStyle)
+
+  minorGridRs :: [n]
+  minorGridRs    = view minorGridLinesFunction rA minorTickRs (0,r)
+  rMinorGridLines :: QDiagram b V2 n Any
+  rMinorGridLines
+    | rA ^. minorGridLines . hidden = mempty
+    | otherwise = foldMap circle (filter (>0) minorGridRs)
+                    # applyStyle (rA ^. minorGridLinesStyle)
+
+  -- Radial tick labels ------------------------------------------------
+
+  rAxTickLabels :: QDiagram b V2 n Any
+  rAxTickLabels
+    | rA ^. tickLabel . hidden = mempty
+    | otherwise                = foldMap rDrawTickLabel tickLabelRs
+
+  -- The positions of the tick labels.
+  tickLabelRs :: [(n, String)]
+  tickLabelRs = view tickLabelFunction rA majorTickRs (0,r)
+
+  -- Draw a single tick label given the position and the string to use
+  rDrawTickLabel :: (n,String) -> QDiagram b V2 n Any
+  rDrawTickLabel (x,label) =
+    view tickLabelTextFunction rA (BoxAlignedText 0.5 1) label
+      # translate (V2 x (- view axisLabelGap rA))
+      # applyStyle (rA ^. tickLabelStyle)
+
+  ----------------------------------------------------------------------
+  -- Angular axis
+  ----------------------------------------------------------------------
+
+  -- The angular axis is a circular line around the perimieter of the
+  -- polar plot. The Ticks and tick labels are placed around this
+  -- perimeter. The Grid lines go from the perimeter to the center.
+  thetaAx
+    | thetaA ^. hidden = mempty
+    | otherwise = thetaAxLine <> thetaAxLabel
+         <> thetaAxTicks <> thetaAxTickLabels <> thetaAxGridLines
+
+  theta = 2*pi
+  thetaAxLine = line # whenever (thetaA ^. axisLine . hidden) phantom
+    where
+      -- XXX for now the radial axis is on the theta=0 line. Need some
+      -- way to change this
+      line = (origin ~~ mkP2 r 0) # applyStyle (thetaA^.axisLineStyle)
+
+  -- Angular axis label ------------------------------------------------
+
+  -- Where should the label go?
+  thetaAxLabel
+    | null thetaTxt || thetaA ^. axisLabel . hidden = mempty
+    | otherwise = view axisLabelTextFunction thetaA thetaLabelAlign thetaTxt
+                    # translate thetaLabelPos
+                    # applyStyle (thetaA ^. axisLabelStyle)
+
+  thetaLabelPos = V2 x (- view axisLabelGap thetaA) where
+    x = case thetaA ^. axisLabelPosition of
+          MiddleAxisLabel -> theta/2
+          LowerAxisLabel  -> 0
+          UpperAxisLabel  -> theta
+  thetaTxt = thetaA ^. axisLabelText
+  thetaLabelAlign = BaselineText
+
+  -- Angular axis ticks ------------------------------------------------
+
+  -- The positions of major and minor ticks along the angular axis
+  majorTickThetas = view majorTicksFunction thetaA (0,theta)
+  minorTickThetas = view minorTicksFunction thetaA majorTickThetas (0,theta)
+
+  -- Major and minor ticks are placed along perimeter, facing the center
+  -- of the axis. Ticks start of horizonal and are rotated to the
+  -- correct position on the axis.
+  thetaAxTicks      = thetaAxMajorTicks <> thetaAxMinorTicks
+  thetaAxMajorTicks
+    | thetaA ^. majorTicks . hidden = mempty
+    | otherwise = foldMap (\phi -> thetaAxMajorTick # translateX r # rotate (phi@@rad)) majorTickThetas
+  thetaAxMinorTicks
+    | thetaA ^. minorTicks . hidden = mempty
+    | otherwise = foldMap (\phi -> thetaAxMinorTick # translateX r # rotate (phi@@rad)) minorTickThetas
+
+  -- The paths used for individual major and minor ticks
+  thetaAxMajorTick = someThetaTick (thetaA ^. majorTicksAlignment) (thetaA ^. majorTicksLength)
+  thetaAxMinorTick = someThetaTick (thetaA ^. minorTicksAlignment) (thetaA ^. minorTicksLength)
+
+  someThetaTick tType d = case tType of
+    TickSpec (fromRational -> aa) (fromRational -> bb)
+             -> mkP2 (-d*bb) 0 ~~ mkP2 (d*aa) 0
+    AutoTick -> mkP2 (-d) 0    ~~ mkP2 d 0
+
+  -- Angular grid lines ------------------------------------------------
+
+  -- grid lines go from the centre of the axis to the perimeter
+  thetaAxGridLines
+    -- | thetaA ^. girdLines . hidden = mempty
+    | otherwise                = thetaMajorGridLines <> thetaMinorGridLines
+
+  majorGridThetas :: [n]
+  majorGridThetas = view majorGridLinesFunction thetaA majorTickThetas (0,theta)
+
+  thetaMajorGridLines :: QDiagram b V2 n Any
+  thetaMajorGridLines
+    | thetaA ^. majorGridLines . hidden = mempty
+    | otherwise  = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) majorGridThetas
+                     # applyStyle (thetaA ^. majorGridLinesStyle)
+
+  minorGridThetas :: [n]
+  minorGridThetas    = view minorGridLinesFunction thetaA minorTickThetas (0,theta)
+  thetaMinorGridLines :: QDiagram b V2 n Any
+  thetaMinorGridLines
+    | thetaA ^. minorGridLines . hidden = mempty
+    | otherwise = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) minorGridThetas
+                    # applyStyle (thetaA ^. minorGridLinesStyle)
+
+  -- Angular tick labels -----------------------------------------------
+
+  thetaAxTickLabels :: QDiagram b V2 n Any
+  thetaAxTickLabels
+    | thetaA ^. tickLabel . hidden = mempty
+    | otherwise                = foldMap thetaDrawTickLabel tickLabelThetas
+
+  -- The positions of the tick labels.
+  tickLabelThetas :: [(n, String)]
+  tickLabelThetas = view tickLabelFunction thetaA majorTickThetas (0,theta)
+
+  -- Draw a single tick label given the position and the string to use
+  thetaDrawTickLabel :: (n,String) -> QDiagram b V2 n Any
+  thetaDrawTickLabel (x,label) =
+    view tickLabelTextFunction thetaA a label
+      # translate v
+      # applyStyle (thetaA ^. tickLabelStyle)
+        where v = mkPolar (r + view axisLabelGap thetaA) (x@@rad) ^. xy_
+              -- a = BoxAlignedText (0.5-cos x/2) (0.5-sin x/2)
+              a = BoxAlignedText 0.5 0.5
+
+    -- line
+    --   | a ^. axisLine . hidden = mempty
+    --   | otherwise = foldMap mkline (map snd ys) -- merge with ticks?
+    --          # transform t
+    --          # stroke
+    --          -- # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
+    --          # lineCap LineCapSquare
+    --   where
+    --     -- TODO: Arrow for R3
+    --     mkline y = pathFromVertices
+    --      $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
+
+-- | Apply a function if the predicate is true.
+whenever :: Bool -> (a -> a) -> a -> a
+whenever b f = bool id f b

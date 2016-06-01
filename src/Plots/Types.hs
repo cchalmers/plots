@@ -106,10 +106,26 @@ module Plots.Types
   , specPoint
   , specColourMap
 
+  -- ** Positioning
+  , Placement (..)
+  , HasPlacement (..)
+  , HasGap (..)
+  , placeAgainst
+
+  -- *** Common positions
+  -- **** Inside positions
+  , topLeft, top, topRight, left, right, bottomLeft, bottom
+  , bottomRight
+
+  -- **** Outside positions
+  , leftAbove, leftTop, leftMid, leftBottom, leftBelow, midAbove, midBelow
+  , rightAbove, rightTop, rightMid, rightBottom, rightBelow
+
   ) where
 
 import           Control.Monad.State
 import           Data.Bool
+import           Data.Maybe            (fromMaybe)
 import           Data.Orphans          ()
 import           Data.Typeable
 import           Data.List             (sortOn)
@@ -150,6 +166,114 @@ horizontal = orientation . iso (==Horizontal) (bool Vertical Horizontal)
 -- | Lens onto whether an object's orientation is vertical.
 vertical :: HasOrientation a => Lens' a Bool
 vertical = horizontal . involuted not
+
+------------------------------------------------------------------------
+-- Placement
+------------------------------------------------------------------------
+
+class HasGap a where
+  -- | The value of the gap when rendering.
+  gap :: Lens' a (N a)
+
+-- | A 'Position' is a point on an axis together with an anchor and a
+--   direction for the gap.
+data Placement = Placement
+  { pAt     :: V2 Rational
+  , pAnchor :: V2 Rational
+  , pGapDir :: Direction V2 Rational
+  }
+  deriving (Show, Read, Eq, Ord)
+  -- In the future the axis position may be replaced by a reader-like
+  -- anchor system where you can choose parts of the rendered axis as a
+  -- position.
+  -- we keep posGap and posGapDir as separate values to keep lens laws
+  -- for 0 gaps
+  -- I'm not sure this should work for a 3D axis
+
+class HasPlacement a where
+  placement :: Lens' a Placement
+
+  -- | The position relative to the axis. @V2 0 0@ corresponds to the
+  --   bottom left corner, @V2 1 1@ is the top right corner.
+  placementAt :: Lens' a (V2 Rational)
+  placementAt = placement . lens pAt (\p a -> p {pAt = a})
+
+  -- | The anchor used for the object being positioned. @V2 0 0@
+  --   corresponds to the bottom left corner, @V2 1 1@ is the top right
+  --   corner.
+  placementAnchor :: Lens' a (V2 Rational)
+  placementAnchor = placement . lens pAnchor (\p a -> p {pAnchor = a})
+
+  -- | The direction to extend the 'gap' when positioning.
+  gapDirection :: Lens' a (Direction V2 Rational)
+  gapDirection = placement . lens pGapDir (\p a -> p {pGapDir = a})
+
+instance HasPlacement Placement where
+  placement = id
+
+-- Inside positions ----------------------------------------------------
+
+-- Internal helper for all inside placements
+pInside :: V2 Rational -> Placement
+pInside v = Placement
+  { pAt     = v
+  , pAnchor = v
+  , pGapDir = dirBetween' (P v) origin
+  }
+
+-- | @dirBetween p q@ returns the directions from @p@ to @q@
+dirBetween' :: (Additive v, Num n) => Point v n -> Point v n -> Direction v n
+dirBetween' p q = direction $ q .-. p
+
+
+topLeft, top, topRight, left, right, bottomLeft, bottom, bottomRight :: Placement
+topLeft     = pInside (V2 (-1)   1 )
+top         = pInside (V2   0    1 )
+topRight    = pInside (V2   1    1 )
+left        = pInside (V2 (-1)   0 )
+right       = pInside (V2 (-1)   0 )
+bottomLeft  = pInside (V2 (-1) (-1))
+bottom      = pInside (V2   0  (-1))
+bottomRight = pInside (V2   1  (-1))
+
+-- Outside positions ---------------------------------------------------
+
+leftAbove, leftTop, leftMid, leftBottom, leftBelow, midAbove, midBelow,
+  rightAbove, rightTop, rightMid, rightBottom, rightBelow :: Placement
+
+leftAbove   = Placement (V2 (-1)   1 ) (V2 (-1) (-1)) (direction (V2   0    1 ))
+leftTop     = Placement (V2 (-1)   1 ) (V2   1    1 ) (direction (V2 (-1)   0 ))
+leftMid     = Placement (V2 (-1)   0 ) (V2   1    0 ) (direction (V2 (-1)   0 ))
+leftBottom  = Placement (V2 (-1) (-1)) (V2   1  (-1)) (direction (V2 (-1)   0 ))
+leftBelow   = Placement (V2 (-1) (-1)) (V2 (-1)   1 ) (direction (V2   0  (-1)))
+
+midAbove    = Placement (V2   0    1 ) (V2   0  (-1)) (direction (V2   0    1 ))
+midBelow    = Placement (V2   0  (-1)) (V2   0    1 ) (direction (V2   0  (-1)))
+
+rightAbove  = Placement (V2   1    1 ) (V2   1  (-1)) (direction (V2   0    1 ))
+rightTop    = Placement (V2   1    1 ) (V2 (-1)   1 ) (direction (V2   1    0 ))
+rightMid    = Placement (V2   1    0 ) (V2 (-1)   0 ) (direction (V2   1    0 ))
+rightBottom = Placement (V2   1  (-1)) (V2 (-1) (-1)) (direction (V2   1    0 ))
+rightBelow  = Placement (V2   1  (-1)) (V2   1    1 ) (direction (V2   0  (-1)))
+
+-- Using positions -----------------------------------------------------
+
+-- | A tool for aligned one object to another. Positions @b@ around the
+--   bounding box of @a@ by translating @b@.
+placeAgainst
+  :: (InSpace V2 n a, SameSpace a b, Enveloped a,
+      HasOrigin a, Alignable b, HasOrigin b, Floating n)
+  => a -> Placement -> n -> b -> b
+placeAgainst a (Placement (V2 px py) (V2 ax ay) d) n b
+  = b # anchor
+      # moveTo (pos .+^ n *^ fromDirection (fmap fromRational d))
+  where
+    pos    = mkP2 (lerp' px xu xl) (lerp' py yu yl)
+    anchor = alignBy unitX (fromRational ax) . alignBy unitY (fromRational ay)
+    (P (V2 xl yl), P (V2 xu yu)) = fromMaybe (origin, origin) (getCorners $ boundingBox a)
+
+    lerp' z u v = fromRational alpha * u + (1 - fromRational alpha) * v
+      where alpha = (z + 1) / 2
 
 ------------------------------------------------------------------------
 -- Legend entries

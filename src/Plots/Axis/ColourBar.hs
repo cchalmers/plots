@@ -1,100 +1,101 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleContexts       #-}
+{-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE MultiParamTypeClasses  #-}
+{-# LANGUAGE RecordWildCards        #-}
+{-# LANGUAGE TemplateHaskell        #-}
+{-# LANGUAGE TypeFamilies           #-}
+{-# LANGUAGE ViewPatterns           #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Axis.ColourBar
--- Copyright   :  (C) 2015 Christopher Chalmers
+-- Copyright   :  (C) 2016 Christopher Chalmers
 -- License     :  BSD-style (see the file LICENSE)
 -- Maintainer  :  Christopher Chalmers
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- XXX This module in unfinished and features in it may not work.
+-- Options for rendering a colour bar, either attached to an axis or
+-- rendered separately.
+--
+-- To change the colour map used for the colour bar see
+-- 'Plots.Style.axisColourMap' from "Plots.Style".
 --
 ----------------------------------------------------------------------------
 module Plots.Axis.ColourBar where
 
-import Diagrams.Prelude
-import Diagrams.TwoD.Text
-import Plots.Axis.Ticks
--- import Plots.Axis.Labels
-import Plots.Style
-import Plots.Legend
-import Plots.Types
-import Data.Typeable
+import           Data.Bool               (bool)
+import           Data.Typeable
+import           Diagrams.Core.Transform (fromSymmetric)
+import           Diagrams.Prelude        hiding (gap)
+import           Diagrams.TwoD.Text
+import           Plots.Axis.Grid
+import           Plots.Axis.Labels
+import           Plots.Axis.Ticks
+import           Plots.Style
+import           Plots.Types
+import           Plots.Util
 
 -- | Options for drawing a colour bar. Note that for an axis, the
 --   'ColourMap' is stored in the 'AxisStyle'. These options are for
 --   other aspects of the bar, not the colours used.
 data ColourBar b n = ColourBar
-  { cbOrientation :: Orientation
-  , cbVisible     :: Bool
-  , cbMajorTicks  :: MajorTicks V2 n
-  -- , cbTickFun     :: (n,n) -> [n] -- MajorTicksFunction
-  -- , cbTickVisible :: Bool
-  -- , cbTickLabels  :: [n] -> (n,n) -> [(n, String)]
-  -- , cbTickAlign   :: TickAlign
-  -- , cbTextFun     :: TextAlignment n -> String -> QDiagram b V2 n Any
-  , cbExtent      :: V2 n
-  , cbGap         :: n
-  , cbStyle       :: Style V2 n
+  { cbPlacement  :: Placement
+  , cbVisible    :: Bool
+  , cbTicks      :: MajorTicks V2 n
+  , cbGridLines  :: MajorGridLines V2 n
+  , cbTickLabels :: TickLabels b V2 n
+  , cbDraw       :: ColourMap -> QDiagram b V2 n Any
+  , cbWidth      :: n
+  , cbLengthFun  :: n -> n
+  , cbGap        :: n
+  , cbStyle      :: Style V2 n
   }
 
 type instance V (ColourBar b n) = V2
 type instance N (ColourBar b n) = n
 
+-- | The default colour bar.
 defColourBar :: (Renderable (Text n) b, Renderable (Path V2 n) b, TypeableFloat n, Enum n)
              => ColourBar b n
 defColourBar = ColourBar
-  { cbOrientation = Vertical
-  , cbMajorTicks  = def
+  { cbPlacement   = rightMid
   , cbVisible     = False
-  -- , cbTextFun     = mkText
-  -- , cbTickFun     = linearMajorTicks 3
-  -- , cbTickVisible = True
-  -- , cbTickAlign   = centreTicks
-  -- , cbTickLabels  = atMajorTicks floatShow
-  , cbExtent      = V2 15 200
+  , cbTicks       = def
+  , cbGridLines   = def
+  , cbTickLabels  = def
+  , cbDraw        = gradientColourBar
+  , cbWidth       = 20
+  , cbLengthFun   = id
   , cbGap         = 20
   , cbStyle       = mempty
-  -- , _colourBarSamples     :: Sampled n
   }
-
 
 class HasColourBar a b | a -> b where
   -- | Lens onto the 'ColourBar'.
   colourBar :: Lens' a (ColourBar b (N a))
 
-  -- -- | Placement of ticks given the range of the colour bar.
-  -- colourBarTickFun :: Lens' a ((N a, N a) -> [N a])
-  -- colourBarTickFun = colourBar . lens cbTickFun (\c a -> c {cbTickFun = a})
+  -- | How to draw the colour bar. Should return a 10x1 box.
+  colourBarDraw :: Lens' a (ColourMap -> QDiagram b V2 (N a) Any)
+  colourBarDraw = colourBar . lens cbDraw (\c a -> c {cbDraw = a})
 
-  -- -- | Alignment of ticks for the colour bar.
-  -- colourBarTickAlign :: Lens' a TickAlign
-  -- colourBarTickAlign = colourBar . lens cbTickAlign (\c a -> c {cbTickAlign = a})
+  -- | The width (orthogonal to the colour bar direction) of the colour
+  --   bar.
+  --
+  --   'Default' is @20@.
+  colourBarWidth :: Lens' a (N a)
+  colourBarWidth = colourBar . lens cbWidth (\c a -> c {cbWidth = a})
 
-  -- -- | Whether to show any ticks in the colour bar.
-  -- colourBarTickVisible :: Lens' a Bool
-  -- colourBarTickVisible = colourBar . lens cbTickVisible (\c a -> c {cbTickVisible = a})
-
-  -- -- | Placement of tick labels given the tick positions and bounds for
-  -- --   the colour bar.
-  -- colourBarTickLabels :: Lens' a ([N a] -> (N a, N a) -> [(N a, String)])
-  -- colourBarTickLabels = colourBar . lens cbTickLabels (\c a -> c {cbTickLabels = a})
-
-  -- -- | The text rendering function used for the tick labels of the colour bar.
-  -- colourBarTextFun :: Lens' a (TextAlignment (N a) -> String -> QDiagram b V2 (N a) Any)
-  -- colourBarTextFun = colourBar . lens cbTextFun (\c a -> c {cbTextFun = a})
-
-  -- | The size of the colour bar when it's in a 'Horizontal' 'orientation'.
-  colourBarExtent :: Lens' a (V2 (N a))
-  colourBarExtent = colourBar . lens cbExtent (\c a -> c {cbExtent = a})
+  -- | Set the length of the colour bar given the length of the axis the
+  --   colour bar is aligned to.
+  --
+  --   'Default' is 'id'.
+  colourBarLengthFunction :: Lens' a (N a -> N a)
+  colourBarLengthFunction = colourBar . lens cbLengthFun (\c a -> c {cbLengthFun = a})
 
   -- | Gap between the axis and the colour bar (if rendered with an axis).
+  --
+  --   'Default' is @20@.
   colourBarGap :: Lens' a (N a)
   colourBarGap = colourBar . lens cbGap (\c a -> c {cbGap = a})
 
@@ -105,53 +106,204 @@ class HasColourBar a b | a -> b where
 instance HasColourBar (ColourBar b n) b where
   colourBar = id
 
+instance HasGap (ColourBar b n) where
+  gap = colourBarGap
+
+instance HasPlacement (ColourBar b n) where
+  placement = lens cbPlacement (\c p -> c {cbPlacement = p})
+
+-- This is a kinda strange instance that I'm using as an experiment.
+-- The Orientation depends on the 'Placement' of the colour bar.
+--
+-- \ N /
+-- W * E
+-- / S \
+--
+-- if it's on the east or west it's vertical, north or south it's
+-- horizontal. If it's on a border it uses whatever way the gap
+-- direction points. If the direction is parallel to the direction it's
+-- on, we arbitrary choose pointing NE or SE to be vertical, NW and SW
+-- to be horizontal (just for completeness, having such gap directions
+-- doesn't make much sense).
+--
+-- When reversing the direction we map E <-> S and N <-> W. The gap
+-- direction is rotated to match the new position and anchor has its x
+-- and y flipped.
 instance HasOrientation (ColourBar b n) where
-  orientation = lens cbOrientation (\c a -> c {cbOrientation = a})
+  orientation = lens getter setter where
+
+    getter p
+      | north     || south = Horizontal
+      | east      || west  = Vertical
+      | northEast          = bool Horizontal Vertical (dx > dy)
+      | southEast          = bool Horizontal Vertical (dx > -dy)
+      | southWest          = bool Horizontal Vertical (dx < dy)
+      | northWest          = bool Horizontal Vertical (dx < -dy)
+      | otherwise          = error $ "internal error: get colourBar orientation: "
+                                  ++ show (p ^. placement)
+      where
+        V2 x y   = p ^. placementAt
+        V2 dx dy = p ^. gapDirection . _Dir
+        north = x < y && x > (-y)
+        east  = x > y && x > (-y)
+        south = x > y && x < (-y)
+        west  = x < y && x < (-y)
+        northEast = x ==   y  && x > 0
+        southEast = x == (-y) && x > 0
+        southWest = x ==   y  && x < 0
+        northWest = x == (-y) && x < 0
+
+    setter p o
+      | getter p == o = p
+      | otherwise     = p & placementAt        %~ flipX_Y
+                          & placementAnchor    %~ flipX_Y
+                          & gapDirection ._Dir %~ flipX_Y
 
 instance Typeable n => HasStyle (ColourBar b n) where
   applyStyle sty = colourBarStyle %~ applyStyle sty
 
+instance Functor f => HasMajorTicks f (ColourBar b n) where
+  majorTicks = lens cbTicks (\c a -> c {cbTicks = a})
+
+instance Functor f => HasTickLabels f (ColourBar b n) b where
+  tickLabel = lens cbTickLabels (\c a -> c {cbTickLabels = a})
+
 instance HasVisibility (ColourBar b n) where
   visible = lens cbVisible (\c a -> c {cbVisible = a})
-
--- | Draw a standalone colour bar.
-drawColourBar
-  :: (TypeableFloat n, Renderable (Path V2 n) b)
-  => ColourBar b n       -- ^ options
-  -> ColourMap           -- ^ colours to use
-  -> (n,n)               -- ^ bounds for colour bar tick labels
-  -> QDiagram b V2 n Any -- ^ resulting colour bar
-drawColourBar cbo cm (_a,_b)
-  | cbo ^. hidden = mempty
-  | otherwise     = centerY $ bar -- -- ||| strutX 5 ||| labels
-  where
-    bar  = square 1 # fillTexture tx
-                    # scaleX x
-                    # scaleY y
-                    # applyStyle (cbStyle cbo)
-                    # alignB
-    -- labels = position (map (bimap toPos (cbTextFun cbo tAlign)) ls)
-    --            # fontSizeO 8
-    V2 x y = cbExtent cbo
-    -- toPos t = mkP2 0 (t * y / (b - a))
-    tx = mkLinearGradient (toStops cm) (mkP2 0 (-0.5)) (mkP2 0 0.5) GradPad
-    -- ps = cbTickFun cbo (a,b)
-    -- ls = cbTickLabels cbo ps (a,b)
-    -- tAlign = orient cbo (BoxAlignedText 0.5 1) (BoxAlignedText 0 0.5)
 
 -- | Add a colour bar to an object, using the bounding box for the object.
 addColourBar
   :: (TypeableFloat n, Renderable (Path V2 n) b)
-  => BoundingBox V2 n
-  -> ColourBar b n
+  => BoundingBox V2 n -- ^ bounding box to place against
+  -> ColourBar b n --
   -> ColourMap
   -> (n,n)
   -> QDiagram b V2 n Any
-addColourBar bb cbo cm ab
-  | cbVisible cbo = alignTo cbPos bb cbAnchor v cb
-  | otherwise     = mempty
+addColourBar bb cbo@ColourBar {..} cm bnds
+  | cbVisible = placeAgainst bb cbPlacement cbGap cb
+  | otherwise = mempty
   where
-    cbPos    = orient cbo South     East
-    cbAnchor = orient cbo AnchorTop AnchorLeft
-    v        = cbGap cbo *^ orient cbo unit_Y unitX
-    cb       = drawColourBar cbo cm ab
+    cb       = renderColourBar cbo cm bnds l
+    -- the length used for the rendered colour bar
+    l = cbLengthFun bbl
+    -- the length of the side of the bounding box the colour bar will be
+    -- against
+    bbl = orient cbo bx by
+    V2 bx by = boxExtents bb
+
+-- | Render a colour bar by it's self at a given width. Note this
+--   ignores 'colourBarGap' and 'colourBarLengthFunction'.
+renderColourBar
+  :: (TypeableFloat n, Renderable (Path V2 n) b)
+  => ColourBar b n -- ^ options for colour bar
+  -> ColourMap     -- ^ map to use
+  -> (n,n)         -- ^ bounds of the values on the colour bar
+  -> n             -- ^ length of the colour bar
+  -> QDiagram b V2 n Any
+renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
+  | cbVisible = bar # xy id reflectY
+                    # o id (reflectY . _reflectX_Y)
+
+             <> tLbs
+  | otherwise = mempty
+
+  where
+  -- These functions deal with the different cases for the position of
+  -- the colour bar so that the ticks and labels are on the outside of
+  -- the axis and the bar horizontal/vertical depending on which side
+  -- the bar is on.
+  o, xy :: a -> a -> a
+  o      = orient cb
+  xy a b = if let V2 x y = cb^.placementAt in x > y
+             then a else b
+
+  w   = cbWidth
+  f x = (x - (ub - lb)/2) * (ub - lb) * l
+
+  bar = outline <> tks <> gLines <> colours
+
+  -- the outline
+  outline = rect l w # applyStyle (cbStyle & _fillTexture .~ _AC ## transparent)
+
+  -- displaying the colour map
+  colours = cbDraw cm # centerXY # scaleX l # scaleY w
+
+  -- the ticks
+  tickXs = view majorTicksFunction cbTicks bnds
+  tks
+    | cbTicks ^. hidden = mempty
+    | otherwise = foldMap (\x -> aTick # translate (V2 (f x) (-w/2))) tickXs
+  aTick = someTick (cbTicks ^. majorTicksAlignment) (cbTicks ^. majorTicksLength)
+
+  someTick tType d = case tType of
+    TickSpec (fromRational -> aa) (fromRational -> bb)
+             -> mkP2 0 (-d*bb) ~~ mkP2 0 (d*aa)
+    AutoTick -> mkP2 0 (-d)    ~~ mkP2 0 d
+
+  -- grid lines
+  gridXs = view majorGridLinesFunction cbGridLines tickXs bnds
+  gLines
+    | cbGridLines ^. hidden = mempty
+    | otherwise             = foldMap mkGridLine gridXs
+                                # strokePath
+                                # applyStyle (cbGridLines ^. majorGridLinesStyle)
+  mkGridLine x = mkP2 (f x) (-w/2) ~~ mkP2 (f x) (w/2)
+
+  -- tick labels
+  tickLabelXs = view tickLabelFunction cbTickLabels tickXs bnds
+  tLbs
+    | cbTickLabels ^. hidden = mempty
+    | otherwise              = foldMap drawTickLabel tickLabelXs
+  drawTickLabel (x,label) =
+    view tickLabelTextFunction cbTickLabels tAlign label
+      # translate v
+      # applyStyle (cbTickLabels ^. tickLabelStyle)
+        where v = V2 (f x) (- w/2 - view tickLabelGap cbTickLabels)
+                    # xy id (_y %~ negate)
+                    # o id ((_y %~ negate) . flipX_Y)
+
+  tAlign = o (xy (BoxAlignedText 0.5 1) (BoxAlignedText 0.5 0))
+             (xy (BoxAlignedText 0 0.5) (BoxAlignedText 1 0.5))
+
+-- | The colour bar generated by a gradient texture. This may not be
+--   supported by all backends.
+gradientColourBar :: (TypeableFloat n, Renderable (Path V2 n) b) => ColourMap -> QDiagram b V2 n Any
+gradientColourBar cm =
+  rect 1 1
+    # fillTexture grad
+    # lw none
+  where
+    stops = map (\(x,c) -> GradientStop (SomeColor c) (fromRational x)) (colourList cm)
+    grad  = defaultLG & _LG . lGradStops .~ stops
+
+-- | Construct a colour bar made up on @n@ solid paths. The final
+--   diagram is 1 by 1, centred  at in the center of the start of the
+--   bar.
+pathColourBar :: (TypeableFloat n, Renderable (Path V2 n) b)
+              => Int -> ColourMap -> QDiagram b V2 n Any
+pathColourBar n cm = ifoldMap mkR xs
+  where
+    mkR i x = rect d' 1
+                # alignR
+                # fcA (cm ^. ixColour (x - 1/(2*fromIntegral n)))
+                # translateX (fromRational x)
+                # lw none
+      where
+        -- Some vector viewers don't render touching blocks of colour
+        -- correctly. To solve this we overlap by half a bar length for
+        -- all except the first bar (which is the one on top).
+        d' | i == 0 = d
+           | otherwise  = d*1.5
+
+    xs = tail (enumFromToN 0 1 n)
+    d  = 1 / fromIntegral n
+
+flipX_Y :: Num n => V2 n -> V2 n
+flipX_Y (V2 x y) = V2 (-y) (-x)
+
+_reflectionX_Y :: (Additive v, R2 v, Num n) => Transformation v n
+_reflectionX_Y = fromSymmetric $ (_xy %~ flipX_Y) <-> (_xy %~ flipX_Y)
+
+_reflectX_Y :: (InSpace v n t, R2 v, Transformable t) => t -> t
+_reflectX_Y = transform _reflectionX_Y
+

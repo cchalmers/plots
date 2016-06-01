@@ -71,7 +71,6 @@ data UniformScaleStrategy
 --   scale of the axis.
 data AxisScaling n = Scaling
   { asRatio          :: Maybe n
-  , asPostScale      :: Maybe n
   , asMode           :: ScaleMode
   , asEnlarge        :: Extending n
   , asOutputSize     :: Maybe n
@@ -90,7 +89,6 @@ type instance N (AxisScaling n) = n
 instance Fractional n => Default (AxisScaling n) where
   def = Scaling
     { asRatio          = Nothing
-    , asPostScale      = Nothing
     , asMode           = AutoScale
     , asEnlarge        = RelativeExtend 0.1
     , asOutputSize     = Just 300
@@ -113,20 +111,11 @@ class HasAxisScaling f a where
   -- | The way to scale in one direction.
   axisScaling :: LensLike' f a (AxisScaling (N a))
 
-  -- | The ratio between this axis and other axes.
-  scaleAspectRatio :: Functor f => LensLike' f a (Maybe (N a))
-  scaleAspectRatio = axisScaling . lens asRatio (\as r -> as {asRatio = r})
-
-  -- | How much to extend the bounds beyond any inferred bounds.
-  scalePostScale :: Functor f => LensLike' f a (Maybe (N a))
-  scalePostScale = axisScaling
-                 . lens asPostScale (\as r -> as {asPostScale = r})
-
   -- | The ratio relative to other axis. If no ratios are set, the ratio
   --   is not enforced. If at least one is set, 'Nothing' ratios are
   --   @1@.
-  scaleRatio :: Functor f => LensLike' f a (Maybe (N a))
-  scaleRatio = axisScaling . lens asRatio (\as r -> as {asRatio = r})
+  scaleAspectRatio :: Functor f => LensLike' f a (Maybe (N a))
+  scaleAspectRatio = axisScaling . lens asRatio (\as r -> as {asRatio = r})
 
   -- | The mode to determine how to scale the bounds in a direction.
   --   Choose between 'AutoScale', 'NoScale', 'Stretch' or
@@ -176,7 +165,7 @@ calculateBounds
   :: Num n
   => AxisScaling n -- ^ Scaling to use for this axis
   -> Maybe (n, n)  -- ^ Inferred bounds (from any plots)
-  -> (n, n)        -- ^ Final bounds to use for this axis
+  -> (n, n)        -- ^ Lower and upper bounds to use for this axis
 calculateBounds Scaling {..} mInferred = (l', u') where
   -- bounds are only enlarged when min/max bound wasn't set
   l' = l & whenever (isNothing asBoundMin) (subtract x)
@@ -216,12 +205,11 @@ calculateScaling aScaling bb = (bounds, aspectScaling, sizeScaling) where
 
   -- the scaling used to meet the desired aspect ratio
   aspectScaling
-    -- if any of the aspect ratios are committed we use the aspect ratio from
-    -- aScaling
+    -- If any of the aspect ratios are committed we use the aspect ratio from
+    -- aScaling. Otherwise no ratios are set, ignore them and scale
+    -- such that each axis is the same length
     | anyOf (folded . scaleAspectRatio) isJust aScaling
-        = vectorScaling (view (scaleAspectRatio . non 1) <$> aScaling)
-    -- otherwise no ratios are set, ignore them and scale such
-    -- that each axis is the same length
+                = vectorScaling $ view (scaleAspectRatio . non 1) <$> aScaling
     | otherwise = inv $ vectorScaling v
 
   -- scaling used so the axis fits in the size spec

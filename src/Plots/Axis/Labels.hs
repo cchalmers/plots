@@ -164,13 +164,13 @@ class HasTickLabels f a b | a -> b where
 
   -- | The 'TextFunction' to render the text.
   --
-  --   'Default' is @'atMajorTicks' 'floatShow'@
+  --   'Default' is 'mkText'.
   tickLabelTextFunction :: Functor f => LensLike' f a (TextFunction b (V a) (N a))
   tickLabelTextFunction = tickLabel . lens tlTextFun (\tl f -> tl {tlTextFun = f})
 
   -- | The 'TextFunction' to render the text.
   --
-  --   'Default' is 'mkText'.
+  --   'Default' is @'atMajorTicks' 'floatShow'@
   tickLabelFunction :: Functor f => LensLike' f a (TickLabelFunction (N a))
   tickLabelFunction = tickLabel . lens tlFun (\tl f -> tl {tlFun = f})
 

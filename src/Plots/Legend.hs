@@ -13,15 +13,6 @@ module Plots.Legend
    Legend
  , HasLegend (..)
 
-   -- * Legend configuration
-
-   -- * Positioning
- , Position (..)
- , getPosition
- , Anchor (..)
- , anchor
- , alignTo
-
    -- * Drawing a legend
  , drawLegend
 
@@ -37,95 +28,11 @@ import           Diagrams.Prelude
 
 import           Plots.Types
 
-data Position
-  = North
-  | NorthEast
-  | East
-  | SouthEast
-  | South
-  | SouthWest
-  | West
-  | NorthWest
-  | Position Rational Rational -- ^ @Position 0 0 = SouthWest@, @Position 1 1 = NorthWest@
-  deriving (Show, Read, Eq, Ord)
-
-
-data Anchor
-  = AnchorTop
-  | AnchorTopRight
-  | AnchorRight
-  | AnchorBottomRight
-  | AnchorBottom
-  | AnchorBottomLeft
-  | AnchorLeft
-  | AnchorTopLeft
-  | Anchor Rational Rational -- ^ @Anchor 0 0 = AnchorBottomLeft@, @mkP2 1 1 = AnchorTopRight@
-  deriving (Show, Read, Eq, Ord)
-
-
--- | Align an object using a given anchor.
-anchor :: (InSpace V2 n a, Alignable a, HasOrigin a, Floating n)
-       => Anchor -> a -> a
-anchor a = case a of
-  AnchorTop         -> alignT . centerX
-  AnchorTopRight    -> alignTR
-  AnchorRight       -> alignL . centerY
-  AnchorBottomRight -> alignBR
-  AnchorBottom      -> alignB . centerX
-  AnchorBottomLeft  -> alignBL
-  AnchorLeft        -> alignL . centerY
-  AnchorTopLeft     -> alignTL
-  Anchor x y        -> alignBy unitX (fromRational x) . alignBy unitY (fromRational y)
-
--- | Get the point from the 'Position' on the bounding box of the enveloped
---   object. Returns the origin if @a@ has an empty envelope.
-getPosition :: (InSpace V2 n a, Enveloped a, HasOrigin a, Fractional n)
-            => Position -> a -> P2 n
-getPosition p a = flip (maybe origin) (getCorners $ boundingBox a)
-  $ \(P (V2 xl yl), P (V2 xu yu)) ->
-    P $ case p of
-          North     -> V2 (mid xl xu) yu
-          NorthEast -> V2 xu yu
-          East      -> V2 xu (mid yl yu)
-          SouthEast -> V2 xu yl
-          South     -> V2 (mid xl xu) yl
-          SouthWest -> V2 xl yl
-          West      -> V2 xl (mid yl yu)
-          NorthWest -> V2 xl yu
-          Position x y -> V2 (lerp' x xu xl) (lerp' y xu xl)
-  where mid l u = (l + u) / 2
-        lerp' alpha u v = fromRational alpha * u + (1 - fromRational alpha) * v
-
--- XXX write more
-
--- | A tool for aligned one object to another.
-alignTo :: (InSpace V2 n a, SameSpace a b, Enveloped a, HasOrigin a, Alignable b, HasOrigin b, Floating n)
-  => Position -> a -> Anchor -> V2 n -> b -> b
-alignTo p a an v b
-  = b # anchor an
-      # moveTo (getPosition p a .+^ v)
-
--- getPosition :: (Enveloped a, HasOrigin a, V a ~ V2, N a ~ n, Fractional n) => Position -> a -> P2 n
--- getPosition p a = case p of
---   North     -> lerp 0.5 tl tr
---   NorthEast -> tr
---   East      -> lerp 0.5 br tr
---   SouthEast -> br
---   South     -> lerp 0.5 br bl
---   SouthWest -> bl
---   West      -> lerp 0.5 bl tl
---   NorthWest -> tl
---   where
---     [bl, br, tl, tr] = getAllCorners $ boundingBox a
-
--- anchorAlign :: (Alignable a, Alignable b, V a ~ V b) => a -> Anchor -> Position -> V a ->
-
 -- | The data type to describe how to draw a legend. For legend entries
 --   see 'Plots.Axis.LegendEntry'.
 data Legend b n = Legend
-  { lPosition    :: Position
-  , lAnchor      :: Anchor
-  , lGap         :: V2 n
+  { lPlacement   :: Placement
+  , lGap         :: n
   , lStyle       :: Style V2 n
   , lSpacing     :: n
   , lTextWidth   :: n
@@ -141,16 +48,12 @@ type instance N (Legend b n) = n
 class HasLegend a b | a -> b where
   legend :: Lens' a (Legend b (N a))
 
-  -- | The 'Position' of the legend relative to the 'Plots.Axis.Axis'.
-  legendPosition :: Lens' a Position
-  legendPosition = legend . lens lPosition (\l a -> l {lPosition = a})
-
-  -- | The anchor for where the legend is placed.
-  legendAnchor :: Lens' a Anchor
-  legendAnchor = legend . lens lAnchor (\l a -> l {lAnchor = a})
+  -- | The 'Placement' of the legend relative to the 'Plots.Axis.Axis'.
+  legendPlacement :: Lens' a Placement
+  legendPlacement = legend . lens lPlacement (\l a -> l {lPlacement = a})
 
   -- | The gap between the legend and the axis.
-  legendGap :: Lens' a (V2 (N a))
+  legendGap :: Lens' a (N a)
   legendGap = legend . lens lGap (\l a -> l {lGap = a})
 
   -- | The style applied to the surronding box of the legend.
@@ -181,11 +84,16 @@ class HasLegend a b | a -> b where
 instance HasLegend (Legend b n) b where
   legend = id
 
+instance HasGap (Legend b n) where
+  gap = legendGap
+
+instance HasPlacement (Legend b n) where
+  placement = legendPlacement
+
 instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
   def = Legend
-    { lPosition    = NorthEast
-    , lAnchor      = AnchorTopLeft
-    , lGap         = V2 20 0
+    { lPlacement   = leftTop
+    , lGap         = 20
     , lSpacing     = 20
     , lTextWidth   = 60
     , lStyle       = mempty
@@ -217,11 +125,11 @@ drawLegend
   -> QDiagram b V2 n Any
 drawLegend bb entries l
   | l ^. hidden || null entries = mempty
-  | otherwise   = alignTo (l ^. legendPosition)
-                          bb
-                          (l ^. legendAnchor)
-                          (l ^. legendGap)
-                          (ledge <> back)
+  | otherwise   = placeAgainst
+                    bb
+                    (l ^. legendPlacement)
+                    (l ^. legendGap)
+                    (ledge <> back)
   where
     w = l ^. legendTextWidth
     h = l ^. legendSpacing
@@ -230,7 +138,7 @@ drawLegend bb entries l
               # orient (l ^. legendOrientation) hcat vcat
               # alignTL
 
-    back = rect w (h * fromIntegral (length entries))
+    back = rect (w + h + 5) (h * fromIntegral (length entries))
              # applyStyle (l ^. legendStyle)
              # alignTL
              # translate (V2 (-5) 0) -- (-3))

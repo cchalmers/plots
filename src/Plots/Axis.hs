@@ -29,6 +29,7 @@ module Plots.Axis
 
     -- * Predefined axes
   , r2Axis
+  , polarAxis
 
     -- ** Base space
   , BaseSpace
@@ -463,24 +464,20 @@ zMax = zAxis . boundMax
 
 -- R3 Axis
 
--- polarAxis :: (TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b) => Axis b Polar n
--- polarAxis = Axis
---   { _axisTitle      = Nothing
---   , _axisSize       = mkWidth 300
---   , _axisPlots      = []
---   , _axisLegend     = def
---   , _axisColourBar  = defColourBar
---   , _axisAxisStyle  = fadedColours
---   , _axisAxisBounds = Bounds $ pure def
---   , _axisGridLines  = pure def
---   , _axisLabels     = Polar $ V2 def (def & axisLabelFunction %~ (fmap . fmap $ rotateBy (1/4))
---                                           & axisLabelGap .~ 40
---                                      )
---   , _axisScaling    = pure def
---   , _axisTickLabels = pure def
---   , _axisTicks      = pure def
---   , _axisLines      = pure def
---   , _axisScale      = pure def
---   -- , _axisPP         = def
---   }
+polarAxis
+  :: (TypeableFloat n,
+      Enum n,
+      Renderable (Text n) b,
+      Renderable (Path V2 n) b)
+  => Axis b Polar n
+polarAxis = Axis
+  { _axisStyle = fadedColours
+  , _colourBar = defColourBar
+
+  , _legend       = def
+  , _axisPlots    = []
+  , _plotModifier = mempty
+
+  , _axes = pure def
+  }
 
