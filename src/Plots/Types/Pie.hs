@@ -7,42 +7,33 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE FunctionalDependencies    #-}
+{-# LANGUAGE ViewPatterns    #-}
+{-# LANGUAGE ScopedTypeVariables    #-}
 
 {-# LANGUAGE UndecidableInstances      #-}
 
 {-# LANGUAGE StandaloneDeriving        #-}
 
 module Plots.Types.Pie
-  (  -- * General pie plot
-     GPiePlot
+  ( -- * Pie plot
+    piePlot
+  , piePlot'
+  , onWedges
+  , wedgeKeys
 
-     -- * Wedge plot
-   , mkWedgePlot
-   , mkWedgePlotFrom
-
-     -- * Annular wedge plot
-   , mkAnnularWedgePlotFrom
-   , mkAnnularWedgePlot
-
-     -- * Lenses
-   , strokeArc
-
-    -- * Wedge
+    -- * Wedges
+  , Wedge
+  , mkWedge
+  , HasWedge (..)
   , wedgePlot
-  , wedgePlotFrom
-  , wedgePlotFrom'
 
-    -- * Annular wedge
-  , annularWedgePlot
-  , annularWedgePlotFrom
-  , annularWedgePlotFrom'
   ) where
 
-import           Control.Lens                    hiding (lmap, none, transform,
-                                                  ( # ))
 import           Control.Monad.State.Lazy
 
 import           Data.Typeable
+import qualified Data.Foldable as F
+import qualified Data.List as List
 
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Coordinates.Polar
@@ -53,106 +44,206 @@ import           Plots.Types
 import           Plots.Axis
 
 ------------------------------------------------------------------------
--- General pie plot
+-- Pie wedge
 ------------------------------------------------------------------------
 
-data GPiePlot n = GPiePlot
-  { sLargeRadius :: n
-  , sSmallRadius :: n
-  , sDirection   :: Direction V2 n
-  , sAngle       :: Angle n
-  , sArc         :: Bool
+-- | Contains information to draw a single wedge of a pie. It is not
+--   intended to be draw directly. Instead use 'piePlot.
+data Wedge n = Wedge
+  { sEndR   :: n
+  , sStartR :: n
+  , sOffset :: n
+  , sDir    :: Direction V2 n
+  , sWidth  :: Angle n
   } deriving Typeable
 
-type instance V (GPiePlot n)  = V2
-type instance N (GPiePlot n)  = n
+type instance V (Wedge n)  = V2
+type instance N (Wedge n)  = n
 
-instance (OrderedField n) => Enveloped (GPiePlot n) where
-  getEnvelope GPiePlot {..} = mempty
+instance (OrderedField n) => Enveloped (Wedge n) where
+  getEnvelope Wedge {..} = mempty
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (GPiePlot n) b where
-  renderPlotable _s sty GPiePlot {..} =
-      annularWedge sLargeRadius sSmallRadius sDirection sAngle
-        # lw none
-        # applyAreaStyle sty
-   <> if sArc
-        then arc' sLargeRadius sDirection sAngle
-               # applyLineStyle sty
-          <> arc' sLargeRadius sDirection sAngle
-               # applyLineStyle sty
-        else mempty
+    => Plotable (Wedge n) b where
+  renderPlotable s sty Wedge {..} =
+    shape
+      # applyAreaStyle sty
+      # translate off
+      # transform (s^.specTrans)
+    where
+      shape
+        | sStartR == 0 = wedge sEndR sDir sWidth
+        | otherwise    = annularWedge sEndR sStartR sDir sWidth
+      off
+        | sOffset == 0 = zero
+        | otherwise    = sOffset *^ fromDir (rotate (sWidth ^/ 2) sDir)
 
-  defLegendPic sty GPiePlot {..}
+  defLegendPic sty Wedge {..}
       = square 5 # applyAreaStyle sty
 
-------------------------------------------------------------------------
--- Wedge plot
-------------------------------------------------------------------------
-
--- | Plot a wedge given radius and angle with direction xDir.
-mkWedgePlot :: (RealFloat n, PointLike v n (Polar n), Num n)
-                => n -> Angle n -> GPiePlot n
-mkWedgePlot r a = GPiePlot
-  { sLargeRadius    = r
-  , sSmallRadius    = 0.01
-  , sDirection      = xDir
-  , sAngle          = a
-  , sArc            = False
+-- | Create a pie wedge with unit radius, starting at direction @d@ with
+--   width @theta@.
+mkWedge
+  :: Num n
+  => Direction V2 n -- ^ starting direction
+  -> Angle n        -- ^ width of wedge
+  -> Wedge n        -- ^ resulting wedge
+mkWedge d theta = Wedge
+  { sEndR   = 1
+  , sStartR = 0
+  , sOffset = 0
+  , sDir    = d
+  , sWidth  = theta
   }
 
--- | Plot a wedge given radius, angle and direction.
-mkWedgePlotFrom :: (RealFloat n, PointLike v n (Polar n), Num n)
-                => n -> Direction V2 n -> Angle n -> GPiePlot n
-mkWedgePlotFrom  r d a = GPiePlot
-  { sLargeRadius = r
-  , sSmallRadius = 0.01
-  , sDirection   = d
-  , sAngle       = a
-  , sArc         = False
+class HasWedge f a where
+  -- | Description on how to draw a wedge.
+  pieWedge :: LensLike' f a (Wedge (N a))
+
+  -- | The outside radius of the wedge. Default is @1@.
+  wedgeOuterRadius :: Functor f => LensLike' f a (N a)
+  wedgeOuterRadius = pieWedge . lens sEndR (\p r -> p {sEndR = r})
+
+  -- | The inside radius of the wedge. Default is $0$.
+  wedgeInnerRadius :: Functor f => LensLike' f a (N a)
+  wedgeInnerRadius = pieWedge . lens sStartR (\p r -> p {sStartR = r})
+
+  -- | The offset of the wedge from the center.
+  wedgeOffset :: Functor f => LensLike' f a (N a)
+  wedgeOffset = pieWedge . lens sOffset (\p x -> p {sOffset = x})
+
+  -- | The width of the wedge, starting from the 'wedgeDirection'.
+  wedgeWidth :: Functor f => LensLike' f a (Angle (N a))
+  wedgeWidth = pieWedge . lens sWidth (\p x -> p {sWidth = x})
+
+  -- | The inititial direction of the wedge.
+  wedgeDirection :: Functor f => LensLike' f a (Direction V2 (N a))
+  wedgeDirection = pieWedge . lens sDir (\p x -> p {sDir = x})
+
+instance HasWedge f (Wedge n) where
+  pieWedge = id
+
+instance (Functor f, HasWedge f a) => HasWedge f (Plot a b) where
+  pieWedge = rawPlot . pieWedge
+
+instance Applicative f => HasWedge f (PieState b n a) where
+  pieWedge = stateMods . traversed . _2 . pieWedge
+
+instance (Applicative f, Typeable b, v ~ V2, Typeable n)
+    => HasWedge f (DynamicPlot b v n) where
+  pieWedge = (dynamicPlot :: Traversal' (DynamicPlot b v n) (Plot (Wedge n) b))
+           . pieWedge
+
+instance (v ~ V2, Applicative f, Typeable b, Typeable n)
+    => HasWedge f (StyledPlot b v n) where
+  pieWedge = (styledPlot :: Traversal' (StyledPlot b v n) (Wedge n))
+
+instance (BaseSpace c ~ V2, Settable f, Typeable b, Typeable n)
+    => HasWedge f (Axis b c n) where
+  pieWedge = finalPlots . pieWedge
+
+------------------------------------------------------------------------
+-- Full pie
+------------------------------------------------------------------------
+
+-- | The state used to draw a part chart made of multiple pie wedges.
+data PieState b n a = PieState
+  { psMods  :: [(a, Plot (Wedge n) b)] -- non-empty list
   }
 
-------------------------------------------------------------------------
--- Annular wedge plot
-------------------------------------------------------------------------
+type instance V (PieState b n a) = V2
+type instance N (PieState b n a) = n
 
--- | Plot a annular wedge given radius and angle with direction xDir.
-mkAnnularWedgePlot :: (RealFloat n, PointLike v n (Polar n), Num n)
-                => n -> n -> Angle n -> GPiePlot n
-mkAnnularWedgePlot r2 r1 a = GPiePlot
-  { sLargeRadius    = r2
-  , sSmallRadius    = r1
-  , sDirection      = xDir
-  , sAngle          = a
-  , sArc            = False
-  }
+-- internal lens
+stateMods :: Lens' (PieState b n a) [(a, Plot (Wedge n) b)]
+stateMods = lens psMods (\ps ms -> ps {psMods = ms})
 
--- | Plot a annular wedge given radius, angle and direction.
-mkAnnularWedgePlotFrom :: (RealFloat n, PointLike v n (Polar n), Num n)
-                => n -> n -> Direction V2 n -> Angle n -> GPiePlot n
-mkAnnularWedgePlotFrom  r2 r1 d a = GPiePlot
-  { sLargeRadius = r2
-  , sSmallRadius = r1
-  , sDirection   = d
-  , sAngle       = a
-  , sArc         = False
-  }
+-- -- | The direction for the first entry in the pie. Default is 'xDir'.
+-- startingDirection :: Lens' (PieState b n a) (Direction V2 n)
+-- startingDirection = lens psStart (\ps d -> ps {psStart = d})
 
-------------------------------------------------------------------------
--- Pie lenses
-------------------------------------------------------------------------
+-- -- | The ending direction of the final wedge. This can be used to make a
+-- finalDirection ::
 
-class HasPie a n | a -> n where
-  pie :: Lens' a (GPiePlot n)
+-- | Modify the state for each wedge given the data entry.
+--
+--   Some common lenses to use on the 'Wedge':
+--
+--       * 'plotColour' - change the colour of the bars
+--
+--       * 'areaStyle' - modify the style of the bars
+--
+--       * 'key' - add a legend entry for that group of bars
+--
+--       * 'wedgeOffset' - the offset of the wedge from the center
+--
+onWedges :: (a -> State (Plot (Wedge n) b) ()) -> State (PieState b n a) ()
+onWedges f = stateMods %= map (\(a, p) -> (a, execState (f a) p))
 
-  strokeArc :: Lens' a Bool
-  strokeArc = pie . lens sArc (\s b -> (s {sArc = b}))
+-- | Add a legend entry for each item given a function that extracts the
+--   item's name.
+wedgeKeys :: Num n => (a -> String) -> State (PieState b n a) ()
+wedgeKeys f = onWedges $ \a -> key (f a)
 
-instance HasPie (GPiePlot n) n where
-  pie = id
+-- | Make a pie plot from a list of data by making a series of wedge
+--   plots.
+--
+-- === __Example__
+--
+-- <<#diagram=pieExample&width=500>>
+--
+-- > import Plots
+-- >
+-- > pieData = [("red", 3), ("blue", 4), ("green", 2), ("purple", 5)]
+-- >
+-- > pieAxis = polarAxis &~ do
+-- >   piePlot pieData snd $ wedgeKeys fst
+-- >   wedgeInnerRadius .= 0.5
+-- >   hide axes
+--
+-- > pieExample = renderAxis pieAxis
+piePlot
+  :: (MonadState (Axis b Polar n) m,
+      Plotable (Wedge n) b,
+      Foldable f)
+  => f a    -- ^ data for each wedge
+  -> (a -> n) -- ^ extract weight of each wedge
+  -> State (PieState b n a) ()
+  -> m ()
+piePlot (F.toList -> as) f st = F.forM_ ps addPlot
+  where
+    -- calculate pie widths
+    ns = map f as
+    x  = F.sum ns
+    wedges = snd $ List.mapAccumR wedgeAccum xDir as
+    wedgeAccum d a = (d', wdg)
+      where theta = (f a / x) @@ turn
+            d'    = d # rotate theta
+            wdg   = mkWedge d theta
 
-instance HasPie (Plot (GPiePlot n) b) n where
-  pie = rawPlot
+    -- run pie state
+    ps  = map snd . psMods $ execState st ps0
+    ps0 = PieState { psMods = zip as (map mkPlot wedges) }
+
+-- | Make a pie plot from list of values without any changes.
+--
+-- === __Example__
+--
+-- <<#diagram=pieAxis'&width=500>>
+--
+-- > import Plots
+-- >
+-- > pieAxis' = polarAxis &~ do
+-- >   piePlot' [1,3,5,2]
+-- >   wedgeInnerRadius .= 0.5
+-- >   hide axes
+piePlot'
+  :: (MonadState (Axis b Polar n) m,
+      Plotable (Wedge n) b,
+      Foldable f)
+  => f n    -- ^ weight of each wedge
+  -> m ()
+piePlot' ns = piePlot ns id (return ())
 
 ------------------------------------------------------------------------
 -- Wedge
@@ -166,96 +257,25 @@ instance HasPie (Plot (GPiePlot n) b) n where
 -- * 'strokeArc' :: 'Lens'' ('BoxPlot' v n) 'Bool' - False
 -- @
 
--- | Add a 'PiePlot' to the 'AxisState' from a data set.
+-- | Add a single 'PiePlot' to the 'AxisState' from a data set.
 --
 -- === __Example__
 --
--- <<diagram=pieExample&width=300>>
+-- <<diagram=wedgeExample&width=500>>
 --
 -- > import Plots
--- > import Plots.Types.Pie
 --
--- > pieAxis = polarAxis &~ do
--- >     wedgePlotFrom' 7 xDir (2/11 @@ turn) $ do
--- >        strokeArc .= True
--- >        plotColor .= sRGB24  255 127 0
--- >     wedgePlotFrom' 4.3 (rotate (2/11 @@ turn) xDir) (4/11 @@ turn) $ do
--- >        strokeArc .= True
--- >        plotColor .=  sRGB24 166 86  40
--- >     wedgePlotFrom' 8.1 (rotate (6/11 @@ turn) xDir)  (3/11 @@ turn) $ do
--- >        strokeArc .= True
--- >        plotColor .= sRGB24 247 129 191
--- >     annularWedgePlotFrom' 3.1  0.1 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
--- >        strokeArc .= True
--- >        plotColor .= sRGB24 117 69 69
--- >     annularWedgePlotFrom' 5.7  3.1 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
--- >        strokeArc .= True
--- >        plotColor .= sRGB24 154 65 65
--- >     annularWedgePlotFrom' 9.5  5.7 (rotate (9/11 @@ turn) xDir)  (2/11 @@ turn) $ do
--- >        strokeArc .= True
--- >        plotColor .= sRGB24 198  49   49
+-- > wedgeAxis = polarAxis &~ do
+-- >   wedgePlot xDir (38@@deg)
+-- >   axes . visible .= False -- hide the axis
 --
--- > pieExample = renderAxis pieAxis
+-- > wedgeExample = renderAxis pieAxis
 wedgePlot
   :: (v ~ BaseSpace c, v ~ V2,
       PointLike v n (Polar n),
       MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
+      Plotable (Wedge n) b,
       RealFloat n)
-  => n -> Angle n -> State (Plot (GPiePlot n) b) () -> m ()
-wedgePlot r a = addPlotable (mkWedgePlot r a)
+  => Direction V2 n -> Angle n -> State (Plot (Wedge n) b) () -> m ()
+wedgePlot r theta = addPlotable (mkWedge r theta)
 
-wedgePlotFrom
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> Direction V2 n -> Angle n -> State (Plot (GPiePlot n) b) () -> m ()
-wedgePlotFrom r d a = addPlotable (mkWedgePlotFrom r d a)
-
--- | Make a wedge and take a 'State' on the plot to alter it's
---   options
-
-wedgePlotFrom'
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> Direction V2 n -> Angle n -> m ()
-wedgePlotFrom' r d a = addPlotable' (mkWedgePlotFrom r d a)
-
-------------------------------------------------------------------------
--- Annular wedge
-------------------------------------------------------------------------
-
-annularWedgePlot
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> n -> Angle n -> State (Plot (GPiePlot n) b) () -> m ()
-annularWedgePlot r1 r2 a = addPlotable (mkAnnularWedgePlot r1 r2 a)
-
-annularWedgePlotFrom
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> n -> Direction V2 n -> Angle n -> State (Plot (GPiePlot n) b) () -> m ()
-annularWedgePlotFrom r1 r2 d a = addPlotable (mkAnnularWedgePlotFrom r1 r2 d a)
-
--- | Make an annular wedge and take a 'State' on the plot to alter it's
---   options
-
-annularWedgePlotFrom'
-  :: (v ~ BaseSpace c, v ~ V2,
-      PointLike v n (Polar n),
-      MonadState (Axis b c n) m,
-      Plotable (GPiePlot n) b,
-      RealFloat n)
-  => n -> n -> Direction V2 n -> Angle n -> m ()
-annularWedgePlotFrom' r1 r2 d a = addPlotable' (mkAnnularWedgePlotFrom r1 r2 d a)
