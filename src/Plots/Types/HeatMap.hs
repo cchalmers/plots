@@ -9,19 +9,46 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE UndecidableInstances   #-}
 
-module Plots.Types.HeatMap where
-  -- ( HeatMap
-  -- , simpleHeatMap
-  --   -- * Prism
-  -- , _HeatMap
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Types.HeatMap
+-- Copyright   :  (C) 2016 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+
+-- A heat map is a graphical representation of data where the individual
+-- values contained in a matrix are represented as colours.
+--
+----------------------------------------------------------------------------
 
 
-  --   -- * Lenses
-  -- , HeatMapBars
-  -- , HeatMapWidth
-  -- , HeatMapSpacing
-  -- , HeatMapIsVerticle
-  -- ) where
+module Plots.Types.HeatMap
+  ( HeatMap
+  , heatMap
+  , heatMap'
+
+  -- * Lenses
+  , HasHeatMap (..)
+
+  -- * Heat matrix
+  , HeatMatrix
+  , heatImage
+  , hmPoints
+  , hmSize
+  , normaliseHeatMatrix
+
+  -- ** Rendering functions
+  , pixelHeatRender
+  , pathHeatRender
+
+  -- * Low level construction
+  , mkHeatMap
+  , mkHeatMatrix
+  , mkHeatMatrix'
+
+  ) where
 
 import           Control.Lens                    hiding (transform, ( # ))
 
@@ -31,10 +58,9 @@ import           Data.Typeable
 import           Data.Vector.Unboxed             ((!))
 import qualified Data.Vector.Unboxed             as U
 
+import           Codec.Picture
 import           Diagrams.Coordinates.Isomorphic
 import           Diagrams.Prelude
--- import           Diagrams.TwoD.Image
-import Codec.Picture
 
 import           Plots.Axis
 import           Plots.Style
@@ -91,22 +117,24 @@ hmPoints f (HeatMatrix e@(V2 x y) ixF) = go 0 0 <&> \vs ->
 
 -- Rendering heat matrices --------------------------------------------
 
--- | Render an heatmap as an image.
+-- | Render an heatmap as an 'ImageRGB8' with @n@ pixels per heat matrix
+--   point.
 pixelHeatRender
   :: (Renderable (DImage n Embedded) b, TypeableFloat n)
-  => HeatMatrix
+  => Int
+  -> HeatMatrix
   -> ColourMap
   -> QDiagram b V2 n Any
-pixelHeatRender hm cm =
-  scale (1/4) . alignBL . image $ DImage (ImageRaster (ImageRGB8 img)) (x*4) (y*4) mempty
+pixelHeatRender n hm cm =
+  scale (1/fromIntegral n) . alignBL . image $ DImage (ImageRaster (ImageRGB8 img)) (x*n) (y*n) mempty
   where
-    img    = heatImage hm cm
+    img    = heatImage n hm cm
     V2 x y = hmSize hm
 
-heatImage :: HeatMatrix -> ColourMap -> Image PixelRGB8
-heatImage hm cm = generateImage (\i j -> getPx (V2 (i `div` 4) (j `div` 4))) x y
+heatImage :: Int -> HeatMatrix -> ColourMap -> Image PixelRGB8
+heatImage n hm cm = generateImage (\i j -> getPx (V2 (i `div` n) ((y - j - 1) `div` n))) x y
   where
-    V2 x y  = hmSize hm * 4
+    V2 x y  = hmSize hm * V2 n n
     getPx v = colourToPixel . fromAlphaColour $ cm ^. ixColour (realToFrac $ hmFun hm v)
 
 colourToPixel :: Colour Double -> PixelRGB8
@@ -121,24 +149,25 @@ pathHeatRender
   -> QDiagram b V2 n Any
 pathHeatRender hm cm = ifoldMapOf hmPoints mk hm # lwO 0
   where
-    V2 x y = hmSize hm
     mk v@(V2 i j) a =
       rect w h
-        # alignBL
-        # translate (fromIntegral <$> v)
+        # alignTR
+        # translate (fromIntegral <$> v ^+^ 1)
         # fcA (cm ^. ixColour (toRational a))
       where
         -- Squares that are not on the top left edge are slightly
         -- bigger to remove phantom gaps
-        w | i == x    = 1
+        w | i == 0    = 1
           | otherwise = 1.5
-        h | j == y    = 1
+        h | j == 0    = 1
           | otherwise = 1.5
 
 ------------------------------------------------------------------------
 -- Heat matrix
 ------------------------------------------------------------------------
 
+-- | A mapping from points in a 2D axis do 'Double's. These 'Double's
+--   are converted to colours using the axis 'ColourMap'.
 data HeatMap b n = HeatMap
   { hMatrix      :: HeatMatrix
   , hStart       :: P2 n
@@ -157,23 +186,44 @@ class HasHeatMap f a b | a -> b where
   -- | Lens onto the heatmap options.
   heatMapOptions :: LensLike' f a (HeatMap b (N a))
 
-  -- | Whether there should be grid lines draw for the heat map. Default
-  --   is 'False'.
+  -- | Whether there should be grid lines draw for the heat map.
+  --
+  --   Default is 'False'.
   heatMapGridVisible :: Functor f => LensLike' f a Bool
   heatMapGridVisible = heatMapOptions . lens hGridVisible (\s b -> (s {hGridVisible = b}))
 
   -- | The style applied to the grid lines for the heat map, if they're
   --   visible.
+  --
+  --   Default is 'mempty'.
   heatMapGridStyle :: Functor f => LensLike' f a (Style V2 (N a))
   heatMapGridStyle = heatMapOptions . lens hGridSty (\s b -> (s {hGridSty = b}))
 
   -- | The size of each individual square in the heat map.
+  --
+  --   Default is @'V2' 1 1@.
   heatMapSize :: Functor f => LensLike' f a (V2 (N a))
   heatMapSize = heatMapOptions . lens hSize (\s b -> (s {hSize = b}))
 
-  -- | The starting point for the heat map.
+  -- | The size of the full extend of the heat map.
+  --
+  --   Default is extent of the heat matrix.
+  heatMapExtent :: (Functor f, Fractional (N a)) => LensLike' f a (V2 (N a))
+  heatMapExtent = heatMapOptions . l where
+    l f hm = f (hSize hm * s) <&> \x -> hm { hSize = x / s }
+      where s = fmap fromIntegral (hmSize $ hMatrix hm)
+
+  -- | The starting point at the bottom left corner of the heat map.
+  --
+  --   Default is 'origin'
   heatMapStart :: Functor f => LensLike' f a (P2 (N a))
   heatMapStart = heatMapOptions . lens hStart (\s b -> (s {hStart = b}))
+
+  -- | The center point of the heat map.
+  heatMapCentre :: (Functor f, Fractional (N a)) => LensLike' f a (P2 (N a))
+  heatMapCentre = heatMapOptions . l where
+    l f hm = f (hStart hm .+^ v) <&> \p -> hm { hStart = p .-^ v }
+      where v = fmap fromIntegral (hmSize $ hMatrix hm) * hSize hm / 2
 
   -- | Limits @(a,b)@ used on the data such that @a@ is the start of the
   --   'ColourMap' and @b@ is the end of the 'ColourMap'. Default is @(0,1)@.
@@ -181,6 +231,8 @@ class HasHeatMap f a b | a -> b where
   heatMapLimits = heatMapOptions . lens hLimits (\s b -> (s {hLimits = b}))
 
   -- | Funtion used to render the heat map.
+  --
+  --   Default is 'pathHeatRender'.
   heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram b V2 (N a) Any)
   heatMapRender = heatMapOptions . lens hDraw (\s b -> (s {hDraw = b}))
 
@@ -191,13 +243,17 @@ instance (Functor f, HasHeatMap f a b) => HasHeatMap f (Plot a b) b where
   heatMapOptions = rawPlot . heatMapOptions
 
 instance OrderedField n => Enveloped (HeatMap b n) where
-  getEnvelope HeatMap {..} = getEnvelope (fromCorners hStart (hStart .+^ hSize))
+  getEnvelope hm = getEnvelope (fromCorners p (p .+^ v))
+    where p = view heatMapStart hm
+          v = view heatMapExtent hm
 
 instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HeatMap b n) b where
   renderPlotable s _sty HeatMap {..} =
       transform (s^.specTrans) $
         grid <> hDraw matrix' (s^.specColourMap)
+                  # transform (scaleV hSize)
+                  # moveTo hStart
     where
       --- TODO
       grid = mempty
@@ -208,20 +264,25 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   -- XXX make better
   defLegendPic sty HeatMap {..} = square 5 # applyAreaStyle sty
 
+scaleV :: (Additive v, Fractional n) => v n -> Transformation v n
+scaleV v = fromLinear f f
+  where f = (liftU2 (*) v) <-> (\u -> liftU2 (/) u v)
+
 -- | Construct a 'Heatmap' using the given 'HeatMatrix'.
 mkHeatMap :: (Renderable (Path V2 n) b, TypeableFloat n)
           => HeatMatrix -> HeatMap b n
 mkHeatMap mat = HeatMap
   { hMatrix      = mat
   , hStart       = origin
-  , hSize        = fmap fromIntegral $ hmSize mat
+  , hSize        = V2 1 1 -- fmap fromIntegral $ hmSize mat
   , hGridSty     = mempty
   , hGridVisible = False
   , hLimits      = Nothing
   , hDraw        = pathHeatRender
   }
 
--- | Add a 'HeatMap' plot using the extent of the heatmap and a generating function.
+-- | Add a 'HeatMap' plot using the extent of the heatmap and a
+--   generating function.
 --
 -- @
 -- 'heatMap' :: 'V2' 'Int'     -> ('V2' 'Int' -> 'Double')     -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
@@ -241,4 +302,22 @@ heatMap
 heatMap i f = addPlotable (mkHeatMap hm)
   where
   hm = mkHeatMatrix (view unvectorLike i) (f . view vectorLike)
+
+-- | Add a 'HeatMap' plot using the extent of the heatmap and a
+-- generating function without changes to the heap map options.
+--
+-- @
+-- 'heatMap' :: 'V2' 'Int'     -> ('V2' 'Int' -> 'Double')     -> 'State' ('Axis' b 'V2' n) ()
+-- 'heatMap' :: ('Int', 'Int') -> (('Int', 'Int') -> 'Double') -> 'State' ('Axis' b 'V2' n) ()
+-- @
+heatMap'
+  :: (VectorLike V2 Int i,
+      TypeableFloat n,
+      Typeable b,
+      MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b)
+  => i             -- ^ extent of array
+  -> (i -> Double) -- ^ heat from index
+  -> m ()          -- ^ add plot to 'Axis'
+heatMap' i f = heatMap i f (return ())
 
