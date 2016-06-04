@@ -40,6 +40,7 @@ import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Line
 import           Plots.Axis.Scale
+import           Plots.Axis.Title
 import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Style
@@ -145,6 +146,7 @@ renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 40
                $ leg
+              <> ttl
               <> cBar
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LeftLabels
@@ -162,9 +164,9 @@ renderR2Axis a = frame 40
     --
 
     -- The colour bar
-    --         & cbExtent .~ ex'
-    -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
     cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (a^.colourBarRange)
+    -- title
+    ttl = drawTitle bb (a^.title)
     --
     styledPlots = buildPlots a
 

@@ -119,6 +119,9 @@ module Plots
     -- | Ticks properties and placement.
   , module Plots.Axis.Ticks
 
+    -- | The plot title.
+  , module Plots.Axis.Title
+
     -- | Colour bars.
   , module Plots.Axis.ColourBar
 
@@ -132,6 +135,7 @@ import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Render
 import           Plots.Axis.Scale
+import           Plots.Axis.Title
 import           Plots.Axis.Ticks
 
 import           Plots.CmdLine

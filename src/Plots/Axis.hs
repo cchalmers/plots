@@ -77,6 +77,7 @@ import           Plots.Axis.Grid
 import           Plots.Axis.Labels
 import           Plots.Axis.Line
 import           Plots.Axis.Scale
+import           Plots.Axis.Title
 import           Plots.Axis.Ticks
 import           Plots.Legend
 import           Plots.Style
@@ -205,6 +206,7 @@ data Axis b c n = Axis
   , _colourBar   :: ColourBar b n
   , _colourBarR  :: (n,n)
   , _legend      :: Legend b n
+  , _axisTitle   :: Title b (BaseSpace c) n
   -- , _axisTitle      :: AxisTitle
 
   , _axisPlots   :: [DynamicPlot b (BaseSpace c) n]
@@ -225,7 +227,7 @@ axes :: (v ~ BaseSpace c, v ~ BaseSpace c')
              (Axis b c' n)
              (c  (SingleAxis b v n))
              (c' (SingleAxis b v n))
-axes = lens _axes (\(Axis a1 a2 a3 a4 a5 a6 _) a7 -> Axis a1 a2 a3 a4 a5 a6 a7)
+axes = lens _axes (\(Axis a1 a2 a3 a4 a5 a6 a7 _) a8 -> Axis a1 a2 a3 a4 a5 a6 a7 a8)
 
 -- | The list of plots currently in the axis.
 axisPlots :: BaseSpace c ~ v => Lens' (Axis b c n) [DynamicPlot b v n]
@@ -300,6 +302,9 @@ instance Settable f => HasPlotStyle f (Axis b c n) b where
 
 instance HasLegend (Axis b c n) b where
   legend = lens _legend (\a l -> a {_legend = l})
+
+instance HasTitle (Axis b c n) b where
+  title = lens _axisTitle (\a t -> a {_axisTitle = t})
 
 -- | The size used for the rendered axis.
 axisSize :: (HasLinearMap c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
@@ -382,6 +387,7 @@ r2Axis = Axis
   { _axisStyle  = fadedColours
   , _colourBar  = defColourBar
   , _colourBarR = (0,1)
+  , _axisTitle  = def
 
   , _legend       = def
   , _axisPlots    = []
@@ -482,6 +488,7 @@ polarAxis = Axis
   { _axisStyle  = fadedColours
   , _colourBar  = defColourBar
   , _colourBarR = (0,1)
+  , _axisTitle  = def
 
   , _legend       = def
   , _axisPlots    = []
