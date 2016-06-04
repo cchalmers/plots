@@ -218,7 +218,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
              then a else b
 
   w   = cbWidth
-  f x = (x - (ub - lb)/2) * (ub - lb) * l
+  f x = (x - (ub - lb)/2) / (ub - lb) * l
 
   bar = outline <> tks <> gLines <> colours
 

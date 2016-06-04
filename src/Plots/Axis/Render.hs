@@ -164,7 +164,7 @@ renderR2Axis a = frame 40
     -- The colour bar
     --         & cbExtent .~ ex'
     -- ex' = orient (cbo ^. cbOrientation) (V2 (width bb) 15) (V2 15 (height bb))
-    cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
+    cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (a^.colourBarRange)
     --
     styledPlots = buildPlots a
 

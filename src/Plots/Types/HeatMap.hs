@@ -230,7 +230,8 @@ class HasHeatMap f a b | a -> b where
   heatMapLimits :: Functor f => LensLike' f a (Maybe (Double, Double))
   heatMapLimits = heatMapOptions . lens hLimits (\s b -> (s {hLimits = b}))
 
-  -- | Funtion used to render the heat map.
+  -- | Funtion used to render the heat map. See 'pathHeatRender' and
+  --   'pixelHeatRender'.
   --
   --   Default is 'pathHeatRender'.
   heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram b V2 (N a) Any)
@@ -299,9 +300,12 @@ heatMap
   -> State (Plot (HeatMap b n) b) ()
                    -- ^ changes to plot options
   -> m ()          -- ^ add plot to 'Axis'
-heatMap i f = addPlotable (mkHeatMap hm)
-  where
-  hm = mkHeatMatrix (view unvectorLike i) (f . view vectorLike)
+heatMap i f s = do
+  let hm    = mkHeatMatrix (view unvectorLike i) (f . view vectorLike)
+      (r,_) = normaliseHeatMatrix hm
+  addPlotable (mkHeatMap hm) s
+  -- this is a pretty inefficient way to do this
+  colourBarRange .= over both realToFrac r
 
 -- | Add a 'HeatMap' plot using the extent of the heatmap and a
 -- generating function without changes to the heap map options.

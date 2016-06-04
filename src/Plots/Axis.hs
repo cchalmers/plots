@@ -26,6 +26,7 @@ module Plots.Axis
   , finalPlots
   , plotModifier
   , axisSize
+  , colourBarRange
 
     -- * Predefined axes
   , r2Axis
@@ -202,6 +203,7 @@ type instance BaseSpace V3      = V3
 data Axis b c n = Axis
   { _axisStyle   :: AxisStyle b (BaseSpace c) n
   , _colourBar   :: ColourBar b n
+  , _colourBarR  :: (n,n)
   , _legend      :: Legend b n
   -- , _axisTitle      :: AxisTitle
 
@@ -223,7 +225,7 @@ axes :: (v ~ BaseSpace c, v ~ BaseSpace c')
              (Axis b c' n)
              (c  (SingleAxis b v n))
              (c' (SingleAxis b v n))
-axes = lens _axes (\(Axis a1 a2 a3 a4 a5 _) a6 -> Axis a1 a2 a3 a4 a5 a6)
+axes = lens _axes (\(Axis a1 a2 a3 a4 a5 a6 _) a7 -> Axis a1 a2 a3 a4 a5 a6 a7)
 
 -- | The list of plots currently in the axis.
 axisPlots :: BaseSpace c ~ v => Lens' (Axis b c n) [DynamicPlot b v n]
@@ -303,6 +305,11 @@ instance HasLegend (Axis b c n) b where
 axisSize :: (HasLinearMap c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
 axisSize = axes . column renderSize . iso mkSizeSpec getSpec -- column axisScaling . asSizeSpec -- iso mkSizeSpec getSpec
 
+-- | The range used for the colour bar limits. This is automaticlaly set
+--   when using 'heatMap' or 'heatMap''
+colourBarRange :: Lens' (Axis b v n) (n,n)
+colourBarRange = lens _colourBarR (\a r -> a {_colourBarR = r})
+
 instance HasAxisStyle (Axis b v n) b where
   axisStyle = lens _axisStyle (\a sty -> a {_axisStyle = sty})
 
@@ -372,8 +379,9 @@ r2Axis
      Renderable (Path V2 n) b)
   => Axis b V2 n
 r2Axis = Axis
-  { _axisStyle = fadedColours
-  , _colourBar = defColourBar
+  { _axisStyle  = fadedColours
+  , _colourBar  = defColourBar
+  , _colourBarR = (0,1)
 
   , _legend       = def
   , _axisPlots    = []
@@ -471,8 +479,9 @@ polarAxis
       Renderable (Path V2 n) b)
   => Axis b Polar n
 polarAxis = Axis
-  { _axisStyle = fadedColours
-  , _colourBar = defColourBar
+  { _axisStyle  = fadedColours
+  , _colourBar  = defColourBar
+  , _colourBarR = (0,1)
 
   , _legend       = def
   , _axisPlots    = []
