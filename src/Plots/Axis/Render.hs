@@ -601,7 +601,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   -- Radial grid2lines -------------------------------------------------
 
   rAxGridLines
-    -- | rA ^. girdLines . hidden = mempty
+    -- - | rA ^. gridLines . hidden = mempty
     | otherwise                = rMajorGridLines <> rMinorGridLines
 
   majorGridRs :: [n]
@@ -705,7 +705,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
 
   -- grid lines go from the centre of the axis to the perimeter
   thetaAxGridLines
-    -- | thetaA ^. girdLines . hidden = mempty
+    -- - | thetaA ^. girdLines . hidden = mempty
     | otherwise                = thetaMajorGridLines <> thetaMinorGridLines
 
   majorGridThetas :: [n]
