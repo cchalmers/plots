@@ -260,7 +260,9 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       grid = mempty
 
       --- XXX need to give _range to the axis somehow (for colour bar range)
-      (_range, matrix') = normaliseHeatMatrix hMatrix
+      (_range, matrix') = case hLimits of
+        Just r@(a,b) -> (r, hMatrix { hmFun = (/ (b - a)) . (+a) . hmFun hMatrix })
+        Nothing      -> normaliseHeatMatrix hMatrix
 
   -- XXX make better
   defLegendPic sty HeatMap {..} = square 5 # applyAreaStyle sty
