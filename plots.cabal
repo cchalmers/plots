@@ -29,6 +29,7 @@ library
     Plots.Axis.Line
     Plots.Axis.Render
     Plots.Axis.Ticks
+    Plots.Axis.Title
     Plots.Axis.Scale
     Plots.CmdLine
     Plots.Legend
