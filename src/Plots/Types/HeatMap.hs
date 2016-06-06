@@ -277,7 +277,7 @@ mkHeatMap :: (Renderable (Path V2 n) b, TypeableFloat n)
 mkHeatMap mat = HeatMap
   { hMatrix      = mat
   , hStart       = origin
-  , hSize        = V2 1 1 -- fmap fromIntegral $ hmSize mat
+  , hSize        = V2 1 1
   , hGridSty     = mempty
   , hGridVisible = False
   , hLimits      = Nothing
