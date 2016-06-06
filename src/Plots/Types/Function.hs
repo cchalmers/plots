@@ -136,7 +136,7 @@ type instance N (ParametricPlot v n) = n
 instance HasFunctionPlotOptions (ParametricPlot v n) n where
   functionPlotOptions = parametricPlotOptions
 
-instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (ParametricPlot v n) where
+instance (Metric v, OrderedField n, Enum n) => Enveloped (ParametricPlot v n) where
   getEnvelope pa = getEnvelope p
                    where
                      p = map f [a, a + 1 / (pa ^. functionPlotNumPoints . to fromIntegral) .. b]
@@ -144,7 +144,7 @@ instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (Param
                      a = pa ^. parametricDomain . _1
                      b = pa ^. parametricDomain . _2
 
-instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
+instance (TypeableFloat n, Enum n, Renderable (Path V2 n) b)
     => Plotable (ParametricPlot V2 n) b where
   renderPlotable s sty pa =
     pathFromVertices p
@@ -165,7 +165,7 @@ pathFromVertices :: (Metric v, OrderedField n, Fractional (v n)) => [Point v n] 
 pathFromVertices = cubicSpline False
 
 -- | Create a parametric plot given a function on range (0,5).
-mkParametricPlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> ParametricPlot v n
+mkParametricPlot :: (PointLike v n p, TypeableFloat n) => (n -> p) -> ParametricPlot v n
 mkParametricPlot f
   = ParametricPlot
       { _parametricFunction = view unpointLike . f
@@ -174,7 +174,7 @@ mkParametricPlot f
       }
 
 -- | Create a parametric plot given a function and a range.
-mkParametricRangePlot :: (PointLike v n p, Additive v, TypeableFloat n) => (n -> p) -> (n, n)-> ParametricPlot v n
+mkParametricRangePlot :: PointLike v n p => (n -> p) -> (n, n)-> ParametricPlot v n
 mkParametricRangePlot f d
   = ParametricPlot
       { _parametricFunction = view unpointLike . f
@@ -208,10 +208,10 @@ makeLenses ''VectorPlot
 type instance V (VectorPlot v n) = v
 type instance N (VectorPlot v n) = n
 
-instance (Metric v, OrderedField n, TypeableFloat n, Enum n) => Enveloped (VectorPlot v n) where
+instance (Metric v, OrderedField n) => Enveloped (VectorPlot v n) where
   getEnvelope = const mempty
 
-instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
+instance (TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (VectorPlot V2 n) b where
   renderPlotable s _sty v = arrowAt' opts pt1 (V2 q r)
                           # transform (s^.specTrans)
@@ -227,7 +227,7 @@ instance (Typeable b, TypeableFloat n, Enum n, Renderable (Path V2 n) b)
           # applyLineStyle sty
 
 -- | Plot a given vector at (0,0).
-mkVectorPlot :: (Additive v, TypeableFloat n) => v n -> VectorPlot v n
+mkVectorPlot :: TypeableFloat n => v n -> VectorPlot v n
 mkVectorPlot f
   = VectorPlot
       { _vectorV       = f
@@ -236,7 +236,7 @@ mkVectorPlot f
       }
 
 -- | Plot a given vector at a given point.
-mkVectorPointPlot :: (Additive v, TypeableFloat n) => v n -> (n, n) ->VectorPlot v n
+mkVectorPointPlot :: TypeableFloat n => v n -> (n, n) ->VectorPlot v n
 mkVectorPointPlot f d
   = VectorPlot
       { _vectorV       = f
@@ -268,7 +268,7 @@ parametricPlot
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
+      TypeableFloat n)
   => (n -> p) -> State (Plot (ParametricPlot v n) b) () -> m ()
 parametricPlot f = addPlotable (mkParametricPlot f)
 
@@ -277,7 +277,7 @@ parametricPlot'
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
+      TypeableFloat n)
   => (n -> p) -> m ()
 parametricPlot' f = addPlotable' (mkParametricPlot f)
 
@@ -296,8 +296,7 @@ parametricRangePlot
   :: (v ~ BaseSpace c,
       PointLike v n p,
       MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
+      Plotable (ParametricPlot v n) b)
   => (n -> p) -> (n ,n) -> State (Plot (ParametricPlot v n) b) () -> m ()
 parametricRangePlot f d = addPlotable (mkParametricRangePlot f d)
 
@@ -305,8 +304,7 @@ parametricRangePlot'
   :: (v ~ BaseSpace c,
       PointLike v n p,
       MonadState (Axis b c n) m,
-      Plotable (ParametricPlot v n) b,
-      Additive v, TypeableFloat n)
+      Plotable (ParametricPlot v n) b)
   => (n -> p) -> (n ,n) -> m ()
 parametricRangePlot' f d = addPlotable' (mkParametricRangePlot f d)
 
@@ -327,7 +325,7 @@ vectorPlot
   :: (v ~ BaseSpace c,
       MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
-      Additive v, TypeableFloat n)
+      TypeableFloat n)
   =>  v n -> State (Plot (VectorPlot v n) b) () -> m ()
 vectorPlot f = addPlotable (mkVectorPlot f)
 
@@ -335,7 +333,7 @@ vectorPointPlot
   :: (v ~ BaseSpace c,
       MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
-      Additive v, TypeableFloat n)
+      TypeableFloat n)
   =>  v n -> (n, n) -> State (Plot (VectorPlot v n) b) () -> m ()
 vectorPointPlot f d = addPlotable (mkVectorPointPlot f d)
 
@@ -343,7 +341,7 @@ vectorPointPlot'
   :: (v ~ BaseSpace c,
       MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
-      Additive v, TypeableFloat n)
+      TypeableFloat n)
   =>  v n -> (n, n) -> m ()
 vectorPointPlot' f d = addPlotable' (mkVectorPointPlot f d)
 
@@ -351,7 +349,7 @@ vectorPointPlot''
   :: (v ~ BaseSpace c,
       MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
-      Additive v, TypeableFloat n)
+      TypeableFloat n)
   =>  v n -> (n, n) -> ArrowOpts n -> m ()
 vectorPointPlot'' f d opts = addPlotable (mkVectorPointPlot f d) $ do
                               setArrowOpts .= opts
@@ -368,7 +366,7 @@ vectorFieldPlot
   :: (v ~ BaseSpace c,
       MonadState (Axis b c n) m,
       Plotable (VectorPlot v n) b,
-      Additive v, TypeableFloat n)
+      TypeableFloat n)
   =>  [v n] -> [(n, n)] -> ArrowOpts n -> m ()
 vectorFieldPlot vs ps opts =
   F.forM_ (zip vs ps) $ \x ->

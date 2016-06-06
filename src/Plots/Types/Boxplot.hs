@@ -82,7 +82,7 @@ type instance N (GBoxPlot v n a) = n
 instance (Metric v, OrderedField n) => Enveloped (GBoxPlot v n a) where
   getEnvelope GBoxPlot {..} = foldMapOf (bFold . to bPos) getEnvelope bData
 
-instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n, n ~ Double)
+instance (Typeable a, TypeableFloat n, Renderable (Path V2 n) b, n ~ Double)
     => Plotable (GBoxPlot V2 n a) b where
   renderPlotable s sty GBoxPlot {..} =
     if bFill
@@ -116,13 +116,13 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
 type BoxPlot v n = GBoxPlot v n (Point v n)
 
 -- | Draw a boxplot with the given data.
-mkBoxPlot :: (PointLike v n p, F.Foldable f, Ord n, Floating n, Enum n, Num n)
+mkBoxPlot :: (PointLike v n p, F.Foldable f)
               => f p -> BoxPlot v n
 mkBoxPlot = mkBoxPlotOf folded
 
 -- | Create a boxplot using a fold and given data.
-mkBoxPlotOf :: (PointLike v n p, Ord n, Floating n, Enum n, Num n)
-                => Fold s p -> s -> BoxPlot v n
+mkBoxPlotOf :: PointLike v n p
+            => Fold s p -> s -> BoxPlot v n
 mkBoxPlotOf f a = GBoxPlot
   { bData = a
   , bFold = f . unpointLike
@@ -135,7 +135,7 @@ mkBoxPlotOf f a = GBoxPlot
 -- Helper functions
 ------------------------------------------------------------------------
 
-boxplotstat :: (Ord n, Floating n, Enum n, n ~ Double) => [P2 n] -> BP
+boxplotstat :: (Floating n, n ~ Double) => [P2 n] -> BP
 boxplotstat ps = BP
    { bppoint = meanXY
    , bpw  = maxX * 0.5
@@ -234,8 +234,7 @@ boxPlot
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (BoxPlot v n) b,
-      F.Foldable f ,
-      Enum n, TypeableFloat n)
+      F.Foldable f)
   => f p -> State (Plot (BoxPlot v n) b) () -> m ()
 boxPlot d = addPlotable (mkBoxPlot d)
 
@@ -260,8 +259,7 @@ boxPlot'
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (BoxPlot v n) b,
-      F.Foldable f ,
-      Enum n, TypeableFloat n)
+      F.Foldable f)
   => f p -> m ()
 boxPlot' d = addPlotable' (mkBoxPlot d)
 
@@ -269,8 +267,7 @@ boxPlotOf
   :: (v ~ BaseSpace c,
       PointLike v n p,
       MonadState (Axis b c n) m,
-      Plotable (BoxPlot v n) b,
-      Enum n, TypeableFloat n)
+      Plotable (BoxPlot v n) b)
   => Fold s p -> s -> State (Plot (BoxPlot v n) b) () -> m ()
 boxPlotOf f s = addPlotable (mkBoxPlotOf f s)
 
@@ -278,8 +275,7 @@ boxPlotOf'
   :: (v ~ BaseSpace c,
       PointLike v n p,
       MonadState (Axis b c n) m,
-      Plotable (BoxPlot v n) b,
-      Enum n, TypeableFloat n)
+      Plotable (BoxPlot v n) b)
   => Fold s p -> s -> m ()
 boxPlotOf' f s = addPlotable' (mkBoxPlotOf f s)
 

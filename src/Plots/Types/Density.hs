@@ -74,7 +74,7 @@ type instance N (GDensityPlot v n a) = n
 instance (Metric v, OrderedField n) => Enveloped (GDensityPlot v n a) where
   getEnvelope GDensityPlot {..} = foldMapOf (dFold . to dPos) getEnvelope dData
 
-instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enum n)
+instance (Typeable a, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GDensityPlot V2 n a) b where
   renderPlotable s sty GDensityPlot {..} =
                dd # transform t
@@ -110,12 +110,12 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b, Enu
 type DensityPlot v n = GDensityPlot v n (Point v n)
 
 -- | Make a density plot.
-mkDensityPlot :: (PointLike v n p, F.Foldable f, Ord n, Floating n, Enum n, Num n)
+mkDensityPlot :: (PointLike v n p, F.Foldable f, Ord n, Floating n, Enum n)
               => f p -> DensityPlot v n
 mkDensityPlot = mkDensityPlotOf folded
 
 -- | Make a density plot using a given fold.
-mkDensityPlotOf :: (PointLike v n p, Ord n, Floating n, Enum n, Num n)
+mkDensityPlotOf :: (PointLike v n p, Ord n, Floating n, Enum n)
                 => Fold s p -> s -> DensityPlot v n
 mkDensityPlotOf f a = GDensityPlot
   { dData = a
@@ -143,11 +143,11 @@ densityY xs = cubicSpline False (map p2 (zip xpts ypts))
 
 -- need to add more density functions
 
-mean :: (Num a, Fractional a) => [a] -> a
+mean :: Fractional a => [a] -> a
 mean [] = 0.0
 mean xs = (sum xs)/ fromIntegral (length xs)
 
-fillDensity :: (Ord n, Fractional n, Enum n) => Located (Trail' Line V2 n) -> Located (Trail' Loop V2 n)
+fillDensity :: Located (Trail' Line V2 n) -> Located (Trail' Loop V2 n)
 fillDensity dd = dd # mapLoc closeLine
 
 -- for better density fill, extend dd till xmin or zero
@@ -207,7 +207,7 @@ densityPlot
       MonadState (Axis b c n) m,
       Plotable (DensityPlot v n) b,
       F.Foldable f ,
-      Enum n, TypeableFloat n)
+      Enum n)
   => f p -> State (Plot (DensityPlot v n) b) () -> m ()
 densityPlot d = addPlotable (mkDensityPlot d)
 
@@ -227,7 +227,7 @@ densityPlot'
       MonadState (Axis b c n) m,
       Plotable (DensityPlot v n) b,
       F.Foldable f ,
-      Enum n, TypeableFloat n)
+      Enum n)
   => f p -> m ()
 densityPlot' d = addPlotable' (mkDensityPlot d)
 
@@ -256,7 +256,7 @@ densityPlotOf
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (DensityPlot v n) b,
-      Enum n, TypeableFloat n)
+      Enum n)
   => Fold s p -> s -> State (Plot (DensityPlot v n) b) () -> m ()
 densityPlotOf f s = addPlotable (mkDensityPlotOf f s)
 
@@ -265,7 +265,7 @@ densityPlotOf'
       PointLike v n p,
       MonadState (Axis b c n) m,
       Plotable (DensityPlot v n) b,
-      Enum n, TypeableFloat n)
+      Enum n)
   => Fold s p -> s -> m ()
 densityPlotOf' f s = addPlotable' (mkDensityPlotOf f s)
 

@@ -63,7 +63,7 @@ type instance N (Wedge n)  = n
 instance (OrderedField n) => Enveloped (Wedge n) where
   getEnvelope Wedge {..} = mempty
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+instance (TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (Wedge n) b where
   renderPlotable s sty Wedge {..} =
     shape
@@ -134,11 +134,11 @@ instance (Applicative f, Typeable b, v ~ V2, Typeable n)
   pieWedge = (dynamicPlot :: Traversal' (DynamicPlot b v n) (Plot (Wedge n) b))
            . pieWedge
 
-instance (v ~ V2, Applicative f, Typeable b, Typeable n)
+instance (v ~ V2, Applicative f, Typeable n)
     => HasWedge f (StyledPlot b v n) where
   pieWedge = (styledPlot :: Traversal' (StyledPlot b v n) (Wedge n))
 
-instance (BaseSpace c ~ V2, Settable f, Typeable b, Typeable n)
+instance (BaseSpace c ~ V2, Settable f, Typeable n)
     => HasWedge f (Axis b c n) where
   pieWedge = finalPlots . pieWedge
 
@@ -274,8 +274,8 @@ wedgePlot
   :: (v ~ BaseSpace c, v ~ V2,
       PointLike v n (Polar n),
       MonadState (Axis b c n) m,
-      Plotable (Wedge n) b,
-      RealFloat n)
+      Plotable (Wedge n) b
+      )
   => Direction V2 n -> Angle n -> State (Plot (Wedge n) b) () -> m ()
 wedgePlot r theta = addPlotable (mkWedge r theta)
 

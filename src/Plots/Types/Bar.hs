@@ -108,7 +108,7 @@ data BarLayout n = BarLayout
   , bWidth   :: n
   , bSpacing :: n
   , bStart   :: n
-  }
+  } deriving Typeable
 
 instance Fractional n => Default (BarLayout n) where
   def = BarLayout Horizontal 0.8 1 1
@@ -162,7 +162,7 @@ instance HasBarLayout a => HasBarLayout (Plot a b) where
 data BarPlot n = BarPlot
   { bpData   :: [(n,n)]
   , bpLayout :: BarLayout n
-  }
+  } deriving Typeable
 
 type instance V (BarPlot n) = V2
 type instance N (BarPlot n) = n
@@ -178,7 +178,7 @@ instance OrderedField n => Enveloped (BarPlot n) where
       drawBar i (a,b) = rectB (mkP2 x a) (V2 (view barWidth bpLayout) (b - a))
         where x = view barStart bpLayout + fromIntegral i * view barSpacing bpLayout
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+instance (TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (BarPlot n) b where
   renderPlotable s sty BarPlot {..} =
     ifoldMap drawBar bpData
@@ -215,7 +215,7 @@ mkBars :: (Foldable f, Num n) => BarLayout n -> f n -> BarPlot n
 mkBars bl (F.toList -> ns) = mkFloatingBars bl (map (0,) ns)
 
 -- | Create equidistant bars with lower and upper bounds for each bar.
-mkFloatingBars :: (Foldable f, Num n) => BarLayout n -> f (n,n) -> BarPlot n
+mkFloatingBars :: Foldable f => BarLayout n -> f (n,n) -> BarPlot n
 mkFloatingBars bl (F.toList -> ns) = BarPlot
   { bpData   = ns
   , bpLayout = bl

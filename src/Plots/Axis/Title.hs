@@ -37,7 +37,7 @@ data Title b v n = Title
   , tStyle     :: Style v n
   , tPlacement :: Placement
   , tGap       :: n
-  }
+  } deriving Typeable
 
 instance (Renderable (Text n) b, TypeableFloat n)
   => Default (Title b V2 n) where
@@ -95,10 +95,7 @@ instance HasTitle (Title b v n) b where
 
 -- | Render the title and place it around the bounding box.
 drawTitle
-  :: (TypeableFloat n,
-      Typeable b,
-      Renderable (Path V2 n) b,
-      Renderable (Text n) b)
+  :: TypeableFloat n
   => BoundingBox V2 n
   -> Title b V2 n
   -> QDiagram b V2 n Any

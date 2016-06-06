@@ -134,15 +134,13 @@ class RenderAxis b v n where
 
 -- | The 'RenderAxis' class provides a default way to render an axis for
 --  each space.
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
-          Renderable (Text n) b)
+instance (TypeableFloat n, Renderable (Path V2 n) b)
     => RenderAxis b V2 n where
   -- | Render an axis and its plots, as well as the legend and colour
   --   bar.
   renderAxis = renderR2Axis
 
-renderR2Axis :: (Typeable b, TypeableFloat n, Renderable (Path V2 n) b,
-                 Renderable (Text n) b)
+renderR2Axis :: (TypeableFloat n, Renderable (Path V2 n) b)
   => Axis b V2 n -> QDiagram b V2 n Any
 renderR2Axis a = frame 40
                $ leg
@@ -461,20 +459,12 @@ ep (E l) = lensP . l
 -- Polar
 ------------------------------------------------------------------------
 
-instance
-     (Typeable b,
-      Enum n,
-      TypeableFloat n,
-      Renderable (Path V2 n) b,
-      Renderable (Text n) b) => RenderAxis b Polar n where
+instance (TypeableFloat n, Renderable (Path V2 n) b)
+    => RenderAxis b Polar n where
   renderAxis = renderPolarAxis
 
 renderPolarAxis
-  :: (Typeable b,
-      Enum n,
-      TypeableFloat n,
-      Renderable (Path V2 n) b,
-      Renderable (Text n) b)
+  :: (TypeableFloat n, Renderable (Path V2 n) b)
   => Axis b Polar n -> QDiagram b V2 n Any
 renderPolarAxis a = frame 15
                $ leg

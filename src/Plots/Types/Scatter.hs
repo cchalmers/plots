@@ -108,7 +108,7 @@ type instance N (ScatterOptions v n a) = n
 instance (Metric v, OrderedField n) => Enveloped (ScatterPlot v n) where
   getEnvelope (ScatterPlot (ScatterOptions {..})) = getEnvelope (map oPos oData)
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+instance (TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (ScatterPlot V2 n) b where
   renderPlotable s sty (ScatterPlot (ScatterOptions {..})) =
     markers <> line
@@ -174,12 +174,12 @@ instance (Applicative f, Typeable b, Typeable v, Typeable n)
   connectingLine = (dynamicPlot :: Traversal' (DynamicPlot b v n) (Plot (ScatterPlot v n) b))
                  . connectingLine
 
-instance (Applicative f, Typeable b, Typeable v, Typeable n)
+instance (Applicative f, Typeable v, Typeable n)
     => HasConnectingLine f (StyledPlot b v n) where
   connectingLine = (styledPlot :: Traversal' (StyledPlot b v n) (ScatterPlot v n))
                  . connectingLine
 
-instance (Settable f, Typeable b, Typeable (BaseSpace c), Typeable n)
+instance (Settable f, Typeable (BaseSpace c), Typeable n)
     => HasConnectingLine f (Axis b c n) where
   connectingLine = finalPlots . connectingLine
 

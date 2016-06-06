@@ -83,11 +83,11 @@ makeLenses ''TextOptions
 type instance V (TextPlot n) = V2
 type instance N (TextPlot n) = n
 
-instance (Fractional n, OrderedField n, TypeableFloat n, Enum n) => Enveloped (TextPlot n) where
+instance OrderedField n => Enveloped (TextPlot n) where
   getEnvelope = const mempty
 
 
-instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n) b, Renderable (Path V2 n) b)
+instance (TypeableFloat n, Renderable (Text n) b, Renderable (Path V2 n) b)
     => Plotable (TextPlot n) b where
   renderPlotable s sty v = alignedText a b str # fontSize (local fsze)
                           # applyTextStyle sty
@@ -115,7 +115,7 @@ instance (Fractional n, Typeable b, TypeableFloat n, Enum n, Renderable (Text n)
 ------------------------------------------------------------------------
 
 -- | Draw a given string at a given point.
-mkTextPlot :: (TypeableFloat n, Fractional n) => (n,n) -> String -> TextPlot n
+mkTextPlot :: (TypeableFloat n) => (n,n) -> String -> TextPlot n
 mkTextPlot p1 f
   = TextPlot
    { _tString       = f

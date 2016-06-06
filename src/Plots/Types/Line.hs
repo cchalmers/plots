@@ -62,7 +62,6 @@ import           Plots.Types
 -- | Add a 'Trail' as a 'Plot' to an 'Axis'.
 trailPlot
   :: (BaseSpace c ~ v,
-      Metric v,
       Plotable (Path v n) b,
       MonadState (Axis b c n) m)
   => Trail v n -- ^ trail to plot
@@ -74,7 +73,6 @@ trailPlot = pathPlot . toPath
 --   options.
 trailPlot'
   :: (BaseSpace c ~ v,
-      Metric v,
       Plotable (Path v n) b,
       MonadState (Axis b c n) m)
   => Trail v n -- ^ trail to plot
@@ -149,7 +147,6 @@ smoothLinePlot = addPlotable . cubicSpline False . toListOf (folded . unpointLik
 smoothLinePlot'
   :: (BaseSpace c ~ v,
       F.Foldable f,
-      Metric v,
       PointLike v n p,
       Plotable (Path v n) b,
       Fractional (v n), -- needs fixing in diagrams-lib

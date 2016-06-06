@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
@@ -11,14 +12,10 @@ module Plots.CmdLine
   ( r2AxisMain
   ) where
 
-import Data.Typeable
--- import Options.Applicative
-
-import Diagrams.Backend.CmdLine
-import Diagrams.Prelude hiding (option, (<>))
-import Diagrams.TwoD.Text       (Text)
-import Plots.Axis
-import Plots.Axis.Render
+import           Diagrams.Backend.CmdLine
+import           Diagrams.Prelude         hiding (option, (<>))
+import           Plots.Axis
+import           Plots.Axis.Render
 
 -- In the future we may want to have extra command line options like
 -- this:
@@ -36,11 +33,8 @@ import Plots.Axis.Render
 --     = mainRender opts . renderAxis
 --     $ a & maybe id (set axisTitle) (plotTitle pOpts)
 
-instance (Typeable b,
-          TypeableFloat n,
-          Renderable (Text n) b,
+instance (TypeableFloat n,
           Renderable (Path V2 n) b,
-          Backend b V2 n,
           Mainable (QDiagram b V2 n Any))
        => Mainable (Axis b V2 n) where
   type MainOpts (Axis b V2 n) = MainOpts (QDiagram b V2 n Any)

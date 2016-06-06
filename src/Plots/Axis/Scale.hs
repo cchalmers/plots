@@ -193,7 +193,7 @@ calculateBounds Scaling {..} mInferred = (l', u') where
 --     - scale to match desired 'scaleAspectRatio'
 --     - scale to match desired 'asSizeSpec'
 calculateScaling
-  :: (HasLinearMap v, Distributive v, OrderedField n, Applicative v, Metric v)
+  :: (HasLinearMap v, OrderedField n, Applicative v)
   => v (AxisScaling n) -- ^ axis scaling options
   -> BoundingBox v n   -- ^ bounding box from the axis plots
   -> (v (n,n), Transformation v n, Transformation v n)
@@ -261,7 +261,7 @@ logPoint v = _Point %~ liftI2 logNumber v
 
 -- | Deform an object according to the axis scale. Does nothing for
 --   linear scales.
-logDeform :: (InSpace v n a, Additive v, Foldable v, Floating n, Deformable a a)
+logDeform :: (InSpace v n a, Foldable v, Floating n, Deformable a a)
           => v LogScale -> a -> a
 logDeform v
   | allOf folded (== LinearAxis) v = id

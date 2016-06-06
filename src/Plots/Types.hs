@@ -262,7 +262,7 @@ rightBelow  = Placement (V2   1  (-1)) (V2   1    1 ) (direction (V2   0  (-1)))
 --   bounding box of @a@ by translating @b@.
 placeAgainst
   :: (InSpace V2 n a, SameSpace a b, Enveloped a,
-      HasOrigin a, Alignable b, HasOrigin b, Floating n)
+      HasOrigin b, Alignable b)
   => a -> Placement -> n -> b -> b
 placeAgainst a (Placement (V2 px py) (V2 ax ay) d) n b
   = b # anchor
@@ -350,7 +350,7 @@ class HasPlotOptions f a b | a -> b where
   --
   --   'Default' is 'mempty'.
   plotName :: Functor f => LensLike' f a Name
-  plotName = plotOptions . lens poName (\g a -> g { poName = a})
+  plotName = plotOptions . lens poName (\g a -> g {poName = a})
   {-# INLINE plotName #-}
 
   -- | Whether the plot should be clipped to the bounds of the axes.
@@ -380,7 +380,7 @@ class HasPlotOptions f a b | a -> b where
   --
   --   'Default' is 'True'.
   plotVisible :: Functor f => LensLike' f a Bool
-  plotVisible = plotOptions . lens poVisible (\po b -> po { poVisible = b})
+  plotVisible = plotOptions . lens poVisible (\po b -> po {poVisible = b})
   {-# INLINE plotVisible #-}
 
 instance (Additive v, Num n) => Default (PlotOptions b v n) where
@@ -439,7 +439,7 @@ key = addLegendEntry . mkLegendEntry
 --
 --  If you only care about the name of the legend, use 'key'.
 addLegendEntry
-  :: (HasPlotOptions Identity a b, MonadState a m, Num (N a))
+  :: (HasPlotOptions Identity a b, MonadState a m)
   => LegendEntry b (V a) (N a)
   -> m ()
 addLegendEntry l = legendEntries <>= [l]
@@ -493,7 +493,8 @@ class (Typeable p, Enveloped p) => Plotable p b where
 
   -- | The default legend picture when the 'LegendPic' is
   --   'DefaultLegendPic'.
-  defLegendPic :: (InSpace v n p, OrderedField n)
+  defLegendPic
+    :: InSpace v n p
     => PlotStyle b v n
     -> p
     -> QDiagram b v n Any
@@ -684,7 +685,7 @@ instance Functor f => HasPlotStyle f (StyledPlot b v n) b where
 
 -- | Traversal over a raw plot of a styled plot. The type of the plot
 --   must match for the traversal to be succesful.
-styledPlot :: forall p b. (Typeable p, Typeable b) => Traversal' (StyledPlot b (V p) (N p)) p
+styledPlot :: forall p b. Typeable p => Traversal' (StyledPlot b (V p) (N p)) p
 styledPlot f s@(StyledPlot p opts sty) =
   case eq p of
     Just Refl -> f p <&> \p' -> StyledPlot p' opts sty

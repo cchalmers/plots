@@ -58,7 +58,7 @@ type instance N (GPointsPlot n)  = n
 instance (OrderedField n) => Enveloped (GPointsPlot n) where
   getEnvelope GPointsPlot {..} = mempty
 
-instance (v ~ V2, Typeable b, TypeableFloat n, Renderable (Path v n) b)
+instance (v ~ V2, TypeableFloat n, Renderable (Path v n) b)
     => Plotable (GPointsPlot n) b where
   renderPlotable _ sty GPointsPlot {..} =
       mconcat [marker # applyMarkerStyle sty # scale 0.1 # moveTo (p2 (r*(cosA theta),r*(sinA theta)))| (r,theta) <- sPoints]
@@ -79,8 +79,7 @@ instance (v ~ V2, Typeable b, TypeableFloat n, Renderable (Path v n) b)
 ------------------------------------------------------------------------
 
 -- | Plot a polar scatter plot given a list of radius and angle.
-mkPointsPlot :: (RealFloat n, PointLike V2 n (Polar n), Num n)
-                => [(n, Angle n)] -> GPointsPlot n
+mkPointsPlot :: [(n, Angle n)] -> GPointsPlot n
 mkPointsPlot ds = GPointsPlot
   { sPoints      =  ds
   , sFill        =  False
@@ -135,8 +134,7 @@ pointsPlot
   :: (v ~ BaseSpace c, v ~ V2,
       PointLike v n (Polar n),
       MonadState (Axis b c n) m,
-      Plotable (GPointsPlot n) b,
-      RealFloat n)
+      Plotable (GPointsPlot n) b)
   => [(n,Angle n)] -> State (Plot (GPointsPlot n) b) () -> m ()
 pointsPlot ds = addPlotable (mkPointsPlot ds)
 
@@ -154,7 +152,6 @@ pointsPlot'
   :: (v ~ BaseSpace c, v ~ V2,
       PointLike v n (Polar n),
       MonadState (Axis b c n) m,
-      Plotable (GPointsPlot n) b,
-      RealFloat n)
+      Plotable (GPointsPlot n) b)
   => [(n,Angle n)] -> m ()
 pointsPlot' ds = addPlotable' (mkPointsPlot ds)

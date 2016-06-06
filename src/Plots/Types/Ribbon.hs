@@ -110,7 +110,7 @@ type instance N (GRibbonPlot v n a) = n
 instance (Metric v, OrderedField n) => Enveloped (GRibbonPlot v n a) where
   getEnvelope GRibbonPlot {..} = foldMapOf (sFold . to sPos) getEnvelope sData
 
-instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+instance (Typeable a, TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (GRibbonPlot V2 n a) b where
   renderPlotable s sty GRibbonPlot {..} =
       fromVertices ps
@@ -146,13 +146,13 @@ instance (Typeable a, Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
 type RibbonPlot v n = GRibbonPlot v n (Point v n)
 
 -- | Make a line plot.
-mkRibbonPlot :: (PointLike v n p, F.Foldable f, Num n)
+mkRibbonPlot :: (PointLike v n p, F.Foldable f)
               => f p -> RibbonPlot v n
 mkRibbonPlot = mkRibbonPlotOf folded
 
 -- | Make a line plot using the given fold.
-mkRibbonPlotOf :: (PointLike v n p, Num n)
-                => Fold s p -> s -> RibbonPlot v n
+mkRibbonPlotOf :: PointLike v n p
+               => Fold s p -> s -> RibbonPlot v n
 mkRibbonPlotOf f a = GRibbonPlot
   { sData = a
   , sFold = f . unpointLike
@@ -167,7 +167,7 @@ mkRibbonPlotOf f a = GRibbonPlot
 -- zeroY :: [(Double, Double)] -> [(Double, Double)]
 -- zeroY xs = [(a,0) | (a,_) <- xs]
 
-createBarData :: (Fractional t, Num t) => (t, t) -> t -> [(t, t)]
+createBarData :: Fractional t => (t, t) -> t -> [(t, t)]
 createBarData (x, y) w = [(xmax, y),(xmin, y),(xmin, 0),(xmax, 0)]
         where xmax =  x + (w/2)
               xmin =  x - (w/2)

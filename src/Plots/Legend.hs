@@ -116,9 +116,7 @@ instance HasOrientation (Legend b n) where
 --   legend options.
 drawLegend
   :: (TypeableFloat n,
-      Typeable b,
-      Renderable (Path V2 n) b,
-      Renderable (Text n) b)
+      Renderable (Path V2 n) b)
   => BoundingBox V2 n
   -> [(QDiagram b V2 n Any, String)]
   -> Legend b n

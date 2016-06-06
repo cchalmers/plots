@@ -90,7 +90,7 @@ data HistogramPlot n = HistogramPlot
   , hStart  :: n
   , hValues :: [n]
   , hOrient :: Orientation
-  }
+  } deriving Typeable
 
 type instance V (HistogramPlot n) = V2
 type instance N (HistogramPlot n) = n
@@ -104,7 +104,7 @@ instance OrderedField n => Enveloped (HistogramPlot n) where
       drawBar i h = rectBL (mkP2 x 0) (V2 hWidth h)
         where x = hStart + fromIntegral i * hWidth
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
+instance (TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (HistogramPlot n) b where
   renderPlotable s sty HistogramPlot {..} =
     ifoldMap drawBar hValues
@@ -135,7 +135,7 @@ instance HasOrientation (HistogramPlot n) where
 computedHistogram
   :: (MonadState (Axis b V2 n) m,
       Plotable (HistogramPlot n) b,
-      Foldable f, Typeable b, TypeableFloat n)
+      Foldable f)
   => n   -- ^ start of first bin
   -> n   -- ^ width of each bin
   -> f n -- ^ heights of the bins
@@ -145,7 +145,7 @@ computedHistogram x0 w xs = addPlotable (mkComputedHistogram x0 w xs)
 
 -- | Construct a 'HistogramPlot' from raw histogram data.
 mkComputedHistogram
-  :: (Foldable f, OrderedField n)
+  :: Foldable f
   => n -- ^ start of first bin
   -> n -- ^ width of each bin
   -> f n -- ^ heights of the bins
