@@ -1,5 +1,7 @@
 # plots
 
+[![Haddock](https://rawgit.com/cchalmers/dense/gh-pages/haddock.svg)](https://cchalmers.github.io/plots/)
+
 `plots` is a plotting library based on [Diagrams](http://projects.haskell.org/diagrams/) supporting 2D and 3D plots. The goal is make good looking plots easily with lots of customisability.
 
 Currently in development stage so it doesn't work well yet. Feel free to take a look and make suggestions.
