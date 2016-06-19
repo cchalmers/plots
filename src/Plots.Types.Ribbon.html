@@ -1,0 +1,485 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE DeriveDataTypeable        #-}</span><span>
+</span><a name="line-2"></a><span class="hs-pragma">{-# LANGUAGE ExistentialQuantification #-}</span><span>
+</span><a name="line-3"></a><span class="hs-pragma">{-# LANGUAGE FlexibleContexts          #-}</span><span>
+</span><a name="line-4"></a><span class="hs-pragma">{-# LANGUAGE FlexibleInstances         #-}</span><span>
+</span><a name="line-5"></a><span class="hs-pragma">{-# LANGUAGE FunctionalDependencies    #-}</span><span>
+</span><a name="line-6"></a><span class="hs-pragma">{-# LANGUAGE MultiParamTypeClasses     #-}</span><span>
+</span><a name="line-7"></a><span class="hs-pragma">{-# LANGUAGE RankNTypes                #-}</span><span>
+</span><a name="line-8"></a><span class="hs-pragma">{-# LANGUAGE RecordWildCards           #-}</span><span>
+</span><a name="line-9"></a><span class="hs-pragma">{-# LANGUAGE TypeFamilies              #-}</span><span>
+</span><a name="line-10"></a><span>
+</span><a name="line-11"></a><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Plots</span><span class="hs-operator">.</span><span class="hs-identifier">Types</span><span class="hs-operator">.</span><span class="hs-identifier">Ribbon</span><span>
+</span><a name="line-12"></a><span>  </span><span class="hs-special">(</span><span>  </span><span class="hs-comment">-- * GRibbonPlot plot</span><span>
+</span><a name="line-13"></a><span>     </span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span>
+</span><a name="line-14"></a><span>  </span><span class="hs-comment">-- , _RibbonPlot</span><span>
+</span><a name="line-15"></a><span>
+</span><a name="line-16"></a><span>    </span><span class="hs-comment">-- * Ribbon plot</span><span>
+</span><a name="line-17"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span>
+</span><a name="line-18"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#mkRibbonPlotOf"><span class="hs-identifier hs-var">mkRibbonPlotOf</span></a><span>
+</span><a name="line-19"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#mkRibbonPlot"><span class="hs-identifier hs-var">mkRibbonPlot</span></a><span>
+</span><a name="line-20"></a><span>
+</span><a name="line-21"></a><span>    </span><span class="hs-comment">-- * Helper functions</span><span>
+</span><a name="line-22"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#createBarData"><span class="hs-identifier hs-var">createBarData</span></a><span>
+</span><a name="line-23"></a><span>
+</span><a name="line-24"></a><span>    </span><span class="hs-comment">-- * Lenses</span><span>
+</span><a name="line-25"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#strokeEdge"><span class="hs-identifier hs-var">strokeEdge</span></a><span>
+</span><a name="line-26"></a><span>
+</span><a name="line-27"></a><span>  </span><span class="hs-comment">--  , BarPlot</span><span>
+</span><a name="line-28"></a><span>  </span><span class="hs-comment">--  , mkBarPlotOf</span><span>
+</span><a name="line-29"></a><span>  </span><span class="hs-comment">--  , mkBarPlot</span><span>
+</span><a name="line-30"></a><span>  </span><span class="hs-comment">--  , createbardata</span><span>
+</span><a name="line-31"></a><span>
+</span><a name="line-32"></a><span>    </span><span class="hs-comment">-- * Ribbon plot</span><span>
+</span><a name="line-33"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#ribbonPlot"><span class="hs-identifier hs-var">ribbonPlot</span></a><span>
+</span><a name="line-34"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#ribbonPlot%27"><span class="hs-identifier hs-var">ribbonPlot'</span></a><span>
+</span><a name="line-35"></a><span>  </span><span class="hs-comment">-- , ribbonPlotL</span><span>
+</span><a name="line-36"></a><span>
+</span><a name="line-37"></a><span>    </span><span class="hs-comment">-- * Fold variation ribbon plot</span><span>
+</span><a name="line-38"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#ribbonPlotOf"><span class="hs-identifier hs-var">ribbonPlotOf</span></a><span>
+</span><a name="line-39"></a><span>  </span><span class="hs-special">,</span><span> </span><a href="Plots.Types.Ribbon.html#ribbonPlotOf%27"><span class="hs-identifier hs-var">ribbonPlotOf'</span></a><span>
+</span><a name="line-40"></a><span>  </span><span class="hs-comment">-- , ribbonPlotLOf</span><span>
+</span><a name="line-41"></a><span>
+</span><a name="line-42"></a><span>    </span><span class="hs-comment">-- * Area plot</span><span>
+</span><a name="line-43"></a><span>  </span><span class="hs-comment">-- , makeribbon</span><span>
+</span><a name="line-44"></a><span>  </span><span class="hs-comment">-- , makearea</span><span>
+</span><a name="line-45"></a><span>  </span><span class="hs-comment">-- , makearea'</span><span>
+</span><a name="line-46"></a><span>  </span><span class="hs-comment">-- , makeareagroup'</span><span>
+</span><a name="line-47"></a><span>
+</span><a name="line-48"></a><span>  </span><span class="hs-comment">--   -- * Single barplot</span><span>
+</span><a name="line-49"></a><span>  </span><span class="hs-comment">-- , barPlot</span><span>
+</span><a name="line-50"></a><span>  </span><span class="hs-comment">-- , barPlot'</span><span>
+</span><a name="line-51"></a><span>  </span><span class="hs-comment">-- , barPlotL</span><span>
+</span><a name="line-52"></a><span>
+</span><a name="line-53"></a><span>  </span><span class="hs-comment">--   -- * Barplot normal</span><span>
+</span><a name="line-54"></a><span>  </span><span class="hs-comment">-- , barPlotNormal</span><span>
+</span><a name="line-55"></a><span>  </span><span class="hs-comment">-- , barPlotNormalC</span><span>
+</span><a name="line-56"></a><span>  </span><span class="hs-comment">-- , barPlotNormalCL</span><span>
+</span><a name="line-57"></a><span>  </span><span class="hs-comment">-- , barPlotNormalMulti</span><span>
+</span><a name="line-58"></a><span>  </span><span class="hs-comment">-- , barPlotNormalMultiC</span><span>
+</span><a name="line-59"></a><span>
+</span><a name="line-60"></a><span>  </span><span class="hs-comment">--   -- * Barplot stacked</span><span>
+</span><a name="line-61"></a><span>  </span><span class="hs-comment">-- , barPlotStacked</span><span>
+</span><a name="line-62"></a><span>  </span><span class="hs-comment">-- , barPlotStackedC</span><span>
+</span><a name="line-63"></a><span>  </span><span class="hs-comment">-- , barPlotStackedCL</span><span>
+</span><a name="line-64"></a><span>  </span><span class="hs-comment">-- , barPlotStackedMultiC</span><span>
+</span><a name="line-65"></a><span>
+</span><a name="line-66"></a><span>  </span><span class="hs-comment">--   -- * Barplot split</span><span>
+</span><a name="line-67"></a><span>  </span><span class="hs-comment">-- , barPlotSplit</span><span>
+</span><a name="line-68"></a><span>  </span><span class="hs-comment">-- , barPlotSplitC</span><span>
+</span><a name="line-69"></a><span>  </span><span class="hs-comment">-- , barPlotSplitCL</span><span>
+</span><a name="line-70"></a><span>  </span><span class="hs-comment">-- , barPlotSplitMultiC</span><span>
+</span><a name="line-71"></a><span>
+</span><a name="line-72"></a><span>  </span><span class="hs-comment">--   -- * Barplot ratio</span><span>
+</span><a name="line-73"></a><span>  </span><span class="hs-comment">-- , barPlotRatio</span><span>
+</span><a name="line-74"></a><span>  </span><span class="hs-comment">-- , barPlotRatioC</span><span>
+</span><a name="line-75"></a><span>  </span><span class="hs-comment">-- , barPlotRatioCL</span><span>
+</span><a name="line-76"></a><span>  </span><span class="hs-comment">-- , barPlotRatioMultiC</span><span>
+</span><a name="line-77"></a><span>  </span><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-78"></a><span>
+</span><a name="line-79"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Lens</span><span>                    </span><span class="hs-keyword">hiding</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-var">lmap</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">none</span><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-var">transform</span><span class="hs-special">,</span><span>
+</span><a name="line-80"></a><span>                                                  </span><span class="hs-special">(</span><span> </span><span class="hs-operator hs-var">#</span><span> </span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-81"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Control</span><span class="hs-operator">.</span><span class="hs-identifier">Monad</span><span class="hs-operator">.</span><span class="hs-identifier">State</span><span class="hs-operator">.</span><span class="hs-identifier">Lazy</span><span>
+</span><a name="line-82"></a><span>
+</span><a name="line-83"></a><span class="hs-keyword">import</span><span> </span><span class="hs-keyword">qualified</span><span> </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Foldable</span><span>                   </span><span class="hs-keyword">as</span><span> </span><span class="hs-identifier">F</span><span>
+</span><a name="line-84"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Data</span><span class="hs-operator">.</span><span class="hs-identifier">Typeable</span><span>
+</span><a name="line-85"></a><span class="hs-comment">-- import           Data.List</span><span>
+</span><a name="line-86"></a><span class="hs-comment">-- import           Data.Function</span><span>
+</span><a name="line-87"></a><span>
+</span><a name="line-88"></a><span class="hs-keyword">import</span><span>           </span><span class="hs-identifier">Diagrams</span><span class="hs-operator">.</span><span class="hs-identifier">Prelude</span><span>
+</span><a name="line-89"></a><span class="hs-keyword">import</span><span>           </span><a href="Diagrams.Coordinates.Isomorphic.html"><span class="hs-identifier">Diagrams</span><span class="hs-operator">.</span><span class="hs-identifier">Coordinates</span><span class="hs-operator">.</span><span class="hs-identifier">Isomorphic</span></a><span>
+</span><a name="line-90"></a><span>
+</span><a name="line-91"></a><span class="hs-keyword">import</span><span>           </span><a href="Plots.Style.html"><span class="hs-identifier">Plots</span><span class="hs-operator">.</span><span class="hs-identifier">Style</span></a><span>
+</span><a name="line-92"></a><span class="hs-keyword">import</span><span>           </span><a href="Plots.Types.html"><span class="hs-identifier">Plots</span><span class="hs-operator">.</span><span class="hs-identifier">Types</span></a><span>
+</span><a name="line-93"></a><span class="hs-keyword">import</span><span>           </span><a href="Plots.Axis.html"><span class="hs-identifier">Plots</span><span class="hs-operator">.</span><span class="hs-identifier">Axis</span></a><span>
+</span><a name="line-94"></a><span class="hs-keyword">import</span><span>           </span><a href="Plots.Axis.Scale.html"><span class="hs-identifier">Plots</span><span class="hs-operator">.</span><span class="hs-identifier">Axis</span><span class="hs-operator">.</span><span class="hs-identifier">Scale</span></a><span>
+</span><a name="line-95"></a><span>
+</span><a name="line-96"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-97"></a><span class="hs-comment">-- GPoints plot</span><span>
+</span><a name="line-98"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-99"></a><span>
+</span><a name="line-100"></a><span class="hs-keyword">data</span><span> </span><a name="GRibbonPlot"><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier">GRibbonPlot</span></a></a><span> </span><a name="local-1628215839"><a href="#local-1628215839"><span class="hs-identifier">v</span></a></a><span> </span><a name="local-1628215840"><a href="#local-1628215840"><span class="hs-identifier">n</span></a></a><span> </span><a name="local-1628215841"><a href="#local-1628215841"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-keyword">forall</span><span> </span><a name="local-1628215842"><a href="#local-1628215842"><span class="hs-identifier">s</span></a></a><span class="hs-operator">.</span><span> </span><a name="GRibbonPlot"><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier">GRibbonPlot</span></a></a><span>
+</span><a name="line-101"></a><span>  </span><span class="hs-special">{</span><span> </span><a name="sData"><a href="Plots.Types.Ribbon.html#sData"><span class="hs-identifier">sData</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><a href="#local-1628215842"><span class="hs-identifier hs-type">s</span></a><span>
+</span><a name="line-102"></a><span>  </span><span class="hs-special">,</span><span> </span><a name="sFold"><a href="Plots.Types.Ribbon.html#sFold"><span class="hs-identifier">sFold</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Fold</span><span> </span><a href="#local-1628215842"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-1628215841"><span class="hs-identifier hs-type">a</span></a><span>
+</span><a name="line-103"></a><span>  </span><span class="hs-special">,</span><span> </span><a name="sPos"><a href="Plots.Types.Ribbon.html#sPos"><span class="hs-identifier">sPos</span></a></a><span>  </span><span class="hs-glyph">::</span><span> </span><a href="#local-1628215841"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">Point</span><span> </span><a href="#local-1628215839"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215840"><span class="hs-identifier hs-type">n</span></a><span>
+</span><a name="line-104"></a><span>  </span><span class="hs-special">,</span><span> </span><a name="sLine"><a href="Plots.Types.Ribbon.html#sLine"><span class="hs-identifier">sLine</span></a></a><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Bool</span><span>
+</span><a name="line-105"></a><span>  </span><span class="hs-special">}</span><span> </span><span class="hs-keyword">deriving</span><span> </span><span class="hs-identifier hs-type">Typeable</span><span>
+</span><a name="line-106"></a><span>
+</span><a name="line-107"></a><span class="hs-keyword">type</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">V</span><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span> </span><a href="#local-1628215927"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215928"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215929"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-1628215927"><span class="hs-identifier hs-type">v</span></a><span>
+</span><a name="line-108"></a><span class="hs-keyword">type</span><span> </span><span class="hs-keyword">instance</span><span> </span><span class="hs-identifier hs-type">N</span><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span> </span><a href="#local-1628215924"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215925"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215926"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-1628215925"><span class="hs-identifier hs-type">n</span></a><span>
+</span><a name="line-109"></a><span>
+</span><a name="line-110"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Metric</span><span> </span><a href="#local-1628215917"><span class="hs-identifier hs-type">v</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">OrderedField</span><span> </span><a href="#local-1628215918"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Enveloped</span><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span> </span><a href="#local-1628215917"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215918"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215919"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-111"></a><span>  </span><a name="local-1912616284"><span class="hs-identifier">getEnvelope</span></a><span> </span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-var">GRibbonPlot</span></a><span> </span><span class="hs-special">{</span><span class="hs-glyph">..</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">foldMapOf</span><span> </span><span class="hs-special">(</span><a href="#local-1628215921"><span class="hs-identifier hs-var">sFold</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">to</span><span> </span><a href="#local-1628215922"><span class="hs-identifier hs-var">sPos</span></a><span class="hs-special">)</span><span> </span><span class="hs-identifier hs-var">getEnvelope</span><span> </span><a href="#local-1628215920"><span class="hs-identifier hs-var">sData</span></a><span>
+</span><a name="line-112"></a><span>
+</span><a name="line-113"></a><span class="hs-keyword">instance</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Typeable</span><span> </span><a href="#local-1628215900"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">TypeableFloat</span><span> </span><a href="#local-1628215901"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">Renderable</span><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Path</span><span> </span><span class="hs-identifier hs-type">V2</span><span> </span><a href="#local-1628215901"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215902"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span>
+</span><a name="line-114"></a><span>    </span><span class="hs-glyph">=&gt;</span><span> </span><a href="Plots.Types.html#Plotable"><span class="hs-identifier hs-type">Plotable</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span> </span><span class="hs-identifier hs-type">V2</span><span> </span><a href="#local-1628215901"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215900"><span class="hs-identifier hs-type">a</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215902"><span class="hs-identifier hs-type">b</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-115"></a><span>  </span><a name="local-1913078655"><a href="Plots.Types.html#renderPlotable"><span class="hs-identifier">renderPlotable</span></a></a><span> </span><a name="local-1628215903"><a href="#local-1628215903"><span class="hs-identifier">s</span></a></a><span> </span><a name="local-1628215904"><a href="#local-1628215904"><span class="hs-identifier">sty</span></a></a><span> </span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-var">GRibbonPlot</span></a><span> </span><span class="hs-special">{</span><span class="hs-glyph">..</span><span class="hs-special">}</span><span> </span><span class="hs-glyph">=</span><span>
+</span><a name="line-116"></a><span>      </span><span class="hs-identifier hs-var">fromVertices</span><span> </span><a href="#local-1628215909"><span class="hs-identifier hs-var">ps</span></a><span>
+</span><a name="line-117"></a><span>        </span><span class="hs-operator hs-var">#</span><span> </span><span class="hs-identifier hs-var">mapLoc</span><span> </span><span class="hs-identifier hs-var">closeLine</span><span>
+</span><a name="line-118"></a><span>        </span><span class="hs-operator hs-var">#</span><span> </span><span class="hs-identifier hs-var">stroke</span><span>
+</span><a name="line-119"></a><span>        </span><span class="hs-operator hs-var">#</span><span> </span><span class="hs-identifier hs-var">lw</span><span> </span><span class="hs-identifier hs-var">none</span><span>
+</span><a name="line-120"></a><span>        </span><span class="hs-operator hs-var">#</span><span> </span><a href="Plots.Style.html#applyAreaStyle"><span class="hs-identifier hs-var">applyAreaStyle</span></a><span> </span><a href="#local-1628215904"><span class="hs-identifier hs-var">sty</span></a><span>
+</span><a name="line-121"></a><span>        </span><span class="hs-operator hs-var">#</span><span> </span><span class="hs-identifier hs-var">transform</span><span> </span><a href="#local-1628215910"><span class="hs-identifier hs-var">t</span></a><span>
+</span><a name="line-122"></a><span>
+</span><a name="line-123"></a><span>   </span><span class="hs-operator hs-var">&lt;&gt;</span><span> </span><span class="hs-keyword">if</span><span> </span><a href="#local-1628215908"><span class="hs-identifier hs-var">sLine</span></a><span>
+</span><a name="line-124"></a><span>        </span><span class="hs-keyword">then</span><span> </span><span class="hs-identifier hs-var">fromVertices</span><span> </span><a href="#local-1628215909"><span class="hs-identifier hs-var">ps</span></a><span>
+</span><a name="line-125"></a><span>               </span><span class="hs-operator hs-var">#</span><span> </span><span class="hs-identifier hs-var">mapLoc</span><span> </span><span class="hs-identifier hs-var">closeLine</span><span>
+</span><a name="line-126"></a><span>               </span><span class="hs-operator hs-var">#</span><span> </span><span class="hs-identifier hs-var">stroke</span><span>
+</span><a name="line-127"></a><span>               </span><span class="hs-operator hs-var">#</span><span> </span><span class="hs-identifier hs-var">transform</span><span> </span><a href="#local-1628215910"><span class="hs-identifier hs-var">t</span></a><span>
+</span><a name="line-128"></a><span>               </span><span class="hs-operator hs-var">#</span><span> </span><a href="Plots.Style.html#applyLineStyle"><span class="hs-identifier hs-var">applyLineStyle</span></a><span> </span><a href="#local-1628215904"><span class="hs-identifier hs-var">sty</span></a><span>
+</span><a name="line-129"></a><span>        </span><span class="hs-keyword">else</span><span> </span><span class="hs-identifier hs-var">mempty</span><span>
+</span><a name="line-130"></a><span>    </span><span class="hs-keyword">where</span><span>
+</span><a name="line-131"></a><span>      </span><a name="local-1628215909"><a href="#local-1628215909"><span class="hs-identifier">ps</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">toListOf</span><span> </span><span class="hs-special">(</span><a href="#local-1628215906"><span class="hs-identifier hs-var">sFold</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">to</span><span> </span><a href="#local-1628215907"><span class="hs-identifier hs-var">sPos</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">to</span><span> </span><span class="hs-special">(</span><a href="Plots.Axis.Scale.html#logPoint"><span class="hs-identifier hs-var">logPoint</span></a><span> </span><a href="#local-1628215911"><span class="hs-identifier hs-var">ls</span></a><span class="hs-special">)</span><span class="hs-special">)</span><span> </span><a href="#local-1628215905"><span class="hs-identifier hs-var">sData</span></a><span>
+</span><a name="line-132"></a><span>      </span><a name="local-1628215910"><a href="#local-1628215910"><span class="hs-identifier">t</span></a></a><span>  </span><span class="hs-glyph">=</span><span> </span><a href="#local-1628215903"><span class="hs-identifier hs-var">s</span></a><span> </span><span class="hs-operator hs-var">^.</span><span> </span><a href="Plots.Types.html#specTrans"><span class="hs-identifier hs-var">specTrans</span></a><span>
+</span><a name="line-133"></a><span>      </span><a name="local-1628215911"><a href="#local-1628215911"><span class="hs-identifier">ls</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-1628215903"><span class="hs-identifier hs-var">s</span></a><span> </span><span class="hs-operator hs-var">^.</span><span> </span><a href="Plots.Types.html#specScale"><span class="hs-identifier hs-var">specScale</span></a><span>
+</span><a name="line-134"></a><span>
+</span><a name="line-135"></a><span>  </span><a name="local-1913078656"><a href="Plots.Types.html#defLegendPic"><span class="hs-identifier">defLegendPic</span></a></a><span> </span><a name="local-1628215912"><a href="#local-1628215912"><span class="hs-identifier">sty</span></a></a><span> </span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-var">GRibbonPlot</span></a><span> </span><span class="hs-special">{</span><span class="hs-glyph">..</span><span class="hs-special">}</span><span>
+</span><a name="line-136"></a><span>      </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">square</span><span> </span><span class="hs-number">5</span><span> </span><span class="hs-operator hs-var">#</span><span> </span><a href="Plots.Style.html#applyAreaStyle"><span class="hs-identifier hs-var">applyAreaStyle</span></a><span> </span><a href="#local-1628215912"><span class="hs-identifier hs-var">sty</span></a><span>
+</span><a name="line-137"></a><span>
+</span><a name="line-138"></a><span class="hs-comment">-- _RibbonPlot :: (Plotable (RibbonPlot v n) b, Typeable b)</span><span>
+</span><a name="line-139"></a><span class="hs-comment">--              =&gt; Prism' (Plot b v n) (RibbonPlot v n)</span><span>
+</span><a name="line-140"></a><span class="hs-comment">-- _RibbonPlot = _Plot</span><span>
+</span><a name="line-141"></a><span>
+</span><a name="line-142"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-143"></a><span class="hs-comment">-- Ribbon Plot</span><span>
+</span><a name="line-144"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-145"></a><span>
+</span><a name="line-146"></a><span class="hs-keyword">type</span><span> </span><a name="RibbonPlot"><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier">RibbonPlot</span></a></a><span> </span><a name="local-1628215837"><a href="#local-1628215837"><span class="hs-identifier">v</span></a></a><span> </span><a name="local-1628215838"><a href="#local-1628215838"><span class="hs-identifier">n</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span> </span><a href="#local-1628215837"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215838"><span class="hs-identifier hs-type">n</span></a><span> </span><span class="hs-special">(</span><span class="hs-identifier hs-type">Point</span><span> </span><a href="#local-1628215837"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215838"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span>
+</span><a name="line-147"></a><span>
+</span><a name="line-148"></a><span class="hs-comment">-- | Make a line plot.</span><span>
+</span><a name="line-149"></a><span class="hs-identifier">mkRibbonPlot</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><a href="Diagrams.Coordinates.Isomorphic.html#PointLike"><span class="hs-identifier hs-type">PointLike</span></a><span> </span><a href="#local-1628215876"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215877"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215878"><span class="hs-identifier hs-type">p</span></a><span class="hs-special">,</span><span> </span><span class="hs-identifier hs-type">F</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Foldable</span><span> </span><a href="#local-1628215879"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span>
+</span><a name="line-150"></a><span>              </span><span class="hs-glyph">=&gt;</span><span> </span><a href="#local-1628215879"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="#local-1628215878"><span class="hs-identifier hs-type">p</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span> </span><a href="#local-1628215876"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215877"><span class="hs-identifier hs-type">n</span></a><span>
+</span><a name="line-151"></a><a name="mkRibbonPlot"><a href="Plots.Types.Ribbon.html#mkRibbonPlot"><span class="hs-identifier">mkRibbonPlot</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Types.Ribbon.html#mkRibbonPlotOf"><span class="hs-identifier hs-var">mkRibbonPlotOf</span></a><span> </span><span class="hs-identifier hs-var">folded</span><span>
+</span><a name="line-152"></a><span>
+</span><a name="line-153"></a><span class="hs-comment">-- | Make a line plot using the given fold.</span><span>
+</span><a name="line-154"></a><span class="hs-identifier">mkRibbonPlotOf</span><span> </span><span class="hs-glyph">::</span><span> </span><a href="Diagrams.Coordinates.Isomorphic.html#PointLike"><span class="hs-identifier hs-type">PointLike</span></a><span> </span><a href="#local-1628215872"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215873"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215874"><span class="hs-identifier hs-type">p</span></a><span>
+</span><a name="line-155"></a><span>               </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Fold</span><span> </span><a href="#local-1628215875"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-1628215874"><span class="hs-identifier hs-type">p</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-1628215875"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span> </span><a href="#local-1628215872"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215873"><span class="hs-identifier hs-type">n</span></a><span>
+</span><a name="line-156"></a><a name="mkRibbonPlotOf"><a href="Plots.Types.Ribbon.html#mkRibbonPlotOf"><span class="hs-identifier">mkRibbonPlotOf</span></a></a><span> </span><a name="local-1628215880"><a href="#local-1628215880"><span class="hs-identifier">f</span></a></a><span> </span><a name="local-1628215881"><a href="#local-1628215881"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-var">GRibbonPlot</span></a><span>
+</span><a name="line-157"></a><span>  </span><span class="hs-special">{</span><span> </span><span class="hs-identifier">sData</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-1628215881"><span class="hs-identifier hs-var">a</span></a><span>
+</span><a name="line-158"></a><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">sFold</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-1628215880"><span class="hs-identifier hs-var">f</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><a href="Diagrams.Coordinates.Isomorphic.html#unpointLike"><span class="hs-identifier hs-var">unpointLike</span></a><span>
+</span><a name="line-159"></a><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">sPos</span><span>  </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">id</span><span>
+</span><a name="line-160"></a><span>  </span><span class="hs-special">,</span><span> </span><span class="hs-identifier">sLine</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">True</span><span>
+</span><a name="line-161"></a><span>  </span><span class="hs-special">}</span><span>
+</span><a name="line-162"></a><span>
+</span><a name="line-163"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-164"></a><span class="hs-comment">-- Helper functions</span><span>
+</span><a name="line-165"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-166"></a><span>
+</span><a name="line-167"></a><span class="hs-comment">-- zeroY :: [(Double, Double)] -&gt; [(Double, Double)]</span><span>
+</span><a name="line-168"></a><span class="hs-comment">-- zeroY xs = [(a,0) | (a,_) &lt;- xs]</span><span>
+</span><a name="line-169"></a><span>
+</span><a name="line-170"></a><span class="hs-identifier">createBarData</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Fractional</span><span> </span><a href="#local-1628215871"><span class="hs-identifier hs-type">t</span></a><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><a href="#local-1628215871"><span class="hs-identifier hs-type">t</span></a><span class="hs-special">,</span><span> </span><a href="#local-1628215871"><span class="hs-identifier hs-type">t</span></a><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-1628215871"><span class="hs-identifier hs-type">t</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><a href="#local-1628215871"><span class="hs-identifier hs-type">t</span></a><span class="hs-special">,</span><span> </span><a href="#local-1628215871"><span class="hs-identifier hs-type">t</span></a><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><a name="line-171"></a><a name="createBarData"><a href="Plots.Types.Ribbon.html#createBarData"><span class="hs-identifier">createBarData</span></a></a><span> </span><span class="hs-special">(</span><a name="local-1628215882"><a href="#local-1628215882"><span class="hs-identifier">x</span></a></a><span class="hs-special">,</span><span> </span><a name="local-1628215883"><a href="#local-1628215883"><span class="hs-identifier">y</span></a></a><span class="hs-special">)</span><span> </span><a name="local-1628215884"><a href="#local-1628215884"><span class="hs-identifier">w</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">[</span><span class="hs-special">(</span><a href="#local-1628215885"><span class="hs-identifier hs-var">xmax</span></a><span class="hs-special">,</span><span> </span><a href="#local-1628215883"><span class="hs-identifier hs-var">y</span></a><span class="hs-special">)</span><span class="hs-special">,</span><span class="hs-special">(</span><a href="#local-1628215886"><span class="hs-identifier hs-var">xmin</span></a><span class="hs-special">,</span><span> </span><a href="#local-1628215883"><span class="hs-identifier hs-var">y</span></a><span class="hs-special">)</span><span class="hs-special">,</span><span class="hs-special">(</span><a href="#local-1628215886"><span class="hs-identifier hs-var">xmin</span></a><span class="hs-special">,</span><span> </span><span class="hs-number">0</span><span class="hs-special">)</span><span class="hs-special">,</span><span class="hs-special">(</span><a href="#local-1628215885"><span class="hs-identifier hs-var">xmax</span></a><span class="hs-special">,</span><span> </span><span class="hs-number">0</span><span class="hs-special">)</span><span class="hs-special">]</span><span>
+</span><a name="line-172"></a><span>        </span><span class="hs-keyword">where</span><span> </span><a name="local-1628215885"><a href="#local-1628215885"><span class="hs-identifier">xmax</span></a></a><span> </span><span class="hs-glyph">=</span><span>  </span><a href="#local-1628215882"><span class="hs-identifier hs-var">x</span></a><span> </span><span class="hs-operator hs-var">+</span><span> </span><span class="hs-special">(</span><a href="#local-1628215884"><span class="hs-identifier hs-var">w</span></a><span class="hs-operator hs-var">/</span><span class="hs-number">2</span><span class="hs-special">)</span><span>
+</span><a name="line-173"></a><span>              </span><a name="local-1628215886"><a href="#local-1628215886"><span class="hs-identifier">xmin</span></a></a><span> </span><span class="hs-glyph">=</span><span>  </span><a href="#local-1628215882"><span class="hs-identifier hs-var">x</span></a><span> </span><span class="hs-glyph">-</span><span> </span><span class="hs-special">(</span><a href="#local-1628215884"><span class="hs-identifier hs-var">w</span></a><span class="hs-operator hs-var">/</span><span class="hs-number">2</span><span class="hs-special">)</span><span>
+</span><a name="line-174"></a><span>
+</span><a name="line-175"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-176"></a><span class="hs-comment">-- Ribbon lenses</span><span>
+</span><a name="line-177"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-178"></a><span>
+</span><a name="line-179"></a><span class="hs-keyword">class</span><span> </span><a name="HasRibbon"><a href="Plots.Types.Ribbon.html#HasRibbon"><span class="hs-identifier">HasRibbon</span></a></a><span> </span><a name="local-1628215831"><a href="#local-1628215831"><span class="hs-identifier">a</span></a></a><span> </span><a name="local-1628215832"><a href="#local-1628215832"><span class="hs-identifier">v</span></a></a><span> </span><a name="local-1628215833"><a href="#local-1628215833"><span class="hs-identifier">n</span></a></a><span> </span><a name="local-1628215834"><a href="#local-1628215834"><span class="hs-identifier">d</span></a></a><span> </span><span class="hs-glyph">|</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">v</span><span> </span><span class="hs-identifier">n</span><span class="hs-special">,</span><span> </span><span class="hs-identifier">a</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier">d</span><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-180"></a><span>  </span><span class="hs-identifier">ribbon</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Lens'</span><span> </span><a href="#local-1628215831"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span> </span><a href="#local-1628215832"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215833"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215834"><span class="hs-identifier hs-type">d</span></a><span class="hs-special">)</span><span>
+</span><a name="line-181"></a><span>
+</span><a name="line-182"></a><span>  </span><span class="hs-identifier">strokeEdge</span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-identifier hs-type">Lens'</span><span> </span><a href="#local-1628215831"><span class="hs-identifier hs-type">a</span></a><span> </span><span class="hs-identifier hs-type">Bool</span><span>
+</span><a name="line-183"></a><span>  </span><a name="local-1913428487"><a href="Plots.Types.Ribbon.html#strokeEdge"><span class="hs-identifier">strokeEdge</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Types.Ribbon.html#ribbon"><span class="hs-identifier hs-var">ribbon</span></a><span> </span><span class="hs-operator hs-var">.</span><span> </span><span class="hs-identifier hs-var">lens</span><span> </span><span class="hs-identifier">sLine</span><span> </span><span class="hs-special">(</span><span class="hs-glyph">\</span><a name="local-1628215835"><a href="#local-1628215835"><span class="hs-identifier">s</span></a></a><span> </span><a name="local-1628215836"><a href="#local-1628215836"><span class="hs-identifier">b</span></a></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-special">(</span><a href="#local-1628215835"><span class="hs-identifier hs-var">s</span></a><span> </span><span class="hs-special">{</span><span class="hs-identifier">sLine</span><span> </span><span class="hs-glyph">=</span><span> </span><a href="#local-1628215836"><span class="hs-identifier hs-var">b</span></a><span class="hs-special">}</span><span class="hs-special">)</span><span class="hs-special">)</span><span>
+</span><a name="line-184"></a><span>
+</span><a name="line-185"></a><span class="hs-keyword">instance</span><span> </span><a href="Plots.Types.Ribbon.html#HasRibbon"><span class="hs-identifier hs-type">HasRibbon</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span> </span><a href="#local-1628215897"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215898"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215899"><span class="hs-identifier hs-type">d</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215897"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215898"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215899"><span class="hs-identifier hs-type">d</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-186"></a><span>  </span><a name="local-1913428486"><a href="Plots.Types.Ribbon.html#ribbon"><span class="hs-identifier">ribbon</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-identifier hs-var">id</span><span>
+</span><a name="line-187"></a><span>
+</span><a name="line-188"></a><span class="hs-keyword">instance</span><span> </span><a href="Plots.Types.Ribbon.html#HasRibbon"><span class="hs-identifier hs-type">HasRibbon</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.html#Plot"><span class="hs-identifier hs-type">Plot</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#GRibbonPlot"><span class="hs-identifier hs-type">GRibbonPlot</span></a><span> </span><a href="#local-1628215893"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215894"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215895"><span class="hs-identifier hs-type">d</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215896"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215893"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215894"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215895"><span class="hs-identifier hs-type">d</span></a><span> </span><span class="hs-keyword">where</span><span>
+</span><a name="line-189"></a><span>  </span><a name="local-1913428486"><a href="Plots.Types.Ribbon.html#ribbon"><span class="hs-identifier">ribbon</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Types.html#rawPlot"><span class="hs-identifier hs-var">rawPlot</span></a><span>
+</span><a name="line-190"></a><span>
+</span><a name="line-191"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-192"></a><span class="hs-comment">-- Ribbon</span><span>
+</span><a name="line-193"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-194"></a><span>
+</span><a name="line-195"></a><span class="hs-identifier">ribbonPlot</span><span>
+</span><a name="line-196"></a><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><a href="#local-1628215864"><span class="hs-identifier hs-type">v</span></a><span> </span><span class="hs-glyph">~</span><span> </span><a href="Plots.Axis.html#BaseSpace"><span class="hs-identifier hs-type">BaseSpace</span></a><span> </span><a href="#local-1628215865"><span class="hs-identifier hs-type">c</span></a><span class="hs-special">,</span><span>
+</span><a name="line-197"></a><span>      </span><a href="Diagrams.Coordinates.Isomorphic.html#PointLike"><span class="hs-identifier hs-type">PointLike</span></a><span> </span><a href="#local-1628215864"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215866"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215867"><span class="hs-identifier hs-type">p</span></a><span class="hs-special">,</span><span>
+</span><a name="line-198"></a><span>      </span><span class="hs-identifier hs-type">MonadState</span><span> </span><span class="hs-special">(</span><a href="Plots.Axis.html#Axis"><span class="hs-identifier hs-type">Axis</span></a><span> </span><a href="#local-1628215868"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-1628215865"><span class="hs-identifier hs-type">c</span></a><span> </span><a href="#local-1628215866"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215869"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">,</span><span>
+</span><a name="line-199"></a><span>      </span><a href="Plots.Types.html#Plotable"><span class="hs-identifier hs-type">Plotable</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span> </span><a href="#local-1628215864"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215866"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215868"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">,</span><span>
+</span><a name="line-200"></a><span>      </span><span class="hs-identifier hs-type">F</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Foldable</span><span> </span><a href="#local-1628215870"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span>
+</span><a name="line-201"></a><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><a href="#local-1628215870"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="#local-1628215867"><span class="hs-identifier hs-type">p</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">State</span><span> </span><span class="hs-special">(</span><a href="Plots.Types.html#Plot"><span class="hs-identifier hs-type">Plot</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span> </span><a href="#local-1628215864"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215866"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215868"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-1628215869"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-202"></a><a name="ribbonPlot"><a href="Plots.Types.Ribbon.html#ribbonPlot"><span class="hs-identifier">ribbonPlot</span></a></a><span> </span><a name="local-1628215887"><a href="#local-1628215887"><span class="hs-identifier">a</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Axis.html#addPlotable"><span class="hs-identifier hs-var">addPlotable</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#mkRibbonPlot"><span class="hs-identifier hs-var">mkRibbonPlot</span></a><span> </span><a href="#local-1628215887"><span class="hs-identifier hs-var">a</span></a><span class="hs-special">)</span><span>
+</span><a name="line-203"></a><span>
+</span><a name="line-204"></a><span class="hs-identifier">ribbonPlot'</span><span>
+</span><a name="line-205"></a><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><a href="#local-1628215857"><span class="hs-identifier hs-type">v</span></a><span> </span><span class="hs-glyph">~</span><span> </span><a href="Plots.Axis.html#BaseSpace"><span class="hs-identifier hs-type">BaseSpace</span></a><span> </span><a href="#local-1628215858"><span class="hs-identifier hs-type">c</span></a><span class="hs-special">,</span><span>
+</span><a name="line-206"></a><span>      </span><a href="Diagrams.Coordinates.Isomorphic.html#PointLike"><span class="hs-identifier hs-type">PointLike</span></a><span> </span><a href="#local-1628215857"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215859"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215860"><span class="hs-identifier hs-type">p</span></a><span class="hs-special">,</span><span>
+</span><a name="line-207"></a><span>      </span><span class="hs-identifier hs-type">MonadState</span><span> </span><span class="hs-special">(</span><a href="Plots.Axis.html#Axis"><span class="hs-identifier hs-type">Axis</span></a><span> </span><a href="#local-1628215861"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-1628215858"><span class="hs-identifier hs-type">c</span></a><span> </span><a href="#local-1628215859"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215862"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">,</span><span>
+</span><a name="line-208"></a><span>      </span><a href="Plots.Types.html#Plotable"><span class="hs-identifier hs-type">Plotable</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span> </span><a href="#local-1628215857"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215859"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215861"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">,</span><span>
+</span><a name="line-209"></a><span>      </span><span class="hs-identifier hs-type">F</span><span class="hs-operator hs-type">.</span><span class="hs-identifier hs-type">Foldable</span><span> </span><a href="#local-1628215863"><span class="hs-identifier hs-type">f</span></a><span class="hs-special">)</span><span>
+</span><a name="line-210"></a><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><a href="#local-1628215863"><span class="hs-identifier hs-type">f</span></a><span> </span><a href="#local-1628215860"><span class="hs-identifier hs-type">p</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-1628215862"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-211"></a><a name="ribbonPlot%27"><a href="Plots.Types.Ribbon.html#ribbonPlot%27"><span class="hs-identifier">ribbonPlot'</span></a></a><span> </span><a name="local-1628215888"><a href="#local-1628215888"><span class="hs-identifier">d</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Axis.html#addPlotable%27"><span class="hs-identifier hs-var">addPlotable'</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#mkRibbonPlot"><span class="hs-identifier hs-var">mkRibbonPlot</span></a><span> </span><a href="#local-1628215888"><span class="hs-identifier hs-var">d</span></a><span class="hs-special">)</span><span>
+</span><a name="line-212"></a><span>
+</span><a name="line-213"></a><span class="hs-comment">-- ribbonPlotL</span><span>
+</span><a name="line-214"></a><span class="hs-comment">--   :: (v ~ BaseSpace c,</span><span>
+</span><a name="line-215"></a><span class="hs-comment">--       PointLike v n p,</span><span>
+</span><a name="line-216"></a><span class="hs-comment">--       MonadState (Axis b c n) m,</span><span>
+</span><a name="line-217"></a><span class="hs-comment">--       Plotable (RibbonPlot v n) b,</span><span>
+</span><a name="line-218"></a><span class="hs-comment">--       F.Foldable f)</span><span>
+</span><a name="line-219"></a><span class="hs-comment">--   =&gt; String -&gt; f p -&gt; m ()</span><span>
+</span><a name="line-220"></a><span class="hs-comment">-- ribbonPlotL l d = addPlotableL l (mkRibbonPlot d)</span><span>
+</span><a name="line-221"></a><span>
+</span><a name="line-222"></a><span class="hs-comment">-- Fold variants</span><span>
+</span><a name="line-223"></a><span>
+</span><a name="line-224"></a><span class="hs-identifier">ribbonPlotOf</span><span>
+</span><a name="line-225"></a><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><a href="#local-1628215850"><span class="hs-identifier hs-type">v</span></a><span> </span><span class="hs-glyph">~</span><span> </span><a href="Plots.Axis.html#BaseSpace"><span class="hs-identifier hs-type">BaseSpace</span></a><span> </span><a href="#local-1628215851"><span class="hs-identifier hs-type">c</span></a><span class="hs-special">,</span><span>
+</span><a name="line-226"></a><span>      </span><a href="Diagrams.Coordinates.Isomorphic.html#PointLike"><span class="hs-identifier hs-type">PointLike</span></a><span> </span><a href="#local-1628215850"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215852"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215853"><span class="hs-identifier hs-type">p</span></a><span class="hs-special">,</span><span>
+</span><a name="line-227"></a><span>      </span><span class="hs-identifier hs-type">MonadState</span><span> </span><span class="hs-special">(</span><a href="Plots.Axis.html#Axis"><span class="hs-identifier hs-type">Axis</span></a><span> </span><a href="#local-1628215854"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-1628215851"><span class="hs-identifier hs-type">c</span></a><span> </span><a href="#local-1628215852"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215855"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">,</span><span>
+</span><a name="line-228"></a><span>      </span><a href="Plots.Types.html#Plotable"><span class="hs-identifier hs-type">Plotable</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span> </span><a href="#local-1628215850"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215852"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215854"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span>
+</span><a name="line-229"></a><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Fold</span><span> </span><a href="#local-1628215856"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-1628215853"><span class="hs-identifier hs-type">p</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-1628215856"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="hs-identifier hs-type">State</span><span> </span><span class="hs-special">(</span><a href="Plots.Types.html#Plot"><span class="hs-identifier hs-type">Plot</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span> </span><a href="#local-1628215850"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215852"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215854"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-1628215855"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-230"></a><a name="ribbonPlotOf"><a href="Plots.Types.Ribbon.html#ribbonPlotOf"><span class="hs-identifier">ribbonPlotOf</span></a></a><span> </span><a name="local-1628215889"><a href="#local-1628215889"><span class="hs-identifier">f</span></a></a><span> </span><a name="local-1628215890"><a href="#local-1628215890"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Axis.html#addPlotable"><span class="hs-identifier hs-var">addPlotable</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#mkRibbonPlotOf"><span class="hs-identifier hs-var">mkRibbonPlotOf</span></a><span> </span><a href="#local-1628215889"><span class="hs-identifier hs-var">f</span></a><span> </span><a href="#local-1628215890"><span class="hs-identifier hs-var">s</span></a><span class="hs-special">)</span><span>
+</span><a name="line-231"></a><span>
+</span><a name="line-232"></a><span class="hs-identifier">ribbonPlotOf'</span><span>
+</span><a name="line-233"></a><span>  </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><a href="#local-1628215843"><span class="hs-identifier hs-type">v</span></a><span> </span><span class="hs-glyph">~</span><span> </span><a href="Plots.Axis.html#BaseSpace"><span class="hs-identifier hs-type">BaseSpace</span></a><span> </span><a href="#local-1628215844"><span class="hs-identifier hs-type">c</span></a><span class="hs-special">,</span><span>
+</span><a name="line-234"></a><span>      </span><a href="Diagrams.Coordinates.Isomorphic.html#PointLike"><span class="hs-identifier hs-type">PointLike</span></a><span> </span><a href="#local-1628215843"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215845"><span class="hs-identifier hs-type">n</span></a><span> </span><a href="#local-1628215846"><span class="hs-identifier hs-type">p</span></a><span class="hs-special">,</span><span>
+</span><a name="line-235"></a><span>      </span><span class="hs-identifier hs-type">MonadState</span><span> </span><span class="hs-special">(</span><a href="Plots.Axis.html#Axis"><span class="hs-identifier hs-type">Axis</span></a><span> </span><a href="#local-1628215847"><span class="hs-identifier hs-type">b</span></a><span> </span><a href="#local-1628215844"><span class="hs-identifier hs-type">c</span></a><span> </span><a href="#local-1628215845"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215848"><span class="hs-identifier hs-type">m</span></a><span class="hs-special">,</span><span>
+</span><a name="line-236"></a><span>      </span><a href="Plots.Types.html#Plotable"><span class="hs-identifier hs-type">Plotable</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#RibbonPlot"><span class="hs-identifier hs-type">RibbonPlot</span></a><span> </span><a href="#local-1628215843"><span class="hs-identifier hs-type">v</span></a><span> </span><a href="#local-1628215845"><span class="hs-identifier hs-type">n</span></a><span class="hs-special">)</span><span> </span><a href="#local-1628215847"><span class="hs-identifier hs-type">b</span></a><span class="hs-special">)</span><span>
+</span><a name="line-237"></a><span>  </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-identifier hs-type">Fold</span><span> </span><a href="#local-1628215849"><span class="hs-identifier hs-type">s</span></a><span> </span><a href="#local-1628215846"><span class="hs-identifier hs-type">p</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-1628215849"><span class="hs-identifier hs-type">s</span></a><span> </span><span class="hs-glyph">-&gt;</span><span> </span><a href="#local-1628215848"><span class="hs-identifier hs-type">m</span></a><span> </span><span class="hs-special">(</span><span class="hs-special">)</span><span>
+</span><a name="line-238"></a><a name="ribbonPlotOf%27"><a href="Plots.Types.Ribbon.html#ribbonPlotOf%27"><span class="hs-identifier">ribbonPlotOf'</span></a></a><span> </span><a name="local-1628215891"><a href="#local-1628215891"><span class="hs-identifier">f</span></a></a><span> </span><a name="local-1628215892"><a href="#local-1628215892"><span class="hs-identifier">s</span></a></a><span> </span><span class="hs-glyph">=</span><span> </span><a href="Plots.Axis.html#addPlotable%27"><span class="hs-identifier hs-var">addPlotable'</span></a><span> </span><span class="hs-special">(</span><a href="Plots.Types.Ribbon.html#mkRibbonPlotOf"><span class="hs-identifier hs-var">mkRibbonPlotOf</span></a><span> </span><a href="#local-1628215891"><span class="hs-identifier hs-var">f</span></a><span> </span><a href="#local-1628215892"><span class="hs-identifier hs-var">s</span></a><span class="hs-special">)</span><span>
+</span><a name="line-239"></a><span>
+</span><a name="line-240"></a><span class="hs-comment">-- ribbonPlotLOf</span><span>
+</span><a name="line-241"></a><span class="hs-comment">--   :: (v ~ BaseSpace c,</span><span>
+</span><a name="line-242"></a><span class="hs-comment">--       PointLike v n p,</span><span>
+</span><a name="line-243"></a><span class="hs-comment">--       MonadState (Axis b c n) m,</span><span>
+</span><a name="line-244"></a><span class="hs-comment">--       Plotable (RibbonPlot v n) b)</span><span>
+</span><a name="line-245"></a><span class="hs-comment">--   =&gt; String -&gt; Fold s p -&gt; s -&gt; m ()</span><span>
+</span><a name="line-246"></a><span class="hs-comment">-- ribbonPlotLOf l f s = addPlotableL l (mkRibbonPlotOf f s)</span><span>
+</span><a name="line-247"></a><span>
+</span><a name="line-248"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-249"></a><span class="hs-comment">-- Area</span><span>
+</span><a name="line-250"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-251"></a><span>
+</span><a name="line-252"></a><span class="hs-comment">-- makeribbon :: (RealFloat b, Typeable b, Typeable b1, Renderable (Path V2 b) b1,</span><span>
+</span><a name="line-253"></a><span class="hs-comment">--                MonadState (Axis b1 c b) m, BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-254"></a><span class="hs-comment">--               [b] -&gt; [b] -&gt; [b] -&gt; Colour Double -&gt; m ()</span><span>
+</span><a name="line-255"></a><span class="hs-comment">-- makeribbon x1s x2s ys colour =</span><span>
+</span><a name="line-256"></a><span class="hs-comment">--   ribbonPlot' ((zip x1s ys) ++ reverse (zip x2s ys)) $ do</span><span>
+</span><a name="line-257"></a><span class="hs-comment">--     -- addLegendEntry &quot;ribbon test&quot;</span><span>
+</span><a name="line-258"></a><span class="hs-comment">--     plotColor .= colour</span><span>
+</span><a name="line-259"></a><span>
+</span><a name="line-260"></a><span class="hs-comment">-- makearea :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-261"></a><span class="hs-comment">--              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-262"></a><span class="hs-comment">--             [Double] -&gt; [Double] -&gt; Colour Double -&gt; m ()</span><span>
+</span><a name="line-263"></a><span class="hs-comment">-- makearea xs ys colour =</span><span>
+</span><a name="line-264"></a><span class="hs-comment">--   ribbonPlot' ((zip xs ys) ++ reverse (zeroY (zip xs ys))) $ do</span><span>
+</span><a name="line-265"></a><span class="hs-comment">--     -- addLegendEntry &quot;ribbon test&quot;</span><span>
+</span><a name="line-266"></a><span class="hs-comment">--     plotColor .= colour</span><span>
+</span><a name="line-267"></a><span>
+</span><a name="line-268"></a><span class="hs-comment">-- -- makearea' :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-269"></a><span class="hs-comment">-- --               MonadState (Axis b c Double) m, BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-270"></a><span class="hs-comment">-- --              [(Double, Double)] -&gt; String -&gt; m ()</span><span>
+</span><a name="line-271"></a><span class="hs-comment">-- -- makearea' sd string =</span><span>
+</span><a name="line-272"></a><span class="hs-comment">-- --   ribbonPlot' (sd ++ reverse (zeroY sd)) $ do</span><span>
+</span><a name="line-273"></a><span class="hs-comment">-- --     -- addLegendEntry string</span><span>
+</span><a name="line-274"></a><span>
+</span><a name="line-275"></a><span class="hs-comment">-- makeareagroup' :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-276"></a><span class="hs-comment">--                    MonadState (Axis b c Double) m, BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-277"></a><span class="hs-comment">--                   m ([(Double, Double)], String) -&gt; m ()</span><span>
+</span><a name="line-278"></a><span class="hs-comment">-- makeareagroup' xs  = do</span><span>
+</span><a name="line-279"></a><span class="hs-comment">--   x &lt;- xs</span><span>
+</span><a name="line-280"></a><span class="hs-comment">--   makearea' (fst x) (snd x)</span><span>
+</span><a name="line-281"></a><span>
+</span><a name="line-282"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-283"></a><span class="hs-comment">-- Bar</span><span>
+</span><a name="line-284"></a><span class="hs-comment">------------------------------------------------------------------------</span><span>
+</span><a name="line-285"></a><span>
+</span><a name="line-286"></a><span class="hs-comment">-- barPlot :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-287"></a><span class="hs-comment">--              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-288"></a><span class="hs-comment">--             (Double,Double) -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-289"></a><span class="hs-comment">-- barPlot x w = ribbonPlot (createBarData x w)</span><span>
+</span><a name="line-290"></a><span>
+</span><a name="line-291"></a><span class="hs-comment">-- barPlot' :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-292"></a><span class="hs-comment">--              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-293"></a><span class="hs-comment">--             (Double,Double) -&gt; Double -&gt; PlotState (RibbonPlot V2 Double) b -&gt; m ()</span><span>
+</span><a name="line-294"></a><span class="hs-comment">-- barPlot' x w = ribbonPlot' (createBarData x w)</span><span>
+</span><a name="line-295"></a><span>
+</span><a name="line-296"></a><span class="hs-comment">-- barPlotC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-297"></a><span class="hs-comment">--              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-298"></a><span class="hs-comment">--             (Double,Double) -&gt; Double -&gt; Colour Double -&gt; m ()</span><span>
+</span><a name="line-299"></a><span class="hs-comment">-- barPlotC x w colour = ribbonPlot' (createBarData x w) $ plotColor .= colour</span><span>
+</span><a name="line-300"></a><span>
+</span><a name="line-301"></a><span class="hs-comment">-- barPlotL :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-302"></a><span class="hs-comment">--              MonadState (Axis b c Double) m, BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-303"></a><span class="hs-comment">--             (Double,Double) -&gt; Double -&gt; String -&gt; Colour Double -&gt; m ()</span><span>
+</span><a name="line-304"></a><span class="hs-comment">-- barPlotL x w string colour =</span><span>
+</span><a name="line-305"></a><span class="hs-comment">--   ribbonPlot' (createBarData x w) $ do</span><span>
+</span><a name="line-306"></a><span class="hs-comment">--     plotColor .= colour</span><span>
+</span><a name="line-307"></a><span class="hs-comment">--     addLegendEntry string</span><span>
+</span><a name="line-308"></a><span>
+</span><a name="line-309"></a><span class="hs-comment">-- ------------------------------------------------------------------------</span><span>
+</span><a name="line-310"></a><span class="hs-comment">-- -- Normal Bar</span><span>
+</span><a name="line-311"></a><span class="hs-comment">-- ------------------------------------------------------------------------</span><span>
+</span><a name="line-312"></a><span>
+</span><a name="line-313"></a><span class="hs-comment">-- barPlotNormal :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-314"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-315"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-316"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-317"></a><span class="hs-comment">-- barPlotNormal y xs w = F.forM_ xs $ \x -&gt; barPlot ((fromIntegral y), x) w</span><span>
+</span><a name="line-318"></a><span>
+</span><a name="line-319"></a><span class="hs-comment">-- barPlotNormalC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-320"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-321"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-322"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; [Colour Double]-&gt; Double -&gt; m ()</span><span>
+</span><a name="line-323"></a><span class="hs-comment">-- barPlotNormalC y xs cs w =</span><span>
+</span><a name="line-324"></a><span class="hs-comment">--   F.forM_ (sortBy (compare `on` fst)(zip xs cs)) $</span><span>
+</span><a name="line-325"></a><span class="hs-comment">--     \x -&gt; barPlotC ((fromIntegral y), fst x) w (snd x)</span><span>
+</span><a name="line-326"></a><span>
+</span><a name="line-327"></a><span class="hs-comment">-- barPlotNormalCL :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-328"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-329"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-330"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; [Colour Double] -&gt; [String]-&gt; Double -&gt; m ()</span><span>
+</span><a name="line-331"></a><span class="hs-comment">-- barPlotNormalCL y xs cs ls w =</span><span>
+</span><a name="line-332"></a><span class="hs-comment">--   F.forM_ (sortBy (compare `on` fstof3)(zip3 xs cs ls)) $</span><span>
+</span><a name="line-333"></a><span class="hs-comment">--     \x -&gt; barPlotL ((fromIntegral y), fstof3 x) w (trdof3 x) (sndof3 x)</span><span>
+</span><a name="line-334"></a><span>
+</span><a name="line-335"></a><span class="hs-comment">-- fstof3 :: (t, t1, t2) -&gt; t</span><span>
+</span><a name="line-336"></a><span class="hs-comment">-- fstof3 (a, _, _) = a</span><span>
+</span><a name="line-337"></a><span class="hs-comment">-- sndof3 :: (t, t1, t2) -&gt; t1</span><span>
+</span><a name="line-338"></a><span class="hs-comment">-- sndof3 (_, a, _) = a</span><span>
+</span><a name="line-339"></a><span class="hs-comment">-- trdof3 :: (t, t1, t2) -&gt; t2</span><span>
+</span><a name="line-340"></a><span class="hs-comment">-- trdof3 (_, _, a) = a</span><span>
+</span><a name="line-341"></a><span>
+</span><a name="line-342"></a><span class="hs-comment">-- barPlotNormalMulti :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-343"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-344"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-345"></a><span class="hs-comment">--                   [[Double]] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-346"></a><span class="hs-comment">-- barPlotNormalMulti xs w = F.forM_ [1 .. length xs] $ \x -&gt; barPlotNormal x (xs!!(x-1)) w</span><span>
+</span><a name="line-347"></a><span>
+</span><a name="line-348"></a><span class="hs-comment">-- barPlotNormalMultiC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-349"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-350"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-351"></a><span class="hs-comment">--                   [[Double]] -&gt; [Colour Double] -&gt; [String] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-352"></a><span class="hs-comment">-- barPlotNormalMultiC xs colormap nms w = do</span><span>
+</span><a name="line-353"></a><span class="hs-comment">--   barPlotNormalCL 1 (xs!!0) colormap nms w</span><span>
+</span><a name="line-354"></a><span class="hs-comment">--   F.forM_ [2 .. length xs] $ \x -&gt; barPlotNormalC x (xs!!(x-1)) colormap w</span><span>
+</span><a name="line-355"></a><span>
+</span><a name="line-356"></a><span class="hs-comment">-- ------------------------------------------------------------------------</span><span>
+</span><a name="line-357"></a><span class="hs-comment">-- -- Stacked Bar</span><span>
+</span><a name="line-358"></a><span class="hs-comment">-- ------------------------------------------------------------------------</span><span>
+</span><a name="line-359"></a><span>
+</span><a name="line-360"></a><span class="hs-comment">-- barPlotStacked :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-361"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-362"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-363"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-364"></a><span class="hs-comment">-- barPlotStacked y xs w =</span><span>
+</span><a name="line-365"></a><span class="hs-comment">--   F.forM_ (additive xs) $</span><span>
+</span><a name="line-366"></a><span class="hs-comment">--     \x -&gt; barPlot ((fromIntegral y), x) w</span><span>
+</span><a name="line-367"></a><span>
+</span><a name="line-368"></a><span class="hs-comment">-- additive :: [Double] -&gt; [Double]</span><span>
+</span><a name="line-369"></a><span class="hs-comment">-- additive [] = []</span><span>
+</span><a name="line-370"></a><span class="hs-comment">-- additive (x:[]) = [x]</span><span>
+</span><a name="line-371"></a><span class="hs-comment">-- additive (x:xs) = x:(additive (addtofst x xs))</span><span>
+</span><a name="line-372"></a><span>
+</span><a name="line-373"></a><span class="hs-comment">-- addtofst :: Double -&gt; [Double] -&gt; [Double]</span><span>
+</span><a name="line-374"></a><span class="hs-comment">-- addtofst a (x:xs) = (a+x):xs</span><span>
+</span><a name="line-375"></a><span class="hs-comment">-- addtofst _ []     = []</span><span>
+</span><a name="line-376"></a><span>
+</span><a name="line-377"></a><span class="hs-comment">-- barPlotStackedC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-378"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-379"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-380"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; [Colour Double]-&gt; Double -&gt; m ()</span><span>
+</span><a name="line-381"></a><span class="hs-comment">-- barPlotStackedC y xs cs w =</span><span>
+</span><a name="line-382"></a><span class="hs-comment">--   F.forM_ (sortBy (compare `on` fst) (zip (additive xs) cs)) $</span><span>
+</span><a name="line-383"></a><span class="hs-comment">--     \x -&gt; barPlotC ((fromIntegral y), fst x) w (snd x)</span><span>
+</span><a name="line-384"></a><span>
+</span><a name="line-385"></a><span class="hs-comment">-- barPlotStackedCL :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-386"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-387"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-388"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; [Colour Double]</span><span>
+</span><a name="line-389"></a><span class="hs-comment">--                      -&gt; [String] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-390"></a><span class="hs-comment">-- barPlotStackedCL y xs cs ls w =</span><span>
+</span><a name="line-391"></a><span class="hs-comment">--   F.forM_ (sortBy (compare `on` fstof3) (zip3 (additive xs) cs ls)) $</span><span>
+</span><a name="line-392"></a><span class="hs-comment">--     \x -&gt; barPlotL ((fromIntegral y), fstof3 x) w (trdof3 x) (sndof3 x)</span><span>
+</span><a name="line-393"></a><span>
+</span><a name="line-394"></a><span class="hs-comment">-- barPlotStackedMultiC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-395"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-396"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-397"></a><span class="hs-comment">--                   [[Double]] -&gt; [Colour Double]-&gt; [String] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-398"></a><span class="hs-comment">-- barPlotStackedMultiC xs colormap nms w = do</span><span>
+</span><a name="line-399"></a><span class="hs-comment">--   barPlotStackedCL 1 (xs!!0) colormap nms w</span><span>
+</span><a name="line-400"></a><span class="hs-comment">--   F.forM_ [2 .. length xs] $ \x -&gt; barPlotStackedC x (xs!!(x-1)) colormap w</span><span>
+</span><a name="line-401"></a><span>
+</span><a name="line-402"></a><span class="hs-comment">-- ------------------------------------------------------------------------</span><span>
+</span><a name="line-403"></a><span class="hs-comment">-- -- Split Bar</span><span>
+</span><a name="line-404"></a><span class="hs-comment">-- ------------------------------------------------------------------------</span><span>
+</span><a name="line-405"></a><span>
+</span><a name="line-406"></a><span class="hs-comment">-- barPlotSplit :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-407"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-408"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-409"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-410"></a><span class="hs-comment">-- barPlotSplit y xs w = F.forM_ (zip (createsplitdata y len w) xs) $ \x -&gt; barPlot x w1</span><span>
+</span><a name="line-411"></a><span class="hs-comment">--   where</span><span>
+</span><a name="line-412"></a><span class="hs-comment">--     w1 = w/fromIntegral len</span><span>
+</span><a name="line-413"></a><span class="hs-comment">--     len = length xs</span><span>
+</span><a name="line-414"></a><span>
+</span><a name="line-415"></a><span class="hs-comment">-- createsplitdata :: Int -&gt; Int -&gt; Double -&gt; [Double]</span><span>
+</span><a name="line-416"></a><span class="hs-comment">-- createsplitdata y len w = [b, b+w1 .. (a-w1)]</span><span>
+</span><a name="line-417"></a><span class="hs-comment">--   where</span><span>
+</span><a name="line-418"></a><span class="hs-comment">--     y1 = fromIntegral y</span><span>
+</span><a name="line-419"></a><span class="hs-comment">--     w1 = w/fromIntegral len</span><span>
+</span><a name="line-420"></a><span class="hs-comment">--     a  = y1 + (w/2) + (w1/2)</span><span>
+</span><a name="line-421"></a><span class="hs-comment">--     b  = y1 - (w/2) + (w1/2)</span><span>
+</span><a name="line-422"></a><span>
+</span><a name="line-423"></a><span class="hs-comment">-- barPlotSplitC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-424"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-425"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-426"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; [Colour Double]-&gt; Double -&gt; m ()</span><span>
+</span><a name="line-427"></a><span class="hs-comment">-- barPlotSplitC y xs cs w =</span><span>
+</span><a name="line-428"></a><span class="hs-comment">--   F.forM_ (zip (zip (createsplitdata y len w) xs) cs) $ \x -&gt; barPlotC (fst x) w1 (snd x)</span><span>
+</span><a name="line-429"></a><span class="hs-comment">--   where</span><span>
+</span><a name="line-430"></a><span class="hs-comment">--     w1  = w/fromIntegral len</span><span>
+</span><a name="line-431"></a><span class="hs-comment">--     len = length xs</span><span>
+</span><a name="line-432"></a><span>
+</span><a name="line-433"></a><span class="hs-comment">-- barPlotSplitCL :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-434"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-435"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-436"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; [Colour Double]</span><span>
+</span><a name="line-437"></a><span class="hs-comment">--                      -&gt; [String] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-438"></a><span class="hs-comment">-- barPlotSplitCL y xs cs ls w =</span><span>
+</span><a name="line-439"></a><span class="hs-comment">--   F.forM_ (zip3 (zip (createsplitdata y len w) xs) cs ls) $ \x -&gt; barPlotL (fstof3 x) w1 (trdof3 x) (sndof3 x)</span><span>
+</span><a name="line-440"></a><span class="hs-comment">--   where</span><span>
+</span><a name="line-441"></a><span class="hs-comment">--     w1  = w / fromIntegral len</span><span>
+</span><a name="line-442"></a><span class="hs-comment">--     len = length xs</span><span>
+</span><a name="line-443"></a><span>
+</span><a name="line-444"></a><span class="hs-comment">-- barPlotSplitMultiC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-445"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-446"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-447"></a><span class="hs-comment">--                   [[Double]] -&gt; [Colour Double]-&gt; [String] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-448"></a><span class="hs-comment">-- barPlotSplitMultiC xs colormap nms w = do</span><span>
+</span><a name="line-449"></a><span class="hs-comment">--   barPlotSplitCL 1 (xs!!0) colormap nms w</span><span>
+</span><a name="line-450"></a><span class="hs-comment">--   F.forM_ [2 .. length xs] $ \x -&gt; barPlotSplitC x (xs!!(x-1)) colormap w</span><span>
+</span><a name="line-451"></a><span>
+</span><a name="line-452"></a><span class="hs-comment">-- ------------------------------------------------------------------------</span><span>
+</span><a name="line-453"></a><span class="hs-comment">-- -- Ratio Bar</span><span>
+</span><a name="line-454"></a><span class="hs-comment">-- ------------------------------------------------------------------------</span><span>
+</span><a name="line-455"></a><span>
+</span><a name="line-456"></a><span class="hs-comment">-- barPlotRatio :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-457"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-458"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-459"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-460"></a><span class="hs-comment">-- barPlotRatio t xs w = barPlotStacked t [ x/tot | x &lt;- xs] w</span><span>
+</span><a name="line-461"></a><span class="hs-comment">--   where tot = sum xs</span><span>
+</span><a name="line-462"></a><span>
+</span><a name="line-463"></a><span class="hs-comment">-- barPlotRatioC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-464"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-465"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-466"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; [Colour Double] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-467"></a><span class="hs-comment">-- barPlotRatioC t xs colormap w = barPlotStackedC t [x/tot | x &lt;- xs] colormap w</span><span>
+</span><a name="line-468"></a><span class="hs-comment">--   where tot = sum xs</span><span>
+</span><a name="line-469"></a><span>
+</span><a name="line-470"></a><span class="hs-comment">-- barPlotRatioCL :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-471"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-472"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-473"></a><span class="hs-comment">--                  Int -&gt; [Double] -&gt; [Colour Double]</span><span>
+</span><a name="line-474"></a><span class="hs-comment">--                      -&gt; [String]-&gt; Double -&gt; m ()</span><span>
+</span><a name="line-475"></a><span class="hs-comment">-- barPlotRatioCL t xs colormap nms w = barPlotStackedCL t [x/tot | x &lt;- xs] colormap nms w</span><span>
+</span><a name="line-476"></a><span class="hs-comment">--   where tot = sum xs</span><span>
+</span><a name="line-477"></a><span>
+</span><a name="line-478"></a><span class="hs-comment">-- barPlotRatioMultiC :: (Typeable b, Renderable (Path V2 Double) b,</span><span>
+</span><a name="line-479"></a><span class="hs-comment">--                   MonadState (Axis b c Double) m,</span><span>
+</span><a name="line-480"></a><span class="hs-comment">--                   BaseSpace c ~ V2) =&gt;</span><span>
+</span><a name="line-481"></a><span class="hs-comment">--                   [[Double]] -&gt; [Colour Double] -&gt; [String] -&gt; Double -&gt; m ()</span><span>
+</span><a name="line-482"></a><span class="hs-comment">-- barPlotRatioMultiC xs colormap nms w = do</span><span>
+</span><a name="line-483"></a><span class="hs-comment">--   barPlotRatioCL 1 (xs!!0) colormap nms w</span><span>
+</span><a name="line-484"></a><span class="hs-comment">--   F.forM_ [2 .. length xs] $ \x -&gt; barPlotRatioC x (xs!!(x-1)) colormap w</span><span>
+</span><a name="line-485"></a></pre></body></html>
