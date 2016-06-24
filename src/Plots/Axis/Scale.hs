@@ -162,13 +162,14 @@ instance HasAxisScaling f (AxisScaling n) where
 
 -- | Calculating the bounds for an axis.
 calculateBounds
-  :: Num n
+  :: OrderedField n
   => AxisScaling n -- ^ Scaling to use for this axis
   -> Maybe (n, n)  -- ^ Inferred bounds (from any plots)
   -> (n, n)        -- ^ Lower and upper bounds to use for this axis
 calculateBounds Scaling {..} mInferred = (l', u') where
   -- bounds are only enlarged when min/max bound wasn't set
   l' = l & whenever (isNothing asBoundMin) (subtract x)
+         & whenever (asLogScale == LogAxis) (max 1e-6)
   u' = u & whenever (isNothing asBoundMax) (+ x)
 
   -- amount to enlarge axis by
