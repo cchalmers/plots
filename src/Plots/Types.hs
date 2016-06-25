@@ -138,6 +138,7 @@ import           Data.Foldable         (Foldable)
 
 import           Plots.Style
 import           Plots.Axis.Scale
+import           Plots.Util
 
 -- Orientation ---------------------------------------------------------
 
@@ -726,10 +727,6 @@ specRect aSpec =
   where
   V2 (xL,xU) (yL,yU) = _specBounds aSpec
   t                   = _specTrans aSpec
-
--- | Apply a function if the predicate is true.
-whenever :: Bool -> (a -> a) -> a -> a
-whenever b f = bool id f b
 
 -- | Get the legend rendered entries from a single styled plot. The
 --   resulting entries are in no particular order. See also

@@ -743,7 +743,3 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
     --     -- TODO: Arrow for R3
     --     mkline y = pathFromVertices
     --      $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
-
--- | Apply a function if the predicate is true.
-whenever :: Bool -> (a -> a) -> a -> a
-whenever b f = bool id f b

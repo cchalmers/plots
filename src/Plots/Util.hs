@@ -11,6 +11,7 @@ module Plots.Util
   , pathFromVertices
   , minMaxOf
   , enumFromToN
+  , whenever
 
     -- * State helpers
   , (&=)
@@ -19,7 +20,9 @@ module Plots.Util
 
 import           Control.Lens
 import           Control.Monad.State
+import           Data.Bool
 import           Data.Monoid.Recommend
+
 import           Diagrams.Prelude           hiding (diff)
 
 -- | Similar to '(%=)' but takes a state modification instead of a
@@ -55,6 +58,10 @@ liftRecommend f (Commit a) (Commit b)       = Commit (f a b)
 fromCommit :: a -> Recommend a -> a
 fromCommit _ (Commit a) = a
 fromCommit a _          = a
+
+-- | Apply a function if the predicate is true.
+whenever :: Bool -> (a -> a) -> a -> a
+whenever b f = bool id f b
 
 ------------------------------------------------------------------------
 -- Diagrams
