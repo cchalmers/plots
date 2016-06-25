@@ -666,7 +666,7 @@ dynamicPlotMods f (DynamicPlot (Plot p opts ps)) =
 ------------------------------------------------------------------------
 
 -- | A 'DynamicPlot' with a concrete style. This is suitable for being
---   rendered with 'styledPlotRender' and get extract the legend entries
+--   rendered with 'renderStyledPlot' and get extract the legend entries
 --   with 'styledPlotLegend.
 --
 --   You can make a 'StyledPlot' with 'styleDynamic'
@@ -709,11 +709,27 @@ styleDynamic sty (DynamicPlot (Plot p opts styF)) = StyledPlot p opts (styF sty)
 
 -- | Render a 'StyledPlot' given an and 'AxisSpec'.
 renderStyledPlot
-  :: AxisSpec v n
-  -> StyledPlot b v n
-  -> QDiagram b v n Any
-renderStyledPlot aSpec (StyledPlot p _ sty)
+  :: TypeableFloat n
+  => AxisSpec V2 n
+  -> StyledPlot b V2 n
+  -> QDiagram b V2 n Any
+renderStyledPlot aSpec (StyledPlot p opts sty)
   = renderPlotable aSpec sty p
+      & whenever (opts^.hidden) phantom
+      & whenever (opts^.clipPlot) (clipTo $ specRect aSpec)
+
+specRect :: TypeableFloat n => AxisSpec V2 n -> Path V2 n
+specRect aSpec =
+  rect (xU - xL) (yU - yL)
+    # moveTo (mkP2 ((xU+xL)/2) ((yU+yL)/2))
+    # transform t
+  where
+  V2 (xL,xU) (yL,yU) = _specBounds aSpec
+  t                   = _specTrans aSpec
+
+-- | Apply a function if the predicate is true.
+whenever :: Bool -> (a -> a) -> a -> a
+whenever b f = bool id f b
 
 -- | Get the legend rendered entries from a single styled plot. The
 --   resulting entries are in no particular order. See also
