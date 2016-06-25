@@ -81,6 +81,7 @@ module Plots.Types
   -- ** Visibility
   , HasVisibility (..)
   , hide
+  , display
 
   -- ** Orientation
   , Orientation (..)
@@ -546,11 +547,20 @@ instance HasVisibility (StyledPlot b v n) where
 -- | Set 'visible' to 'False' for the given setter.
 --
 -- @
--- hide minorTicks          :: State (Axis b v n) ()
--- hide (xAxis . gridLines) :: State (Axis b v n) ()
+-- 'hide' 'minorTicks'          :: 'State' ('Axis' b v n) ()
+-- 'hide' ('xAxis' . 'gridLines') :: 'State' ('Axis' b v n) ()
 -- @
 hide :: (MonadState s m, HasVisibility a) => ASetter' s a -> m ()
 hide l = l . visible .= False
+
+-- | Set 'visible' to 'True' for the given setter.
+--
+-- @
+-- 'display' 'minorGridLines' :: 'State' ('Axis' b v n) ()
+-- 'display' 'colourBar'      :: 'State' ('Axis' b v n) ()
+-- @
+display :: (MonadState s m, HasVisibility a) => ASetter' s a -> m ()
+display l = l . visible .= True
 
 ------------------------------------------------------------------------
 -- Plot modification
