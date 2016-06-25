@@ -49,14 +49,12 @@ module Plots.Axis.Ticks
   , majorTickPositions
   , minorTickPositions
   , linearMajorTicks
-  , linearMinorTicks
   ) where
 
 import           Control.Lens     hiding (transform, ( # ))
 import           Data.Data
 import           Data.Default
 import           Data.Foldable    as F
-import           Data.List        ((\\))
 import           Data.Ord
 import           Plots.Types
 import           Plots.Util
@@ -116,7 +114,7 @@ data MajorTicks v n = MajorTicks
 
 instance (Enum n, TypeableFloat n) => Default (MajorTicks v n) where
   def = MajorTicks
-    { matFunction = linearMajorTicks 6
+    { matFunction = linearMajorTicks 5
     , matAlign    = autoTicks
     , matLength   = 5
     , matStyle    = mempty # lwO 0.4
@@ -178,9 +176,9 @@ data MinorTicks v n = MinorTicks
 type instance V (MinorTicks v n) = v
 type instance N (MinorTicks v n) = n
 
-instance (Enum n, TypeableFloat n) => Default (MinorTicks v n) where
+instance TypeableFloat n => Default (MinorTicks v n) where
   def = MinorTicks
-    { mitFunction = linearMinorTicks 4
+    { mitFunction = minorTicksHelper 4
     , mitAlign    = autoTicks
     , mitLength   = 3
     , mitStyle    = mempty # lwO 0.4
@@ -315,18 +313,6 @@ minorTickPositions = minorTicksFunction . mapped . mapped
 -- | Ticks whose value ends in 1, 0.5, 0.25, 0.2 (*10^n).
 linearMajorTicks :: (Enum n, RealFrac n, Floating n) => n -> (n, n) -> [n]
 linearMajorTicks = majorTicksHelper [1, 0.5, 0.25, 0.2]
-
--- | Position @n@ minor ticks between each major tick.
-linearMinorTicks :: (Enum n, Fractional n, Ord n) => n -> [n] -> (n, n) -> [n]
-linearMinorTicks p xs@(x1:x2:_) (a,b) = filter inRange ts \\ xs where
-  -- This whole things pretty hacky right now. Needs to be thought about
-  -- and cleaned up.
-  inRange n = n > a + ε && n < b - ε
-  -- Could get rid of Enum by doing this manually.
-  ts = [x1 - 3*h, x1 - 2*h .. b]
-  h = (x2 - x1) / p
-  ε  = h * 0.1
-linearMinorTicks _ _ _ = []
 
 -- Logarithmic ticks ---------------------------------------------------
 

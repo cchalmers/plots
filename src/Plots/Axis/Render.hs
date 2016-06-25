@@ -26,6 +26,7 @@ module Plots.Axis.Render where
 import           Data.Foldable
 import           Data.Typeable
 import           Data.Bool
+import           Data.List (sort)
 
 import           Diagrams.BoundingBox
 import           Diagrams.Prelude
@@ -317,21 +318,16 @@ axisOnBasis p bs a ls t e eO lp
 
     -- measurements
     b@(x0,x1)  = bs ^. el e :: (n, n)
-    -- b@(x0,x1)  = over both ((*ssX) . logNumber (ls^.el e)) $ bs ^. el e :: (n, n)
     coscale = ep e %~ coscaleNum
     coscaleNum = scaleNum (bs ^. el e) (ls ^. el e)
-    -- ssX = x10 / logNumber (ls^.el e) x10
     yb@(y0,y1) = bs ^. el eO . if lp == UpperLabels
                                  then swapped
                                  else id
     --
-    -- ticksD       = a ^. axisTicks . el e
-    majorTickXs  = view majorTicksFunction a b
+    majorTickXs  = sort $ view majorTicksFunction a b
     majorTickXs' = map coscaleNum majorTickXs
-    minorTickXs  = view minorTicksFunction a majorTickXs b
+    minorTickXs  = sort $ view minorTicksFunction a majorTickXs b
     minorTickXs' = map coscaleNum minorTickXs
-    -- majorTickXs = logNumber (ls ^. el e) <$> (ticksD ^. majorTicksFun) b
-    -- minorTickXs = logNumber (ls ^. el e) <$> (ticksD ^. minorTicksFun) majorTickXs b
     --
     ys       = getAxisLinePos yb lineType
     lineType = a ^. axisLineType
