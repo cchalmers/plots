@@ -112,7 +112,7 @@ data MajorTicks v n = MajorTicks
   , matVisible  :: Bool
   }
 
-instance (Enum n, TypeableFloat n) => Default (MajorTicks v n) where
+instance TypeableFloat n => Default (MajorTicks v n) where
   def = MajorTicks
     { matFunction = linearMajorTicks 5
     , matAlign    = autoTicks
@@ -124,7 +124,7 @@ instance (Enum n, TypeableFloat n) => Default (MajorTicks v n) where
 type instance V (MajorTicks v n) = v
 type instance N (MajorTicks v n) = n
 
--- | Class of things that have a single 'MajorTicks'.
+-- | Class of things that have a 'MajorTicks'.
 class HasMajorTicks f a where
   -- | Lens onto the 'MajorTicks' of something.
   majorTicks :: LensLike' f a (MajorTicks (V a) (N a))
@@ -246,7 +246,7 @@ instance Functor f => HasMajorTicks f (Ticks v n) where
 instance Functor f => HasMinorTicks f (Ticks v n) where
   minorTicks f (Ticks ma mi) = f mi <&> \mi' -> Ticks ma mi'
 
-instance (TypeableFloat n, Enum n) => Default (Ticks v n) where
+instance TypeableFloat n => Default (Ticks v n) where
   def = Ticks def def
 
 instance Typeable n => HasStyle (Ticks v n) where
@@ -303,7 +303,6 @@ minorTickPositions
   => LensLike' f a [N a]
 minorTickPositions = minorTicksFunction . mapped . mapped
 
-
 ------------------------------------------------------------------------
 -- Calculating ticks
 ------------------------------------------------------------------------
@@ -311,16 +310,17 @@ minorTickPositions = minorTicksFunction . mapped . mapped
 -- Linear ticks --------------------------------------------------------
 
 -- | Ticks whose value ends in 1, 0.5, 0.25, 0.2 (*10^n).
-linearMajorTicks :: (Enum n, RealFrac n, Floating n) => n -> (n, n) -> [n]
-linearMajorTicks = majorTicksHelper [1, 0.5, 0.25, 0.2]
+linearMajorTicks :: (RealFrac n, Floating n) => n -> (n, n) -> [n]
+linearMajorTicks = majorTicksHelper [1, 0.5, 0.25, 0.2, 0.3]
 
 -- Logarithmic ticks ---------------------------------------------------
 
 -- | Place n ticks at powers of 10 on the axis.
-logMajorTicks :: (Enum n, RealFrac n, Floating n) => n -> (n, n) -> [n]
+logMajorTicks :: (RealFrac n, Floating n) => n -> (n, n) -> [n]
 logMajorTicks n (a,b) =
   -- Logarithmic ticks are just like linear ticks but in a different domain.
-  map (10**) $ majorTicksHelper [1..9] n (log10 (max 2 a), log10 b)
+  map (10**) $ majorTicksHelper ts n (log10 (max 2 a), log10 b)
+    where ts = [1,2,3,4,5,6,7,8,9]
 
 -- Ticks helpers -------------------------------------------------------
 
@@ -339,29 +339,27 @@ minorTicksHelper n ts _ = F.concat $ go ts where
 -- | Choose ticks whose step size is a multiple of 10 of the allowed
 --   numbers and tries to match the number of desired ticks.
 majorTicksHelper
-  :: (Enum n, RealFrac n, Floating n)
+  :: (RealFrac n, Floating n)
   => [n]    -- ^ Allowed numbers (up to powers of 10)
   -> n      -- ^ desired number of ticks
   -> (n, n) -- ^ bounds
   -> [n]    -- ^ tick positions
-majorTicksHelper ts0 n (a,b) = filter inRange hs where
-  hs = [i*h, (i + 1) * h .. b]
+majorTicksHelper ts0 n (a,b) = takeWhile (<= b + 1e-8) $ iterate (+h) a'
+  where
   i  = fromIntegral (truncate ( a / h ) :: Int)
 
-  -- -- We don't want the ticks touching the edge of the axis bounds so
-  -- -- we discard any too close. This should be a parameter?
-  inRange x = x >= a && x <= b
+  a' = i*h
 
-  -- Nice height that's closest to the height needed for desired number
-  -- of ticks.
+  -- Find the a value from our potential ticks that's closest to our
+  -- ideal height.
   h  = minimumBy (comparing $ abs . (h' -)) ts'
 
-  -- Height for the desired number of ticks.
+  -- Ideal height for the desired number of ticks.
   h' = d / n
 
   -- Potential step heights that look nice and are in a suitable range
   -- for the axis bounds.
-  ts' = map (* 10 ^^ (floor $ log10 d :: Int)) ts0
+  ts' = map (* 10 ^^ (floor $ log10 d :: Int)) (ts0 ++ map (*10) ts0)
   d   = abs $ b - a
 
 -- logged :: Floating a => Iso' a a

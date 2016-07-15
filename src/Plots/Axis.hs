@@ -106,7 +106,7 @@ data SingleAxis b v n = SingleAxis
 type instance V (SingleAxis b v n) = v
 type instance N (SingleAxis b v n) = n
 
-instance (TypeableFloat n, Enum n, Renderable (Text n) b)
+instance (TypeableFloat n, Renderable (Text n) b)
     => Default (SingleAxis b V2 n) where
   def = SingleAxis
     { saLabel      = def
@@ -379,7 +379,6 @@ addPlotable' p = addPlotable p (return ())
 -- | The default axis for plots in the 'V2' coordinate system.
 r2Axis
   :: (TypeableFloat n,
-     Enum n,
      Renderable (Text n) b,
      Renderable (Path V2 n) b)
   => Axis b V2 n
@@ -480,7 +479,6 @@ zMax = zAxis . boundMax
 
 polarAxis
   :: (TypeableFloat n,
-      Enum n,
       Renderable (Text n) b,
       Renderable (Path V2 n) b)
   => Axis b Polar n

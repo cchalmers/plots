@@ -56,7 +56,7 @@ type instance V (ColourBar b n) = V2
 type instance N (ColourBar b n) = n
 
 -- | The default colour bar.
-defColourBar :: (Renderable (Text n) b, Renderable (Path V2 n) b, TypeableFloat n, Enum n)
+defColourBar :: (Renderable (Text n) b, Renderable (Path V2 n) b, TypeableFloat n)
              => ColourBar b n
 defColourBar = ColourBar
   { cbPlacement   = rightMid
