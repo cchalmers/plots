@@ -56,6 +56,15 @@ module Plots.Axis
   , yMin
   , yMax
 
+    -- ** r-axis
+  , rAxis
+  , rLabel
+  , rMax
+
+    -- ** theta-axis
+  , thetaAxis
+  , thetaLabel
+
     -- ** z-axis
   , zAxis
   , zLabel
@@ -454,6 +463,38 @@ zMin = zAxis . boundMin
 --   'Default'), the bounds will be infered by the plots in the axis.
 zMax :: R3 c => Lens' (Axis b c n) (Maybe n)
 zMax = zAxis . boundMax
+
+-- The r-axis ----------------------------------------------------------
+
+-- | Lens onto the radial axis of an 'Axis'.
+rAxis :: Radial c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+rAxis = axes . _radial
+
+-- | The label for the radial axis. Shorthand for @'rAxis' . 'axisLabelText'@.
+rLabel :: Radial c => Lens' (Axis b c n) String
+rLabel = rAxis . axisLabelText
+
+-- | The minimum z value for the axis. If the value if 'Nothing' (the
+--   'Default'), the bounds will be infered by the plots in the axis.
+-- rMin :: R3 c => Lens' (Axis b c n) (Maybe n)
+-- rMin = zAxis . boundMin
+
+-- | The minimum radial value for the axis. If the value if 'Nothing'
+--   (the 'Default'), the bounds will be infered by the plots in the
+--   axis.
+rMax :: Radial c => Lens' (Axis b c n) (Maybe n)
+rMax = rAxis . boundMax
+
+-- The theta-axis ------------------------------------------------------
+
+-- | Lens onto the radial axis of an 'Axis'.
+thetaAxis :: Circle c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+thetaAxis = axes . el etheta
+
+-- | The label for the radial axis. Shorthand for @'rAxis' . 'axisLabelText'@.
+thetaLabel :: Circle c => Lens' (Axis b c n) String
+thetaLabel = thetaAxis . axisLabelText
+
 
 -- R3 Axis
 

@@ -125,7 +125,7 @@ class Radial t => Circle t where
   _azimuth :: Lens' (t a) (Angle a)
   _polar   :: Lens' (t a) (Polar a)
 
-er :: Circle v => E v
+er :: Radial v => E v
 er = E _radial
 
 eθ, etheta :: Circle v => E v

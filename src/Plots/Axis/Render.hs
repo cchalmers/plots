@@ -450,7 +450,6 @@ ep :: E v -> Lens' (Point v x) x
 ep (E l) = lensP . l
 {-# INLINE ep #-}
 
-
 ------------------------------------------------------------------------
 -- Polar
 ------------------------------------------------------------------------
@@ -458,6 +457,32 @@ ep (E l) = lensP . l
 instance (TypeableFloat n, Renderable (Path V2 n) b)
     => RenderAxis b Polar n where
   renderAxis = renderPolarAxis
+
+-- | An lower and upper bound for the bounding radius using @n@ envelope
+--   calculations. The more calculations used, the smaller the range of
+--   the bound.
+boundingRadiusR :: (InSpace V2 n a, Enveloped a) => Int -> a -> (n, n)
+boundingRadiusR (max 3 -> n) e =
+  case appEnvelope (getEnvelope e) of
+    Nothing -> (0,0)
+    Just f  ->
+      let thetas = map (@@rad) $ enumFromToN 0 tau n
+          vs     = map angleV thetas
+
+          -- The lower bound is the maximum distance obtained from the
+          -- envelope trials. We know the radius will be at least this far.
+          lowerBound = foldr (\v r -> max (f v) r) 0 vs
+
+          -- In the worst case, there will be a point at the intersection of
+          -- two neighbouring bounding planes from the envelope calculations.
+          -- We can calculate the distance to this intersecion using simple
+          -- trigonometry.
+          -- (Note, this is why we need at least three envelope calculations,
+          -- otherwise there wouldn't be any intersection between the bounding
+          -- planes)
+          upperBound = lowerBound / cos (pi / fromIntegral n)
+
+      in  (lowerBound, upperBound)
 
 renderPolarAxis
   :: (TypeableFloat n, Renderable (Path V2 n) b)
@@ -469,14 +494,19 @@ renderPolarAxis a = frame 15
               <> rAxis
               <> plots
   where
-    spec = AxisSpec (pure (-20, 20)) mempty (pure LinearAxis) (a ^. axisColourMap)
-    plots    = foldMap (renderStyledPlot spec) styledPlots # scale 6
+    r = snd $ boundingRadiusR 30 styledPlots
+    spec  = AxisSpec xs t (pure LinearAxis) (a ^. axisColourMap)
+    plots = foldMap (renderStyledPlot spec) styledPlots
 
+    dataBB = fromCorners (mkP2 (-r) (-r)) (mkP2 r r)
+    (xs, tv, t') = calculateScaling (view _Wrapped $ a^.axes.column axisScaling) dataBB
+    t = tv <> t'
+    --
     -- drawAxis = axisOnBasis origin xs a (a^.axisScale) t
     --
     -- rAxis = (rline <> rticks) # scale 6
-    rAxis = drawPolarAxis spec' (a ^. axes)
-    spec' = AxisSpec (pure (-20, 20)) mempty (pure LinearAxis) (a ^. axisColourMap)
+    rAxis = drawPolarAxis spec (a ^. axes)
+    -- spec' = AxisSpec (pure (0, 20)) mempty (pure LinearAxis) (a ^. axisColourMap)
 
     -- rline = origin ~~ (10 *^ unitX) # lwO 2
     -- rticks = foldMap moveTo (map (\x -> mkP2 x 0) [1..9]) tick # lwO 1
@@ -487,7 +517,7 @@ renderPolarAxis a = frame 15
     -- (xs, tv, t') = workOutScale a
     -- t = tv <> t'
     --
-    bb = fromCorners (p2 (-20,-20)) (p2 (20,20)) -- (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
+    bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
     --
 
@@ -519,11 +549,15 @@ renderPolarAxis a = frame 15
     -- cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
     -- -- ttl = drawTitle bb (a^.title)
 
-drawPolarAxis :: forall b n. (Renderable (Path V2 n) b, TypeableFloat n)
-              => AxisSpec V2 n -> Polar (SingleAxis b V2 n) -> QDiagram b V2 n Any
+drawPolarAxis
+  :: forall b n. (Renderable (Path V2 n) b, TypeableFloat n)
+  => AxisSpec V2 n -> Polar (SingleAxis b V2 n) -> QDiagram b V2 n Any
 drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
 
-  r = 100
+  -- use a radius of the upper x bound for the axis (this is not ideal)
+  r = spec ^. specBounds . _x . _2
+  t = spec ^. specTrans
+  s = avgScale t
 
   ----------------------------------------------------------------------
   -- Radial axis
@@ -542,6 +576,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
       -- XXX for now the radial axis is on the theta=0 line. Need some
       -- way to change this
       line = (origin ~~ mkP2 r 0) # applyStyle (rA^.axisLineStyle)
+                                  # transform t
 
   -- Radial axis label -------------------------------------------------
 
@@ -551,7 +586,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
                     # translate rLabelPos
                     # applyStyle (rA ^. axisLabelStyle)
 
-  rLabelPos = V2 x (- view axisLabelGap rA) where
+  rLabelPos = V2 (s*x) (- view axisLabelGap rA) where
     x = case rA ^. axisLabelPosition of
           MiddleAxisLabel -> r/2
           LowerAxisLabel  -> 0
@@ -559,7 +594,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   rTxt = rA ^. axisLabelText
   rLabelAlign = BaselineText
 
-  -- Radial axis ticks -------------------------------------------------
+  -- Radial ticks ------------------------------------------------------
 
   -- The positions of major and minor ticks along the radial axis
   majorTickRs = view majorTicksFunction rA (0,r)
@@ -570,10 +605,12 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   rAxTicks      = rAxMajorTicks <> rAxMinorTicks
   rAxMajorTicks
     | rA ^. majorTicks . hidden = mempty
-    | otherwise = foldMap (\x -> rAxMajorTick # translateX x) majorTickRs
+    | otherwise = foldMap (\x -> rAxMajorTick # translateX (s*x)) majorTickRs
+                       # applyStyle (rA ^. majorTicksStyle)
   rAxMinorTicks
     | rA ^. minorTicks . hidden = mempty
-    | otherwise = foldMap (\x -> rAxMinorTick # translateX x) minorTickRs
+    | otherwise = foldMap (\x -> rAxMinorTick # translateX (s*x)) minorTickRs
+                       # applyStyle (rA ^. minorTicksStyle)
 
   -- The paths used for individual major and minor ticks
   rAxMajorTick = someTick (rA ^. majorTicksAlignment) (rA ^. majorTicksLength)
@@ -584,7 +621,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
              -> mkP2 0 (-d*bb) ~~ mkP2 0 (d*aa)
     AutoTick -> mkP2 0 (-d)    ~~ mkP2 0 d
 
-  -- Radial grid2lines -------------------------------------------------
+  -- Radial grid lines -------------------------------------------------
 
   rAxGridLines
     -- - | rA ^. gridLines . hidden = mempty
@@ -596,8 +633,9 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   rMajorGridLines :: QDiagram b V2 n Any
   rMajorGridLines
     | rA ^. majorGridLines . hidden = mempty
-    | otherwise  = foldMap circle (filter (>0) majorGridRs)
-                     # applyStyle (rA ^. majorGridLinesStyle)
+    | otherwise = foldMap circle (filter (>0) majorGridRs)
+                    # applyStyle (rA ^. majorGridLinesStyle)
+                    # transform t
 
   minorGridRs :: [n]
   minorGridRs    = view minorGridLinesFunction rA minorTickRs (0,r)
@@ -606,6 +644,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
     | rA ^. minorGridLines . hidden = mempty
     | otherwise = foldMap circle (filter (>0) minorGridRs)
                     # applyStyle (rA ^. minorGridLinesStyle)
+                    # transform t
 
   -- Radial tick labels ------------------------------------------------
 
@@ -622,7 +661,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   rDrawTickLabel :: (n,String) -> QDiagram b V2 n Any
   rDrawTickLabel (x,label) =
     view tickLabelTextFunction rA (BoxAlignedText 0.5 1) label
-      # translate (V2 x (- view axisLabelGap rA))
+      # translate (V2 (s*x) (- view axisLabelGap rA))
       # applyStyle (rA ^. tickLabelStyle)
 
   ----------------------------------------------------------------------
@@ -642,7 +681,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
     where
       -- XXX for now the radial axis is on the theta=0 line. Need some
       -- way to change this
-      line = (origin ~~ mkP2 r 0) # applyStyle (thetaA^.axisLineStyle)
+      line = circle (s*r) # applyStyle (thetaA^.axisLineStyle)
 
   -- Angular axis label ------------------------------------------------
 
@@ -653,7 +692,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
                     # translate thetaLabelPos
                     # applyStyle (thetaA ^. axisLabelStyle)
 
-  thetaLabelPos = V2 x (- view axisLabelGap thetaA) where
+  thetaLabelPos = V2 (s*x) (- view axisLabelGap thetaA) where
     x = case thetaA ^. axisLabelPosition of
           MiddleAxisLabel -> theta/2
           LowerAxisLabel  -> 0
@@ -673,10 +712,12 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   thetaAxTicks      = thetaAxMajorTicks <> thetaAxMinorTicks
   thetaAxMajorTicks
     | thetaA ^. majorTicks . hidden = mempty
-    | otherwise = foldMap (\phi -> thetaAxMajorTick # translateX r # rotate (phi@@rad)) majorTickThetas
+    | otherwise = foldMap (\phi -> thetaAxMajorTick # translateX (s*r) # rotate (phi@@rad)) majorTickThetas
+                       # applyStyle (thetaA ^. majorTicksStyle)
   thetaAxMinorTicks
     | thetaA ^. minorTicks . hidden = mempty
-    | otherwise = foldMap (\phi -> thetaAxMinorTick # translateX r # rotate (phi@@rad)) minorTickThetas
+    | otherwise = foldMap (\phi -> thetaAxMinorTick # translateX (s*r) # rotate (phi@@rad)) minorTickThetas
+                       # applyStyle (thetaA ^. minorTicksStyle)
 
   -- The paths used for individual major and minor ticks
   thetaAxMajorTick = someThetaTick (thetaA ^. majorTicksAlignment) (thetaA ^. majorTicksLength)
@@ -700,8 +741,9 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   thetaMajorGridLines :: QDiagram b V2 n Any
   thetaMajorGridLines
     | thetaA ^. majorGridLines . hidden = mempty
-    | otherwise  = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) majorGridThetas
-                     # applyStyle (thetaA ^. majorGridLinesStyle)
+    | otherwise = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) majorGridThetas
+                    # transform t
+                    # applyStyle (thetaA ^. majorGridLinesStyle)
 
   minorGridThetas :: [n]
   minorGridThetas    = view minorGridLinesFunction thetaA minorTickThetas (0,theta)
@@ -709,6 +751,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   thetaMinorGridLines
     | thetaA ^. minorGridLines . hidden = mempty
     | otherwise = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) minorGridThetas
+                    # transform t
                     # applyStyle (thetaA ^. minorGridLinesStyle)
 
   -- Angular tick labels -----------------------------------------------
@@ -716,7 +759,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   thetaAxTickLabels :: QDiagram b V2 n Any
   thetaAxTickLabels
     | thetaA ^. tickLabel . hidden = mempty
-    | otherwise                = foldMap thetaDrawTickLabel tickLabelThetas
+    | otherwise                    = foldMap thetaDrawTickLabel tickLabelThetas
 
   -- The positions of the tick labels.
   tickLabelThetas :: [(n, String)]
@@ -728,7 +771,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
     view tickLabelTextFunction thetaA a label
       # translate v
       # applyStyle (thetaA ^. tickLabelStyle)
-        where v = mkPolar (r + view axisLabelGap thetaA) (x@@rad) ^. xy_
+        where v = mkPolar (s*r + view axisLabelGap thetaA) (x@@rad) ^. xy_
               -- a = BoxAlignedText (0.5-cos x/2) (0.5-sin x/2)
               a = BoxAlignedText 0.5 0.5
 
