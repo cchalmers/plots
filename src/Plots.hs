@@ -105,6 +105,9 @@ module Plots
   , module Plots.Types
 
     -- | Grid lines and styles.
+  , module Plots.Legend
+
+    -- | Grid lines and styles.
   , module Plots.Axis.Grid
 
     -- | Axis labels and tick labels .
@@ -139,6 +142,7 @@ import           Plots.Axis.Title
 import           Plots.Axis.Ticks
 
 import           Plots.CmdLine
+import           Plots.Legend
 import           Plots.Style
 import           Plots.Types
 import           Plots.Util
