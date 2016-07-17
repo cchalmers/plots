@@ -45,7 +45,7 @@ instance (Renderable (Text n) b, TypeableFloat n)
     { tVisible = True
     , tTxt     = ""
     , tTxtFun  = mkText
-    , tStyle   = mempty # fontSize (output 16)
+    , tStyle   = mempty # fontSize (output 11)
     , tPlacement = midAbove
     , tGap = 20
     }

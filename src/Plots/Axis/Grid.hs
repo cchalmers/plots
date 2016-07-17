@@ -98,7 +98,7 @@ instance HasMajorGridLines f (MajorGridLines v n) where
 instance (Typeable n, Floating n) => Default (MajorGridLines v n) where
   def = MajorGridLines
     { magFun     = onTicksGridLineFunction
-    , magStyle   = mempty # lwO 0.1
+    , magStyle   = mempty # lwO 0.8
     , magVisible = True
     }
 
@@ -148,7 +148,7 @@ instance HasMinorGridLines f (MinorGridLines v n) where
 instance (Typeable n, Floating n) => Default (MinorGridLines v n) where
   def = MinorGridLines
     { migFun     = onTicksGridLineFunction
-    , migStyle   = mempty # lwO 0.4
+    , migStyle   = mempty # lwO 0.5
     , migVisible = False
     }
 

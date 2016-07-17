@@ -73,7 +73,6 @@ data AxisScaling n = Scaling
   { asRatio          :: Maybe n
   , asMode           :: ScaleMode
   , asEnlarge        :: Extending n
-  , asOutputSize     :: Maybe n
   , asBoundMin       :: Maybe n
   , asBoundMax       :: Maybe n
   , asSize           :: Maybe n
@@ -91,13 +90,12 @@ instance Fractional n => Default (AxisScaling n) where
     { asRatio          = Nothing
     , asMode           = AutoScale
     , asEnlarge        = RelativeExtend 0.1
-    , asOutputSize     = Just 300
     , asBoundMin       = Nothing
     , asBoundMax       = Nothing
     , asLogScale       = def
+    , asSize           = Just 400
     , asBackupBoundMax = 5
     , asBackupBoundMin = -5
-    , asSize           = Just 300
     }
 
 -- | How much to extend the bounds beyond any inferred bounds.
@@ -136,15 +134,32 @@ class HasAxisScaling f a where
   axisExtend :: Functor f => LensLike' f a (Extending (N a))
   axisExtend = axisScaling . lens asEnlarge (\as r -> as {asEnlarge = r})
 
-  -- | The maximum bound the axis.
-  boundMax :: Functor f => LensLike' f a (Maybe (N a))
-  boundMax = axisScaling . lens asBoundMax (\as b -> as {asBoundMax = b})
-
-  -- | The minimum bound the axis.
+  -- | The maximum bound the axis. There are helper functions for
+  --   setting a minimum bound for a specific axis.
+  --
+  -- @
+  -- 'Plots.Axis.xMin' :: 'Lens'' ('Axis' b 'V2' 'Double') ('Maybe' 'Double')
+  -- 'Plots.Axis.yMin' :: 'Lens'' ('Axis' b 'V2' 'Double') ('Maybe' 'Double')
+  -- @
+  --
+  --   Default is 'Nothing'.
   boundMin :: Functor f => LensLike' f a (Maybe (N a))
   boundMin = axisScaling . lens asBoundMin (\as b -> as {asBoundMin = b})
 
-  -- | The size of the rendered axis. Default is 500.
+  -- | The maximum bound the axis. There are helper functions for
+  --   setting a maximum bound specific axis.
+  --
+  -- @
+  -- 'Plots.Axis.xMax' :: 'Lens'' ('Axis' b 'V2' 'Double') ('Maybe' 'Double')
+  -- 'Plots.Axis.yMax' :: 'Lens'' ('Axis' b 'V2' 'Double') ('Maybe' 'Double')
+  -- 'Plots.Axis.rMax' :: 'Lens'' ('Axis' b 'Polar 'Double') ('Maybe' 'Double')
+  -- @
+  --
+  --   Default is 'Nothing'.
+  boundMax :: Functor f => LensLike' f a (Maybe (N a))
+  boundMax = axisScaling . lens asBoundMax (\as b -> as {asBoundMax = b})
+
+  -- | The size of the rendered axis. Default is @'Just' 400@.
   renderSize :: Functor f => LensLike' f a (Maybe (N a))
   renderSize = axisScaling . lens asSize (\as s -> as {asSize = s})
 

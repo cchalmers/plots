@@ -123,7 +123,7 @@ instance (TypeableFloat n, Renderable (Text n) b)
     { alFun       = mkText
     , alText      = ""
     , alStyle     = mempty & fontSize (output 8)
-    , alGap       = 20
+    , alGap       = 30
     , alPos       = MiddleAxisLabel
     , alPlacement = OutsideAxisLabel
     , alVisible   = True
@@ -194,7 +194,7 @@ instance (TypeableFloat n, Renderable (Text n) b)
   def = TickLabels
     { tlFun     = atMajorTicks floatShow
     , tlTextFun = mkText
-    , tlStyle   = mempty & fontSize (output 11)
+    , tlStyle   = mempty & fontSize (output 8)
     , tlGap     = 12
     , tlVisible = True
     }
