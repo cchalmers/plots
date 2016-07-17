@@ -60,8 +60,14 @@ data Wedge n = Wedge
 type instance V (Wedge n)  = V2
 type instance N (Wedge n)  = n
 
-instance (OrderedField n) => Enveloped (Wedge n) where
-  getEnvelope Wedge {..} = mempty
+instance RealFloat n => Enveloped (Wedge n) where
+  getEnvelope Wedge {..} = getEnvelope shape # translate off where
+    shape
+      | sStartR == 0 = wedge sEndR sDir sWidth :: Path V2 n
+      | otherwise    = annularWedge sEndR sStartR sDir sWidth
+    off
+      | sOffset == 0 = zero
+      | otherwise    = sOffset *^ fromDir (rotate (sWidth ^/ 2) sDir)
 
 instance (TypeableFloat n, Renderable (Path V2 n) b)
     => Plotable (Wedge n) b where
