@@ -92,7 +92,7 @@ instance HasPlacement (Legend b n) where
 
 instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
   def = Legend
-    { lPlacement   = leftTop
+    { lPlacement   = rightTop
     , lGap         = 20
     , lSpacing     = 20
     , lTextWidth   = 60
