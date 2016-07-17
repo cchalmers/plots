@@ -219,6 +219,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
 
   w   = cbWidth
   f x = (x - (ub - lb)/2) / (ub - lb) * l
+  inRange x = x >= lb && x <= ub
 
   bar = outline <> tks <> gLines <> colours
 
@@ -229,10 +230,11 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   colours = cbDraw cm # centerXY # scaleX l # scaleY w
 
   -- the ticks
-  tickXs = view majorTicksFunction cbTicks bnds
+  tickXs  = view majorTicksFunction cbTicks bnds
+  tickXs' = filter inRange tickXs
   tks
     | cbTicks ^. hidden = mempty
-    | otherwise = foldMap (\x -> aTick # translate (V2 (f x) (-w/2))) tickXs
+    | otherwise = foldMap (\x -> aTick # translate (V2 (f x) (-w/2))) tickXs'
   aTick = someTick (cbTicks ^. majorTicksAlignment) (cbTicks ^. majorTicksLength)
 
   someTick tType d = case tType of
@@ -241,7 +243,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
     AutoTick -> mkP2 0 (-d)    ~~ mkP2 0 d
 
   -- grid lines
-  gridXs = view majorGridLinesFunction cbGridLines tickXs bnds
+  gridXs = filter inRange $ view majorGridLinesFunction cbGridLines tickXs bnds
   gLines
     | cbGridLines ^. hidden = mempty
     | otherwise             = foldMap mkGridLine gridXs
@@ -250,7 +252,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   mkGridLine x = mkP2 (f x) (-w/2) ~~ mkP2 (f x) (w/2)
 
   -- tick labels
-  tickLabelXs = view tickLabelFunction cbTickLabels tickXs bnds
+  tickLabelXs = view tickLabelFunction cbTickLabels tickXs' bnds
   tLbs
     | cbTickLabels ^. hidden = mempty
     | otherwise              = foldMap drawTickLabel tickLabelXs

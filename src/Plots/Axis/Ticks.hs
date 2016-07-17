@@ -338,17 +338,23 @@ minorTicksHelper n ts _ = F.concat $ go ts where
 
 -- | Choose ticks whose step size is a multiple of 10 of the allowed
 --   numbers and tries to match the number of desired ticks.
+--
+--   Note that the resulting tick positions may go out of the range of
+--   the bounds. This is so the minor ticks can be chosen correctly if a
+--   tick doesn't end exactly on a bound. When we render, we ignore all
+--   ticks outside the bounds.
 majorTicksHelper
   :: (RealFrac n, Floating n)
   => [n]    -- ^ Allowed numbers (up to powers of 10)
   -> n      -- ^ desired number of ticks
   -> (n, n) -- ^ bounds
   -> [n]    -- ^ tick positions
-majorTicksHelper ts0 n (a,b) = takeWhile (<= b + 1e-8) $ iterate (+h) a'
+majorTicksHelper ts0 n (a,b) = iterateN n' (+h) a'
   where
-  i  = fromIntegral (truncate ( a / h ) :: Int)
+  i  = fromIntegral (floor ( a / h ) :: Int)
 
   a' = i*h
+  n' = ceiling ((b - a')/h) + 1
 
   -- Find the a value from our potential ticks that's closest to our
   -- ideal height.

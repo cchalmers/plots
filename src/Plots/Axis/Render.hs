@@ -227,7 +227,7 @@ axisOnBasis p bs a ls t e eO lp
       where
         -- tickLabelsD  = a ^. axisTickLabels . el e
         labelFun     = a ^. tickLabelFunction
-        drawLabels y = foldMap f (labelFun majorTickXs b)
+        drawLabels y = foldMap f (labelFun (filter inRange majorTickXs) b)
           where
             f (x, l) = place dia p'
               where
@@ -245,17 +245,19 @@ axisOnBasis p bs a ls t e eO lp
       where
         majorLines
           | a ^. majorGridLines . hidden = mempty
-          | otherwise = foldMap mkGridLine majorGridXs
+          | otherwise = foldMap mkGridLine majorGridXs'
                           # tStroke
                           # applyStyle (a ^. majorGridLinesStyle)
-        majorGridXs = view majorGridLinesFunction a majorTickXs' b
+        majorGridXs  = view majorGridLinesFunction a majorTickXs b
+        majorGridXs' = map coscaleNum (filter inRange majorGridXs)
         --
         minorLines
           | a ^. minorGridLines . hidden = mempty
-          | otherwise = foldMap mkGridLine minorGridXs
+          | otherwise = foldMap mkGridLine minorGridXs'
                        # tStroke
                        # applyStyle (a ^. minorGridLinesStyle)
-        minorGridXs = view minorGridLinesFunction a minorTickXs' b
+        minorGridXs  = view minorGridLinesFunction a minorTickXs b
+        minorGridXs' = map coscaleNum (filter inRange minorGridXs)
         -- --
         mkGridLine x = pathFromVertices [f y0, f y1]
           where f y = over lensP ((el e .~ x) . (el eO .~ y)) p
@@ -317,17 +319,18 @@ axisOnBasis p bs a ls t e eO lp
          $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
 
     -- measurements
-    b@(x0,x1)  = bs ^. el e :: (n, n)
+    b@(x0,x1)  = bs ^. el e :: (n, n) -- bounds
     coscale = ep e %~ coscaleNum
     coscaleNum = scaleNum (bs ^. el e) (ls ^. el e)
     yb@(y0,y1) = bs ^. el eO . if lp == UpperLabels
                                  then swapped
                                  else id
+    inRange x = x >= x0 && x <= x1
     --
     majorTickXs  = sort $ view majorTicksFunction a b
-    majorTickXs' = map coscaleNum majorTickXs
+    majorTickXs' = map coscaleNum (filter inRange majorTickXs)
     minorTickXs  = sort $ view minorTicksFunction a majorTickXs b
-    minorTickXs' = map coscaleNum minorTickXs
+    minorTickXs' = map coscaleNum (filter inRange minorTickXs)
     --
     ys       = getAxisLinePos yb lineType
     lineType = a ^. axisLineType
@@ -559,6 +562,9 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   t = spec ^. specTrans
   s = avgScale t
 
+  rInRange x = x >= 0 && x <= r*1.000001
+  thetaInRange x = x >= 0 && x < tau
+
   ----------------------------------------------------------------------
   -- Radial axis
   ----------------------------------------------------------------------
@@ -597,19 +603,21 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   -- Radial ticks ------------------------------------------------------
 
   -- The positions of major and minor ticks along the radial axis
-  majorTickRs = view majorTicksFunction rA (0,r)
-  minorTickRs = view minorTicksFunction rA majorTickRs (0,r)
+  majorTickRs  = view majorTicksFunction rA (0,r)
+  majorTickRs' = map (*s) $ filter rInRange majorTickRs
+  minorTickRs  = view minorTicksFunction rA majorTickRs (0,r)
+  minorTickRs' = map (*s) $ filter rInRange minorTickRs
 
   -- Major and minor ticks are placed along the line at the calculated
   -- positions majorTickRs
   rAxTicks      = rAxMajorTicks <> rAxMinorTicks
   rAxMajorTicks
     | rA ^. majorTicks . hidden = mempty
-    | otherwise = foldMap (\x -> rAxMajorTick # translateX (s*x)) majorTickRs
+    | otherwise = foldMap (\x -> rAxMajorTick # translateX x) majorTickRs'
                        # applyStyle (rA ^. majorTicksStyle)
   rAxMinorTicks
     | rA ^. minorTicks . hidden = mempty
-    | otherwise = foldMap (\x -> rAxMinorTick # translateX (s*x)) minorTickRs
+    | otherwise = foldMap (\x -> rAxMinorTick # translateX x) minorTickRs'
                        # applyStyle (rA ^. minorTicksStyle)
 
   -- The paths used for individual major and minor ticks
@@ -627,24 +635,22 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
     -- - | rA ^. gridLines . hidden = mempty
     | otherwise                = rMajorGridLines <> rMinorGridLines
 
-  majorGridRs :: [n]
-  majorGridRs    = view majorGridLinesFunction rA majorTickRs (0,r)
+  majorGridRs  = view majorGridLinesFunction rA majorTickRs (0,r)
+  majorGridRs' = map (*s) $ filter rInRange majorGridRs
 
   rMajorGridLines :: QDiagram b V2 n Any
   rMajorGridLines
     | rA ^. majorGridLines . hidden = mempty
-    | otherwise = foldMap circle (filter (>0) majorGridRs)
+    | otherwise = foldMap circle (filter (>0) majorGridRs')
                     # applyStyle (rA ^. majorGridLinesStyle)
-                    # transform t
 
-  minorGridRs :: [n]
-  minorGridRs    = view minorGridLinesFunction rA minorTickRs (0,r)
+  minorGridRs  = view minorGridLinesFunction rA minorTickRs (0,r)
+  minorGridRs' = map (*s) $ filter rInRange minorGridRs
   rMinorGridLines :: QDiagram b V2 n Any
   rMinorGridLines
     | rA ^. minorGridLines . hidden = mempty
-    | otherwise = foldMap circle (filter (>0) minorGridRs)
+    | otherwise = foldMap circle (filter (>0) minorGridRs')
                     # applyStyle (rA ^. minorGridLinesStyle)
-                    # transform t
 
   -- Radial tick labels ------------------------------------------------
 
@@ -655,7 +661,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
 
   -- The positions of the tick labels.
   tickLabelRs :: [(n, String)]
-  tickLabelRs = view tickLabelFunction rA majorTickRs (0,r)
+  tickLabelRs = view tickLabelFunction rA (filter rInRange majorTickRs) (0,r)
 
   -- Draw a single tick label given the position and the string to use
   rDrawTickLabel :: (n,String) -> QDiagram b V2 n Any
@@ -703,8 +709,10 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   -- Angular axis ticks ------------------------------------------------
 
   -- The positions of major and minor ticks along the angular axis
-  majorTickThetas = view majorTicksFunction thetaA (0,theta)
-  minorTickThetas = view minorTicksFunction thetaA majorTickThetas (0,theta)
+  majorTickThetas  = view majorTicksFunction thetaA (0,theta)
+  majorTickThetas' = filter thetaInRange majorTickThetas
+  minorTickThetas  = view minorTicksFunction thetaA majorTickThetas (0,theta)
+  minorTickThetas' = filter thetaInRange minorTickThetas
 
   -- Major and minor ticks are placed along perimeter, facing the center
   -- of the axis. Ticks start of horizonal and are rotated to the
@@ -712,11 +720,11 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
   thetaAxTicks      = thetaAxMajorTicks <> thetaAxMinorTicks
   thetaAxMajorTicks
     | thetaA ^. majorTicks . hidden = mempty
-    | otherwise = foldMap (\phi -> thetaAxMajorTick # translateX (s*r) # rotate (phi@@rad)) majorTickThetas
+    | otherwise = foldMap (\phi -> thetaAxMajorTick # translateX (s*r) # rotate (phi@@rad)) majorTickThetas'
                        # applyStyle (thetaA ^. majorTicksStyle)
   thetaAxMinorTicks
     | thetaA ^. minorTicks . hidden = mempty
-    | otherwise = foldMap (\phi -> thetaAxMinorTick # translateX (s*r) # rotate (phi@@rad)) minorTickThetas
+    | otherwise = foldMap (\phi -> thetaAxMinorTick # translateX (s*r) # rotate (phi@@rad)) minorTickThetas'
                        # applyStyle (thetaA ^. minorTicksStyle)
 
   -- The paths used for individual major and minor ticks
@@ -735,22 +743,22 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
     -- - | thetaA ^. girdLines . hidden = mempty
     | otherwise                = thetaMajorGridLines <> thetaMinorGridLines
 
-  majorGridThetas :: [n]
   majorGridThetas = view majorGridLinesFunction thetaA majorTickThetas (0,theta)
+  majorGridThetas' = filter thetaInRange majorGridThetas
 
   thetaMajorGridLines :: QDiagram b V2 n Any
   thetaMajorGridLines
     | thetaA ^. majorGridLines . hidden = mempty
-    | otherwise = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) majorGridThetas
+    | otherwise = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) majorGridThetas'
                     # transform t
                     # applyStyle (thetaA ^. majorGridLinesStyle)
 
-  minorGridThetas :: [n]
   minorGridThetas    = view minorGridLinesFunction thetaA minorTickThetas (0,theta)
+  minorGridThetas'   = filter thetaInRange minorGridThetas
   thetaMinorGridLines :: QDiagram b V2 n Any
   thetaMinorGridLines
     | thetaA ^. minorGridLines . hidden = mempty
-    | otherwise = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) minorGridThetas
+    | otherwise = foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) minorGridThetas'
                     # transform t
                     # applyStyle (thetaA ^. minorGridLinesStyle)
 
@@ -763,7 +771,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
 
   -- The positions of the tick labels.
   tickLabelThetas :: [(n, String)]
-  tickLabelThetas = view tickLabelFunction thetaA majorTickThetas (0,theta)
+  tickLabelThetas = view tickLabelFunction thetaA majorTickThetas' (0,theta)
 
   -- Draw a single tick label given the position and the string to use
   thetaDrawTickLabel :: (n,String) -> QDiagram b V2 n Any
