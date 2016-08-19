@@ -6,9 +6,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 module Plots.Util
-  ( liftRecommend
-  , fromCommit
-  , pathFromVertices
+  ( pathFromVertices
   , minMaxOf
   , enumFromToN
   , whenever
@@ -21,7 +19,6 @@ module Plots.Util
 import           Control.Lens
 import           Control.Monad.State
 import           Data.Bool
-import           Data.Monoid.Recommend
 
 import           Diagrams.Prelude           hiding (diff)
 
@@ -38,26 +35,11 @@ infix 1 &~~
 
 -- | @enumFromToN a b n@ calculates a list from @a@ to @b@ in @n@ steps.
 enumFromToN :: Fractional n => n -> n -> Int -> [n]
-enumFromToN a b n = step n a
+enumFromToN a b n = go n a
   where
-    step !i !x | i < 1     = [x]
-               | otherwise = x : step (i - 1) (x + diff)
+    go !i !x | i < 1     = [x]
+             | otherwise = x : go (i - 1) (x + diff)
     diff = (b - a) / fromIntegral n
-
--- | Apply a function over two recommends or two commits. If only one of
---   the values is a commit, the commit is used without applying the
---   function.
-liftRecommend :: (a -> a -> a) -> Recommend a -> Recommend a -> Recommend a
-liftRecommend _ (Commit a) (Recommend _)    = Commit a
-liftRecommend _ (Recommend _) (Commit b)    = Commit b
-liftRecommend f (Recommend a) (Recommend b) = Recommend (f a b)
-liftRecommend f (Commit a) (Commit b)       = Commit (f a b)
-
--- | Extract a commit value, defaulting to the provided value when it is
---   a recommend.
-fromCommit :: a -> Recommend a -> a
-fromCommit _ (Commit a) = a
-fromCommit a _          = a
 
 -- | Apply a function if the predicate is true.
 whenever :: Bool -> (a -> a) -> a -> a
