@@ -23,7 +23,6 @@
 --
 ----------------------------------------------------------------------------
 
-
 module Plots.Types.HeatMap
   ( HeatMap
   , heatMap
@@ -37,11 +36,11 @@ module Plots.Types.HeatMap
   , heatImage
   , hmPoints
   , hmSize
-  , normaliseHeatMatrix
 
   -- ** Rendering functions
-  , pixelHeatRender
   , pathHeatRender
+  , pixelHeatRender
+  , pixelHeatRender'
 
   -- * Low level construction
   , mkHeatMap
@@ -51,12 +50,17 @@ module Plots.Types.HeatMap
   ) where
 
 import           Control.Lens                    hiding (transform, ( # ))
+import qualified Data.Colour                     as C
 
+import           Control.Monad.ST
 import           Control.Monad.State
 import qualified Data.Foldable                   as F
 import           Data.Typeable
-import           Data.Vector.Unboxed             ((!))
-import qualified Data.Vector.Unboxed             as U
+import qualified Data.Vector.Generic.Mutable     as M
+import qualified Data.Vector.Storable            as S
+import qualified Data.Vector.Unboxed             as V
+import           Data.Word                       (Word8)
+import           Statistics.Function             (minMax)
 
 import           Codec.Picture
 import           Diagrams.Coordinates.Isomorphic
@@ -65,7 +69,6 @@ import           Diagrams.Prelude
 import           Plots.Axis
 import           Plots.Style
 import           Plots.Types
-import           Plots.Util
 
 ------------------------------------------------------------------------
 -- Heatmap
@@ -73,87 +76,201 @@ import           Plots.Util
 
 -- | 2D Array of 'Double's.
 data HeatMatrix = HeatMatrix
-  { hmSize :: !(V2 Int)
-  , hmFun  :: V2 Int -> Double
+  { hmSize       :: {-# UNPACK #-} !(V2 Int)
+    -- ^ The size of heat matrix.
+  , _hmVector    :: {-# UNPACK #-} !(Vector Double)
+  , hmBoundLower :: {-# UNPACK #-} !Double
+  , hmBoundUpper :: {-# UNPACK #-} !Double
   }
 
--- | Create a heat matrix from an extent and a function to extract the
---   values.
+-- | Construct a heat matrix from a size and a generating function.
 mkHeatMatrix :: V2 Int -> (V2 Int -> Double) -> HeatMatrix
-mkHeatMatrix = HeatMatrix
+mkHeatMatrix s@(V2 x y) f = runST $ do
+  mv <- M.new (x*y)
 
--- | Create a heat matrix from a list of lists of values. All sublists
---   should have the same length
-mkHeatMatrix' :: Foldable f => f (f Double) -> HeatMatrix
-mkHeatMatrix' xss =
-  case F.length <$> preview folded xss of
-    Just y  -> HeatMatrix (V2 x y) f
-    Nothing -> HeatMatrix zero (const 0)
+  let go !q !a !b !i !j
+        | j == y    = do v <- V.unsafeFreeze mv
+                         return (HeatMatrix s v a b)
+        | i == x    = go q a b 0 (j + 1)
+        | otherwise = do let !d = f (V2 i j)
+                         M.unsafeWrite mv q d
+                         go (q + 1) (min a d) (max b d) (i + 1) j
+
+  go 0 (1/0) (-1/0) 0 0
+{-# INLINE mkHeatMatrix #-}
+
+-- | Construct a heat matrix from a foldable of foldables.
+--
+-- @
+-- 'mkHeatMatrix'' :: [['Double']] -> 'HeatMatrix'
+-- 'mkHeatMatrix'' :: ['Vector' 'Double'] -> 'HeatMatrix'
+-- @
+mkHeatMatrix' :: (Foldable f, Foldable g) => f (g Double) -> HeatMatrix
+mkHeatMatrix' xss = HeatMatrix (V2 x y) vd a b
   where
-    x           = F.length xss
-    v           = U.fromList $ toListOf (folded . folded) xss
-    f (V2 i j)  = v ! (x*j + i)
-
--- | Normalise a heat matrix so all values lie in the (0,1) range. Also
---   returns the lower and upper limit of the original heat matrix.
-normaliseHeatMatrix :: HeatMatrix -> ((Double, Double), HeatMatrix)
-normaliseHeatMatrix hm = (range, hm { hmFun = (/ (b - a)) . (+a) . hmFun hm })
-  where range@(a,b) = minMaxOf hmPoints hm
-        -- XXX what if range = 0?
+  (a,b) = minMax vd
+  vd = V.create $ do
+    mv <- M.new (x*y)
+    let go !_ []     = return mv
+        go  j (r:rs) = V.unsafeCopy (M.unsafeSlice (j*x) x mv) r >> go (j-1) rs
+    go (y - 1) vs
+  -- vs is in reverse since we used foldl' to build it
+  (!x,!y,!vs) = F.foldl' f (maxBound,0,[]) xss
+  f (!i,!j,!ss) xs = let !v = V.fromList (F.toList xs)
+                     in  (min i (V.length v), j+1, v : ss)
 
 -- | Indexed traversal over the values of a 'HeatMatrix'.
 hmPoints :: IndexedTraversal' (V2 Int) HeatMatrix Double
-hmPoints f (HeatMatrix e@(V2 x y) ixF) = go 0 0 <&> \vs ->
-  let v             = U.fromListN (x*y) vs
-      ixF' (V2 i j) = U.unsafeIndex v (x*j + i)
-  in  HeatMatrix e ixF'
+hmPoints f (HeatMatrix e@(V2 x y) v a b) =
+  go 0 0 0 <&> \vs ->
+    let v'= V.fromListN (x*y) vs
+    in  HeatMatrix e v' a b
   where
     -- V2 x y = hmExtent
-    go !i !j
-      | i >= x    = go 0 (j+1)
+    go !s !i !j
+      | i >= x    = go s 0 (j+1)
       | j >= y    = pure []
-      | otherwise = (:) <$> indexed f (V2 i j) (ixF $ V2 i j) <*> go (i+1) j
-{-# INLINE hmPoints #-}
+      | otherwise = (:) <$> indexed f (V2 i j) (V.unsafeIndex v s)
+                        <*> go (s+1) (i+1) j
+{-# INLINE [0] hmPoints #-}
+
+{-# RULES
+  "hmPoints/foldr"
+  hmPoints = ifoldring hmFold :: Getting (Endo r) HeatMatrix Double;
+  "hmPoints/ifoldr"
+  hmPoints = ifoldring hmFold :: IndexedGetting (V2 Int) (Endo r) HeatMatrix Double
+ #-}
+
+hmFold :: (V2 Int -> Double -> b -> b) -> b -> HeatMatrix -> b
+hmFold f b0 (HeatMatrix (V2 x y) v _ _) = go 0 0 0 b0 where
+  go !s !i !j b
+    | i >= x    = go s 0 (j+1) b
+    | j >= y    = b
+    | otherwise = f (V2 i j) (V.unsafeIndex v s) (go (s+1) (i+1) j b)
+{-# INLINE hmFold #-}
 
 -- Rendering heat matrices --------------------------------------------
 
+-- | Render an heatmap as an 'ImageRGB8'.
+pixelHeatRender
+  :: (Renderable (DImage n Embedded) b, TypeableFloat n)
+  => HeatMatrix
+  -> ColourMap
+  -> QDiagram b V2 n Any
+pixelHeatRender hm cm =
+  alignBL . image $ DImage (ImageRaster (ImageRGB8 img)) x y mempty
+  where
+    img    = heatImage hm cm
+    V2 x y = hmSize hm
+
 -- | Render an heatmap as an 'ImageRGB8' with @n@ pixels per heat matrix
 --   point.
-pixelHeatRender
+pixelHeatRender'
   :: (Renderable (DImage n Embedded) b, TypeableFloat n)
   => Int
   -> HeatMatrix
   -> ColourMap
   -> QDiagram b V2 n Any
-pixelHeatRender n hm cm =
+pixelHeatRender' n hm cm =
   scale (1/fromIntegral n) . alignBL . image $ DImage (ImageRaster (ImageRGB8 img)) (x*n) (y*n) mempty
   where
-    img    = heatImage n hm cm
+    img    = scaleImage n $ heatImage hm cm
     V2 x y = hmSize hm
 
-heatImage :: Int -> HeatMatrix -> ColourMap -> Image PixelRGB8
-heatImage n hm cm = generateImage (\i j -> getPx (V2 (i `div` n) ((y - j - 1) `div` n))) x y
-  where
-    V2 x y  = hmSize hm * V2 n n
-    getPx v = colourToPixel . fromAlphaColour $ cm ^. ixColour (realToFrac $ hmFun hm v)
+-- | Scale an image so each pixel takes (n*n) pixels. This can be
+--   usefull for using 'heatImage' on small heat matrixes to give a
+--   sharper image.
+scaleImage :: Int -> Image PixelRGB8 -> Image PixelRGB8
+scaleImage n img | n == 1  = img
+                 | n == 0  = Image 0 0 S.empty
+                 | n <  0  = error "scaleImage: negative scale"
+scaleImage n (Image x y v) = Image (n*x) (n*y) vn where
+  !refV = V.fromList $ map (*3) [ i + n*x*j | i <- [0..n-1], j <- [0..n-1] ]
+  !n3 = 3*n
+  vn = S.create $ do
+    mv <- M.new (n * n * S.length v)
+    let go !q !i !s | q >= 3*x*y = return mv
+                    | i == x     = go q 0 (s + 3*x*n*(n-1))
+        go  q  i  s              = do
+          let !r = S.unsafeIndex v  q
+              !g = S.unsafeIndex v (q+1)
+              !b = S.unsafeIndex v (q+2)
+          V.forM_ refV $ \ds -> do
+            M.unsafeWrite mv (s + ds    ) r
+            M.unsafeWrite mv (s + ds + 1) g
+            M.unsafeWrite mv (s + ds + 2) b
+          go (q+3) (i+1) (s+n3)
 
-colourToPixel :: Colour Double -> PixelRGB8
+    go 0 0 0
+
+-- | Create an image of 'PixelsRGB8' using the heat matrix.
+heatImage :: HeatMatrix -> ColourMap -> Image PixelRGB8
+heatImage (HeatMatrix (V2 x y) dv a b) cm = Image x y v' where
+  !cv = mkColourVector cm
+
+  -- PixelRGB8 doesn't have an unboxed instance so we have to write each
+  -- component manually.
+  v' = S.create $ do
+    mv <- M.new (3 * x * y)
+    let !m = 256 / (b - a)
+        go s i q
+          | s == x-1  = do -- return mv
+              let !d = V.unsafeIndex dv s
+              let !o = 3 * (min 255 . max 0 . round $ (d - a) * m)
+              M.unsafeWrite mv  q    (V.unsafeIndex cv  o   )
+              M.unsafeWrite mv (q+1) (V.unsafeIndex cv (o+1))
+              M.unsafeWrite mv (q+2) (V.unsafeIndex cv (o+2))
+              return mv
+              -- go (s+1) (i+1) (q+3)
+          | i == x    = go (s - 2*x) 0 q
+          | otherwise = do
+              let !d = V.unsafeIndex dv s
+              let !o = 3 * (min 255 . max 0 . round $ (d - a) * m)
+              M.unsafeWrite mv  q    (V.unsafeIndex cv  o   )
+              M.unsafeWrite mv (q+1) (V.unsafeIndex cv (o+1))
+              M.unsafeWrite mv (q+2) (V.unsafeIndex cv (o+2))
+              go (s+1) (i+1) (q+3)
+    go (x * (y-1)) 0 0
+
+-- Make an unboxed colour map using 256 samples.
+mkColourVector :: ColourMap -> Vector Word8
+mkColourVector cm = V.create $ do
+  mv <- M.new (3*256)
+
+  let go i | i == 3*256 = return mv
+           | otherwise  = do
+               let PixelRGB8 r g b = cm ^. ixColour (fromIntegral i / (3*256))
+                                         . to colourToPixel
+               M.unsafeWrite mv  i    r
+               M.unsafeWrite mv (i+1) g
+               M.unsafeWrite mv (i+2) b
+               go (i+3)
+
+  go 0
+
+colourToPixel :: AlphaColour Double -> PixelRGB8
 colourToPixel c = PixelRGB8 r g b
-  where RGB r g b = toSRGB24 c
+  where RGB r g b = toSRGB24 (c `C.over` black)
 
--- | Render the heat map as squares.
+-- | Render the heat map as a collection squares made up of 'Trail's.
+--   This method is compatible with all backends and should always look
+--   sharp. However it can become slow and large for large heat maps.
+--
+--   It is recommended to use 'pathHeatRender' for small heat maps and
+--   'pixelHeatRender' for larger ones.
 pathHeatRender
   :: (Renderable (Path V2 n) b, TypeableFloat n)
   => HeatMatrix
   -> ColourMap
   -> QDiagram b V2 n Any
-pathHeatRender hm cm = ifoldMapOf hmPoints mk hm # lwO 0
+pathHeatRender hm@(HeatMatrix _ _ a b) cm = ifoldMapOf hmPoints mk hm # lwO 0
   where
-    mk v@(V2 i j) a =
+    normalise d = toRational $ (d - a) / (b - a)
+    mk v@(V2 i j) d =
       rect w h
         # alignTR
         # translate (fromIntegral <$> v ^+^ 1)
-        # fcA (cm ^. ixColour (toRational a))
+        # fcA (cm ^. ixColour (normalise d))
       where
         -- Squares that are not on the top left edge are slightly
         -- bigger to remove phantom gaps
@@ -260,9 +377,11 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
       grid = mempty
 
       --- XXX need to give _range to the axis somehow (for colour bar range)
-      (_range, matrix') = case hLimits of
-        Just r@(a,b) -> (r, hMatrix { hmFun = (/ (b - a)) . (+a) . hmFun hMatrix })
-        Nothing      -> normaliseHeatMatrix hMatrix
+      matrix' = case hLimits of
+        -- Just r@(a,b) -> (r, hMatrix { hmFun = (/ (b - a)) . (+a) . hmFun hMatrix })
+        -- Nothing      -> normaliseHeatMatrix hMatrix
+        Just (a,b) -> hMatrix { hmBoundLower = a, hmBoundUpper = b }
+        Nothing     -> hMatrix
 
   -- XXX make better
   defLegendPic sty HeatMap {..} = square 5 # applyAreaStyle sty
@@ -303,11 +422,11 @@ heatMap
                    -- ^ changes to plot options
   -> m ()          -- ^ add plot to 'Axis'
 heatMap i f s = do
-  let hm    = mkHeatMatrix (view unvectorLike i) (f . view vectorLike)
-      (r,_) = normaliseHeatMatrix hm
+  let hm@(HeatMatrix _ _ a b) = mkHeatMatrix (view unvectorLike i) (f . view vectorLike)
   addPlotable (mkHeatMap hm) s
-  -- this is a pretty inefficient way to do this
-  colourBarRange .= over both realToFrac r
+
+  -- (don't like this way of doing it)
+  colourBarRange .= over both realToFrac (a,b)
 
 -- | Add a 'HeatMap' plot using the extent of the heatmap and a
 -- generating function without changes to the heap map options.
