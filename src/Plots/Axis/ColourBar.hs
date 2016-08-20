@@ -218,7 +218,11 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
              then a else b
 
   w   = cbWidth
-  f x = (x - (ub - lb)/2) / (ub - lb) * l
+  -- move a value on the colour bar such that
+  --   f lb = -l/2
+  --   f ub =  l/2
+  -- so it ligns up with the colour bar
+  f x = (x - (ub + lb)/2) / (ub - lb) * l
   inRange x = x >= lb && x <= ub
 
   bar = outline <> tks <> gLines <> colours
@@ -279,7 +283,7 @@ gradientColourBar cm =
     grad  = defaultLG & _LG . lGradStops .~ stops
 
 -- | Construct a colour bar made up on @n@ solid paths. The final
---   diagram is 1 by 1, centred  at in the center of the start of the
+--   diagram is 1 by 1, centred at in the center of the start of the
 --   bar.
 pathColourBar :: (TypeableFloat n, Renderable (Path V2 n) b)
               => Int -> ColourMap -> QDiagram b V2 n Any
