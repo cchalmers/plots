@@ -363,7 +363,7 @@ colours2 = cycle
 -- | Markers which have a filling, used for 'fadedColours' and
 --   'vividColours'.
 filledMarkers :: RealFloat n => [Path V2 n]
-filledMarkers = map (centerXY . pathFromTrail) $ cycle
+filledMarkers = scale 11 . map (centerXY . pathFromTrail) $ cycle
   [ circle 0.5
   , square 1
   , triangle 1
@@ -376,7 +376,7 @@ filledMarkers = map (centerXY . pathFromTrail) $ cycle
 
 -- | 'asterisk' markers with varying numbers of prongs.
 lineMarkers :: OrderedField n => [Path V2 n]
-lineMarkers = cycle
+lineMarkers = scale 11 $ cycle
   [ asterisk 4 1 # rotateBy (1/8)
   , asterisk 6 1
   , asterisk 5 1

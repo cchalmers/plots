@@ -23,6 +23,8 @@
 -- coordinates to display values for typically two variables for a set
 -- of data.
 --
+-- <<diagrams/src_Plots_Types_Scatter_scatterExample.svg#diagram=scatterExample&height=350>>
+--
 ----------------------------------------------------------------------------
 module Plots.Types.Scatter
   ( -- * Scatter plot

@@ -147,9 +147,9 @@ renderR2Axis a = frame 40
                $ leg
               <> ttl
               <> cBar
+              <> plots
               <> drawAxis ex ey LowerLabels
               <> drawAxis ey ex LeftLabels
-              <> plots
   where
     spec  = AxisSpec xs t (a^.axes . column logScale) (a ^. axisColourMap)
     plots = foldMap (renderStyledPlot spec) styledPlots
