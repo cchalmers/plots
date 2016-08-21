@@ -57,6 +57,11 @@ module Plots
     -- | Ribbon and area. Ribbon and area plot api.
   , module Plots.Types.Ribbon
 
+    -- ** Heat map plot
+
+    -- | 2D mapping from 'Double's to colours.
+  , module Plots.Types.HeatMap
+
     -- ** Histogram plot
 
     -- | Histogram. API for histogram.
@@ -128,9 +133,14 @@ module Plots
     -- | Colour bars.
   , module Plots.Axis.ColourBar
 
+    -- | Polar coordinates
+  , module Diagrams.Coordinates.Polar
+
   , (&=), (&~~)
 
   ) where
+
+import Diagrams.Coordinates.Polar
 
 import           Plots.Axis
 import           Plots.Axis.ColourBar
@@ -151,6 +161,7 @@ import           Plots.Types.Bar
 import           Plots.Types.Boxplot
 import           Plots.Types.Density
 import           Plots.Types.Function
+import           Plots.Types.HeatMap
 import           Plots.Types.Histogram
 import           Plots.Types.Line
 import           Plots.Types.Others
