@@ -668,7 +668,7 @@ dynamicPlotMods f (DynamicPlot (Plot p opts ps)) =
 
 -- | A 'DynamicPlot' with a concrete style. This is suitable for being
 --   rendered with 'renderStyledPlot' and get extract the legend entries
---   with 'styledPlotLegend.
+--   with 'styledPlotLegend'.
 --
 --   You can make a 'StyledPlot' with 'styleDynamic'
 data StyledPlot b v n where

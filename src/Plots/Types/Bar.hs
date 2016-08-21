@@ -460,9 +460,9 @@ instance HasBarLayout (MultiBarState b n a) where
 --
 -- > groupedExample s = r2Axis &~ do
 -- >   yMin ?= 0
--- >   xAxis . gridLineVisible .= False
+-- >   hide (xAxis . majorGridLines)
 -- >   xLabel .= "breakfast item"
--- >   minorTickVisible .= False
+-- >   hide minorTicks
 -- >   multiBars sortedData snd $ do
 -- >     vertical .= True
 -- >     barWidth //= 2
@@ -557,9 +557,9 @@ runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
 -- > multiBarAxis :: Axis B V2 Double
 -- > multiBarAxis = r2Axis &~ do
 -- >   yMin ?= 0
--- >   xAxis . gridLineVisible .= False
+-- >   hide (xAxis . majorGridLines)
+-- >   hide minorTicks
 -- >   xLabel .= "breakfast item"
--- >   minorTickVisible .= False
 -- >   multiBars sortedData snd $ do
 -- >     vertical .= True
 -- >     barWidth //= 2

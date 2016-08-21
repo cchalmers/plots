@@ -196,16 +196,17 @@ wedgeKeys f = onWedges $ \a -> key (f a)
 --
 -- === __Example__
 --
--- <<#diagram=pieExample&width=500>>
+-- <<diagrams/src_Plots_Types_Pie_pieExample.svg#diagram=pieExample&width=500>>
 --
 -- > import Plots
 -- >
 -- > pieData = [("red", 3), ("blue", 4), ("green", 2), ("purple", 5)]
 -- >
+-- > pieAxis :: Axis B Polar Double
 -- > pieAxis = polarAxis &~ do
 -- >   piePlot pieData snd $ wedgeKeys fst
 -- >   wedgeInnerRadius .= 0.5
--- >   hide axes
+-- >   hide (axes . traversed)
 --
 -- > pieExample = renderAxis pieAxis
 piePlot
@@ -235,14 +236,17 @@ piePlot (F.toList -> as) f st = F.forM_ ps addPlot
 --
 -- === __Example__
 --
--- <<#diagram=pieAxis'&width=500>>
+-- <<diagrams/src_Plots_Types_Pie_pieExample'.svg#diagram=pieExample'&width=500>>
 --
 -- > import Plots
 -- >
+-- > pieAxis' :: Axis B Polar Double
 -- > pieAxis' = polarAxis &~ do
 -- >   piePlot' [1,3,5,2]
 -- >   wedgeInnerRadius .= 0.5
--- >   hide axes
+-- >   hide (axes . traversed)
+--
+-- > pieExample' = renderAxis pieAxis'
 piePlot'
   :: (MonadState (Axis b Polar n) m,
       Plotable (Wedge n) b,

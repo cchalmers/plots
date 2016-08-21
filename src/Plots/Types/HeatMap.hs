@@ -17,30 +17,33 @@
 -- Maintainer  :  Christopher Chalmers
 -- Stability   :  experimental
 -- Portability :  non-portable
-
+--
 -- A heat map is a graphical representation of data where the individual
 -- values contained in a matrix are represented as colours.
 --
 ----------------------------------------------------------------------------
 
 module Plots.Types.HeatMap
-  ( HeatMap
+  ( -- * Heat map
+    HeatMap
   , heatMap
   , heatMap'
+  , heatMapIndexed
+  , heatMapIndexed'
 
   -- * Lenses
   , HasHeatMap (..)
+
+  -- ** Rendering functions
+  , pathHeatRender
+  , pixelHeatRender
+  , pixelHeatRender'
 
   -- * Heat matrix
   , HeatMatrix
   , heatImage
   , hmPoints
   , hmSize
-
-  -- ** Rendering functions
-  , pathHeatRender
-  , pixelHeatRender
-  , pixelHeatRender'
 
   -- * Low level construction
   , mkHeatMap
@@ -152,6 +155,18 @@ hmFold f b0 (HeatMatrix (V2 x y) v _ _) = go 0 0 0 b0 where
 -- Rendering heat matrices --------------------------------------------
 
 -- | Render an heatmap as an 'ImageRGB8'.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_HeatMap_pixelHeatRenderExample.svg#diagram=pixelHeatRenderExample&width=400>>
+--
+-- > import Plots
+-- >
+-- > pixelHeatRenderExample =
+-- >   let f (V2 x y) = fromIntegral x + fromIntegral y
+-- >       myHM       = mkHeatMatrix (V2 5 5) f
+-- >   in  pixelHeatRender myHM viridis
+--
 pixelHeatRender
   :: (Renderable (DImage n Embedded) b, TypeableFloat n)
   => HeatMatrix
@@ -165,6 +180,18 @@ pixelHeatRender hm cm =
 
 -- | Render an heatmap as an 'ImageRGB8' with @n@ pixels per heat matrix
 --   point.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_HeatMap_pixelHeatRenderExample'.svg#diagram=pixelHeatRenderExample'&width=400>>
+--
+-- > import Plots
+-- >
+-- > pixelHeatRenderExample' =
+-- >   let f (V2 x y) = fromIntegral x + fromIntegral y
+-- >       myHM       = mkHeatMatrix (V2 5 5) f
+-- >   in  pixelHeatRender' 10 myHM viridis
+--
 pixelHeatRender'
   :: (Renderable (DImage n Embedded) b, TypeableFloat n)
   => Int
@@ -258,6 +285,18 @@ colourToPixel c = PixelRGB8 r g b
 --
 --   It is recommended to use 'pathHeatRender' for small heat maps and
 --   'pixelHeatRender' for larger ones.
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_HeatMap_pathHeatRenderExample.svg#diagram=pathHeatRenderExample&width=400>>
+--
+-- > import Plots
+-- >
+-- > pathHeatRenderExample =
+-- >   let f (V2 x y) = fromIntegral x + fromIntegral y
+-- >       myHM       = mkHeatMatrix (V2 5 5) f
+-- >   in  pathHeatRender myHM viridis
+--
 pathHeatRender
   :: (Renderable (Path V2 n) b, TypeableFloat n)
   => HeatMatrix
@@ -403,6 +442,8 @@ mkHeatMap mat = HeatMap
   , hDraw        = pathHeatRender
   }
 
+-- Adding to axis ------------------------------------------------------
+
 -- | Add a 'HeatMap' plot using the extent of the heatmap and a
 --   generating function.
 --
@@ -410,7 +451,101 @@ mkHeatMap mat = HeatMap
 -- 'heatMap' :: 'V2' 'Int'     -> ('V2' 'Int' -> 'Double')     -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
 -- 'heatMap' :: ('Int', 'Int') -> (('Int', 'Int') -> 'Double') -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
 -- @
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapExample.svg#diagram=heatMapExample&width=400>>
+--
+-- > import Plots
+-- > heatMapAxis :: Axis B V2 Double
+-- > heatMapAxis = r2Axis &~ do
+-- >   hide majorGridLines
+-- >   display colourBar
+-- >   axisExtend .= AbsoluteExtend 0
+-- >
+-- >   let xs = [[1,2,3],[4,5,6]]
+-- >   heatMap xs $ heatMapSize .= V2 10 10
+--
+-- > heatMapExample = renderAxis heatMapAxis
+--
 heatMap
+  :: (Foldable f,
+      Foldable g,
+      TypeableFloat n,
+      Typeable b,
+      MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b)
+  => f (g Double)
+  -> State (Plot (HeatMap b n) b) ()
+                   -- ^ changes to plot options
+  -> m ()          -- ^ add plot to 'Axis'
+heatMap xss s = do
+  let hm@(HeatMatrix _ _ a b) = mkHeatMatrix' xss
+  addPlotable (mkHeatMap hm) s
+
+  -- (don't like this way of doing it)
+  colourBarRange .= over both realToFrac (a,b)
+
+-- | Add a 'HeatMap' plot using the extent of the heatmap and a
+--   generating function.
+--
+-- @
+-- 'heatMap' :: 'V2' 'Int'     -> ('V2' 'Int' -> 'Double')     -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
+-- 'heatMap' :: ('Int', 'Int') -> (('Int', 'Int') -> 'Double') -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
+-- @
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapExample'.svg#diagram=heatMapExample'&width=400>>
+--
+-- > import Plots
+-- > heatMapAxis' :: Axis B V2 Double
+-- > heatMapAxis' = r2Axis &~ do
+-- >   hide majorGridLines
+-- >   display colourBar
+-- >   axisExtend .= AbsoluteExtend 0
+-- >
+-- >   let xs = [[1,2,3],[4,5,6]]
+-- >   heatMap' xs
+--
+-- > heatMapExample' = renderAxis heatMapAxis'
+--
+heatMap'
+  :: (Foldable f,
+      Foldable g,
+      TypeableFloat n,
+      Typeable b,
+      MonadState (Axis b V2 n) m,
+      Renderable (Path V2 n) b)
+  => f (g Double)
+  -> m ()          -- ^ add plot to 'Axis'
+heatMap' xss = heatMap xss (return ())
+
+-- | Add a 'HeatMap' plot using the extent of the heatmap and a
+--   generating function.
+--
+-- @
+-- 'heatMap' :: 'V2' 'Int'     -> ('V2' 'Int' -> 'Double')     -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
+-- 'heatMap' :: ('Int', 'Int') -> (('Int', 'Int') -> 'Double') -> 'State' ('Plot' ('HeatMap' b n)) () -> 'State' ('Axis' b 'V2' n) ()
+-- @
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample.svg#diagram=heatMapIndexedExample&width=400>>
+--
+-- > import Plots
+-- > heatMapIndexedAxis :: Axis B V2 Double
+-- > heatMapIndexedAxis = r2Axis &~ do
+-- >   hide majorGridLines
+-- >   display colourBar
+-- >   axisExtend .= AbsoluteExtend 0
+-- >
+-- >   let f (V2 x y) = fromIntegral x + fromIntegral y
+-- >   heatMapIndexed (V2 3 3) f $ heatMapSize .= V2 10 10
+--
+-- > heatMapIndexedExample = renderAxis heatMapIndexedAxis
+--
+heatMapIndexed
   :: (VectorLike V2 Int i,
       TypeableFloat n,
       Typeable b,
@@ -421,7 +556,7 @@ heatMap
   -> State (Plot (HeatMap b n) b) ()
                    -- ^ changes to plot options
   -> m ()          -- ^ add plot to 'Axis'
-heatMap i f s = do
+heatMapIndexed i f s = do
   let hm@(HeatMatrix _ _ a b) = mkHeatMatrix (view unvectorLike i) (f . view vectorLike)
   addPlotable (mkHeatMap hm) s
 
@@ -435,7 +570,24 @@ heatMap i f s = do
 -- 'heatMap' :: 'V2' 'Int'     -> ('V2' 'Int' -> 'Double')     -> 'State' ('Axis' b 'V2' n) ()
 -- 'heatMap' :: ('Int', 'Int') -> (('Int', 'Int') -> 'Double') -> 'State' ('Axis' b 'V2' n) ()
 -- @
-heatMap'
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample'.svg#diagram=heatMapIndexedExample'&width=400>>
+--
+-- > import Plots
+-- > heatMapIndexedAxis' :: Axis B V2 Double
+-- > heatMapIndexedAxis' = r2Axis &~ do
+-- >   hide majorGridLines
+-- >   display colourBar
+-- >   axisExtend .= AbsoluteExtend 0
+-- >
+-- >   let f (V2 x y) = fromIntegral x + fromIntegral y
+-- >   heatMapIndexed' (V2 3 3) f
+--
+-- > heatMapIndexedExample' = renderAxis heatMapIndexedAxis'
+--
+heatMapIndexed'
   :: (VectorLike V2 Int i,
       TypeableFloat n,
       Typeable b,
@@ -444,5 +596,5 @@ heatMap'
   => i             -- ^ extent of array
   -> (i -> Double) -- ^ heat from index
   -> m ()          -- ^ add plot to 'Axis'
-heatMap' i f = heatMap i f (return ())
+heatMapIndexed' i f = heatMapIndexed i f (return ())
 
