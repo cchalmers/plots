@@ -221,7 +221,6 @@ wedgeKeys f = onWedges $ \a -> key (f a)
 -- > piePlotAxis :: Axis B Polar Double
 -- > piePlotAxis = polarAxis &~ do
 -- >   piePlot pieData snd $ wedgeKeys fst
--- >   wedgeInnerRadius .= 0.5
 -- >   hide (axes . traversed)
 --
 -- > piePlotExample = renderAxis piePlotAxis
