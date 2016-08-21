@@ -277,7 +277,7 @@ scatterOptions = gscatterOptions
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Scatter_scatterExample.svg#diagram=scatterExample&width=600>>
+-- <<diagrams/src_Plots_Types_Scatter_scatterExample.svg#diagram=scatterExample&height=350>>
 --
 -- > import Plots
 -- > mydata1 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
@@ -309,7 +309,7 @@ scatterPlot xs = gscatterPlot (xs ^.. folded . unpointLike) id
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Scatter_scatterExample'.svg#diagram=scatterExample'&width=600>>
+-- <<diagrams/src_Plots_Types_Scatter_scatterExample'.svg#diagram=scatterExample'&height=350>>
 --
 -- > import Plots
 -- > mydata4 = [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]

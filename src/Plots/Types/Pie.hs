@@ -13,10 +13,26 @@
 {-# LANGUAGE UndecidableInstances      #-}
 
 {-# LANGUAGE StandaloneDeriving        #-}
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Types.Line
+-- Copyright   :  (C) 2016 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- A pie plot is a circular statistical graphic, which is divided into
+-- slices to illustrate numerical proportion.
+--
+-- <<diagrams/src_Plots_Types_Pie_piePlotExample.svg#diagram=piePlotExample&height=350>>
+--
+----------------------------------------------------------------------------
 
 module Plots.Types.Pie
   ( -- * Pie plot
-    piePlot
+    PieState
+  , piePlot
   , piePlot'
   , onWedges
   , wedgeKeys
@@ -196,19 +212,19 @@ wedgeKeys f = onWedges $ \a -> key (f a)
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Pie_pieExample.svg#diagram=pieExample&width=500>>
+-- <<diagrams/src_Plots_Types_Pie_piePlotExample.svg#diagram=piePlotExample&height=350>>
 --
 -- > import Plots
 -- >
 -- > pieData = [("red", 3), ("blue", 4), ("green", 2), ("purple", 5)]
 -- >
--- > pieAxis :: Axis B Polar Double
--- > pieAxis = polarAxis &~ do
+-- > piePlotAxis :: Axis B Polar Double
+-- > piePlotAxis = polarAxis &~ do
 -- >   piePlot pieData snd $ wedgeKeys fst
 -- >   wedgeInnerRadius .= 0.5
 -- >   hide (axes . traversed)
 --
--- > pieExample = renderAxis pieAxis
+-- > piePlotExample = renderAxis piePlotAxis
 piePlot
   :: (MonadState (Axis b Polar n) m,
       Plotable (Wedge n) b,
@@ -236,17 +252,17 @@ piePlot (F.toList -> as) f st = F.forM_ ps addPlot
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Pie_pieExample'.svg#diagram=pieExample'&width=500>>
+-- <<diagrams/src_Plots_Types_Pie_pieExample'.svg#diagram=pieExample'&height=350>>
 --
 -- > import Plots
 -- >
--- > pieAxis' :: Axis B Polar Double
--- > pieAxis' = polarAxis &~ do
+-- > piePlotAxis' :: Axis B Polar Double
+-- > piePlotAxis' = polarAxis &~ do
 -- >   piePlot' [1,3,5,2]
 -- >   wedgeInnerRadius .= 0.5
 -- >   hide (axes . traversed)
 --
--- > pieExample' = renderAxis pieAxis'
+-- > pieExample' = renderAxis piePlotAxis'
 piePlot'
   :: (MonadState (Axis b Polar n) m,
       Plotable (Wedge n) b,
@@ -271,15 +287,15 @@ piePlot' ns = piePlot ns id (return ())
 --
 -- === __Example__
 --
--- <<diagram=wedgeExample&width=500>>
+-- <<diagrams/src_Plots_Types_Pie_wedgeExample.svg#diagram=wedgeExample&height=350>>
 --
 -- > import Plots
+-- >
+-- > wedgePlotAxis :: Axis B Polar Double
+-- > wedgePlotAxis = polarAxis &~ do
+-- >   wedgePlot xDir (38@@deg) $ key "wedge"
 --
--- > wedgeAxis = polarAxis &~ do
--- >   wedgePlot xDir (38@@deg)
--- >   axes . visible .= False -- hide the axis
---
--- > wedgeExample = renderAxis pieAxis
+-- > wedgeExample = renderAxis wedgePlotAxis
 wedgePlot
   :: (v ~ BaseSpace c, v ~ V2,
       PointLike v n (Polar n),

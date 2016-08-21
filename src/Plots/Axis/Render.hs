@@ -555,7 +555,7 @@ renderPolarAxis a = frame 15
 drawPolarAxis
   :: forall b n. (Renderable (Path V2 n) b, TypeableFloat n)
   => AxisSpec V2 n -> Polar (SingleAxis b V2 n) -> QDiagram b V2 n Any
-drawPolarAxis spec (Polar (V2 rA thetaA)) = rAx <> thetaAx where
+drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx where
 
   -- use a radius of the upper x bound for the axis (this is not ideal)
   r = spec ^. specBounds . _x . _2

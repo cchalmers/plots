@@ -20,6 +20,8 @@
 -- lengths proportional to the values that they represent. The bars can
 -- be plotted vertically or horizontally.
 --
+-- <<diagrams/src_Plots_Types_Bar_multiBarExample.svg#diagram=multiBarExample&height=350>>
+--
 ----------------------------------------------------------------------------
 module Plots.Types.Bar
   (
@@ -304,12 +306,13 @@ _reflectXY = transform _reflectionXY
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_barExample.svg#diagram=barExample&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_barExample.svg#diagram=barExample&height=400>>
 --
 -- > import Plots
 -- > barAxis :: Axis B V2 Double
 -- > barAxis = r2Axis &~ do
 -- >   yMin ?= 0
+-- >   hide majorGridLines
 -- >   barPlot [13.5, 3.0, 6.9, 7.2, 4.6] $ do
 -- >     vertical .= True
 -- >     barWidth //= 2
@@ -328,12 +331,13 @@ barPlot ns = addPlotable (mkBars def ns)
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_barExample'.svg#diagram=barExample'&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_barExample'.svg#diagram=barExample'&height=400>>
 --
 -- > import Plots
 -- > barAxis' :: Axis B V2 Double
 -- > barAxis' = r2Axis &~ do
--- >   yMin ?= 0
+-- >   xMin ?= 0
+-- >   hide (yAxis . majorGridLines)
 -- >   barPlot' [13.5, 3.0, 6.9, 7.2, 4.6]
 --
 -- > barExample' = renderAxis barAxis'
@@ -349,12 +353,13 @@ barPlot' ns = addPlotable' (mkBars def ns)
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_namedBarExample.svg#diagram=namedBarExample&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_namedBarExample.svg#diagram=namedBarExample&height=400>>
 --
 -- > import Plots
 -- > namedBarAxis :: Axis B V2 Double
 -- > namedBarAxis = r2Axis &~ do
 -- >   yMin ?= 0
+-- >   hide (xAxis . majorGridLines)
 -- >   namedBarPlot [("eggs", 12), ("bacon", 5), ("sausage", 9), ("beans", 3)] $ do
 -- >     vertical .= True
 -- >     barWidth //= 2
@@ -378,12 +383,13 @@ namedBarPlot d s = do
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_namedBarExample'.svg#diagram=namedBarExample'&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_namedBarExample'.svg#diagram=namedBarExample'&height=400>>
 --
 -- > import Plots
 -- > namedBarAxis' :: Axis B V2 Double
 -- > namedBarAxis' = r2Axis &~ do
--- >   yMin ?= 0
+-- >   xMin ?= 0
+-- >   hide majorGridLines
 -- >   namedBarPlot' [("eggs", 12), ("bacon", 5), ("sausage", 9), ("beans", 3)]
 --
 -- > namedBarExample' = renderAxis namedBarAxis'
@@ -493,7 +499,7 @@ multiFun = lens mbsBarFun (\mbs f -> mbs {mbsBarFun = f})
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_groupedBarsExample.svg#diagram=groupedBarsExample&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_groupedBarsExample.svg#diagram=groupedBarsExample&height=400>>
 
 groupedBars :: Fractional n => State (MultiBarState b n a) ()
 groupedBars = groupedBars' 1
@@ -505,7 +511,7 @@ groupedBars = groupedBars' 1
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_groupedBarsExample'.svg#diagram=groupedBarsExample'&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_groupedBarsExample'.svg#diagram=groupedBarsExample'&height=400>>
 --
 groupedBars' :: Fractional n => n -> State (MultiBarState b n a) ()
 groupedBars' n = multiFun .= mkGroupedBars n
@@ -514,7 +520,7 @@ groupedBars' n = multiFun .= mkGroupedBars n
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_stackedBarsExample.svg#diagram=stackedBarsExample&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_stackedBarsExample.svg#diagram=stackedBarsExample&height=400>>
 --
 stackedBars :: Num n => State (MultiBarState b n a) ()
 stackedBars = multiFun .= mkStackedBars
@@ -525,7 +531,7 @@ stackedBars = multiFun .= mkStackedBars
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_stackedEqualBarsExample.svg#diagram=stackedEqualBarsExample&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_stackedEqualBarsExample.svg#diagram=stackedEqualBarsExample&height=400>>
 --
 stackedEqualBars :: Fractional n => n -> State (MultiBarState b n a) ()
 stackedEqualBars n = multiFun .= mkStackedEqualBars n
@@ -534,7 +540,7 @@ stackedEqualBars n = multiFun .= mkStackedEqualBars n
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_runningBarsExample.svg#diagram=runningBarsExample&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_runningBarsExample.svg#diagram=runningBarsExample&height=400>>
 --
 runningBars :: Num n => State (MultiBarState b n a) ()
 runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
@@ -544,7 +550,7 @@ runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Bar_multiBarExample.svg#diagram=multiBarExample&width=600>>
+-- <<diagrams/src_Plots_Types_Bar_multiBarExample.svg#diagram=multiBarExample&height=400>>
 --
 -- > import Plots
 -- > breakfastData :: [(String, V2 Double)]

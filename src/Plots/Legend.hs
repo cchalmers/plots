@@ -98,7 +98,7 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
     , lTextWidth   = 60
     , lStyle       = mempty
     , lTextF       = mkText (BoxAlignedText 0 0.5)
-    , lTextStyle   = mempty & fontSize (output 8)
+    , lTextStyle   = mempty & fontSize (output 11)
     , lOrientation = Vertical
     , lVisible     = True
     }
@@ -137,6 +137,7 @@ drawLegend bb entries l
               # alignTL
 
     back = rect (w + h + 5) (h * fromIntegral (length entries))
+             # fcA transparent
              # applyStyle (l ^. legendStyle)
              # alignTL
              # translate (V2 (-5) 0) -- (-3))

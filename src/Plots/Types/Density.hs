@@ -185,7 +185,7 @@ instance HasDensity (Plot (GDensityPlot v n d) b) v n d where
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Density_densityExample.svg#diagram=densityExample&width=300>>
+-- <<diagrams/src_Plots_Types_Density_densityExample.svg#diagram=densityExample&height=350>>
 --
 -- > import Plots
 -- > import Plots.Types.Density

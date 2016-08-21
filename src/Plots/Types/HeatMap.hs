@@ -21,6 +21,8 @@
 -- A heat map is a graphical representation of data where the individual
 -- values contained in a matrix are represented as colours.
 --
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample.svg#diagram=heatMapIndexedExample&height=350>>
+--
 ----------------------------------------------------------------------------
 
 module Plots.Types.HeatMap
@@ -158,7 +160,7 @@ hmFold f b0 (HeatMatrix (V2 x y) v _ _) = go 0 0 0 b0 where
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_HeatMap_pixelHeatRenderExample.svg#diagram=pixelHeatRenderExample&width=400>>
+-- <<diagrams/src_Plots_Types_HeatMap_pixelHeatRenderExample.svg#diagram=pixelHeatRenderExample&height=350>>
 --
 -- > import Plots
 -- >
@@ -183,7 +185,7 @@ pixelHeatRender hm cm =
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_HeatMap_pixelHeatRenderExample'.svg#diagram=pixelHeatRenderExample'&width=400>>
+-- <<diagrams/src_Plots_Types_HeatMap_pixelHeatRenderExample'.svg#diagram=pixelHeatRenderExample'&height=350>>
 --
 -- > import Plots
 -- >
@@ -288,7 +290,7 @@ colourToPixel c = PixelRGB8 r g b
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_HeatMap_pathHeatRenderExample.svg#diagram=pathHeatRenderExample&width=400>>
+-- <<diagrams/src_Plots_Types_HeatMap_pathHeatRenderExample.svg#diagram=pathHeatRenderExample&height=350>>
 --
 -- > import Plots
 -- >
@@ -454,7 +456,7 @@ mkHeatMap mat = HeatMap
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_HeatMap_heatMapExample.svg#diagram=heatMapExample&width=400>>
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapExample.svg#diagram=heatMapExample&height=350>>
 --
 -- > import Plots
 -- > heatMapAxis :: Axis B V2 Double
@@ -496,7 +498,7 @@ heatMap xss s = do
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_HeatMap_heatMapExample'.svg#diagram=heatMapExample'&width=400>>
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapExample'.svg#diagram=heatMapExample'&height=350>>
 --
 -- > import Plots
 -- > heatMapAxis' :: Axis B V2 Double
@@ -531,7 +533,7 @@ heatMap' xss = heatMap xss (return ())
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample.svg#diagram=heatMapIndexedExample&width=400>>
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample.svg#diagram=heatMapIndexedExample&height=350>>
 --
 -- > import Plots
 -- > heatMapIndexedAxis :: Axis B V2 Double
@@ -573,7 +575,7 @@ heatMapIndexed i f s = do
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample'.svg#diagram=heatMapIndexedExample'&width=400>>
+-- <<diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample'.svg#diagram=heatMapIndexedExample'&height=350>>
 --
 -- > import Plots
 -- > heatMapIndexedAxis' :: Axis B V2 Double

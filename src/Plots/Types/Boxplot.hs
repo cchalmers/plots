@@ -8,17 +8,30 @@
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
 
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Plots.Types.HeatMap
+-- Copyright   :  (C) 2016 Christopher Chalmers
+-- License     :  BSD-style (see the file LICENSE)
+-- Maintainer  :  Christopher Chalmers
+-- Stability   :  experimental
+-- Portability :  non-portable
+--
+-- A heat map is a graphical representation of data where the individual
+-- values contained in a matrix are represented as colours.
+--
+-- <<diagrams/src_Plots_Types_Boxplot_boxPlotExample.svg#diagram=boxPlotExample&height=350>>
+--
+----------------------------------------------------------------------------
 
 module Plots.Types.Boxplot
   ( -- * Adding box plots
     boxPlot
   , boxPlot'
-  -- , boxPlotL
 
     -- * Fold variant boxplot
   , boxPlotOf
   , boxPlotOf'
-  -- , boxPlotOfL
 
      -- * Boxplot type
   , GBoxPlot
@@ -86,8 +99,8 @@ instance (Typeable a, TypeableFloat n, Renderable (Path V2 n) b, n ~ Double)
     => Plotable (GBoxPlot V2 n a) b where
   renderPlotable s sty GBoxPlot {..} =
     if bFill
-      then mconcat ([ draw' d | d <-(drawBoxPlot dd)] ++ [foo])
-      else mconcat [ draw' d | d <-(drawBoxPlot dd)]
+      then mconcat ([ draw' d | d <- drawBoxPlot dd] ++ [foo])
+      else mconcat [ draw' d | d <- drawBoxPlot dd]
     where
       ps      = toListOf (bFold . to bPos . to (logPoint ls)) bData
       dd      = bBox ps
@@ -214,7 +227,7 @@ instance HasBox (Plot (GBoxPlot v n d) b) v n d where
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Boxplot_boxPlotExample.svg#diagram=boxPlotExample&width=300>>
+-- <<diagrams/src_Plots_Types_Boxplot_boxPlotExample.svg#diagram=boxPlotExample&height=350>>
 --
 -- > import Plots
 -- > import Plots.Types.Boxplot
@@ -243,7 +256,7 @@ boxPlot d = addPlotable (mkBoxPlot d)
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Boxplot_boxPlotExample'.svg#diagram=boxPlotExample'&width=300>>
+-- <<diagrams/src_Plots_Types_Boxplot_boxPlotExample'.svg#diagram=boxPlotExample'&height=350>>
 --
 -- > import Plots
 -- > import Plots.Types.Boxplot

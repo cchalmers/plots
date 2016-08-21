@@ -204,7 +204,7 @@ instance Default NormalisationMethod where
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Histogram_countDia.svg#diagram=countDia&width=600>>
+-- <<diagrams/src_Plots_Types_Histogram_countDia.svg#diagram=countDia&height=350>>
 count :: NormalisationMethod
 count = NM $ \_ v -> v
 
@@ -212,7 +212,7 @@ count = NM $ \_ v -> v
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Histogram_probabilityDia.svg#diagram=probabilityDia&width=600>>
+-- <<diagrams/src_Plots_Types_Histogram_probabilityDia.svg#diagram=probabilityDia&height=350>>
 probability :: NormalisationMethod
 probability = NM $ \_ v -> v ^/ V.sum v
 
@@ -221,7 +221,7 @@ probability = NM $ \_ v -> v ^/ V.sum v
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Histogram_countDensityDia.svg#diagram=countDensityDia&width=600>>
+-- <<diagrams/src_Plots_Types_Histogram_countDensityDia.svg#diagram=countDensityDia&height=350>>
 countDensity :: NormalisationMethod
 countDensity = NM $ \w v -> v ^/ w
 
@@ -230,7 +230,7 @@ countDensity = NM $ \w v -> v ^/ w
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Histogram_pdfDia.svg#diagram=pdfDia&width=600>>
+-- <<diagrams/src_Plots_Types_Histogram_pdfDia.svg#diagram=pdfDia&height=350>>
 pdf :: NormalisationMethod
 pdf = NM $ \w v -> v ^/ (w * V.sum v)
 
@@ -240,7 +240,7 @@ pdf = NM $ \w v -> v ^/ (w * V.sum v)
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Histogram_cumilativeDia.svg#diagram=cumilativeDia&width=600>>
+-- <<diagrams/src_Plots_Types_Histogram_cumilativeDia.svg#diagram=cumilativeDia&height=350>>
 cumilative :: NormalisationMethod
 cumilative = NM $ \_ -> V.scanl1 (+)
 
@@ -250,7 +250,7 @@ cumilative = NM $ \_ -> V.scanl1 (+)
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Histogram_cdfDia.svg#diagram=cdfDia&width=600>>
+-- <<diagrams/src_Plots_Types_Histogram_cdfDia.svg#diagram=cdfDia&height=350>>
 cdf :: NormalisationMethod
 cdf = NM $ \_ v -> V.scanl1 (+) v ^/ V.sum v
 
@@ -366,7 +366,7 @@ range nBins xs
 --
 -- === __Example__
 --
--- <<diagrams/src_Plots_Types_Histogram_histogramExample.svg#diagram=histogramExample&width=600>>
+-- <<diagrams/src_Plots_Types_Histogram_histogramExample.svg#diagram=histogramExample&height=350>>
 --
 -- > import Plots
 -- > histogramAxis :: Axis B V2 Double
