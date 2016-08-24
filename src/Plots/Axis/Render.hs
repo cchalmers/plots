@@ -21,7 +21,13 @@
 -- of axis.
 --
 ----------------------------------------------------------------------------
-module Plots.Axis.Render where
+module Plots.Axis.Render
+  ( -- * Rendering axes
+    RenderAxis (..)
+
+    -- * Low level
+  , buildPlots
+  )where
 
 import           Data.Foldable
 import           Data.Typeable
@@ -58,80 +64,11 @@ buildPlots a = map (appEndo $ a ^. plotModifier)
              $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
              -- TODO: correct order
 
--- -- | Build the axis spec from the axis parameters. The AxisSpec contains
--- --   the size infomation needed to render the axis.
--- buildAxisSpec :: BaseSpace c ~ v => Axis b c n -> (AxisSpec v n, [StyledPlot])
--- buildAxisSpec a = AxisSpec
---   { _specBounds = xs
---   , _specTrans  = t
---   , _specScale  = (a^.axes . column logScale)
---   , _specColourMap = (a ^. axisColourMap)
---   }
---     (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
-
-
---     -- First we need to gather infomation from the axis, this is done by
---     -- building the styled plots (not yet rendered). The bounding box of
---     -- these styled plots is used along with the axis scaling infomation
---     -- from the axes to calculate the bounds and transforms needed to
---     -- build the rest of the axis.
---     styledPlots  = buildPlots a
---     (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
---     t            = tv <> t'
-
---     -- To render the plots we need to give the AxisSpec to the styled
---     -- plots.
---     spec          = AxisSpec xs t (a^.axes . column logScale) (a ^. axisColourMap)
---     renderedPlots = foldMap (renderStyledPlot spec) styledPlots
-
---     -- Now we draw each of the individual axes.
---     drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axes.column logScale) t ll ll2
-
---     -- Alls that's left are the legend, colour bar and title.  The
---     -- rendering gubbins of these are in their respective modules.
---     bb   = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
---     leg  = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
---     cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
---     -- ttl = drawTitle bb (a^.title)
-
+-- | Renderable axes.
 class RenderAxis b v n where
+  -- | Render an axis to a diagram. The size of the diagram is
+  --   determined by the 'axisSize'.
   renderAxis :: Axis b v n -> QDiagram b (BaseSpace v) n Any
-
-
--- instance (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
---     => RenderAxis b V3 n where
---   renderAxis = renderR3Axis
-
--- renderR3Axis :: (TypeableFloat n, Renderable (Path V2 n) b, Renderable (Text n) b, Typeable b)
---     => Axis b V3 n -> QDiagram b V2 n Any
--- renderR3Axis a = frame 15
---                $ legend
---               <> plots
---               <> drawAxis ex ey LowerLabels
---               <> drawAxis ey ex UpperLabels
---               <> drawAxis ez ey LowerLabels
---               <> drawAxis ey ez NoLabels
---               <> drawBackAxis ez ex NoLabels
---               <> drawBackAxis ex ez NoLabels
---   where
---     plots        = foldMap (renderPlot xs t) plots'
---     drawAxis     = axisOnBasis minPoint xs a tv l t2
---     drawBackAxis = axisOnBasis backPoint xs a tv l t2
-
---     minPoint  = P $ fmap fst xs
---     backPoint = P $ view <$> V3 _1 _2 _1 <*> xs
---     --
---     (xs, tv, t2) = workOutScale a
---     --
---     bb = fromCorners (P . l $ fmap fst xs) (P . l $ fmap snd xs)
---     legend = drawLegend bb (a ^. legend) (plots' ^.. traversed)
---                         -- (a ^.. axisPlots . traversed . genericPlot)
---     --
---     plots' = a ^. axisPlots . to applyTheme
---     -- TODO: fix this
---     applyTheme = zipWith (\axisEntry -> over plotThemeEntry (Commit . fromCommit axisEntry)) (a ^. axisTheme)
---     --
---     l = a ^. axisLinearMap
 
 -- | The 'RenderAxis' class provides a default way to render an axis for
 --  each space.
@@ -347,24 +284,7 @@ axisOnBasis p bs a ls t e eO lp
                 then id
                 else negate
 
--- | Stroke without any envelope, trace, query etc.
-primStroke :: (Ord n, Typeable n, Typeable v, Renderable (Path v n) b)
-           => Path v n -> QDiagram b v n Any
-primStroke path =
-  mkQD (Prim path)
-       mempty
-       mempty
-       mempty
-       mempty
-
 -- utilities
-
-translationE :: (Num n, HasLinearMap v) => E v -> n -> Transformation v n
-translationE (E l) x = translation (zero & l .~ x)
-
-scaleE :: (Additive v, Fractional n) => E v -> n -> Transformation v n
-scaleE e s = fromLinear f f
-  where f = (el e *~ s) <-> (el e //~ s)
 
 getAxisLinePos :: (Num n, Ord n) => (n, n) -> AxisLineType -> [(AxisPos, n)]
 getAxisLinePos (a,b) aType = case aType of
@@ -378,72 +298,6 @@ getAxisLinePos (a,b) aType = case aType of
   NoAxisLine     -> []
 
 data AxisPos = LowerAxis | MiddleAxis | UpperAxis
-
-------------------------------------------------------------------------
--- Elements
-------------------------------------------------------------------------
-
--- Ticks ---------------------------------------------------------------
-
--- renderTicks
---   :: (TypeableFloat n, HasLinearMap v, Metric v, Typeable v,
---       Renderable (Path v n) b, OrderedField n)
---   => Point v n -- start point
---   -- minor
---   -> [n]   -- positions
---   -> (n,n) -- (lower, upper)
---   -- major
---   -> [n]   -- positions
---   -> (n,n) -- (lower, upper)
---   -> E v   -- direction of axis
---   -> E v   -- orthogonal direction of axis
---   -> (Path v n, Path v n) -- resulting ticks
--- renderTicks p0 t b ticks e down eO = majorTicks <> minorTicks
---   where
---     majorTicks = foldMap (positionTick majorTick) majorTickXs
---                    # primStroke
---                    # applyStyle (ticks ^. majorTickStyle)
---     --
---     minorTicks = foldMap (positionTick minorTick) minorTickXs
---                    # primStroke
---                    # applyStyle (ticks ^. minorTickStyle)
---     --
---     minorTick = middleTick (ticks ^. minorTickLength)
---     majorTick = middleTick (ticks ^. majorTickLength)
---     --
---     drawTick  d =
---       fromVertices
---         [ origin & ep eO -~ d
---         , origin & ep eO +~ d ]
---         # whenever down reversing
---     middleTick d =
---       fromVertices
---         [ origin & ep eO -~ d
---         , origin & ep eO +~ d ]
---         # whenever down reversing
-
---     positionTick tick x = place tick p'
---       where p' = p0 & ep e .~ x & papply t
-
---     majorTickXs = (ticks ^. majorTicksFun) b
---     minorTickXs = (ticks ^. minorTicksFun) majorTickXs b
-
--- Gird ----------------------------------------------------------------
-
--- renderGrid
---   :: (TypeableFloat n, HasLinearMap v, Metric v, Typeable v,
---       Renderable (Path v n) b, OrderedField n)
---   => Point v n -- start point
---   -- minor
---   -> [n]   -- positions
---   -> (n,n) -- (lower, upper)
---   -- major
---   -> [n]   -- positions
---   -> (n,n) -- (lower, upper)
---   -> E v   -- direction of axis
---   -> E v   -- orthogonal direction of axis
---   -> (Path v n, Path v n) -- resulting ticks
--- renderTicks p0 t b ticks e down eO = majorTicks <> minorTicks
 
 ------------------------------------------------------------------------
 -- Utilities
@@ -494,7 +348,7 @@ renderPolarAxis a = frame 15
                $ leg
               -- <> colourBar
               -- <> circles
-              <> rAxis
+              <> theAxis
               <> plots
   where
     r = snd $ boundingRadiusR 30 styledPlots
@@ -505,52 +359,13 @@ renderPolarAxis a = frame 15
     (xs, tv, t') = calculateScaling (view _Wrapped $ a^.axes.column axisScaling) dataBB
     t = tv <> t'
     --
-    -- drawAxis = axisOnBasis origin xs a (a^.axisScale) t
-    --
-    -- rAxis = (rline <> rticks) # scale 6
-    rAxis = drawPolarAxis spec (a ^. axes)
-    -- spec' = AxisSpec (pure (0, 20)) mempty (pure LinearAxis) (a ^. axisColourMap)
-
-    -- rline = origin ~~ (10 *^ unitX) # lwO 2
-    -- rticks = foldMap moveTo (map (\x -> mkP2 x 0) [1..9]) tick # lwO 1
-    -- tick = unit_Y ~~ unitY & scale 0.2
-    --
-    -- circles = foldMap circle [1,3..9] # lwO 1 # lc grey # scale 6 # opacity 0.5
-    --
-    -- (xs, tv, t') = workOutScale a
-    -- t = tv <> t'
+    theAxis = drawPolarAxis spec (a ^. axes)
     --
     bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
     --
-
     styledPlots = map (appEndo $ a ^. plotModifier)
                 $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
-
-
-    -- -- First we need to gather infomation from the axis, this is done by
-    -- -- building the styled plots (not yet rendered). The bounding box of
-    -- -- these styled plots is used along with the axis scaling infomation
-    -- -- from the axes to calculate the bounds and transforms needed to
-    -- -- build the rest of the axis.
-    -- styledPlots  = buildPlots a
-    -- (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
-    -- t            = tv <> t'
-
-    -- -- To render the plots we need to give the AxisSpec to the styled
-    -- -- plots.
-    -- spec          = AxisSpec xs t (a^.axes . column logScale) (a ^. axisColourMap)
-    -- renderedPlots = foldMap (renderStyledPlot spec) styledPlots
-
-    -- -- Now we draw each of the individual axes.
-    -- drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axes.column logScale) t ll ll2
-
-    -- -- Alls that's left are the legend, colour bar and title.  The
-    -- -- rendering gubbins of these are in their respective modules.
-    -- bb   = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
-    -- leg  = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
-    -- cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (0,1)
-    -- -- ttl = drawTitle bb (a^.title)
 
 drawPolarAxis
   :: forall b n. (Renderable (Path V2 n) b, TypeableFloat n)
