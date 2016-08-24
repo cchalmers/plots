@@ -52,11 +52,6 @@ module Plots
     --   and path.
   , module Plots.Types.Line
 
-    -- ** Ribbon plot
-
-    -- | Ribbon and area. Ribbon and area plot api.
-  , module Plots.Types.Ribbon
-
     -- ** Heat map plot
 
     -- | 2D mapping from 'Double's to colours.
@@ -67,39 +62,8 @@ module Plots
     -- | Histogram. API for histogram.
   , module Plots.Types.Histogram
 
-    -- ** Function plot
-
-    -- | Parametric functions and vectors. Parametric plot and vectors
-    --   api.
-  , module Plots.Types.Function
-
-    -- ** Box plot
-
-    -- | Boxplot. Boxplot api.
-  , module Plots.Types.Boxplot
-
-    -- ** Density function
-
-    -- | Density function. Density plot api.
-  , module Plots.Types.Density
-
-    -- ** Smooth function
-
-    -- | Smooth. Smooth plot api.
-  , module Plots.Types.Smooth
-
-    -- | Text. API for text plot.
-  , module Plots.Types.Text
-
     -- | Wedge and annular wedge. API for wedge, annular wegde and pie.
   , module Plots.Types.Pie
-
-    -- | Scatter plot for polar co-ordinates. API for polar scatter
-    --   plot.
-  , module Plots.Types.Points
-
-    -- | API using multiple types.
-  , module Plots.Types.Others
 
     --------------------------------------------------------------------
     -- * Low level
@@ -158,17 +122,9 @@ import           Plots.Types
 import           Plots.Util
 
 import           Plots.Types.Bar
-import           Plots.Types.Boxplot
-import           Plots.Types.Density
-import           Plots.Types.Function
 import           Plots.Types.HeatMap
 import           Plots.Types.Histogram
 import           Plots.Types.Line
-import           Plots.Types.Others
 import           Plots.Types.Pie
-import           Plots.Types.Points
-import           Plots.Types.Ribbon
 import           Plots.Types.Scatter
-import           Plots.Types.Smooth
-import           Plots.Types.Text
 
