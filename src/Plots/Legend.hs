@@ -29,7 +29,7 @@ import           Diagrams.Prelude
 import           Plots.Types
 
 -- | The data type to describe how to draw a legend. For legend entries
---   see 'Plots.Axis.LegendEntry'.
+--   see 'Plots.Types.LegendEntry'.
 data Legend b n = Legend
   { lPlacement   :: Placement
   , lGap         :: n
@@ -117,10 +117,10 @@ instance HasOrientation (Legend b n) where
 drawLegend
   :: (TypeableFloat n,
       Renderable (Path V2 n) b)
-  => BoundingBox V2 n
-  -> [(QDiagram b V2 n Any, String)]
-  -> Legend b n
-  -> QDiagram b V2 n Any
+  => BoundingBox V2 n                -- ^ bounding box to place legend against
+  -> [(QDiagram b V2 n Any, String)] -- ^ diagram pictures along with their key
+  -> Legend b n                      -- ^ options for drawing the legend
+  -> QDiagram b V2 n Any             -- ^ rendered legend
 drawLegend bb entries l
   | l ^. hidden || null entries = mempty
   | otherwise   = placeAgainst

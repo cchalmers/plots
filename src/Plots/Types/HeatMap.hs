@@ -506,6 +506,7 @@ heatMap xss s = do
 -- >   hide majorGridLines
 -- >   display colourBar
 -- >   axisExtend .= AbsoluteExtend 0
+-- >   axisColourMap .= Plots.magma
 -- >
 -- >   let xs = [[1,2,3],[4,5,6]]
 -- >   heatMap' xs
@@ -583,6 +584,7 @@ heatMapIndexed i f s = do
 -- >   hide majorGridLines
 -- >   display colourBar
 -- >   axisExtend .= AbsoluteExtend 0
+-- >   axisColourMap .= Plots.magma
 -- >
 -- >   let f (V2 x y) = fromIntegral x + fromIntegral y
 -- >   heatMapIndexed' (V2 3 3) f
