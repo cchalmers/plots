@@ -81,13 +81,47 @@ import           Data.Typeable
 import           Diagrams.Prelude hiding (magma)
 import           Linear
 
--- | A plot style is made up of separate styles ('lineStyle',
+-- | Plot styles are used to style each plot in an axis. Every 'Axis'
+--   comes with a list of plots styles (contained in the 'AxisStyle')
+--   which get applied the plots upon rendering.
+--
+--   You can either change the list of plot styles used with
+--   'axisStyle':
+--
+-- @
+-- stylishAxis = r2Axis &~ do
+--   axisStyle .= vividColours
+--   linePlot [(1,2) (3,4)] $ key "line 1"
+--   linePlot [(1,1) (4,2)] $ key "line 2"
+-- @
+--
+--   change the style for individual plots when changing the plot state.
+--
+-- @
+-- stylishAxis2 = r2Axis &~ do
+--   linePlot [(1,2) (3,4)] $ do
+--     key "line 1"
+--     plotColour .= green
+--   linePlot [(1,1) (4,2)] $ do
+--     key "line 2"
+--     plotColour .= orange
+-- @
+--
+--   A plot style is made up of separate styles ('lineStyle',
 --   'markerStyle', 'areaStyle' and 'textStyle') a 'plotColour' and a
 --   'plotMarker'. When rendering a plot, the 'PlotStyle's in an
 --   'AxisStyle' are used to style each plot. The lenses can be used to
 --   customise each style when adding the plot.
+--
+--   * 'plotColour' - the underlying colour of the plot
+--   * 'lineStyle' - style used for lines ('linePlot', 'connectingLine'
+--      in a 'scatterPlot')
+--   * 'areaStyle' - style used for any area ('barPlot', 'piePlot',
+--      'histogramPlot')
+--   * 'markerStyle' - style used for markers in 'scatterPlot'
+--   * 'plotMarker' - marker used in 'scatterPlot'
 data PlotStyle b v n = PlotStyle
-  { _plotColor   :: Colour Double
+  { _plotColour  :: Colour Double
   , _lineStyle   :: Colour Double -> Style v n
   , _markerStyle :: Colour Double -> Style v n
   , _areaStyle   :: Colour Double -> Style v n
@@ -104,15 +138,15 @@ class HasPlotStyle f a b | a -> b where
   -- | Lens onto the 'PlotStyle'.
   plotStyle :: LensLike' f a (PlotStyle b (V a) (N a))
 
-  -- | The 'plotColor' is the overall colour of the plot. This is passed
+  -- | The 'plotColour' is the overall colour of the plot. This is passed
   --   to the other styles ('lineStyle', 'markerStyle' etc.) to give an
   --   overall colour for the plot.
   plotColour :: Functor f => LensLike' f a (Colour Double)
-  plotColour = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
+  plotColour = plotStyle . lens _plotColour (\p f -> p {_plotColour = f})
 
   -- | Alias for 'plotColour'.
   plotColor :: Functor f => LensLike' f a (Colour Double)
-  plotColor = plotStyle . lens _plotColor (\p f -> p {_plotColor = f})
+  plotColor = plotColour
 
   -- | This style is applied to any plots made up of lines only (like
   --   'Path' plots). This is a less general version of
@@ -175,7 +209,7 @@ class HasPlotStyle f a b | a -> b where
   plotStyleFunctions = plotStyle . t
     where
       t f PlotStyle {..} = PlotStyle
-        <$> pure _plotColor
+        <$> pure _plotColour
         <*> f _lineStyle
         <*> f _markerStyle
         <*> f _areaStyle
