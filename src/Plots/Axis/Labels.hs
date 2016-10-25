@@ -29,6 +29,9 @@ module Plots.Axis.Labels
   , HasTickLabels (..)
   , tickLabelPositions
   , atMajorTicks
+
+    -- * Misc
+  , TextFunction
   ) where
 
 import           Control.Lens       hiding (( # ))

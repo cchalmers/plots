@@ -187,12 +187,12 @@ type instance BaseSpace V3      = V3
 --   a plot. Common 'LensLike's used for the axis (see haddock's
 --   instances for a more comprehensive list):
 --
--- * 'axisStyle'    - customise the 'AxisStyle'
--- * 'legend'       - customise the 'Legend'
--- * 'colourBar'    - customise the 'ColourBar'
--- * 'currentPlots' - current plots in the 'Axis'
--- * 'finalPlots'   - changes to the plots just before rendering
--- * 'axes'         - changes to each 'SingleAxis'
+--   * 'axisStyle'    - customise the 'AxisStyle'
+--   * 'legend'       - customise the 'Legend'
+--   * 'colourBar'    - customise the 'ColourBar'
+--   * 'currentPlots' - current plots in the 'Axis'
+--   * 'finalPlots'   - changes to the plots just before rendering
+--   * 'axes'         - changes to each 'SingleAxis'
 --
 --          * 'xAxis' - the x-axis
 --          * 'yAxis' - the y-axis
@@ -210,6 +210,9 @@ type instance BaseSpace V3      = V3
 --   * 'axisLine'    - customise the 'AxisLine'
 --   * 'axisScaling' - customise the 'AxisScaling'
 --
+--   Plots are usually added to the axis using specific functions for
+--   that plots ('Plots.Types.Line.linePlot, 'Plots.Types.Bar.barPlot').
+--   These functions use 'addPlotable' to add the plot to the axis.
 data Axis b c n = Axis
   { _axisStyle   :: AxisStyle b (BaseSpace c) n
   , _colourBar   :: ColourBar b n

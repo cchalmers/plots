@@ -59,6 +59,11 @@ import           Prelude
 -- | Build a list of styled plots from the axis, ready to be rendered.
 --   This takes into account any 'AxisStyle' changes and applies the
 --   'finalPlots' modifications.
+--
+--   The 'StyledPlots' can be rendered with 'renderStyledPlot' and the
+--   legend entries can be obtained with 'styledPlotLegends'. This is
+--   what 'renderAxis' can uses internally but might be useful for
+--   debugging or generating your own legend.
 buildPlots :: BaseSpace c ~ v => Axis b c n -> [StyledPlot b v n]
 buildPlots a = map (appEndo $ a ^. plotModifier)
              $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)

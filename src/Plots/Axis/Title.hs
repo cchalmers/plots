@@ -110,4 +110,3 @@ drawTitle bb t
     tDia = tTxtFun t (BoxAlignedText 0.5 0) (tTxt t)
              # applyStyle (tStyle t)
 
-

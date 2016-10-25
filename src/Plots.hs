@@ -33,10 +33,6 @@ module Plots
     --   plot can also be configured to have a different style /
     --   transform depending on the data.
 
-  , scatterPlot
-  , bubblePlot
-  , gscatterPlot
-
     -- | Scatter and bubble. Scatter and bubble plot api.
   , module Plots.Types.Scatter
 
@@ -44,9 +40,6 @@ module Plots
   , module Plots.Types.Bar
 
     -- ** Line plot
-    -- | Line plots display 'Path's as a plot.
-
-  , linePlot
 
     -- | Line, trail and path. Line plot, steps plot api & api for trail
     --   and path.

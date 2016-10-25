@@ -46,6 +46,7 @@ type instance V (Legend b n) = V2
 type instance N (Legend b n) = n
 
 class HasLegend a b | a -> b where
+  -- | Lens onto the 'Legend' of something.
   legend :: Lens' a (Legend b (N a))
 
   -- | The 'Placement' of the legend relative to the 'Plots.Axis.Axis'.
