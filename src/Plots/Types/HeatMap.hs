@@ -460,9 +460,8 @@ mkHeatMap mat = HeatMap
 -- > import Plots
 -- > heatMapAxis :: Axis B V2 Double
 -- > heatMapAxis = r2Axis &~ do
--- >   hide majorGridLines
 -- >   display colourBar
--- >   axisExtend .= AbsoluteExtend 0
+-- >   axisExtend .= noExtend
 -- >
 -- >   let xs = [[1,2,3],[4,5,6]]
 -- >   heatMap xs $ heatMapSize .= V2 10 10
@@ -501,9 +500,8 @@ heatMap xss s = do
 -- > import Plots
 -- > heatMapAxis' :: Axis B V2 Double
 -- > heatMapAxis' = r2Axis &~ do
--- >   hide majorGridLines
 -- >   display colourBar
--- >   axisExtend .= AbsoluteExtend 0
+-- >   axisExtend .= noExtend
 -- >   axisColourMap .= Plots.magma
 -- >
 -- >   let xs = [[1,2,3],[4,5,6]]
@@ -537,9 +535,8 @@ heatMap' xss = heatMap xss (return ())
 -- > import Plots
 -- > heatMapIndexedAxis :: Axis B V2 Double
 -- > heatMapIndexedAxis = r2Axis &~ do
--- >   hide majorGridLines
 -- >   display colourBar
--- >   axisExtend .= AbsoluteExtend 0
+-- >   axisExtend .= noExtend
 -- >
 -- >   let f (V2 x y) = fromIntegral x + fromIntegral y
 -- >   heatMapIndexed (V2 3 3) f $ heatMapSize .= V2 10 10
@@ -579,9 +576,8 @@ heatMapIndexed i f s = do
 -- > import Plots
 -- > heatMapIndexedAxis' :: Axis B V2 Double
 -- > heatMapIndexedAxis' = r2Axis &~ do
--- >   hide majorGridLines
 -- >   display colourBar
--- >   axisExtend .= AbsoluteExtend 0
+-- >   axisExtend .= noExtend
 -- >   axisColourMap .= Plots.magma
 -- >
 -- >   let f (V2 x y) = fromIntegral x + fromIntegral y

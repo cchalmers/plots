@@ -22,6 +22,7 @@ module Plots.Axis.Scale
   , ScaleMode (..)
   , UniformScaleStrategy (..)
   , Extending (..)
+  , noExtend
   , HasAxisScaling (..)
 
    -- ** Log scales
@@ -103,6 +104,10 @@ data Extending n
   = AbsoluteExtend n
   | RelativeExtend n
   deriving (Show, Ord, Eq, Functor)
+
+-- | Do not extend the axis beyond the inferred bounds.
+noExtend :: Num n => Extending n
+noExtend = AbsoluteExtend 0
 
 -- | Class of things that have an 'AxisScaling'.
 class HasAxisScaling f a where

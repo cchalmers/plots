@@ -159,9 +159,9 @@ class HasTickLabels f a b | a -> b where
   --   levels of the axis:
   --
   -- @
-  -- 'tickLabel' :: 'Traversal'' ('Tick' b c n)       ('TickLabel' ('BaseSpace' c) n)
-  -- 'tickLabel' :: 'Lens''      ('SingleAxis' b v n) ('TickLabel' v n)
-  -- 'tickLabel' :: 'Lens''      ('TickLabel' v n)    ('TickLabel' v n)
+  -- 'tickLabel' :: 'Traversal'' ('Tick' b c n)       ('TickLabels' ('BaseSpace' c) n)
+  -- 'tickLabel' :: 'Lens''      ('SingleAxis' b v n) ('TickLabels' v n)
+  -- 'tickLabel' :: 'Lens''      ('TickLabel' v n)    ('TickLabels' v n)
   -- @
   tickLabel :: LensLike' f a (TickLabels b (V a) (N a))
 
