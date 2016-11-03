@@ -1,3 +1,4 @@
 .stack-work
 examples_output
 .shake
+.DS_Store
