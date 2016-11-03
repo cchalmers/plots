@@ -31,7 +31,6 @@ library
     Plots.Axis.Ticks
     Plots.Axis.Title
     Plots.Axis.Scale
-    Plots.CmdLine
     Plots.Legend
     Plots.Name
     Plots.Style

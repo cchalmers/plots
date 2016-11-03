@@ -21,9 +21,6 @@ module Plots
     -- for the plots of an axis.
   , module Plots.Style
 
-    -- | Generate a command line tool to make a plot.
-  , module Plots.CmdLine
-
     --------------------------------------------------------------------
     -- * Plot Types
     --------------------------------------------------------------------
@@ -108,7 +105,6 @@ import           Plots.Axis.Scale
 import           Plots.Axis.Title
 import           Plots.Axis.Ticks
 
-import           Plots.CmdLine
 import           Plots.Legend
 import           Plots.Style
 import           Plots.Types

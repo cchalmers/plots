@@ -8,6 +8,10 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
+
+-- Orphan Mainable Axis instance.
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Axis.Render
@@ -24,6 +28,7 @@
 module Plots.Axis.Render
   ( -- * Rendering axes
     RenderAxis (..)
+  , r2AxisMain
 
     -- * Low level
   , buildPlots
@@ -39,6 +44,7 @@ import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 import           Linear                     hiding (translation, rotate)
 
+import           Diagrams.Backend.CmdLine
 import           Diagrams.Coordinates.Polar
 
 import           Plots.Axis
@@ -56,6 +62,36 @@ import           Plots.Util
 
 import           Prelude
 
+------------------------------------------------------------------------
+-- Mainable instances
+------------------------------------------------------------------------
+
+instance (TypeableFloat n,
+          Renderable (Path V2 n) b,
+          Mainable (QDiagram b V2 n Any))
+       => Mainable (Axis b V2 n) where
+  type MainOpts (Axis b V2 n) = MainOpts (QDiagram b V2 n Any)
+
+  mainRender opts = mainRender opts . renderAxis
+
+instance ToResult (Axis b v n) where
+  type Args (Axis b v n) = ()
+  type ResultOf (Axis b v n) = Axis b v n
+
+  toResult d _ = d
+
+-- | 'mainWith' specialised to a 2D Axis.
+r2AxisMain
+  :: (Parseable (MainOpts (QDiagram b V2 Double Any)),
+      Mainable (Axis b V2 Double))
+  => Axis b V2 Double
+  -> IO ()
+r2AxisMain = mainWith
+
+------------------------------------------------------------------------
+-- Low level functions
+------------------------------------------------------------------------
+
 -- | Build a list of styled plots from the axis, ready to be rendered.
 --   This takes into account any 'AxisStyle' changes and applies the
 --   'finalPlots' modifications.
@@ -68,6 +104,10 @@ buildPlots :: BaseSpace c ~ v => Axis b c n -> [StyledPlot b v n]
 buildPlots a = map (appEndo $ a ^. plotModifier)
              $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
              -- TODO: correct order
+
+------------------------------------------------------------------------
+-- Render axis
+------------------------------------------------------------------------
 
 -- | Renderable axes.
 class RenderAxis b v n where
