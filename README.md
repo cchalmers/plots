@@ -2,27 +2,41 @@
 
 [![Haddock](https://rawgit.com/cchalmers/plots/gh-pages/haddock.svg)](https://cchalmers.github.io/plots/)
 
-`plots` is a plotting library based on [Diagrams](http://projects.haskell.org/diagrams/) supporting 2D and 3D plots. The goal is make good looking plots easily with lots of customisability.
+`plots` is a plotting library based on [diagrams](http://projects.haskell.org/diagrams).
 
-Currently in development stage so it doesn't work well yet. Feel free to take a look and make suggestions.
+Some sample plots:
+
+#### Scatter plot
+![scatter-plot](https://rawgit.com/cchalmers/plots/master/diagrams/src_Plots_Types_Scatter_scatterExample'.svg)
+
+#### Bar plot
+![bar-plot](https://rawgit.com/cchalmers/plots/master/diagrams/src_Plots_Types_Bar_barExample'.svg)
+
+#### Heat map
+![heat-map](https://rawgit.com/cchalmers/plots/master/diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample'.svg)
+
+There are many more plots to be added. There are also plans to support
+3D plots. Issues and pull requests welcome.
 
 ## Examples
 
-There are several example plots in the `examples/` directory. To build the examples, first ensure that you have `stack` installed, and that you have a `stack.yaml` file in this directory that contains the lines:
+There are several example plots in the `examples/` directory. To build
+the examples, first ensure that you have `stack` installed, and that you
+have a `stack.yaml` file in this directory that contains the lines:
 
-```yaml
-packages:
+```yaml packages:
 - '.'
 - 'test'
 ```
 
-(If you run the command `stack init`, stack will automatically generate the `stack.yaml` file with the appropriate packages.)
+(If you run the command `stack init`, stack will automatically generate
+the `stack.yaml` file with the appropriate packages.)
 
-You can then build the examples using
-```sh
-stack build
-stack exec RunExamples
-```
-The `RunExamples` script will generate `png` files in the `examples_output` directory.
+You can then build the examples using ```sh stack build stack exec
+RunExamples ``` The `RunExamples` script will generate `png` files in
+the `examples_output` directory.
 
-**Note:** The `RunExamples` script re-builds an example if the output file (`examples_output/X.png`) does not exist, or if the source file (`examples/X.hs`) has been modified since the last time the script was run.
+**Note:** The `RunExamples` script re-builds an example if the output
+file (`examples_output/X.png`) does not exist, or if the source file
+(`examples/X.hs`) has been modified since the last time the script was
+run.
