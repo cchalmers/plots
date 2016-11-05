@@ -192,6 +192,9 @@ class HasTickLabels f a b | a -> b where
 instance HasTickLabels f (TickLabels b v n) b where
   tickLabel = id
 
+instance HasGap (TickLabels b v n) where
+  gap = tickLabelGap
+
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (TickLabels b V2 n) where
   def = TickLabels
