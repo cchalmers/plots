@@ -69,6 +69,14 @@ import           Prelude
 instance (TypeableFloat n,
           Renderable (Path V2 n) b,
           Mainable (QDiagram b V2 n Any))
+       => Mainable (Axis b Polar n) where
+  type MainOpts (Axis b Polar n) = MainOpts (QDiagram b V2 n Any)
+
+  mainRender opts = mainRender opts . renderAxis
+
+instance (TypeableFloat n,
+          Renderable (Path V2 n) b,
+          Mainable (QDiagram b V2 n Any))
        => Mainable (Axis b V2 n) where
   type MainOpts (Axis b V2 n) = MainOpts (QDiagram b V2 n Any)
 
