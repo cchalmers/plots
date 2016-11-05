@@ -1,4 +1,3 @@
-#!/usr/bin/env stack
 -- stack --install-ghc runghc --package wreq --package cassava
 
 -- example usage
@@ -61,6 +60,8 @@ myaxis = execStateT ?? r2Axis $ do
   xLabel .= "date"
   yLabel .= "closing (dollars)"
 
+  yMin ?= 0
+
 main :: IO ()
 main = mainWith myaxis
 
@@ -118,7 +119,7 @@ autoTimeLabels ts (t0, t1)
   | d < day    = fmt "%H:%M"
   | d < month  = fmt "%F %H"
   | d < year   = fmt "%F"
-  | d < 2*year   = fmt "%F"
+  | d < 2*year = fmt "%F"
   | otherwise  = fmt "%Y"
   where
     d     = t1 - t0
