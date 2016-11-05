@@ -81,6 +81,9 @@ instance Circle Polar where
   _azimuth = polarWrapper . _y . from rad
   _polar   = id
 
+instance HasR Polar where
+  _r = polarWrapper . _x
+
 -- | Construct a 'Polar' from a magnitude and an 'Angle'.
 mkPolar :: n -> Angle n -> Polar n
 mkPolar r θ = Polar $ V2 r (θ^.rad)
