@@ -120,12 +120,16 @@ instance Typeable n => HasStyle (AxisLabel b v n) where
 instance HasVisibility (AxisLabel b v n) where
   visible = lens alVisible (\al b -> al {alVisible = b})
 
+instance HasGap (AxisLabel b v n) where
+  gap = axisLabelGap
+
 instance (TypeableFloat n, Renderable (Text n) b)
     => Default (AxisLabel b V2 n) where
   def = AxisLabel
     { alFun       = mkText
     , alText      = ""
     , alStyle     = mempty & fontSize (output 11)
+                           & recommendFillColor black
     , alGap       = 30
     , alPos       = MiddleAxisLabel
     , alPlacement = OutsideAxisLabel
@@ -136,15 +140,10 @@ instance (TypeableFloat n, Renderable (Text n) b)
 -- Tick labels
 ------------------------------------------------------------------------
 
--- Labels that are placed next to the ticks (usually) of an axis.
-
--- | Tick labels functions are used to draw the tick labels. They has access to
---   the major ticks and the current bounds. Returns the position of the
---   tick and label to use at that position.
-type TickLabelFunction n = [n] -> (n,n) -> [(n, String)]
+-- Labels that are placed next to the ticks of an axis.
 
 data TickLabels b v n = TickLabels
-  { tlFun     :: TickLabelFunction n
+  { tlFun     :: [n] -> (n,n) -> [(n, String)]
   , tlTextFun :: TextFunction b v n
   , tlStyle   :: Style v n
   , tlGap     :: n
@@ -171,10 +170,12 @@ class HasTickLabels f a b | a -> b where
   tickLabelTextFunction :: Functor f => LensLike' f a (TextFunction b (V a) (N a))
   tickLabelTextFunction = tickLabel . lens tlTextFun (\tl f -> tl {tlTextFun = f})
 
-  -- | The 'TextFunction' to render the text.
+  -- | Tick labels functions are used to draw the tick labels. They has
+  --   access to the major ticks and the current bounds. Returns the
+  --   position of the tick and label to use at that position.
   --
   --   'Default' is @'atMajorTicks' 'floatShow'@
-  tickLabelFunction :: Functor f => LensLike' f a (TickLabelFunction (N a))
+  tickLabelFunction :: Functor f => LensLike' f a ([N a] -> (N a, N a) -> [(N a, String)])
   tickLabelFunction = tickLabel . lens tlFun (\tl f -> tl {tlFun = f})
 
   -- | The 'Style' to use on the rendered text.
@@ -201,6 +202,7 @@ instance (TypeableFloat n, Renderable (Text n) b)
     { tlFun     = atMajorTicks floatShow
     , tlTextFun = mkText
     , tlStyle   = mempty & fontSize (output 11)
+                         & recommendFillColor black
     , tlGap     = 12
     , tlVisible = True
     }
@@ -224,7 +226,7 @@ floatShow = show . (realToFrac :: Real n => n -> Float)
 
 -- | Make a 'TickLabelFunction' by specifying how to draw a single label
 --   from a position on the axis.
-atMajorTicks :: (n -> String) -> TickLabelFunction n
+atMajorTicks :: (n -> String) -> [n] -> (n,n) -> [(n, String)]
 atMajorTicks f ticks _ = map ((,) <*> f) ticks
 
 -- -- | Use the list of strings as the labels for the axis, starting at 1

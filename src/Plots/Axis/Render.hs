@@ -393,8 +393,8 @@ renderPolarAxis a = frame 15
                $ leg
               -- <> colourBar
               -- <> circles
-              <> theAxis
               <> plots
+              <> theAxis
   where
     r = snd $ boundingRadiusR 30 styledPlots
     spec  = AxisSpec xs t (pure LinearAxis) (a ^. axisColourMap)
@@ -451,6 +451,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
     | otherwise = view axisLabelTextFunction rA rLabelAlign rTxt
                     # translate rLabelPos
                     # applyStyle (rA ^. axisLabelStyle)
+                    # fc black
 
   rLabelPos = V2 (s*x) (- view axisLabelGap rA) where
     x = case rA ^. axisLabelPosition of
@@ -529,6 +530,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
     view tickLabelTextFunction rA (BoxAlignedText 0.5 1) label
       # translate (V2 (s*x) (- view axisLabelGap rA))
       # applyStyle (rA ^. tickLabelStyle)
+      # fc black
 
   ----------------------------------------------------------------------
   -- Angular axis
@@ -557,12 +559,16 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
     | otherwise = view axisLabelTextFunction thetaA thetaLabelAlign thetaTxt
                     # translate thetaLabelPos
                     # applyStyle (thetaA ^. axisLabelStyle)
+                    # fc black
 
-  thetaLabelPos = V2 (s*x) (- view axisLabelGap thetaA) where
+  -- thetaLabelPos = V2 (s*x) (- view axisLabelGap thetaA) where
+  thetaLabelPos = view xy_ (mkPolar (s*r + view axisLabelGap thetaA) x) where
+    -- The angle on the axis the label is placed, doesn't make much
+    -- sense right now.
     x = case thetaA ^. axisLabelPosition of
-          MiddleAxisLabel -> theta/2
-          LowerAxisLabel  -> 0
-          UpperAxisLabel  -> theta
+          MiddleAxisLabel -> quarterTurn
+          LowerAxisLabel  -> zero
+          UpperAxisLabel  -> halfTurn
   thetaTxt = thetaA ^. axisLabelText
   thetaLabelAlign = BaselineText
 
@@ -634,11 +640,12 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
   tickLabelThetas = view tickLabelFunction thetaA majorTickThetas' (0,theta)
 
   -- Draw a single tick label given the position and the string to use
-  thetaDrawTickLabel :: (n,String) -> QDiagram b V2 n Any
+  thetaDrawTickLabel :: (n, String) -> QDiagram b V2 n Any
   thetaDrawTickLabel (x,label) =
     view tickLabelTextFunction thetaA a label
       # translate v
       # applyStyle (thetaA ^. tickLabelStyle)
+      # fc black
         where v = mkPolar (s*r + view axisLabelGap thetaA) (x@@rad) ^. xy_
               -- a = BoxAlignedText (0.5-cos x/2) (0.5-sin x/2)
               a = BoxAlignedText 0.5 0.5
