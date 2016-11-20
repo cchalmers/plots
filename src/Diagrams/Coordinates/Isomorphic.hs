@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleContexts        #-}
 {-# LANGUAGE FlexibleInstances       #-}
 {-# LANGUAGE FunctionalDependencies  #-}
+{-# LANGUAGE KindSignatures          #-}
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE ViewPatterns            #-}
@@ -45,7 +46,7 @@ type HasIndexedBasis v = (HasBasis v, TraversableWithIndex (E v) v)
 
 -- | Umbrella class giving everything needed for working in the space. This is
 --   basically 'V2' or 'V3' from "linear".
-type Euclidean v = (HasLinearMap v, HasIndexedBasis v, Metric v)
+type Euclidean (v :: * -> *) = (HasLinearMap v, HasIndexedBasis v, Metric v)
 
 -- vector like ---------------------------------------------------------
 
