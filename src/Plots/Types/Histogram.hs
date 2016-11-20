@@ -58,7 +58,6 @@ module Plots.Types.Histogram
 import           Control.Monad.State.Lazy
 
 import qualified Data.Foldable               as F
-import           Data.Function
 import           Data.Maybe
 import           Data.Typeable
 
