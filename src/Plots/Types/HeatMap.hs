@@ -83,7 +83,7 @@ import           Plots.Types
 data HeatMatrix = HeatMatrix
   { hmSize       :: {-# UNPACK #-} !(V2 Int)
     -- ^ The size of heat matrix.
-  , _hmVector    :: {-# UNPACK #-} !(Vector Double)
+  , _hmVector    :: {-# UNPACK #-} !(V.Vector Double)
   , hmBoundLower :: {-# UNPACK #-} !Double
   , hmBoundUpper :: {-# UNPACK #-} !Double
   }
@@ -262,7 +262,7 @@ heatImage (HeatMatrix (V2 x y) dv a b) cm = Image x y v' where
     go (x * (y-1)) 0 0
 
 -- Make an unboxed colour map using 256 samples.
-mkColourVector :: ColourMap -> Vector Word8
+mkColourVector :: ColourMap -> V.Vector Word8
 mkColourVector cm = V.create $ do
   mv <- M.new (3*256)
 
