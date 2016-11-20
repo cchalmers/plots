@@ -160,7 +160,7 @@ class HasX t => HasY t where
 instance HasY v => HasY (Point v) where
   xy_ = lensP . xy_
 
-instance HasY V2    where xy_ = id
+instance HasY V2    where xy_ = _xy
 instance HasY V3    where xy_ = _xy
 instance HasY Polar where xy_ = polarV2
 
