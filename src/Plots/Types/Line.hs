@@ -32,7 +32,7 @@ module Plots.Types.Line
   , smoothLinePlot
   , smoothLinePlot'
 
-    -- * Contruction utilities
+    -- * Construction utilities
 
     -- ** Trails
   , mkTrail
