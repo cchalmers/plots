@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 extra-source-files:  README.md diagrams/*.svg
 extra-doc-files:     diagrams/*.svg
 description:         Diagrams based plotting library.
-tested-with: GHC==8.0.2, GHC==7.10.3
+tested-with: GHC==8.0.2, GHC==7.10.3, GHC==7.8.4
 
 source-repository head
  type:     git
