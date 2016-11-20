@@ -6,8 +6,8 @@
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeOperators          #-}
 {-# LANGUAGE UndecidableInstances   #-}
@@ -126,14 +126,15 @@ module Plots.Types
 
 import           Control.Monad.State
 import           Data.Bool
-import           Data.Maybe            (fromMaybe)
-import           Data.Orphans          ()
+import           Data.List           (sortBy)
+import           Data.Maybe          (fromMaybe)
+import           Data.Ord            (comparing)
+import           Data.Orphans        ()
 import           Data.Typeable
-import           Data.List             (sortOn)
-import           Diagrams.Prelude      as D
+import           Diagrams.Prelude    as D
 
-import           Plots.Style
 import           Plots.Axis.Scale
+import           Plots.Style
 import           Plots.Util
 
 -- Orientation ---------------------------------------------------------
@@ -748,4 +749,10 @@ styledPlotLegends
   = map (\(_,p,t) -> (p,t))
   . sortOn (view _1)
   . concatMap singleStyledPlotLegend
+
+-- XXX taken from "Data.List", defined here because it was only added in
+-- base-4.8 (ghc-7.10)
+sortOn :: Ord b => (a -> b) -> [a] -> [a]
+sortOn f =
+  map snd . sortBy (comparing fst) . map (\x -> let y = f x in y `seq` (y, x))
 
