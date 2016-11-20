@@ -1,6 +1,7 @@
 # plots
 
 [![Haddock](https://rawgit.com/cchalmers/plots/gh-pages/haddock.svg)](https://cchalmers.github.io/plots/)
+[![Travis](https://api.travis-ci.org/cchalmers/plots.svg?branch=master)](https://travis-ci.org/cchalmers/plots)
 
 `plots` is a plotting library based on [diagrams](http://projects.haskell.org/diagrams).
 
