@@ -115,7 +115,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b)
   renderPlotable s sty (ScatterPlot (ScatterOptions {..})) =
     markers <> line
     where
-      markers = foldMap mk oData # applyMarkerStyle sty
+      markers = F.foldMap mk oData # applyMarkerStyle sty
       --
       mk a = marker # transform (oTr a)
                     # applyStyle (oSty a)
