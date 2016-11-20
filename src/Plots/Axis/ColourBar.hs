@@ -38,6 +38,7 @@ module Plots.Axis.ColourBar
  ) where
 
 import           Data.Bool               (bool)
+import qualified Data.Foldable           as F
 import           Data.Typeable
 import           Diagrams.Core.Transform (fromSymmetric)
 import           Diagrams.Prelude        hiding (gap)
@@ -259,7 +260,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   tickXs' = filter inRange tickXs
   tks
     | cbTicks ^. hidden = mempty
-    | otherwise = foldMap (\x -> aTick # translate (V2 (f x) (-w/2))) tickXs'
+    | otherwise = F.foldMap (\x -> aTick # translate (V2 (f x) (-w/2))) tickXs'
   aTick = someTick (cbTicks ^. majorTicksAlignment) (cbTicks ^. majorTicksLength)
 
   someTick tType d = case tType of
@@ -271,7 +272,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   gridXs = filter inRange $ view majorGridLinesFunction cbGridLines tickXs bnds
   gLines
     | cbGridLines ^. hidden = mempty
-    | otherwise             = foldMap mkGridLine gridXs
+    | otherwise             = F.foldMap mkGridLine gridXs
                                 # strokePath
                                 # applyStyle (cbGridLines ^. majorGridLinesStyle)
   mkGridLine x = mkP2 (f x) (-w/2) ~~ mkP2 (f x) (w/2)
@@ -280,7 +281,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   tickLabelXs = view tickLabelFunction cbTickLabels tickXs' bnds
   tLbs
     | cbTickLabels ^. hidden = mempty
-    | otherwise              = foldMap drawTickLabel tickLabelXs
+    | otherwise              = F.foldMap drawTickLabel tickLabelXs
   drawTickLabel (x,label) =
     view tickLabelTextFunction cbTickLabels tAlign label
       # translate v
