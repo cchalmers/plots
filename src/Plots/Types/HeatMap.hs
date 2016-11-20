@@ -110,7 +110,7 @@ mkHeatMatrix s@(V2 x y) f = runST $ do
 -- 'mkHeatMatrix'' :: [['Double']] -> 'HeatMatrix'
 -- 'mkHeatMatrix'' :: ['Vector' 'Double'] -> 'HeatMatrix'
 -- @
-mkHeatMatrix' :: (Foldable f, Foldable g) => f (g Double) -> HeatMatrix
+mkHeatMatrix' :: (F.Foldable f, F.Foldable g) => f (g Double) -> HeatMatrix
 mkHeatMatrix' xss = HeatMatrix (V2 x y) vd a b
   where
   (a,b) = minMax vd
@@ -469,8 +469,8 @@ mkHeatMap mat = HeatMap
 -- > heatMapExample = renderAxis heatMapAxis
 --
 heatMap
-  :: (Foldable f,
-      Foldable g,
+  :: (F.Foldable f,
+      F.Foldable g,
       TypeableFloat n,
       Typeable b,
       MonadState (Axis b V2 n) m,
@@ -510,8 +510,8 @@ heatMap xss s = do
 -- > heatMapExample' = renderAxis heatMapAxis'
 --
 heatMap'
-  :: (Foldable f,
-      Foldable g,
+  :: (F.Foldable f,
+      F.Foldable g,
       TypeableFloat n,
       Typeable b,
       MonadState (Axis b V2 n) m,

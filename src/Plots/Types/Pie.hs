@@ -227,7 +227,7 @@ wedgeKeys f = onWedges $ \a -> key (f a)
 piePlot
   :: (MonadState (Axis b Polar n) m,
       Plotable (Wedge n) b,
-      Foldable f)
+      F.Foldable f)
   => f a    -- ^ data for each wedge
   -> (a -> n) -- ^ extract weight of each wedge
   -> State (PieState b n a) ()
@@ -265,7 +265,7 @@ piePlot (F.toList -> as) f st = F.forM_ ps addPlot
 piePlot'
   :: (MonadState (Axis b Polar n) m,
       Plotable (Wedge n) b,
-      Foldable f)
+      F.Foldable f)
   => f n    -- ^ weight of each wedge
   -> m ()
 piePlot' ns = piePlot ns id (return ())

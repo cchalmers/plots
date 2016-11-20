@@ -132,10 +132,6 @@ import           Data.Typeable
 import           Data.List             (sortOn)
 import           Diagrams.Prelude      as D
 
-#if __GLASGOW_HASKELL__ < 710
-import           Data.Foldable         (Foldable)
-#endif
-
 import           Plots.Style
 import           Plots.Axis.Scale
 import           Plots.Util

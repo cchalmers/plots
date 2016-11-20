@@ -213,11 +213,11 @@ instance HasBarLayout (BarPlot n) where
 ------------------------------------------------------------------------
 
 -- | Create equidistant bars using the values.
-mkBars :: (Foldable f, Num n) => BarLayout n -> f n -> BarPlot n
+mkBars :: (F.Foldable f, Num n) => BarLayout n -> f n -> BarPlot n
 mkBars bl (F.toList -> ns) = mkFloatingBars bl (map (0,) ns)
 
 -- | Create equidistant bars with lower and upper bounds for each bar.
-mkFloatingBars :: Foldable f => BarLayout n -> f (n,n) -> BarPlot n
+mkFloatingBars :: F.Foldable f => BarLayout n -> f (n,n) -> BarPlot n
 mkFloatingBars bl (F.toList -> ns) = BarPlot
   { bpData   = ns
   , bpLayout = bl
@@ -321,7 +321,7 @@ _reflectXY = transform _reflectionXY
 barPlot
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
-      Foldable f)
+      F.Foldable f)
   => f n                           -- ^ bar heights
   -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()                          -- ^ changes to the 'Axis'
@@ -344,7 +344,7 @@ barPlot ns = addPlotable (mkBars def ns)
 barPlot'
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
-      Foldable f)
+      F.Foldable f)
   => f n  -- ^ bar heights
   -> m () -- ^ changes to the 'Axis'
 barPlot' ns = addPlotable' (mkBars def ns)
@@ -368,7 +368,7 @@ barPlot' ns = addPlotable' (mkBars def ns)
 namedBarPlot
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
-      Foldable f)
+      F.Foldable f)
   => f (String,n)                  -- ^ bar heights with name
   -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()                          -- ^ changes to the 'Axis'
@@ -396,7 +396,7 @@ namedBarPlot d s = do
 namedBarPlot'
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
-      Foldable f)
+      F.Foldable f)
   => f (String,n)  -- ^ bar heights with name
   -> m ()          -- ^ add plot to the 'Axis'
 namedBarPlot' ns = namedBarPlot ns (return ())
@@ -405,7 +405,7 @@ namedBarPlot' ns = namedBarPlot ns (return ())
 floatingBarPlot
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
-      Foldable f)
+      F.Foldable f)
   => f (n,n) -- ^ bar limits
   -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
   -> m ()
@@ -580,8 +580,8 @@ runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
 multiBars
   :: (MonadState (Axis b V2 n) m,
       Plotable (BarPlot n) b,
-      Foldable f,
-      Foldable g)
+      F.Foldable f,
+      F.Foldable g)
   => f a                            -- ^ data for multi plot
   -> (a -> g n)                     -- ^ extract bar heights from each data set
   -> State (MultiBarState b n a) () -- ^ state to make changes to the plot

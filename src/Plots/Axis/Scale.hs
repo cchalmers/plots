@@ -44,6 +44,7 @@ import           Data.Bool
 import           Data.Default
 import           Data.Distributive
 import           Data.Maybe
+import qualified Data.Foldable as F
 
 import           Diagrams
 import           Linear
@@ -282,7 +283,7 @@ logPoint v = _Point %~ liftI2 logNumber v
 
 -- | Deform an object according to the axis scale. Does nothing for
 --   linear scales.
-logDeform :: (InSpace v n a, Foldable v, Floating n, Deformable a a)
+logDeform :: (InSpace v n a, F.Foldable v, Floating n, Deformable a a)
           => v LogScale -> a -> a
 logDeform v
   | allOf folded (== LinearAxis) v = id

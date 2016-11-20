@@ -137,7 +137,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b)
 
 -- | Low level construction of 'ScatterOptions'.
 mkScatterOptions
-  :: (PointLike v n p, Foldable f, Fractional n)
+  :: (PointLike v n p, F.Foldable f, Fractional n)
   => f a
   -> (a -> p)
   -> ScatterOptions v n a
@@ -377,7 +377,7 @@ bubblePlot
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b,
       Typeable n,
-      Foldable f)
+      F.Foldable f)
   => f (n, p) -- ^ fold over points with a size
   -> State (Plot (BubbleOptions v n) b) () -- ^ changes to the options
   -> m () -- ^ add plot to 'Axis'
@@ -393,7 +393,7 @@ bubblePlot'
       Typeable n,
       MonadState (Axis b c n) m,
       Plotable (ScatterPlot v n) b,
-      Foldable f)
+      F.Foldable f)
   => f (n, p) -- ^ fold over points with a size
   -> m () -- ^ add plot to 'Axis'
 bubblePlot' xs = bubblePlot xs (return ())

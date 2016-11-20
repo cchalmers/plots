@@ -135,7 +135,7 @@ instance HasOrientation (HistogramPlot n) where
 computedHistogram
   :: (MonadState (Axis b V2 n) m,
       Plotable (HistogramPlot n) b,
-      Foldable f)
+      F.Foldable f)
   => n   -- ^ start of first bin
   -> n   -- ^ width of each bin
   -> f n -- ^ heights of the bins
@@ -145,7 +145,7 @@ computedHistogram x0 w xs = addPlotable (mkComputedHistogram x0 w xs)
 
 -- | Construct a 'HistogramPlot' from raw histogram data.
 mkComputedHistogram
-  :: Foldable f
+  :: F.Foldable f
   => n -- ^ start of first bin
   -> n -- ^ width of each bin
   -> f n -- ^ heights of the bins
@@ -311,7 +311,7 @@ instance HasHistogramOptions a => HasHistogramOptions (Plot a b) where
 -- | Create a histogram by binning the data using the
 --   'HistogramOptions'.
 mkHistogramPlot
-  :: (Foldable f, RealFrac n)
+  :: (F.Foldable f, RealFrac n)
   => HistogramOptions n -> f n -> HistogramPlot n
 mkHistogramPlot HistogramOptions {..} xs =
   HistogramPlot
@@ -346,7 +346,7 @@ range nBins xs
 
 -- |
 -- mkWeightedHistogram
---   :: (Foldable f, OrderdField n)
+--   :: (F.Foldable f, OrderdField n)
 --   => HistogramOptions n -> [(n, n)] -> HistogramPlot n
 -- mkWeightedHistogram
 
