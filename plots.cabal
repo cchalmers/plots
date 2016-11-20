@@ -47,7 +47,7 @@ library
     Diagrams.Coordinates.Polar
   hs-source-dirs:      src
   build-depends:
-    base          >= 4.3 && < 5.0,
+    base          >= 4.7 && < 5.0,
     adjunctions,
     colour,
     containers    >= 0.3 && < 0.6,
