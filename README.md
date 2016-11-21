@@ -27,7 +27,8 @@ There are several example plots in the `examples/` directory. To build
 the examples, first ensure that you have `stack` installed, and that you
 have a `stack.yaml` file in this directory that contains the lines:
 
-```yaml packages:
+```yaml
+packages:
 - '.'
 - 'test'
 ```
