@@ -14,7 +14,7 @@
 -- Portability :  non-portable
 --
 -- The 'Axis' is the main data type for "plots". It holds all the
--- nessesary infomation to be rendered into a 'Diagram'.
+-- necessary infomation to be rendered into a 'Diagram'.
 --
 ----------------------------------------------------------------------------
 module Plots.Axis
@@ -100,7 +100,7 @@ import           Linear
 
 -- Single axis ---------------------------------------------------------
 
--- | Render infomation for a single axis line.
+-- | Render information for a single axis line.
 data SingleAxis b v n = SingleAxis
 -- note the the v is only present for Style v n
   { saLabel     :: AxisLabel b v n
@@ -183,7 +183,7 @@ type instance BaseSpace V3      = V3
 
 -- Axis data type ------------------------------------------------------
 
--- | Axis is the data type that holds all the nessessary information to render
+-- | Axis is the data type that holds all the necessary information to render
 --   a plot. Common 'LensLike's used for the axis (see haddock's
 --   instances for a more comprehensive list):
 --
@@ -211,7 +211,7 @@ type instance BaseSpace V3      = V3
 --   * 'axisScaling' - customise the 'AxisScaling'
 --
 --   Plots are usually added to the axis using specific functions for
---   that plots ('Plots.Types.Line.linePlot, 'Plots.Types.Bar.barPlot').
+--   those plots ('Plots.Types.Line.linePlot, 'Plots.Types.Bar.barPlot').
 --   These functions use 'addPlotable' to add the plot to the axis.
 data Axis b c n = Axis
   { _axisStyle   :: AxisStyle b (BaseSpace c) n
@@ -322,7 +322,7 @@ instance HasTitle (Axis b c n) b where
 axisSize :: (HasLinearMap c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
 axisSize = axes . column renderSize . iso mkSizeSpec getSpec -- column axisScaling . asSizeSpec -- iso mkSizeSpec getSpec
 
--- | The range used for the colour bar limits. This is automaticlaly set
+-- | The range used for the colour bar limits. This is automatically set
 --   when using 'heatMap' or 'heatMap''
 colourBarRange :: Lens' (Axis b v n) (n,n)
 colourBarRange = lens _colourBarR (\a r -> a {_colourBarR = r})
@@ -368,7 +368,7 @@ addPlot
   -> m ()     -- ^ add plot to the 'Axis'
 addPlot p = axisPlots <>= [DynamicPlot p]
 
--- | Add something 'Plotable' to the 'Axis' with a statefull modification
+-- | Add something 'Plotable' to the 'Axis' with a stateful modification
 --   of the 'Plot'.
 addPlotable
   :: (InSpace (BaseSpace c) n p, MonadState (Axis b c n) m, Plotable p b)
