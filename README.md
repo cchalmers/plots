@@ -44,3 +44,9 @@ the `examples_output` directory.
 file (`examples_output/X.png`) does not exist, or if the source file
 (`examples/X.hs`) has been modified since the last time the script was
 run.
+
+**Note 2:** If the `RunExamples` script fails with errors such as
+  `Failed to load interface for ...` then you will need to `stack
+  install` the required packages. In my case (with a freshly installed
+  stack), I needed to run the following `stack install wreq cassava
+  diagrams-rasterific`.
