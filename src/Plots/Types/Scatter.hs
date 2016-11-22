@@ -273,8 +273,9 @@ scatterOptions = gscatterOptions
 -- | Add a 'ScatterPlot' to the 'AxisState' from a data set.
 --
 -- @
---   myaxis = r2Axis ~&
---     scatterPlot data1
+-- 'scatterPlot' :: [('Double', 'Double')] -> 'State' ('Plot' ('ScatterOptions' 'V2' 'Double' ('P2' 'Double')) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'scatterPlot' :: ['V2' 'Double']        -> 'State' ('Plot' ('ScatterOptions' 'V2' 'Double' ('P2' 'Double')) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'scatterPlot' :: ['P2' 'Double']        -> 'State' ('Plot' ('ScatterOptions' 'V2' 'Double' ('P2' 'Double')) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
 -- @
 --
 -- === __Example__
@@ -308,6 +309,12 @@ scatterPlot xs = gscatterPlot (xs ^.. folded . unpointLike) id
 
 -- | Version of 'scatterPlot' without any changes to the
 --   'ScatterOptions'.
+--
+-- @
+-- 'scatterPlot'' :: [('Double', 'Double')] -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'scatterPlot'' :: ['V2' 'Double']        -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'scatterPlot'' :: ['P2' 'Double']        -> 'State' ('Axis' b 'V2' 'Double') ()
+-- @
 --
 -- === __Example__
 --
@@ -371,6 +378,30 @@ type BubbleOptions v n = ScatterOptions v n (n, Point v n)
 
 -- | Scatter plots with extra numeric parameter. By default the extra
 --   parameter is the scale of the marker but this can be changed.
+--
+-- @
+-- 'bubblePlot' :: [('Double', ('Double', 'Double'))] -> 'State' ('Plot' ('BubbleOptions' v n) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'bubblePlot' :: [('Double', 'V2' 'Double')]        -> 'State' ('Plot' ('BubbleOptions' v n) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'bubblePlot' :: [('Double', 'P2' 'Double')]        -> 'State' ('Plot' ('BubbleOptions' v n) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- @
+--
+-- === __Example__
+--
+-- <<diagrams/src_Plots_Types_Scatter_bubbleExample.svg#diagram=bubbleExample&height=350>>
+--
+-- > import Plots
+-- > myweights = [2, 1.3, 1.8, 0.7]
+-- > mydata7 = zip myweights [(1,3), (2,5.5), (3.2, 6), (3.5, 6.1)]
+-- > mydata8 = mydata7 & each._2._2 *~ 0.5 & each._1 *~ 0.5
+-- > mydata9 = [(1, V2 1.2 2.7), (3, V2 2 5.1), (0.9, V2 3.2 2.6), (2, V2 3.5 5)]
+--
+-- > bubbleAxis :: Axis B V2 Double
+-- > bubbleAxis = r2Axis &~ do
+-- >   bubblePlot mydata7 $ key "data 7"
+-- >   bubblePlot mydata8 $ key "data 8"
+-- >   bubblePlot mydata9 $ key "data 9"
+--
+-- > bubbleExample = renderAxis bubbleAxis
 bubblePlot
   :: (BaseSpace c ~ v,
       PointLike v n p,
@@ -387,6 +418,12 @@ bubblePlot xs s =
     s
 
 -- | Simple version of 'bubblePlot' without any changes to the 'Plot'.
+--
+-- @
+-- 'bubblePlot'' :: [('Double', ('Double', 'Double'))] -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'bubblePlot'' :: [('Double', 'V2' 'Double')]        -> 'State' ('Axis' b 'V2' 'Double') ()
+-- @
+--
 bubblePlot'
   :: (v ~ BaseSpace c,
       PointLike v n p,
