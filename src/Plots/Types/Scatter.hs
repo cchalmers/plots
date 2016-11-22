@@ -25,6 +25,8 @@
 --
 -- <<diagrams/src_Plots_Types_Scatter_scatterExample.svg#diagram=scatterExample&height=350>>
 --
+-- (see 'scatterPlot' example for code to make this plot)
+--
 ----------------------------------------------------------------------------
 module Plots.Types.Scatter
   ( -- * Scatter plot

@@ -22,6 +22,8 @@
 --
 -- <<diagrams/src_Plots_Types_Bar_multiBarExample.svg#diagram=multiBarExample&height=350>>
 --
+-- (see 'multiBars' example for code to make this plot)
+--
 ----------------------------------------------------------------------------
 module Plots.Types.Bar
   (

@@ -23,6 +23,8 @@
 --
 -- <<diagrams/src_Plots_Types_HeatMap_heatMapIndexedExample.svg#diagram=heatMapIndexedExample&height=350>>
 --
+-- (see 'heatMapIndexed' example for code to make this plot)
+--
 ----------------------------------------------------------------------------
 
 module Plots.Types.HeatMap

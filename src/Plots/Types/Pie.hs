@@ -27,6 +27,8 @@
 --
 -- <<diagrams/src_Plots_Types_Pie_piePlotExample.svg#diagram=piePlotExample&height=350>>
 --
+-- (see 'piePlot' example for code to make this plot)
+--
 ----------------------------------------------------------------------------
 
 module Plots.Types.Pie
@@ -64,7 +66,7 @@ import           Plots.Axis
 ------------------------------------------------------------------------
 
 -- | Contains information to draw a single wedge of a pie. It is not
---   intended to be draw directly. Instead use 'piePlot.
+--   intended to be draw directly. Instead use 'piePlot'.
 data Wedge n = Wedge
   { sEndR   :: n
   , sStartR :: n
