@@ -66,7 +66,7 @@ import           Plots.Axis
 ------------------------------------------------------------------------
 
 -- | Contains information to draw a single wedge of a pie. It is not
---   intended to be draw directly. Instead use 'piePlot'.
+--   intended to be drawn directly. Instead use 'piePlot'.
 data Wedge n = Wedge
   { sEndR   :: n
   , sStartR :: n
