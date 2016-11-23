@@ -49,7 +49,7 @@ module Plots
 
     -- ** Histogram plot
 
-    -- | Histogram. API for histogram.
+    -- | Histogram. API for histograms.
   , module Plots.Types.Histogram
 
     -- | Wedge and annular wedge. API for wedge, annular wegde and pie.
@@ -60,7 +60,7 @@ module Plots
     --------------------------------------------------------------------
 
     -- | Definitions of bounds, axis scale, orientation, legend, generic
-    --   plot ,plot spec and so on.
+    --   plot, plot spec and so on.
   , module Plots.Types
 
     -- | Grid lines and styles.
@@ -69,7 +69,7 @@ module Plots
     -- | Grid lines and styles.
   , module Plots.Axis.Grid
 
-    -- | Axis labels and tick labels .
+    -- | Axis labels and tick labels.
   , module Plots.Axis.Labels
 
     -- | Rendering system for polar and r2 axis.
@@ -87,7 +87,7 @@ module Plots
     -- | Colour bars.
   , module Plots.Axis.ColourBar
 
-    -- | Polar coordinates
+    -- | Polar coordinates.
   , module Diagrams.Coordinates.Polar
 
   , (&=), (&~~)
