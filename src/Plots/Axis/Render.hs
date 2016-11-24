@@ -301,8 +301,8 @@ axisOnBasis p bs a ls t e eO lp
       | otherwise = foldMap mkline (map snd ys) -- merge with ticks?
              # transform t
              # stroke
-             -- # applyStyle (a ^. axisLine e . axisArrowOpts . _Just . shaftStyle)
              # lineCap LineCapSquare
+             # applyStyle (a^.axisLineStyle)
       where
         -- TODO: Arrow for R3
         mkline y = pathFromVertices
