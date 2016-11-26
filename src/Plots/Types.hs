@@ -302,8 +302,8 @@ legendPicture = lens lPic (\l pic -> l {lPic = pic})
 legendText :: Lens' (LegendEntry b v n) String
 legendText = lens lText (\l txt -> l {lText = txt})
 
--- | The order in which the legend entries are rendered. If precedence
---   are equal, they entries are put in the order they are added to the
+-- | The order in which the legend entries are rendered. If precedences
+--   are equal, the entries are put in the order they are added to the
 --   axis.
 --
 --   Default is @0@.
@@ -635,7 +635,7 @@ type instance N (DynamicPlot b v n) = n
 _DynamicPlot :: (Plotable p b, Typeable b) => Prism' (DynamicPlot b (V p) (N p)) (Plot p b)
 _DynamicPlot = prism' DynamicPlot (\(DynamicPlot p) -> cast p)
 
--- | Traversal over the dynamic plot without the Plotable constraint
+-- | Traversal over the dynamic plot without the 'Plotable' constraint
 --   '_DynamicPlot' has.
 dynamicPlot :: forall p b. (Typeable p, Typeable b)
             => Traversal' (DynamicPlot b (V p) (N p)) (Plot p b)
@@ -692,7 +692,7 @@ instance Functor f => HasPlotStyle f (StyledPlot b v n) b where
     f sty <&> StyledPlot p opts
 
 -- | Traversal over a raw plot of a styled plot. The type of the plot
---   must match for the traversal to be succesful.
+--   must match for the traversal to be successful.
 styledPlot :: forall p b. Typeable p => Traversal' (StyledPlot b (V p) (N p)) p
 styledPlot f s@(StyledPlot p opts sty) =
   case eq p of
