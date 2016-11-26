@@ -228,7 +228,7 @@ instance Typeable n => HasStyle (GridLines v n) where
 -- @
 -- 'hideGridLines' :: 'Axis' b c n       -> 'Axis' b c n
 -- 'hideGridLines' :: 'SingleAxis' b c n -> 'SingleAxis' b c n
--- 'hideGridLines' :: 'GridLines' b c n  -> 'GirdLines' b c n
+-- 'hideGridLines' :: 'GridLines' b c n  -> 'GridLines' b c n
 -- @
 hideGridLines :: (HasGridLines Identity a, MonadState a m) => m ()
 hideGridLines = do
@@ -240,7 +240,7 @@ hideGridLines = do
 -- @
 -- 'showGridLines' :: 'Axis' b c n       -> 'Axis' b c n
 -- 'showGridLines' :: 'SingleAxis' b c n -> 'SingleAxis' b c n
--- 'showGridLines' :: 'GridLines' b c n  -> 'GirdLines' b c n
+-- 'showGridLines' :: 'GridLines' b c n  -> 'GridLines' b c n
 -- @
 showGridLines :: (HasGridLines Identity a, MonadState a m) => m ()
 showGridLines = do
