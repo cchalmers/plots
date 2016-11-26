@@ -544,7 +544,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
   -- Angular axis
   ----------------------------------------------------------------------
 
-  -- The angular axis is a circular line around the perimieter of the
+  -- The angular axis is a circular line around the perimeter of the
   -- polar plot. The Ticks and tick labels are placed around this
   -- perimeter. The Grid lines go from the perimeter to the center.
   thetaAx
@@ -614,7 +614,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
 
   -- grid lines go from the centre of the axis to the perimeter
   thetaAxGridLines
-    -- - | thetaA ^. girdLines . hidden = mempty
+    -- - | thetaA ^. gridLines . hidden = mempty
     | otherwise                = thetaMajorGridLines <> thetaMinorGridLines
 
   majorGridThetas = view majorGridLinesFunction thetaA majorTickThetas (0,theta)
