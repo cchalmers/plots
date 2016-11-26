@@ -52,7 +52,7 @@ module Plots
     -- | Histogram. API for histograms.
   , module Plots.Types.Histogram
 
-    -- | Wedge and annular wedge. API for wedge, annular wegde and pie.
+    -- | Wedge and annular wedge. API for wedge, annular wedge and pie.
   , module Plots.Types.Pie
 
     --------------------------------------------------------------------
