@@ -56,7 +56,7 @@ data AxisLabelPosition
    | LowerAxisLabel
    | UpperAxisLabel
 
--- | Whether the 'AxisLabel' should be inside or ouside the axis.
+-- | Whether the 'AxisLabel' should be inside or outside the axis.
 data AxisLabelPlacement
    = InsideAxisLabel
    | OutsideAxisLabel
@@ -102,7 +102,7 @@ class HasAxisLabel f a b | a -> b where
   axisLabelStyle :: Functor f => LensLike' f a (Style (V a) (N a))
   axisLabelStyle = axisLabel . lens alStyle (\al sty -> al {alStyle = sty})
 
-  -- | The position the label will be placed parallel the axis.
+  -- | The position the label will be placed parallel to the axis.
   axisLabelPosition :: Functor f => LensLike' f a AxisLabelPosition
   axisLabelPosition = axisLabel . lens alPos (\al sty -> al {alPos = sty})
 
@@ -170,7 +170,7 @@ class HasTickLabels f a b | a -> b where
   tickLabelTextFunction :: Functor f => LensLike' f a (TextFunction b (V a) (N a))
   tickLabelTextFunction = tickLabel . lens tlTextFun (\tl f -> tl {tlTextFun = f})
 
-  -- | Tick labels functions are used to draw the tick labels. They has
+  -- | Tick labels functions are used to draw the tick labels. They have
   --   access to the major ticks and the current bounds. Returns the
   --   position of the tick and label to use at that position.
   --
