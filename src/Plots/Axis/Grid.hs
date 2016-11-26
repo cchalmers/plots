@@ -14,7 +14,7 @@
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Lines that go along the axis. Supports major and minor gird lines
+-- Lines that go along the axis. Supports major and minor grid lines
 -- separately for each axis.
 --
 ----------------------------------------------------------------------------
@@ -193,7 +193,7 @@ gridLinesVisible = gridLines . vis where
 -- Both grid lines
 ------------------------------------------------------------------------
 
--- | Type holding infomation about both major and minor grid lines.
+-- | Type holding information about both major and minor grid lines.
 data GridLines v n = GridLines
   { majGrid     :: MajorGridLines v n
   , minGrid     :: MinorGridLines v n
@@ -247,7 +247,7 @@ showGridLines = do
   minorGridLines . visible .= True
   majorGridLines . visible .= True
 
--- | Traversal over both the major and minor grid styles. This can be used at seversal levels in the Axis:
+-- | Traversal over both the major and minor grid styles. This can be used at several levels in the axis:
 gridLinesStyle :: (HasGridLines f a, Applicative f) => LensLike' f a (Style (V a) (N a))
 gridLinesStyle = gridLines . styles where
   styles :: Traversal' (GridLines v n) (Style v n)
