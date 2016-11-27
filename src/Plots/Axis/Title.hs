@@ -36,6 +36,7 @@ data Title b v n = Title
   , tTxtFun    :: TextAlignment n -> String -> QDiagram b v n Any
   , tStyle     :: Style v n
   , tPlacement :: Placement
+  , tAlignment :: TextAlignment n
   , tGap       :: n
   } deriving Typeable
 
@@ -47,6 +48,7 @@ instance (Renderable (Text n) b, TypeableFloat n)
     , tTxtFun  = mkText
     , tStyle   = mempty # fontSize (output 11)
     , tPlacement = midAbove
+    , tAlignment = BoxAlignedText 0.5 0
     , tGap = 20
     }
 
@@ -84,6 +86,19 @@ class HasTitle a b | a -> b where
   titlePlacement :: Lens' a Placement
   titlePlacement = title . lens tPlacement (\t s -> t {tPlacement = s})
 
+  -- | The function used to draw the title text.
+  --
+  --   Default is 'mkText'.
+  titleTextFunction :: Lens' a (TextAlignment (N a) -> String -> QDiagram b (V a) (N a) Any)
+  titleTextFunction = title . lens tTxtFun (\t s -> t {tTxtFun = s})
+
+  -- | The 'TextAlignment' used for the title text. This is given to the
+  --   'titleTextFunction'.
+  --
+  --   Default is @'BoxAlignedText' 0.5 0@.
+  titleAlignment :: Lens' a (TextAlignment (N a))
+  titleAlignment = title . lens tAlignment (\t s -> t {tAlignment = s})
+
   -- | The gap between the axis and the title.
   --
   --   Default is 'mempty'.
@@ -107,6 +122,6 @@ drawTitle bb t
                   (t ^. titleGap)
                   tDia
   where
-    tDia = tTxtFun t (BoxAlignedText 0.5 0) (tTxt t)
+    tDia = tTxtFun t (t ^. titleAlignment) (tTxt t)
              # applyStyle (tStyle t)
 
