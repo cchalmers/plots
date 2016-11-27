@@ -137,14 +137,21 @@ drawLegend bb entries l
               # orient (l ^. legendOrientation) hcat vcat
               # alignTL
 
-    back = rect (w + h + 5) (h * fromIntegral (length entries))
-             # fcA transparent
+    back = backRect
              # applyStyle (l ^. legendStyle)
+             # fcA transparent
              # alignTL
-             # translate (V2 (-5) 0) -- (-3))
+    backRect = orient (l ^. legendOrientation)
+      (rect (nEntries * entryWidth) h             )
+      (rect entryWidth              (h * nEntries))
+    nEntries = fromIntegral (length entries)
 
-    -- mkLabels :: (QDiagram b V2 n Any, String) -> QDiagram b V2 n Any
-    mkLabels (pic, txt) = pic' ||| strutX 5 ||| label where
+    -- Each legend picture has a width equal to the height of each
+    -- legend entry. The picture also has a 5 unit buffer either side of
+    -- it.
+    entryWidth = w + 10 + h
+
+    mkLabels (pic, txt) = strutX 5 ||| pic' ||| strutX 5 ||| label where
       pic'  = pic # withEnvelope (fromCorners (pure (-h/2)) (pure (h/2)))
       label = view legendTextFunction l txt
                 # applyStyle (l ^. legendTextStyle)
