@@ -209,7 +209,7 @@ pixelHeatRender' n hm cm =
     V2 x y = hmSize hm
 
 -- | Scale an image so each pixel takes (n*n) pixels. This can be
---   usefull for using 'heatImage' on small heat matrixes to give a
+--   useful for using 'heatImage' on small heat matrixes to give a
 --   sharper image.
 scaleImage :: Int -> Image PixelRGB8 -> Image PixelRGB8
 scaleImage n img | n == 1  = img
@@ -365,7 +365,7 @@ class HasHeatMap f a b | a -> b where
   heatMapSize :: Functor f => LensLike' f a (V2 (N a))
   heatMapSize = heatMapOptions . lens hSize (\s b -> (s {hSize = b}))
 
-  -- | The size of the full extend of the heat map.
+  -- | The size of the full extent of the heat map.
   --
   --   Default is extent of the heat matrix.
   heatMapExtent :: (Functor f, Fractional (N a)) => LensLike' f a (V2 (N a))
