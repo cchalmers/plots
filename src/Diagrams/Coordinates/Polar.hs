@@ -136,9 +136,9 @@ eθ     = E (_polar . polarWrapper . _y)
 etheta = eθ
 
 -- | Coordinate with at least one dimension where the x coordinate can be
---   retreived numerically. Note this differs slightly from 'R1' which requires
+--   retrieved numerically. Note this differs slightly from 'R1' which requires
 --   a lens for all values. This allows instances for different coordinates
---   such as 'Polar', where the x coordinate can only be retreived numerically.
+--   such as 'Polar', where the x coordinate can only be retrieved numerically.
 class HasX t where
   x_ :: RealFloat n => Lens' (t n) n
 
