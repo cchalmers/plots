@@ -26,7 +26,6 @@ module Plots.Style
   ( -- * The axis style
     AxisStyle
   , HasAxisStyle (..)
-  -- , axisStyles
 
     -- ** Predefined styles
   , fadedColours
@@ -73,7 +72,6 @@ module Plots.Style
 
   ) where
 
--- import           Control.Lens     hiding (transform, ( # ), at, none)
 import qualified Control.Lens     as Lens
 import           Data.Colour.SRGB
 import qualified Data.Map         as M
@@ -273,7 +271,7 @@ instance (Metric v, Traversable v, OrderedField n) => Transformable (PlotStyle b
 ------------------------------------------------------------------------
 
 -- | The 'AxisStyle' determines the 'Style's of the plots in an axis.
---   There are various predifined styles to change the look of the plot.
+--   There are various predefined styles to change the look of the plot.
 data AxisStyle b v n = AxisStyle ColourMap [PlotStyle b v n]
 
 type instance V (AxisStyle b v n) = v
