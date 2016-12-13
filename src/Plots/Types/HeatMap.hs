@@ -124,7 +124,7 @@ data MM = MM {-# UNPACK #-} !Double {-# UNPACK #-} !Double
 -- | Compute the minimum and maximum of a vector in one pass. This
 --   ignores any @Infinity@ or @NaN@ values (since these make no sense
 --   for colour bar ranges).
-minMax :: Vector Double -> (Double, Double)
+minMax :: V.Vector Double -> (Double, Double)
 minMax = fini . V.foldl' go (MM (1/0) (-1/0))
   where
     go (MM lo hi) k = MM (min' lo k) (max' hi k)
