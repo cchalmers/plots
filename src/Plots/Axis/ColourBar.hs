@@ -324,7 +324,7 @@ pathColourBar n cm = ifoldMap mkR xs
   where
     mkR i x = rect d' 1
                 # alignR
-                # fcA (cm ^. ixColour (x - 1/(2*fromIntegral n)))
+                # fc (cm ^. ixColourR (x - 1/(2*fromIntegral n)))
                 # translateX (fromRational x)
                 # lw none
       where

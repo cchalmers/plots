@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns           #-}
+{-# LANGUAGE ViewPatterns           #-}
 {-# LANGUAGE DeriveDataTypeable     #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
@@ -57,7 +58,6 @@ module Plots.Types.HeatMap
   ) where
 
 import           Control.Lens                    hiding (transform, ( # ))
-import qualified Data.Colour                     as C
 
 import           Control.Monad.ST
 import           Control.Monad.State
@@ -67,7 +67,6 @@ import qualified Data.Vector.Generic.Mutable     as M
 import qualified Data.Vector.Storable            as S
 import qualified Data.Vector.Unboxed             as V
 import           Data.Word                       (Word8)
-import           Statistics.Function             (minMax)
 
 import           Codec.Picture
 import           Diagrams.Coordinates.Isomorphic
@@ -105,6 +104,32 @@ mkHeatMatrix s@(V2 x y) f = runST $ do
 
   go 0 (1/0) (-1/0) 0 0
 {-# INLINE mkHeatMatrix #-}
+
+min' :: Double -> Double -> Double
+min' !a !b
+  | isNaN b      = a
+  | isInfinite b = a
+  | otherwise    = min a b
+{-# INLINE min' #-}
+
+max' :: Double -> Double -> Double
+max' !a !b
+  | isNaN b      = a
+  | isInfinite b = a
+  | otherwise    = max a b
+{-# INLINE max' #-}
+
+data MM = MM {-# UNPACK #-} !Double {-# UNPACK #-} !Double
+
+-- | Compute the minimum and maximum of a vector in one pass. This
+--   ignores any @Infinity@ or @NaN@ values (since these make no sense
+--   for colour bar ranges).
+minMax :: Vector Double -> (Double, Double)
+minMax = fini . V.foldl' go (MM (1/0) (-1/0))
+  where
+    go (MM lo hi) k = MM (min' lo k) (max' hi k)
+    fini (MM lo hi) = (lo, hi)
+{-# INLINE minMax #-}
 
 -- | Construct a heat matrix from a foldable of foldables.
 --
@@ -209,7 +234,7 @@ pixelHeatRender' n hm cm =
     V2 x y = hmSize hm
 
 -- | Scale an image so each pixel takes (n*n) pixels. This can be
---   useful for using 'heatImage' on small heat matrixes to give a
+--   useful for using 'heatImage' on small heat matrices to give a
 --   sharper image.
 scaleImage :: Int -> Image PixelRGB8 -> Image PixelRGB8
 scaleImage n img | n == 1  = img
@@ -236,30 +261,36 @@ scaleImage n (Image x y v) = Image (n*x) (n*y) vn where
 
 -- | Create an image of 'PixelsRGB8' using the heat matrix.
 heatImage :: HeatMatrix -> ColourMap -> Image PixelRGB8
-heatImage (HeatMatrix (V2 x y) dv a b) cm = Image x y v' where
+heatImage (HeatMatrix (V2 x y) dv a b) cm = Image x y v where
   !cv = mkColourVector cm
 
-  -- PixelRGB8 doesn't have an unboxed instance so we have to write each
-  -- component manually.
-  v' = S.create $ do
+  v :: S.Vector Word8
+  v = S.create $ do
     mv <- M.new (3 * x * y)
     let !m = 256 / (b - a)
-        go s i q
-          | s == x-1  = do -- return mv
-              let !d = V.unsafeIndex dv s
+        writeColour q (toSRGB24 -> RGB rr gg bb) = do
+          M.unsafeWrite mv  q    rr
+          M.unsafeWrite mv (q+1) gg
+          M.unsafeWrite mv (q+2) bb
+
+        colourValue !q !d
+          | isNaN d      = writeColour q (cm^.nanColour)
+          | isInfinite d = writeColour q (if d < 0 then cm^.negInfColour else cm^.infColour)
+          | otherwise    = do
               let !o = 3 * (min 255 . max 0 . round $ (d - a) * m)
               M.unsafeWrite mv  q    (V.unsafeIndex cv  o   )
               M.unsafeWrite mv (q+1) (V.unsafeIndex cv (o+1))
               M.unsafeWrite mv (q+2) (V.unsafeIndex cv (o+2))
+
+        go s i q
+          | s == x-1  = do
+              let d = V.unsafeIndex dv s
+              colourValue q d
               return mv
-              -- go (s+1) (i+1) (q+3)
           | i == x    = go (s - 2*x) 0 q
           | otherwise = do
-              let !d = V.unsafeIndex dv s
-              let !o = 3 * (min 255 . max 0 . round $ (d - a) * m)
-              M.unsafeWrite mv  q    (V.unsafeIndex cv  o   )
-              M.unsafeWrite mv (q+1) (V.unsafeIndex cv (o+1))
-              M.unsafeWrite mv (q+2) (V.unsafeIndex cv (o+2))
+              let d = V.unsafeIndex dv s
+              colourValue q d
               go (s+1) (i+1) (q+3)
     go (x * (y-1)) 0 0
 
@@ -270,18 +301,14 @@ mkColourVector cm = V.create $ do
 
   let go i | i == 3*256 = return mv
            | otherwise  = do
-               let PixelRGB8 r g b = cm ^. ixColour (fromIntegral i / (3*256))
-                                         . to colourToPixel
+               let x = fromIntegral i / (3*256)
+                   RGB r g b = cm ^. ixColourR x . to toSRGB24
                M.unsafeWrite mv  i    r
                M.unsafeWrite mv (i+1) g
                M.unsafeWrite mv (i+2) b
                go (i+3)
 
   go 0
-
-colourToPixel :: AlphaColour Double -> PixelRGB8
-colourToPixel c = PixelRGB8 r g b
-  where RGB r g b = toSRGB24 (c `C.over` black)
 
 -- | Render the heat map as a collection squares made up of 'Trail's.
 --   This method is compatible with all backends and should always look
@@ -308,12 +335,12 @@ pathHeatRender
   -> QDiagram b V2 n Any
 pathHeatRender hm@(HeatMatrix _ _ a b) cm = ifoldMapOf hmPoints mk hm # lwO 0
   where
-    normalise d = toRational $ (d - a) / (b - a)
+    normalise d = (d - a) / (b - a)
     mk v@(V2 i j) d =
       rect w h
         # alignTR
         # translate (fromIntegral <$> v ^+^ 1)
-        # fcA (cm ^. ixColour (normalise d))
+        # fc (cm ^. ixColour (normalise d))
       where
         -- Squares that are not on the top left edge are slightly
         -- bigger to remove phantom gaps

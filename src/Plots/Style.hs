@@ -57,11 +57,14 @@ module Plots.Style
     -- * Colour maps
   , ColourMap
   , ixColour
+  , ixColourR
   , cmTraverse
   , colourMap
-  , alphaColourMap
   , colourList
   , toStops
+
+  , NanColours
+  , HasNanColours (..)
 
     -- ** Sample maps
   , viridis
@@ -457,51 +460,100 @@ star' x = trailLike . (`at` mkP2 (-x/6) (x/6))
 -- Colour maps
 ------------------------------------------------------------------------
 
--- type ColourMap = [(Double, AlphaColour Double)]
+-- | Colours to use when representing @NaN@, @Infinity@ and @-Infinity@.
+data NanColours = NanColours
+  { _nanColour    :: Colour Double
+  , _infColour    :: Colour Double
+  , _negInfColour :: Colour Double
+  } deriving Show
+
+class HasNanColours a where
+  -- | Colours to use when displaying @NaN@, @Infinity@ and @-Infinity@.
+  nanColours :: Lens' a NanColours
+
+  -- | Colour to use when displaying @NaN@.
+  --
+  -- Default is 'white.
+  nanColour :: Lens' a (Colour Double)
+  nanColour = nanColours . lens _nanColour (\n c -> n {_nanColour = c})
+
+  -- | Colour to use when displaying @Infinity@.
+  --
+  -- Default is 'lime'.
+  infColour :: Lens' a (Colour Double)
+  infColour = nanColours . lens _infColour (\n c -> n {_infColour = c})
+
+  -- | Colour to use when displaying @-Infinity@.
+  --
+  -- Default is 'magenta'.
+  negInfColour :: Lens' a (Colour Double)
+  negInfColour = nanColours . lens _negInfColour (\n c -> n {_negInfColour = c})
+
+instance HasNanColours NanColours where
+  nanColours = id
+
+instance Default NanColours where
+  def = NanColours
+    { _nanColour    = magenta
+    , _infColour    = white
+    , _negInfColour = black
+    }
+
+-- type ColourMap = [(Double, Colour Double)]
 
 -- | A map from a number (usually between 0 and 1) to a colour. Colour
 --   maps are part of the 'AxisStyle', which is used for plots like
 --   'Plots.Types.HeatMap'.
-newtype ColourMap = ColourMap (M.Map Rational (AlphaColour Double))
+data ColourMap = ColourMap NanColours (M.Map Rational (Colour Double))
   deriving Show
-
 
 type instance V ColourMap = V1
 type instance N ColourMap = Rational
 
--- makeWrapped ''ColourMap
--- manually write instance to avoid template haskell splitting the
--- module up
-instance Rewrapped ColourMap ColourMap
-instance Wrapped ColourMap where
-  type Unwrapped ColourMap = M.Map Rational (AlphaColour Double)
-  _Wrapped' = iso (\(ColourMap a) -> a) ColourMap
-  {-# INLINE _Wrapped' #-}
+cmap :: Lens' ColourMap (M.Map Rational (Colour Double))
+cmap f (ColourMap ncs cs) = f cs <&> \cs' -> ColourMap ncs cs'
+
+instance HasNanColours ColourMap where
+  nanColours f (ColourMap ncs cs) = f ncs <&> \ncs' -> ColourMap ncs' cs
 
 p1apply :: Num a => Transformation V1 a -> a -> a
 p1apply t a = papply t (P (V1 a)) ^. _x
 
 instance Transformable ColourMap where
-  transform t = over (_Wrapped' . _Wrapped' . mapped . _1) (p1apply t)
+  transform t = over (cmap . _Wrapped' . mapped . _1) (p1apply t)
 
 type instance Index ColourMap   = Rational
-type instance IxValue ColourMap = AlphaColour Double
+type instance IxValue ColourMap = Colour Double
 
-instance AsEmpty ColourMap where
-  _Empty = nearly (ColourMap M.empty) (allOf each (==transparent))
-
-instance Each ColourMap ColourMap (AlphaColour Double) (AlphaColour Double) where
-  each = _Wrapped' . each
+instance Each ColourMap ColourMap (Colour Double) (Colour Double) where
+  each = cmap . each
 
 instance Ixed ColourMap where
-  ix = ixColour
+  ix = ixColourR
 
 -- | 'Nothing' == 'transparent'
 instance At ColourMap where
-  at x = ixColour x . from (non transparent)
+  at x = ixColourR x . from (non black)
 
-ixColour :: Rational -> Lens' ColourMap (AlphaColour Double)
-ixColour x f (ColourMap cm) = f c <&> \c' -> ColourMap (M.insert x c' cm)
+ixColour :: Double -> Lens' ColourMap (Colour Double)
+ixColour x f cM@(ColourMap ncs cm)
+  | isNaN x      = nanColour f cM
+  | isInfinite x = if x < 0 then negInfColour f cM else infColour f cM
+  | otherwise    = f c <&> \c' -> ColourMap ncs (M.insert r c' cm)
+  where
+  r = toRational x
+  c = case (M.lookupLE r cm, M.lookupGE r cm) of
+        (Just (i,c1), Just (j,c2))
+          | i == j    -> c1
+          | otherwise ->
+              let a = fromRational $ (r - i) / (j - i)
+              in  blend a c2 c1
+        (Just (_,c1), Nothing) -> c1
+        (Nothing, Just (_,c2)) -> c2
+        _                      -> black
+
+ixColourR :: Rational -> Lens' ColourMap (Colour Double)
+ixColourR x f (ColourMap ncs cm) = f c <&> \c' -> ColourMap ncs (M.insert x c' cm)
   where
   c = case (M.lookupLE x cm, M.lookupGE x cm) of
         (Just (i,c1), Just (j,c2))
@@ -511,28 +563,25 @@ ixColour x f (ColourMap cm) = f c <&> \c' -> ColourMap (M.insert x c' cm)
               in  blend a c2 c1
         (Just (_,c1), Nothing) -> c1
         (Nothing, Just (_,c2)) -> c2
-        _                      -> transparent
+        _                      -> black
 
 -- | Indexed traversal over the colours indexed and ordered by their
 --   position in the map.
-cmTraverse :: IndexedTraversal' Rational ColourMap (AlphaColour Double)
-cmTraverse = _Wrapped' . itraversed
+cmTraverse :: IndexedTraversal' Rational ColourMap (Colour Double)
+cmTraverse = cmap . itraversed
 
 -- | Return the list of colours in the [0,1] range in order. This always
 --   includes colours 0 and 1.
-colourList :: ColourMap -> [(Rational, AlphaColour Double)]
+colourList :: ColourMap -> [(Rational, Colour Double)]
 colourList = itoListOf (cmTraverse . ifiltered (\i _ -> i >= 0 && i <= 1))
-           . (ixColour 0 %~ id) . (ixColour 1 %~ id)
+           . (ixColourR 0 %~ id) . (ixColourR 1 %~ id)
            -- touch colours at 0 and 1 so they're in the list
 
 colourMap :: [(Rational, Colour Double)] -> ColourMap
-colourMap = alphaColourMap . over (mapped . _2) opaque
-
-alphaColourMap :: [(Rational, AlphaColour Double)] -> ColourMap
-alphaColourMap [] = ColourMap M.empty
-alphaColourMap cs
-  | a == b        = ColourMap (M.singleton 0.5 c)
-  | otherwise     = ColourMap (M.mapKeysMonotonic normalise cm)
+colourMap [] = ColourMap def M.empty
+colourMap cs
+  | a == b        = ColourMap def (M.singleton 0.5 c)
+  | otherwise     = ColourMap def (M.mapKeysMonotonic normalise cm)
   where
     cm    = M.fromList cs
     (a,c) = M.findMin cm
