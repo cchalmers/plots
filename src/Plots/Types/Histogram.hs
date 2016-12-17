@@ -74,7 +74,7 @@ import           Plots.Types
 import           Plots.Util
 
 
--- | Construct a rectangle of size v with the bottom left at point p.
+-- | Construct a rectangle of size $v$ with the bottom left at point $p$.
 rectBL :: (InSpace V2 n t, TrailLike t) => Point V2 n -> V2 n -> t
 rectBL p (V2 x y) =
   trailLike $ fromOffsets [V2 x 0, V2 0 y, V2 (-x) 0] # closeTrail `at` p
@@ -96,7 +96,7 @@ type instance N (HistogramPlot n) = n
 
 instance OrderedField n => Enveloped (HistogramPlot n) where
   getEnvelope HistogramPlot {..} =
-    -- don't like this reduntent code
+    -- don't like this redundant code
     getEnvelope . orient hOrient _reflectXY id . (id :: Path v n -> Path v n) $
       ifoldMap drawBar hValues
     where
