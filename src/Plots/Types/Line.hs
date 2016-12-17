@@ -159,7 +159,7 @@ smoothLinePlot' xs = smoothLinePlot xs (return ())
 -- Trail and path
 ------------------------------------------------------------------------
 
--- | Construct a localed trail from a list of folable of points.
+-- | Construct a localed trail from a list of foldable of points.
 mkTrail :: (PointLike v n p, OrderedField n, F.Foldable f) => f p -> Located (Trail v n)
 mkTrail = mkTrailOf folded
 
