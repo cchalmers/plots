@@ -139,7 +139,6 @@ drawLegend bb entries l
 
     back = backRect
              # applyStyle (l ^. legendStyle)
-             # fcA transparent
              # alignTL
     backRect = orient (l ^. legendOrientation)
       (rect (nEntries * entryWidth) h             )
