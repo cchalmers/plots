@@ -23,58 +23,58 @@ import           Data.Default
 import           Data.Typeable
 import           Diagrams.TwoD.Text
 
-import           Diagrams.BoundingBox
+import           Geometry.BoundingBox
 import           Diagrams.Prelude
 
 import           Plots.Types
 
 -- | The data type to describe how to draw a legend. For legend entries
 --   see 'Plots.Types.LegendEntry'.
-data Legend b n = Legend
+data Legend = Legend
   { lPlacement   :: Placement
-  , lGap         :: n
-  , lStyle       :: Style V2 n
-  , lSpacing     :: n
-  , lTextWidth   :: n
-  , lTextF       :: String -> QDiagram b V2 n Any
-  , lTextStyle   :: Style V2 n
+  , lGap         :: Double
+  , lStyle       :: Style V2 Double
+  , lSpacing     :: Double
+  , lTextWidth   :: Double
+  , lTextF       :: String -> Diagram V2
+  , lTextStyle   :: Style V2 Double
   , lOrientation :: Orientation
   , lVisible     :: Bool
   } deriving Typeable
 
-type instance V (Legend b n) = V2
-type instance N (Legend b n) = n
+type instance V Legend = V2
+type instance N Legend = Double
 
-class HasLegend a b | a -> b where
+class HasLegend a where
   -- | Lens onto the 'Legend' of something.
-  legend :: Lens' a (Legend b (N a))
+  legend :: Lens' a Legend
 
   -- | The 'Placement' of the legend relative to the 'Plots.Axis.Axis'.
   legendPlacement :: Lens' a Placement
   legendPlacement = legend . lens lPlacement (\l a -> l {lPlacement = a})
 
   -- | The gap between the legend and the axis.
-  legendGap :: Lens' a (N a)
+  legendGap :: Lens' a Double
   legendGap = legend . lens lGap (\l a -> l {lGap = a})
 
   -- | The style applied to the surronding box of the legend.
-  legendStyle :: Lens' a (Style V2 (N a))
+  legendStyle :: Lens' a (Style V2 Double)
   legendStyle = legend . lens lStyle (\l a -> l {lStyle = a})
 
   -- | The spacing between entries in the legend.
-  legendSpacing :: Lens' a (N a)
+  legendSpacing :: Lens' a Double
   legendSpacing = legend . lens lSpacing (\l a -> l {lSpacing = a})
 
   -- | The space given for the text in the legend.
-  legendTextWidth :: Lens' a (N a)
+  legendTextWidth :: Lens' a Double
   legendTextWidth = legend . lens lTextWidth (\l a -> l {lTextWidth = a})
 
   -- | The function to generate the legend text.
-  legendTextFunction :: Lens' a (String -> QDiagram b V2 (N a) Any)
+  legendTextFunction :: Lens' a (String -> Diagram V2)
   legendTextFunction = legend . lens lTextF (\l a -> l {lTextF = a})
 
   -- | The style applied to the legend text.
-  legendTextStyle :: Lens' a (Style V2 (N a))
+  legendTextStyle :: Lens' a (Style V2 Double)
   legendTextStyle = legend . lens lTextStyle (\l a -> l {lTextStyle = a})
 
   -- | The way the legend entries are listed. (This will likely be
@@ -82,16 +82,16 @@ class HasLegend a b | a -> b where
   legendOrientation :: Lens' a Orientation
   legendOrientation = legend . lens lOrientation (\l a -> l {lOrientation = a})
 
-instance HasLegend (Legend b n) b where
+instance HasLegend Legend where
   legend = id
 
-instance HasGap (Legend b n) where
+instance HasGap Legend where
   gap = legendGap
 
-instance HasPlacement (Legend b n) where
+instance HasPlacement Legend where
   placement = legendPlacement
 
-instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
+instance Default Legend where
   def = Legend
     { lPlacement   = rightTop
     , lGap         = 20
@@ -104,24 +104,26 @@ instance (TypeableFloat n, Renderable (Text n) b) => Default (Legend b n) where
     , lVisible     = True
     }
 
-instance HasVisibility (Legend b n) where
+instance HasVisibility Legend where
   visible = lens lVisible (\l a -> l {lVisible = a})
 
-instance TypeableFloat n => HasStyle (Legend b n) where
-  applyStyle sty = over legendStyle (applyStyle sty)
+instance ApplyStyle Legend
 
-instance HasOrientation (Legend b n) where
+-- | The style for the bounding box of the legend.
+instance HasStyle Legend where
+  style = legendStyle
+  {-# INLINE style #-}
+
+instance HasOrientation Legend where
   orientation = legendOrientation
 
 -- | Draw a legend to the bounding box using the legend entries and
 --   legend options.
 drawLegend
-  :: (TypeableFloat n,
-      Renderable (Path V2 n) b)
-  => BoundingBox V2 n                -- ^ bounding box to place legend against
-  -> [(QDiagram b V2 n Any, String)] -- ^ diagram pictures along with their key
-  -> Legend b n                      -- ^ options for drawing the legend
-  -> QDiagram b V2 n Any             -- ^ rendered legend
+  :: BoundingBox V2 Double  -- ^ bounding box to place legend against
+  -> [(Diagram V2, String)] -- ^ diagram pictures along with their key
+  -> Legend                 -- ^ options for drawing the legend
+  -> Diagram V2             -- ^ rendered legend
 drawLegend bb entries l
   | l ^. hidden || null entries = mempty
   | otherwise   = placeAgainst

@@ -101,22 +101,21 @@ import           Linear
 -- Single axis ---------------------------------------------------------
 
 -- | Render information for a single axis line.
-data SingleAxis b v n = SingleAxis
--- note the the v is only present for Style v n
-  { saLabel     :: AxisLabel b v n
-  , saLine      :: AxisLine v n
-  , saTickLabel :: TickLabels b v n
-  , saScaling   :: AxisScaling n
-  , saGridLines :: GridLines v n
-  , saTicks     :: Ticks v n
+data SingleAxis v = SingleAxis
+-- note the the v is only present for Style v
+  { saLabel     :: AxisLabel v
+  , saLine      :: AxisLine v
+  , saTickLabel :: TickLabels v
+  , saScaling   :: AxisScaling
+  , saGridLines :: GridLines v
+  , saTicks     :: Ticks v
   , saVisible   :: Bool
   }
 
-type instance V (SingleAxis b v n) = v
-type instance N (SingleAxis b v n) = n
+type instance V (SingleAxis v) = v
+type instance N (SingleAxis v) = Double
 
-instance (TypeableFloat n, Renderable (Text n) b)
-    => Default (SingleAxis b V2 n) where
+instance Default (SingleAxis V2) where
   def = SingleAxis
     { saLabel      = def
     , saLine       = def
@@ -127,43 +126,43 @@ instance (TypeableFloat n, Renderable (Text n) b)
     , saVisible    = True
     }
 
-instance Functor f => HasTicks f (SingleAxis b v n) where
+instance Functor f => HasTicks f (SingleAxis v) where
   bothTicks = lens saTicks (\sa ticks -> sa {saTicks = ticks})
 
-instance Functor f => HasMajorTicks f (SingleAxis b v n) where
+instance Functor f => HasMajorTicks f (SingleAxis v) where
   majorTicks = bothTicks . majorTicks
 
-instance Functor f => HasMinorTicks f (SingleAxis b v n) where
+instance Functor f => HasMinorTicks f (SingleAxis v) where
   minorTicks = bothTicks . minorTicks
 
-instance Functor f => HasAxisLabel f (SingleAxis b v n) b where
+instance Functor f => HasAxisLabel f (SingleAxis v) where
   axisLabel = lens saLabel (\sa l -> sa {saLabel = l})
 
-instance Functor f => HasTickLabels f (SingleAxis b v n) b where
+instance Functor f => HasTickLabels f (SingleAxis v) where
   tickLabel = lens saTickLabel (\sa tl -> sa {saTickLabel = tl})
 
-instance Functor f => HasAxisLine f (SingleAxis b v n) where
+instance Functor f => HasAxisLine f (SingleAxis v) where
   axisLine = lens saLine (\sa l -> sa {saLine = l})
 
-instance Functor f => HasGridLines f (SingleAxis b v n) where
+instance Functor f => HasGridLines f (SingleAxis v) where
   gridLines = lens saGridLines (\sa l -> sa {saGridLines = l})
 
-instance Functor f => HasMajorGridLines f (SingleAxis b v n) where
+instance Functor f => HasMajorGridLines f (SingleAxis v) where
   majorGridLines = gridLines . majorGridLines
 
-instance Functor f => HasMinorGridLines f (SingleAxis b v n) where
+instance Functor f => HasMinorGridLines f (SingleAxis v) where
   minorGridLines = gridLines . minorGridLines
 
-instance Functor f => HasAxisScaling f (SingleAxis b v n) where
+instance Functor f => HasAxisScaling f (SingleAxis v) where
   axisScaling = lens saScaling (\sa s -> sa {saScaling = s})
 
-instance HasVisibility (SingleAxis b v n) where
+instance HasVisibility (SingleAxis v) where
   visible = lens saVisible (\sa b -> sa {saVisible = b})
 
--- singleAxisScale :: Lens' (SingleAxis b v n) AxisScale
+-- singleAxisScale :: Lens' (SingleAxis v) AxisScale
 -- singleAxisScale = lens saScale (\sa s -> sa {saScale = s})
 
--- singleAxisBound :: Lens' (SingleAxis b v n) (Bound n)
+-- singleAxisBound :: Lens' (SingleAxis v) (Bound n)
 -- singleAxisBound = lens saBounds (\sa b -> sa {saBounds = b})
 
 ------------------------------------------------------------------------
@@ -213,36 +212,36 @@ type instance BaseSpace V3      = V3
 --   Plots are usually added to the axis using specific functions for
 --   those plots ('Plots.Types.Line.linePlot, 'Plots.Types.Bar.barPlot').
 --   These functions use 'addPlotable' to add the plot to the axis.
-data Axis b c n = Axis
-  { _axisStyle   :: AxisStyle b (BaseSpace c) n
-  , _colourBar   :: ColourBar b n
-  , _colourBarR  :: (n,n)
-  , _legend      :: Legend b n
-  , _axisTitle   :: Title b (BaseSpace c) n
+data Axis c = Axis
+  { _axisStyle   :: AxisStyle (BaseSpace c)
+  , _colourBar   :: ColourBar
+  , _colourBarR  :: (Double,Double)
+  , _legend      :: Legend
+  , _axisTitle   :: Title (BaseSpace c)
   -- , _axisTitle      :: AxisTitle
 
-  , _axisPlots   :: [DynamicPlot b (BaseSpace c) n]
-  , _plotModifier :: Endo (StyledPlot b (BaseSpace c) n)
+  , _axisPlots   :: [DynamicPlot (BaseSpace c)]
+  , _plotModifier :: Endo (StyledPlot (BaseSpace c))
 
   -- the v in each axis is only used for the style
-  , _axes        :: c (SingleAxis b (BaseSpace c) n)
+  , _axes        :: c (SingleAxis (BaseSpace c))
   } deriving Typeable
 
 -- | Lens onto the separate axes of an axis. Allows changing the
 --   coordinate system as long as the 'BaseSpace' is the same.
 --
 -- @
--- 'axes' :: 'Lens'' ('Axis' b c n) (c ('SingleAxis' b v n))
+-- 'axes' :: 'Lens'' ('Axis' c) (c ('SingleAxis' v))
 -- @
 axes :: (v ~ BaseSpace c, v ~ BaseSpace c')
-     => Lens (Axis b c  n)
-             (Axis b c' n)
-             (c  (SingleAxis b v n))
-             (c' (SingleAxis b v n))
+     => Lens (Axis c)
+             (Axis c')
+             (c  (SingleAxis v))
+             (c' (SingleAxis v))
 axes = lens _axes (\(Axis a1 a2 a3 a4 a5 a6 a7 _) a8 -> Axis a1 a2 a3 a4 a5 a6 a7 a8)
 
 -- | The list of plots currently in the axis.
-axisPlots :: BaseSpace c ~ v => Lens' (Axis b c n) [DynamicPlot b v n]
+axisPlots :: BaseSpace c ~ v => Lens' (Axis c) [DynamicPlot v]
 axisPlots = lens _axisPlots (\a ps -> a {_axisPlots = ps})
 
 -- | Traversal over the current plots in the axis.
@@ -253,7 +252,7 @@ axisPlots = lens _axisPlots (\a ps -> a {_axisPlots = ps})
 -- @
 -- 'finalPlots' . 'connectingLine' .= 'True'
 -- @
-currentPlots :: BaseSpace c ~ v => Traversal' (Axis b c n) (DynamicPlot b v n)
+currentPlots :: BaseSpace c ~ v => Traversal' (Axis c) (DynamicPlot v)
 currentPlots = axisPlots . traversed
 
 -- | Setter over the final plot before the axis is rendered.
@@ -266,71 +265,71 @@ currentPlots = axisPlots . traversed
 -- 'finalPlots' . 'connectingLine' .= 'True'
 -- @
 --
-finalPlots :: BaseSpace c ~ v => Setter' (Axis b c n) (StyledPlot b v n)
+finalPlots :: BaseSpace c ~ v => Setter' (Axis c) (StyledPlot v)
 finalPlots = sets $ \f a -> a {_plotModifier = _plotModifier a <> Endo f}
 
 -- | Lens onto the modifier set by 'finalPlots'. This gets applied to
 --   all plots in the axis, just before they are rendered.
-plotModifier :: BaseSpace c ~ v => Lens' (Axis b c n) (Endo (StyledPlot b v n))
+plotModifier :: BaseSpace c ~ v => Lens' (Axis c) (Endo (StyledPlot v))
 plotModifier = lens _plotModifier (\a f -> a {_plotModifier = f})
 
 -- Axis instances ------------------------------------------------------
 
-type instance V (Axis b v n) = BaseSpace v
-type instance N (Axis b v n) = n
+type instance V (Axis v) = BaseSpace v
+type instance N (Axis v) = Double
 
-instance (Applicative f, Traversable c) => HasTicks f (Axis b c n) where
+instance (Applicative f, Traversable c) => HasTicks f (Axis c) where
   bothTicks = axes . traverse . bothTicks
 
-instance (Applicative f, Traversable c) => HasMajorTicks f (Axis b c n) where
+instance (Applicative f, Traversable c) => HasMajorTicks f (Axis c) where
   majorTicks = axes . traverse . majorTicks
 
-instance (Applicative f, Traversable c) => HasMinorTicks f (Axis b c n) where
+instance (Applicative f, Traversable c) => HasMinorTicks f (Axis c) where
   minorTicks = axes . traverse . minorTicks
 
-instance (Applicative f, Traversable c) => HasGridLines f (Axis b c n) where
+instance (Applicative f, Traversable c) => HasGridLines f (Axis c) where
   gridLines = axes . traverse . gridLines
 
-instance (Applicative f, Traversable c) => HasMajorGridLines f (Axis b c n) where
+instance (Applicative f, Traversable c) => HasMajorGridLines f (Axis c) where
   majorGridLines = axes . traverse . majorGridLines
 
-instance (Applicative f, Traversable c) => HasMinorGridLines f (Axis b c n) where
+instance (Applicative f, Traversable c) => HasMinorGridLines f (Axis c) where
   minorGridLines = axes . traverse . minorGridLines
 
-instance (Applicative f, Traversable c) => HasAxisLabel f (Axis b c n) b where
+instance (Applicative f, Traversable c) => HasAxisLabel f (Axis c) where
   axisLabel = axes . traverse . axisLabel
 
-instance (Applicative f, Traversable c) => HasTickLabels f (Axis b c n) b where
+instance (Applicative f, Traversable c) => HasTickLabels f (Axis c) where
   tickLabel = axes . traverse . tickLabel
 
-instance (Applicative f, Traversable c) => HasAxisScaling f (Axis b c n) where
+instance (Applicative f, Traversable c) => HasAxisScaling f (Axis c) where
   axisScaling = axes . traverse . axisScaling
 
-instance Settable f => HasPlotOptions f (Axis b c n) b where
+instance Settable f => HasPlotOptions f (Axis c) where
   plotOptions = finalPlots . plotOptions
 
-instance Settable f => HasPlotStyle f (Axis b c n) b where
+instance Settable f => HasPlotStyle f (Axis c) where
   plotStyle = finalPlots . plotStyle
 
-instance HasLegend (Axis b c n) b where
+instance HasLegend (Axis c) where
   legend = lens _legend (\a l -> a {_legend = l})
 
-instance HasTitle (Axis b c n) b where
+instance HasTitle (Axis c) where
   title = lens _axisTitle (\a t -> a {_axisTitle = t})
 
 -- | The size used for the rendered axis.
-axisSize :: (HasLinearMap c, Num n, Ord n) => Lens' (Axis b c n) (SizeSpec c n)
+axisSize :: HasLinearMap c => Lens' (Axis c) (SizeSpec c Double)
 axisSize = axes . column renderSize . iso mkSizeSpec getSpec -- column axisScaling . asSizeSpec -- iso mkSizeSpec getSpec
 
 -- | The range used for the colour bar limits. This is automatically set
 --   when using 'heatMap' or 'heatMap''
-colourBarRange :: Lens' (Axis b v n) (n,n)
+colourBarRange :: Lens' (Axis v) (Double,Double)
 colourBarRange = lens _colourBarR (\a r -> a {_colourBarR = r})
 
-instance HasAxisStyle (Axis b v n) b where
+instance HasAxisStyle (Axis v) where
   axisStyle = lens _axisStyle (\a sty -> a {_axisStyle = sty})
 
-instance HasColourBar (Axis b v n) b where
+instance HasColourBar (Axis v) where
   colourBar = lens _colourBar (\a cb -> a {_colourBar = cb})
 
 -- Axis functions ------------------------------------------------------
@@ -338,11 +337,11 @@ instance HasColourBar (Axis b v n) b where
 -- $plotable
 -- The 'Plotable' class defines ways of converting the data type to a
 -- diagram for some axis. There are several variants for adding an axis
--- with constraints @('InSpace' v n a, 'Plotable' a b)@:
+-- with constraints @('InSpace' v a, 'Plotable' a b)@:
 --
 -- @
--- 'addPlotable'  ::           a -> 'PlotState' a b -> 'AxisState' b v n
--- 'addPlotable''   ::           a ->                  'AxisState' b v n
+-- 'addPlotable'  :: a -> 'PlotState' a b -> 'AxisState' v
+-- 'addPlotable'' :: a ->                  'AxisState' v
 -- @
 --
 -- The last argument is a 'PlotState' so you can use @do@ notation to
@@ -363,23 +362,23 @@ instance HasColourBar (Axis b v n) b where
 
 -- | Add a 'Plotable' 'Plot' to an 'Axis'.
 addPlot
-  :: (InSpace (BaseSpace c) n p, MonadState (Axis b c n) m, Plotable p b)
-  => Plot p b -- ^ the plot
-  -> m ()     -- ^ add plot to the 'Axis'
+  :: (InSpace (BaseSpace c) Double p, MonadState (Axis c) m, Plotable p)
+  => Plot p -- ^ the plot
+  -> m ()   -- ^ add plot to the 'Axis'
 addPlot p = axisPlots <>= [DynamicPlot p]
 
 -- | Add something 'Plotable' to the 'Axis' with a stateful modification
 --   of the 'Plot'.
 addPlotable
-  :: (InSpace (BaseSpace c) n p, MonadState (Axis b c n) m, Plotable p b)
+  :: (InSpace (BaseSpace c) Double p, MonadState (Axis c) m, Plotable p, HasLinearMap (BaseSpace c))
   => p -- ^ the raw plot
-  -> State (Plot p b) () -- ^ changes to the plot
+  -> State (Plot p) () -- ^ changes to the plot
   -> m () -- ^ add plot to the 'Axis'
 addPlotable p s = addPlot $ execState s (mkPlot p)
 
 -- | Simple version of 'AddPlotable' without any changes 'Plot'.
 addPlotable'
-  :: (InSpace (BaseSpace v) n p, MonadState (Axis b v n) m, Plotable p b)
+  :: (InSpace (BaseSpace c) Double p, MonadState (Axis c) m, Plotable p, HasLinearMap (BaseSpace c))
   => p    -- ^ the raw plot
   -> m () -- ^ add plot to the 'Axis'
 addPlotable' p = addPlotable p (return ())
@@ -389,11 +388,7 @@ addPlotable' p = addPlotable p (return ())
 ------------------------------------------------------------------------
 
 -- | The default axis for plots in the 'V2' coordinate system.
-r2Axis
-  :: (TypeableFloat n,
-     Renderable (Text n) b,
-     Renderable (Path V2 n) b)
-  => Axis b V2 n
+r2Axis :: Axis V2
 r2Axis = Axis
   { _axisStyle  = fadedColours
   , _colourBar  = defColourBar
@@ -407,95 +402,110 @@ r2Axis = Axis
   , _axes = pure def
   }
 
+-- | The default axis for plots in the 'V2' coordinate system.
+-- r3Axis :: Axis V3
+-- r3Axis = Axis
+--   { _axisStyle  = fadedColours3D
+--   , _colourBar  = defColourBar
+--   , _colourBarR = (0,1)
+--   , _axisTitle  = def
+
+--   , _legend       = def
+--   , _axisPlots    = []
+--   , _plotModifier = mempty
+
+--   , _axes = pure def
+--   }
+
 -- The x-axis ----------------------------------------------------------
 
 -- | Lens onto the x-axis of an 'Axis'.
-xAxis :: R1 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+xAxis :: R1 c => Lens' (Axis c) (SingleAxis (BaseSpace c))
 xAxis = axes . _x
 
 -- | The label for the x-axis. Shorthand for @'xAxis' . 'axisLabelText'@.
-xLabel :: R1 c => Lens' (Axis b c n) String
+xLabel :: R1 c => Lens' (Axis c) String
 xLabel = xAxis . axisLabelText
 
 -- | The minimum x value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
-xMin :: R1 c => Lens' (Axis b c n) (Maybe n)
+xMin :: R1 c => Lens' (Axis c) (Maybe Double)
 xMin = xAxis . boundMin
 
 -- | The minimum x value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
-xMax :: R1 c => Lens' (Axis b c n) (Maybe n)
+xMax :: R1 c => Lens' (Axis c) (Maybe Double)
 xMax = xAxis . boundMax
 
 -- The y-axis ----------------------------------------------------------
 
 -- | Lens onto the y-axis of an 'Axis'.
-yAxis :: R2 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+yAxis :: R2 c => Lens' (Axis c) (SingleAxis (BaseSpace c))
 yAxis = axes . _y
 
 -- | The label for the y-axis. Shorthand for @'yAxis' . 'axisLabelText'@.
-yLabel :: R2 c => Lens' (Axis b c n) String
+yLabel :: R2 c => Lens' (Axis c) String
 yLabel = yAxis . axisLabelText
 
 -- | The minimum y value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
-yMin :: R2 c => Lens' (Axis b c n) (Maybe n)
+yMin :: R2 c => Lens' (Axis c) (Maybe Double)
 yMin = yAxis . boundMin
 
 -- | The minimum y value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
-yMax :: R2 c => Lens' (Axis b c n) (Maybe n)
+yMax :: R2 c => Lens' (Axis c) (Maybe Double)
 yMax = yAxis . boundMax
 
 -- The z-axis ----------------------------------------------------------
 
 -- | Lens onto the z-axis of an 'Axis'.
-zAxis :: R3 c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+zAxis :: R3 c => Lens' (Axis c) (SingleAxis (BaseSpace c))
 zAxis = axes . _z
 
 -- | The label for the z-axis. Shorthand for @'zAxis' . 'axisLabelText'@.
-zLabel :: R3 c => Lens' (Axis b c n) String
+zLabel :: R3 c => Lens' (Axis c) String
 zLabel = zAxis . axisLabelText
 
 -- | The minimum z value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
-zMin :: R3 c => Lens' (Axis b c n) (Maybe n)
+zMin :: R3 c => Lens' (Axis c) (Maybe Double)
 zMin = zAxis . boundMin
 
 -- | The minimum z value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
-zMax :: R3 c => Lens' (Axis b c n) (Maybe n)
+zMax :: R3 c => Lens' (Axis c) (Maybe Double)
 zMax = zAxis . boundMax
 
 -- The r-axis ----------------------------------------------------------
 
 -- | Lens onto the radial axis of an 'Axis'.
-rAxis :: Radial c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+rAxis :: Radial c => Lens' (Axis c) (SingleAxis (BaseSpace c))
 rAxis = axes . _radial
 
 -- | The label for the radial axis. Shorthand for @'rAxis' . 'axisLabelText'@.
-rLabel :: Radial c => Lens' (Axis b c n) String
+rLabel :: Radial c => Lens' (Axis c) String
 rLabel = rAxis . axisLabelText
 
 -- | The minimum z value for the axis. If the value if 'Nothing' (the
 --   'Default'), the bounds will be infered by the plots in the axis.
--- rMin :: R3 c => Lens' (Axis b c n) (Maybe n)
+-- rMin :: R3 c => Lens' (Axis c) (Maybe Double)
 -- rMin = zAxis . boundMin
 
 -- | The minimum radial value for the axis. If the value if 'Nothing'
 --   (the 'Default'), the bounds will be infered by the plots in the
 --   axis.
-rMax :: Radial c => Lens' (Axis b c n) (Maybe n)
+rMax :: Radial c => Lens' (Axis c) (Maybe Double)
 rMax = rAxis . boundMax
 
 -- The theta-axis ------------------------------------------------------
 
 -- | Lens onto the radial axis of an 'Axis'.
-thetaAxis :: Circle c => Lens' (Axis b c n) (SingleAxis b (BaseSpace c) n)
+thetaAxis :: Circle c => Lens' (Axis c) (SingleAxis (BaseSpace c))
 thetaAxis = axes . el etheta
 
 -- | The label for the radial axis. Shorthand for @'rAxis' . 'axisLabelText'@.
-thetaLabel :: Circle c => Lens' (Axis b c n) String
+thetaLabel :: Circle c => Lens' (Axis c) String
 thetaLabel = thetaAxis . axisLabelText
 
 
@@ -521,11 +531,7 @@ thetaLabel = thetaAxis . axisLabelText
 
 -- R3 Axis
 
-polarAxis
-  :: (TypeableFloat n,
-      Renderable (Text n) b,
-      Renderable (Path V2 n) b)
-  => Axis b Polar n
+polarAxis :: Axis Polar
 polarAxis = Axis
   { _axisStyle  = fadedColours
   , _colourBar  = defColourBar

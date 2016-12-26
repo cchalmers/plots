@@ -29,8 +29,8 @@ module Plots.Types.Line
     -- * Line plots from points
   , linePlot
   , linePlot'
-  , smoothLinePlot
-  , smoothLinePlot'
+  -- , smoothLinePlot
+  -- , smoothLinePlot'
 
     -- * Construction utilities
 
@@ -55,47 +55,46 @@ import           Diagrams.Prelude
 import           Plots.Axis
 import           Plots.Types
 
+import Data.Typeable
+import Geometry.Path
+import qualified Data.Sequence as S (fromList, singleton)
+
 ------------------------------------------------------------------------
 -- Trails and Paths
 ------------------------------------------------------------------------
 
+trail2Path :: Located (Trail v n) -> Path v n
+trail2Path = Path . S.singleton
+
 -- | Add a 'Trail' as a 'Plot' to an 'Axis'.
 trailPlot
-  :: (BaseSpace c ~ v,
-      Plotable (Path v n) b,
-      MonadState (Axis b c n) m)
-  => Trail v n -- ^ trail to plot
-  -> State (Plot (Path v n) b) () -- ^ changes to plot options
+  :: (BaseSpace c ~ v, MonadState (Axis c) m, HasLinearMap v, Typeable v, R1 v)
+  => Located (Trail v Double) -- ^ trail to plot
+  -> State (Plot (Path v Double)) () -- ^ changes to plot options
   -> m () -- ^ add plot to the 'Axis'
-trailPlot = pathPlot . toPath
+trailPlot = pathPlot . trail2Path
 
 -- | Add a 'Trail' as a 'Plot' to an 'Axis' without changes to the plot
 --   options.
 trailPlot'
-  :: (BaseSpace c ~ v,
-      Plotable (Path v n) b,
-      MonadState (Axis b c n) m)
-  => Trail v n -- ^ trail to plot
+  :: (BaseSpace c ~ v, MonadState (Axis c) m, HasLinearMap v, Typeable v, R1 v)
+  => Located (Trail v Double) -- ^ trail to plot
   -> m () -- ^ add plot to the 'Axis'
-trailPlot' = pathPlot' . toPath
+trailPlot' = pathPlot' . trail2Path
 
 -- | Add a 'Path' as a 'Plot' to an 'Axis'.
 pathPlot
-  :: (BaseSpace c ~ v,
-      Plotable (Path v n) b,
-      MonadState (Axis b c n) m)
-  => Path v n -- ^ path to plot
-  -> State (Plot (Path v n) b) () -- ^ changes to plot options
+  :: (BaseSpace c ~ v, MonadState (Axis c) m, HasLinearMap v, Typeable v, R1 v)
+  => Path v Double -- ^ path to plot
+  -> State (Plot (Path v Double)) () -- ^ changes to plot options
   -> m () -- ^ add plot to the 'Axis'
 pathPlot = addPlotable
 
 -- | Add a 'Path' as a 'Plot' to an 'Axis' without changes to the plot
 --   options.
 pathPlot'
-  :: (BaseSpace c ~ v,
-      Plotable (Path v n) b,
-      MonadState (Axis b c n) m)
-  => Path v n -- ^ path to plot
+  :: (BaseSpace c ~ v, MonadState (Axis c) m, HasLinearMap v, Typeable v, R1 v)
+  => Path v Double -- ^ path to plot
   -> m () -- ^ add plot to the 'Axis'
 pathPlot' = addPlotable'
 
@@ -106,54 +105,56 @@ pathPlot' = addPlotable'
 -- | Add a 'Path' plot from a list of points.
 linePlot
   :: (BaseSpace c ~ v,
-      Metric v,
+      HasLinearMap v,
       F.Foldable f,
-      PointLike v n p,
-      Plotable (Path v n) b,
-      MonadState (Axis b c n) m)
+      R1 v,
+      PointLike v Double p,
+      MonadState (Axis c) m)
   => f p -- ^ points to turn into trail
-  -> State (Plot (Path v n) b) () -- ^ changes to plot options
+  -> State (Plot (Path v Double)) () -- ^ changes to plot options
   -> m () -- ^ add plot to the 'Axis'
 linePlot = addPlotable . toPath . mkTrail
 
 -- | Add a 'Path' plot from a list of points.
 linePlot'
   :: (BaseSpace c ~ v,
-      Metric v,
+      HasLinearMap v,
       F.Foldable f,
-      PointLike v n p,
-      Plotable (Path v n) b,
-      MonadState (Axis b c n) m)
+      R1 v,
+      PointLike v Double p,
+      MonadState (Axis c) m)
   => f p -- ^ points to turn into trail
   -> m () -- ^ add plot to the 'Axis'
 linePlot' = addPlotable' . toPath . mkTrail
 
 -- | Add a smooth 'Path' plot from a list of points using 'cubicSpline'.
-smoothLinePlot
-  :: (BaseSpace c ~ v,
-      F.Foldable f,
-      Metric v,
-      PointLike v n p,
-      Plotable (Path v n) b,
-      Fractional (v n), -- needs fixing in diagrams-lib
-      MonadState (Axis b c n) m)
-  => f p -- ^ points to turn into trail
-  -> State (Plot (Path v n) b) () -- ^ changes to plot options
-  -> m () -- ^ add plot to the 'Axis'
-smoothLinePlot = addPlotable . cubicSpline False . toListOf (folded . unpointLike)
+-- smoothLinePlot
+--   :: (BaseSpace c ~ v,
+--       F.Foldable f,
+--       Typeable v,
+--       HasLinearMap v,
+--       PointLike v Double p,
+--       R1 v,
+--       Fractional (v Double), -- needs fixing in diagrams-lib
+--       MonadState (Axis c) m)
+--   => f p -- ^ points to turn into trail
+--   -> State (Plot (Path v Double)) () -- ^ changes to plot options
+--   -> m () -- ^ add plot to the 'Axis'
+-- smoothLinePlot = addPlotable . cubicSpline False . toListOf (folded . unpointLike)
 
 -- | Add a smooth 'Path' plot from a list of points using 'cubicSpline'
 --   without changes to the plot options.
-smoothLinePlot'
-  :: (BaseSpace c ~ v,
-      F.Foldable f,
-      PointLike v n p,
-      Plotable (Path v n) b,
-      Fractional (v n), -- needs fixing in diagrams-lib
-      MonadState (Axis b c n) m)
-  => f p -- ^ points to turn into trail
-  -> m () -- ^ add plot to the 'Axis'
-smoothLinePlot' xs = smoothLinePlot xs (return ())
+-- smoothLinePlot'
+--   :: (BaseSpace c ~ v,
+--       F.Foldable f,
+--       PointLike v Double p,
+--       Typeable v,
+--       R1 v,
+--       Fractional (v Double), -- needs fixing in diagrams-lib
+--       MonadState (Axis c) m)
+--   => f p -- ^ points to turn into trail
+--   -> m () -- ^ add plot to the 'Axis'
+-- smoothLinePlot' xs = smoothLinePlot xs (return ())
 
 ------------------------------------------------------------------------
 -- Trail and path
@@ -173,5 +174,5 @@ mkPath pss = toPath $ map mkTrail (F.toList pss)
 
 -- | Construct a localed trail from a fold over points.
 mkPathOf :: (PointLike v n p, OrderedField n) => Fold s t -> Fold t p -> s -> Path v n
-mkPathOf f1 f2 as = Path $ map (mkTrailOf f2) (toListOf f1 as)
+mkPathOf f1 f2 as = Path . S.fromList $ map (mkTrailOf f2) (toListOf f1 as)
 

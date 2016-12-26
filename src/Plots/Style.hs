@@ -29,6 +29,7 @@ module Plots.Style
 
     -- ** Predefined styles
   , fadedColours
+  , fadedColours3D
   , vividColours
   , blackAndWhite
 
@@ -82,6 +83,10 @@ import           Data.Typeable
 import           Diagrams.Prelude hiding (magma)
 import           Linear
 
+import Diagrams.ThreeD.Attributes
+
+import Geometry
+
 -- | Plot styles are used to style each plot in an axis. Every 'Axis'
 --   comes with a list of plots styles (contained in the 'AxisStyle')
 --   which get applied the plots upon rendering.
@@ -121,23 +126,23 @@ import           Linear
 --      'histogramPlot')
 --   * 'markerStyle' - style used for markers in 'scatterPlot'
 --   * 'plotMarker' - marker used in 'scatterPlot'
-data PlotStyle b v n = PlotStyle
+data PlotStyle v = PlotStyle
   { _plotColour  :: Colour Double
-  , _lineStyle   :: Colour Double -> Style v n
-  , _markerStyle :: Colour Double -> Style v n
-  , _areaStyle   :: Colour Double -> Style v n
-  , _textStyle   :: Colour Double -> Style v n
-  , _plotMarker  :: QDiagram b v n Any
+  , _lineStyle   :: Colour Double -> Style v Double
+  , _markerStyle :: Colour Double -> Style v Double
+  , _areaStyle   :: Colour Double -> Style v Double
+  , _textStyle   :: Colour Double -> Style v Double
+  , _plotMarker  :: Diagram v
   } deriving Typeable
   -- XXX link to examples in haddock?
 
-type instance V (PlotStyle b v n) = v
-type instance N (PlotStyle b v n) = n
+type instance V (PlotStyle v) = v
+type instance N (PlotStyle v) = Double
 
 -- | Class for objects that contain a 'PlotStyle'.
-class HasPlotStyle f a b | a -> b where
+class HasPlotStyle f a where
   -- | Lens onto the 'PlotStyle'.
-  plotStyle :: LensLike' f a (PlotStyle b (V a) (N a))
+  plotStyle :: LensLike' f a (PlotStyle (V a))
 
   -- | The 'plotColour' is the overall colour of the plot. This is passed
   --   to the other styles ('lineStyle', 'markerStyle' etc.) to give an
@@ -152,61 +157,60 @@ class HasPlotStyle f a b | a -> b where
   -- | This style is applied to any plots made up of lines only (like
   --   'Path' plots). This is a less general version of
   --   'lineStyleFunction'.
-  lineStyle :: Settable f => LensLike' f a (Style (V a) (N a))
+  lineStyle :: Settable f => LensLike' f a (Style (V a) Double)
   lineStyle = lineStyleFunction . mapped
 
   -- | A version 'lineStyle' with access to the current 'plotColour'
   --   when 'applyLineStyle' is used.
-  lineStyleFunction :: Functor f => LensLike' f a (Colour Double ->
-    Style (V a) (N a))
+  lineStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) Double)
   lineStyleFunction = plotStyle . lens _lineStyle (\p f -> p {_lineStyle = f})
 
   -- | This style is applied to any markers in the plot (usually the
   --   'plotMarker'). This is a less general version of
   --   'markerStyleFunction'.
-  markerStyle :: Settable f => LensLike' f a (Style (V a) (N a))
+  markerStyle :: Settable f => LensLike' f a (Style (V a) Double)
   markerStyle = markerStyleFunction . mapped
 
   -- | A version 'lineStyle' with access to the current 'plotColour' when
   --   'applyMarkerStyle' is used.
-  markerStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) (N a))
+  markerStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) Double)
   markerStyleFunction = plotStyle . lens _markerStyle (\p f -> p {_markerStyle = f})
 
   -- | This style is applied to any filled areas in a plot (like
   --   'Plots.Types.Bar' or 'Plots.Styles.Ribbon'). This is a less
   --   general version of 'areaStyleFunction'.
-  areaStyle :: Settable f => LensLike' f a (Style (V a) (N a))
+  areaStyle :: Settable f => LensLike' f a (Style (V a) Double)
   areaStyle = areaStyleFunction . mapped
 
   -- | A version 'areaStyle' with access to the current 'plotColour' when
   --   'applyAreaStyle' is used.
-  areaStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) (N a))
+  areaStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) Double)
   areaStyleFunction = plotStyle . lens _areaStyle (\p f -> p {_areaStyle = f})
 
   -- | This style is applied to text plots. This is a less general
   --   version of 'textStyleFunction'.
-  textStyle :: Settable f => LensLike' f a (Style (V a) (N a))
+  textStyle :: Settable f => LensLike' f a (Style (V a) Double)
   textStyle = textStyleFunction . mapped
 
   -- | A version 'textStyle' with access to the current 'plotColour' when
   --   'applyAreaStyle' is used.
-  textStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) (N a))
+  textStyleFunction :: Functor f => LensLike' f a (Colour Double -> Style (V a) Double)
   textStyleFunction = plotStyle . lens _textStyle (\p f -> p {_textStyle = f})
 
   -- | This diagram is used as any markers in a plot (like
   --   'Plots.Types.Scatter'). The 'markerStyle' will be applied to this
   --   marker when the plot gets rendered.
-  plotMarker :: Functor f => LensLike' f a (QDiagram b (V a) (N a) Any)
+  plotMarker :: Functor f => LensLike' f a (Diagram (V a))
   plotMarker = plotStyle . lens _plotMarker (\p f -> p {_plotMarker = f})
 
   -- | A traversal over all the styles ('lineStyle', 'markerStyle',
   --  'areaStyle' and 'textStyle') of a 'PlotStyle'. This is a less
   --  general version of 'plotStyleFunctions'.
-  plotStyles :: Settable f => LensLike' f a (Style (V a) (N a))
+  plotStyles :: Settable f => LensLike' f a (Style (V a) Double)
   plotStyles = plotStyleFunctions . mapped
 
   -- | A version of 'plotStyles' with access to the 'plotColour'.
-  plotStyleFunctions :: Applicative f => LensLike' f a (Colour Double -> Style (V a) (N a))
+  plotStyleFunctions :: Applicative f => LensLike' f a (Colour Double -> Style (V a) Double)
   plotStyleFunctions = plotStyle . t
     where
       t f PlotStyle {..} = PlotStyle
@@ -217,7 +221,7 @@ class HasPlotStyle f a b | a -> b where
         <*> f _textStyle
         <*> pure _plotMarker
 
-instance HasPlotStyle f (PlotStyle b v n) b where
+instance HasPlotStyle f (PlotStyle v) where
   plotStyle = id
 
 -- Applying styles -----------------------------------------------------
@@ -225,48 +229,48 @@ instance HasPlotStyle f (PlotStyle b v n) b where
 -- | Apply the 'lineStyle' from a 'PlotStyle'.
 --
 -- @
--- applyLineStyle :: (InSpace v n t, HasStyle t) => PlotStyle b v n -> t -> t
+-- applyLineStyle :: (InSpace v n t, HasStyle t) => PlotStyle v -> t -> t
 -- @
 applyLineStyle
-  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
-  => a -> t -> t
+  :: (InSpace v Double t, ApplyStyle t)
+  => PlotStyle v -> t -> t
 applyLineStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. lineStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'markerStyle' from a 'PlotStyle'.
 --
 -- @
--- applyMarkerStyle :: (InSpace v n t, HasStyle t) => PlotStyle b v n -> t -> t
+-- applyMarkerStyle :: (InSpace v n t, HasStyle t) => PlotStyle v -> t -> t
 -- @
 applyMarkerStyle
-  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
-  => a -> t -> t
+  :: (InSpace v Double t, ApplyStyle t)
+  => PlotStyle v -> t -> t
 applyMarkerStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. markerStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'areaStyle from a 'PlotStyle'.
 --
 -- @
--- applyLineStyle :: (InSpace v n t, HasStyle t) => PlotStyle b v n -> t -> t
+-- applyLineStyle :: (InSpace v n t, HasStyle t) => PlotStyle v -> t -> t
 -- @
 applyAreaStyle
-  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
-  => a -> t -> t
+  :: (InSpace v Double t, ApplyStyle t)
+  => PlotStyle v -> t -> t
 applyAreaStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. areaStyleFunction) (sty ^. plotColour)
 
 -- | Apply the 'textStyle' from a 'PlotStyle'.
 --
 -- @
--- applyTextStyle :: (InSpace v n t, HasStyle t) => PlotStyle b v n -> t -> t
+-- applyTextStyle :: (InSpace v n t, HasStyle t) => PlotStyle v -> t -> t
 -- @
 applyTextStyle
-  :: (SameSpace a t, HasPlotStyle (Const (PlotStyle b (V a) (N a))) a b, HasStyle t)
-  => a -> t -> t
+  :: (InSpace v Double t, ApplyStyle t)
+  => PlotStyle v -> t -> t
 applyTextStyle (view plotStyle -> sty) =
   applyStyle $ (sty ^. textStyleFunction) (sty ^. plotColour)
 
-instance (Metric v, Traversable v, OrderedField n) => Transformable (PlotStyle b v n) where
+instance (Metric v, Traversable v) => Transformable (PlotStyle v) where
   transform t = (plotMarker %~ transform t) . (plotStyles %~ transform t)
 
 ------------------------------------------------------------------------
@@ -275,15 +279,15 @@ instance (Metric v, Traversable v, OrderedField n) => Transformable (PlotStyle b
 
 -- | The 'AxisStyle' determines the 'Style's of the plots in an axis.
 --   There are various predefined styles to change the look of the plot.
-data AxisStyle b v n = AxisStyle ColourMap [PlotStyle b v n]
+data AxisStyle v = AxisStyle ColourMap [PlotStyle v]
 
-type instance V (AxisStyle b v n) = v
-type instance N (AxisStyle b v n) = n
+type instance V (AxisStyle v) = v
+type instance N (AxisStyle v) = Double
 
 -- | Class of things that have an 'AxisStyle'.
-class HasAxisStyle a b | a -> b where
+class HasAxisStyle a where
   -- | Lens onto the 'AxisStyle'.
-  axisStyle :: Lens' a (AxisStyle b (V a) (N a))
+  axisStyle :: Lens' a (AxisStyle (V a))
 
   -- | The 'ColourMap' is used to draw the 'Plots.Axis.ColourBar' and
   --   render plots like 'Plots.HeatMap'.
@@ -293,14 +297,14 @@ class HasAxisStyle a b | a -> b where
 
   -- | Traversal over the 'PlotStyle's in an 'AxisStyle'. There are always
   --   an infinite number of 'PlotStyle's in an 'AxisStyle'.
-  axisStyles :: IndexedTraversal' Int a (PlotStyle b (V a) (N a))
+  axisStyles :: IndexedTraversal' Int a (PlotStyle (V a))
   axisStyles = axisStyle . stys . traversed
     where stys f (AxisStyle c ss) = f ss <&> \ss' -> AxisStyle c ss'
 
-instance HasAxisStyle (AxisStyle b v n) b where
+instance HasAxisStyle (AxisStyle v) where
   axisStyle = id
 
-instance Applicative f => HasPlotStyle f (AxisStyle b v n) b where
+instance Applicative f => HasPlotStyle f (AxisStyle v) where
   plotStyle = axisStyles
 
 ------------------------------------------------------------------------
@@ -327,7 +331,7 @@ instance Applicative f => HasPlotStyle f (AxisStyle b v n) b where
 -- | Theme using 'funColours' with faded fills and thick lines.
 --
 -- <<diagrams/src_Plots_Style_fadedColourPic.svg#diagram=fadedColourPic&width=600>>
-fadedColours :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
+fadedColours :: AxisStyle V2
 fadedColours = AxisStyle viridis $
   zipWith mkStyle (cycle colours1) (cycle $ map stroke filledMarkers)
   where
@@ -336,10 +340,20 @@ fadedColours = AxisStyle viridis $
     fadeS c = mempty # fc (blend 0.1 white c) # lc c # lwO 1
     fillS c = mempty # fc c # lw none
 
+fadedColours3D :: AxisStyle V3
+fadedColours3D = AxisStyle viridis $
+  zipWith mkStyle (cycle colours1) shapeMarkers
+  where
+    mkStyle c = PlotStyle c lineS fadeS fadeS fillS
+    lineS c = mempty # lwO 3 :: Style V3 Double
+    fadeS c = mempty # sc (blend 0.1 white c) # lwO 3 :: Style V3 Double
+    fillS c = mempty # sc c # lw none  :: Style V3 Double
+
+
 -- | Theme using 'funColours' with no lines on 'areaStyle.
 --
 -- <<diagrams/src_Plots_Style_vividColourPic.svg#diagram=vividColourPic&width=600>>
-vividColours :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
+vividColours :: AxisStyle V2
 vividColours = AxisStyle viridis $
   zipWith mkStyle (cycle colours2) (cycle $ map (scale 1.2 . stroke) filledMarkers)
   where
@@ -351,7 +365,7 @@ vividColours = AxisStyle viridis $
 -- | Theme without any colours, useful for black and white documents.
 --
 -- <<diagrams/src_Plots_Style_blackAndWhitePic.svg#diagram=blackAndWhitePic&width=600>>
-blackAndWhite :: (TypeableFloat n, Renderable (Path V2 n) b) => AxisStyle b V2 n
+blackAndWhite :: AxisStyle V2
 blackAndWhite = AxisStyle greys $
   zipWith3 mkStyle (cycle colours) (cycle lineStyles) (cycle $ map stroke filledMarkers)
   where
@@ -397,9 +411,18 @@ colours2 = cycle
 
 -- | Markers which have a filling, used for 'fadedColours' and
 --   'vividColours'.
+shapeMarkers :: [Diagram V3]
+shapeMarkers = scale 11 $ cycle
+  [ cube
+  , sphere
+  , cone
+  ]
+
+-- | Markers which have a filling, used for 'fadedColours' and
+--   'vividColours'.
 filledMarkers :: RealFloat n => [Path V2 n]
-filledMarkers = scale 11 . map (centerXY . pathFromTrail) $ cycle
-  [ circle 0.5
+filledMarkers = scale 11 . map (centerXY . toPath) $ cycle
+  [ circle 0.5 :: RealFloat n => Trail V2 n
   , square 1
   , triangle 1
   , diamond (1 / sqrt 2)
@@ -431,27 +454,27 @@ asterisk :: OrderedField n => Int -> n -> Path V2 n
 asterisk n x
   = mconcat . take n
   . iterate (rotateBy (1/fromIntegral n))
-  $ (0 ^& 0) ~~ (0 ^& x)
+  $ fromVertices [origin, mkP2 0 x]
 
 -- | A rotated 'square'.
-diamond :: (InSpace V2 n t, TrailLike t) => n -> t
-diamond = trailLike . rotateBy (1/8) . square
+diamond :: (InSpace V2 n t, FromTrail t, OrderedField n) => n -> t
+diamond = fromLocTrail . rotateBy (1/8) . square
 
 -- | A rotated 'plus'.
-crossShape :: (InSpace V2 n t, TrailLike t) => n -> t
-crossShape = trailLike . rotateBy (1/8) . plus
+crossShape :: (InSpace V2 n t, FromTrail t, OrderedField n) => n -> t
+crossShape = fromLocTrail . rotateBy (1/8) . plus
 
 -- | Filled in @+@ symbol.
-plus :: (InSpace V2 n t, TrailLike t) => n -> t
-plus x = trailLike . (`at` mkP2 (x/6) (x/6))
-       . wrapTrail . glueLine . mconcat . take 4
-       . iterate (rotateBy (1/4)) . onLineSegments init
+plus :: (InSpace V2 n t, FromTrail t, OrderedField n) => n -> t
+plus x = fromLocLoop . (`at` mkP2 (x/6) (x/6))
+       . glueLine . mconcat . take 4
+       . iterate (rotateBy (1/4)) . (^?! _init)
        $ square (x/3)
 
 -- | A filled in five sided start of size x.
-star' :: (InSpace V2 n t, TrailLike t) => n -> t
-star' x = trailLike . (`at` mkP2 (-x/6) (x/6))
-        . wrapTrail . glueLine . mconcat . take 5
+star' :: (InSpace V2 n t, FromTrail t, OrderedField n) => n -> t
+star' x = fromLocLoop . (`at` mkP2 (-x/6) (x/6))
+        . glueLine . mconcat . take 5
         . iterate (rotateBy (-1/5)) $ spoke
   where
     spoke = fromOffsets . map r2 $ [(x/6,x/2), (x/6,-x/2)]
@@ -588,7 +611,7 @@ colourMap cs
     (b,_) = M.findMax cm
     normalise x = (x - a) / (b - a)
 
-toStops :: Fractional n => ColourMap -> [GradientStop n]
+toStops :: ColourMap -> [GradientStop]
 toStops = map (\(x,c) -> GradientStop (SomeColor c) (fromRational x))
         . colourList
 

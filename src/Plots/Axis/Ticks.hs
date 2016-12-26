@@ -52,7 +52,6 @@ module Plots.Axis.Ticks
   ) where
 
 import           Control.Lens     hiding (transform, ( # ))
-import           Data.Data
 import           Data.Default
 import           Data.Foldable    as F
 import           Data.Ord
@@ -104,15 +103,15 @@ outsideTicks = TickSpec 1 0
 ------------------------------------------------------------------------
 
 -- | The big ticks on the axis line.
-data MajorTicks v n = MajorTicks
-  { matFunction :: (n,n) -> [n]
+data MajorTicks v = MajorTicks
+  { matFunction :: (Double,Double) -> [Double]
   , matAlign    :: TicksAlignment
-  , matLength   :: n
-  , matStyle    :: Style v n
+  , matLength   :: Double
+  , matStyle    :: Style v Double
   , matVisible  :: Bool
   }
 
-instance TypeableFloat n => Default (MajorTicks v n) where
+instance Default (MajorTicks v) where
   def = MajorTicks
     { matFunction = linearMajorTicks 5
     , matAlign    = autoTicks
@@ -121,20 +120,20 @@ instance TypeableFloat n => Default (MajorTicks v n) where
     , matVisible  = True
     }
 
-type instance V (MajorTicks v n) = v
-type instance N (MajorTicks v n) = n
+type instance V (MajorTicks v) = v
+type instance N (MajorTicks v) = Double
 
 -- | Class of things that have a 'MajorTicks'.
 class HasMajorTicks f a where
   -- | Lens onto the 'MajorTicks' of something.
-  majorTicks :: LensLike' f a (MajorTicks (V a) (N a))
+  majorTicks :: LensLike' f a (MajorTicks (V a))
 
   -- | The function used to place ticks for this axis, given the bounds
   --   of the axis. The result of these major ticks are also used as
   --   guides for 'MinorTicks', 'MajorGridLines' and 'MinorGridLines'.
   --
   --   Default is @'linearMinorTicks' 5@.
-  majorTicksFunction :: Functor f => LensLike' f a ((N a, N a) -> [N a])
+  majorTicksFunction :: Functor f => LensLike' f a ((Double, Double) -> [Double])
   majorTicksFunction = majorTicks . lens matFunction (\mat a -> mat {matFunction = a})
 
   -- | Alignment of the major ticks. Choose between 'autoTicks'
@@ -145,38 +144,42 @@ class HasMajorTicks f a where
   -- | The total length the major ticks.
   --
   --   Default is @7@.
-  majorTicksLength :: Functor f => LensLike' f a (N a)
+  majorTicksLength :: Functor f => LensLike' f a Double
   majorTicksLength = majorTicks . lens matLength (\mat a -> mat {matLength = a})
 
   -- | The style used to render the major ticks.
   --
   --   Default is @'lwO' 0.6 'mempty'@ (subject to change).
-  majorTicksStyle :: Functor f => LensLike' f a (Style (V a) (N a))
+  majorTicksStyle :: Functor f => LensLike' f a (Style (V a) Double)
   majorTicksStyle = majorTicks . lens matStyle (\mat sty -> mat {matStyle = sty})
 
-instance HasMajorTicks f (MajorTicks v n) where
+instance HasMajorTicks f (MajorTicks v) where
   majorTicks = id
 
-instance HasVisibility (MajorTicks v n) where
+instance HasVisibility (MajorTicks v) where
   visible = lens matVisible (\mat b -> mat {matVisible = b})
+
+instance ApplyStyle (MajorTicks v) where
+instance HasStyle (MajorTicks v) where
+  style = majorTicksStyle
 
 ------------------------------------------------------------------------
 -- Minor ticks
 ------------------------------------------------------------------------
 
 -- | The small ticks on the axis line.
-data MinorTicks v n = MinorTicks
-  { mitFunction :: [n] -> (n,n) -> [n]
+data MinorTicks v = MinorTicks
+  { mitFunction :: [Double] -> (Double,Double) -> [Double]
   , mitAlign    :: TicksAlignment
-  , mitLength   :: n
-  , mitStyle    :: Style v n
+  , mitLength   :: Double
+  , mitStyle    :: Style v Double
   , mitVisible  :: Bool
   }
 
-type instance V (MinorTicks v n) = v
-type instance N (MinorTicks v n) = n
+type instance V (MinorTicks v) = v
+type instance N (MinorTicks v) = Double
 
-instance TypeableFloat n => Default (MinorTicks v n) where
+instance Default (MinorTicks v) where
   def = MinorTicks
     { mitFunction = minorTicksHelper 4
     , mitAlign    = autoTicks
@@ -188,13 +191,13 @@ instance TypeableFloat n => Default (MinorTicks v n) where
 -- | Class of things that have a single 'MinorTicks'.
 class HasMinorTicks f a where
   -- | Lens onto the 'MinorTicks' of something.
-  minorTicks :: LensLike' f a (MinorTicks (V a) (N a))
+  minorTicks :: LensLike' f a (MinorTicks (V a))
 
   -- | The function used to place ticks for this axis, given the result
   --   of 'majorTicksFunction' and the bounds of the axis.
   --
   --   Default is @'linearMinorTicks' 3@.
-  minorTicksFunction :: Functor f => LensLike' f a ([N a] -> (N a, N a) -> [N a])
+  minorTicksFunction :: Functor f => LensLike' f a ([Double] -> (Double, Double) -> [Double])
   minorTicksFunction = minorTicks . lens mitFunction (\mit a -> mit {mitFunction = a})
 
   -- | Alignment of the minor ticks. Choose between 'autoTicks'
@@ -205,52 +208,56 @@ class HasMinorTicks f a where
   -- | The total length the minor ticks.
   --
   --   Default is @3@.
-  minorTicksLength :: Functor f => LensLike' f a (N a)
+  minorTicksLength :: Functor f => LensLike' f a Double
   minorTicksLength = minorTicks . lens mitLength (\mit a -> mit {mitLength = a})
 
   -- | The style used to render the minor ticks.
   --
   --   Default is @'lwO' 0.4 'mempty'@ (subject to change).
-  minorTicksStyle :: Functor f => LensLike' f a (Style (V a) (N a))
+  minorTicksStyle :: Functor f => LensLike' f a (Style (V a) Double)
   minorTicksStyle = minorTicks . lens mitStyle (\mit sty -> mit {mitStyle = sty})
 
-instance HasMinorTicks f (MinorTicks v n) where
+instance HasMinorTicks f (MinorTicks v) where
   minorTicks = id
 
-instance HasVisibility (MinorTicks v n) where
+instance HasVisibility (MinorTicks v) where
   visible = lens mitVisible (\mit sty -> mit {mitVisible = sty})
+
+instance ApplyStyle (MinorTicks v) where
+instance HasStyle (MinorTicks v) where
+  style = minorTicksStyle
 
 ------------------------------------------------------------------------
 -- Both ticks
 ------------------------------------------------------------------------
 
 -- | Both 'MajorTicks' and 'MinorTicks' together.
-data Ticks v n = Ticks (MajorTicks v n) (MinorTicks v n)
+data Ticks v = Ticks (MajorTicks v) (MinorTicks v)
 -- Ticks are originally split up into major and minor so we can reuse
 -- major for the colour bar. I'm still undecided whether it's worth all
 -- the extra boilerplate here.
 
-type instance V (Ticks v n) = v
-type instance N (Ticks v n) = n
+type instance V (Ticks v) = v
+type instance N (Ticks v) = Double
 
 -- | Class of things with both 'MajorTicks' and 'MinorTicks'.
 class (HasMinorTicks f a, HasMajorTicks f a) => HasTicks f a where
-  bothTicks :: LensLike' f a (Ticks (V a) (N a))
+  bothTicks :: LensLike' f a (Ticks (V a))
 
-instance Functor f => HasTicks f (Ticks v n) where
+instance Functor f => HasTicks f (Ticks v) where
   bothTicks = id
 
-instance Functor f => HasMajorTicks f (Ticks v n) where
+instance Functor f => HasMajorTicks f (Ticks v) where
   majorTicks f (Ticks ma mi) = f ma <&> \ma' -> Ticks ma' mi
 
-instance Functor f => HasMinorTicks f (Ticks v n) where
+instance Functor f => HasMinorTicks f (Ticks v) where
   minorTicks f (Ticks ma mi) = f mi <&> \mi' -> Ticks ma mi'
 
-instance TypeableFloat n => Default (Ticks v n) where
+instance Default (Ticks v) where
   def = Ticks def def
 
-instance Typeable n => HasStyle (Ticks v n) where
-  applyStyle s = over ticksStyle (applyStyle s)
+instance ApplyStyle (Ticks v) where
+  applyStyle = over ticksStyle . applyStyle
 
 -- | Traversal over both major and minor tick alignment.
 ticksAlign :: (HasTicks f a, Applicative f) => LensLike' f a TicksAlignment
@@ -260,7 +267,7 @@ ticksAlign = bothTicks . aligns
                   <$> f (a ^. majorTicksAlignment) <*> f (a ^. minorTicksAlignment)
 
 -- | Traversal over both major and minor tick styles.
-ticksStyle :: (HasTicks f a, Applicative f) => LensLike' f a (Style (V a) (N a))
+ticksStyle :: (HasTicks f a, Applicative f) => LensLike' f a (Style (V a) Double)
 ticksStyle = bothTicks . styles
   where
     styles f a = (\m mn -> a & majorTicksStyle .~ m & minorTicksStyle .~ mn)
@@ -291,7 +298,7 @@ hideTicks = ticksVisible .~ False
 --   you want to add or modify existing tick positions.
 majorTickPositions
   :: (HasMajorTicks f a, Settable f)
-  => LensLike' f a [N a]
+  => LensLike' f a [Double]
 majorTickPositions = majorTicksFunction . mapped
 
 -- | Setter over the final positions the major ticks. This is not as
@@ -300,7 +307,7 @@ majorTickPositions = majorTicksFunction . mapped
 --   you want to add or modify existing tick positions.
 minorTickPositions
   :: (HasMinorTicks f a, Settable f)
-  => LensLike' f a [N a]
+  => LensLike' f a [Double]
 minorTickPositions = minorTicksFunction . mapped . mapped
 
 ------------------------------------------------------------------------

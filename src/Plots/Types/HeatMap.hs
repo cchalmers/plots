@@ -76,6 +76,8 @@ import           Plots.Axis
 import           Plots.Style
 import           Plots.Types
 
+import Diagrams.TwoD.Image
+
 ------------------------------------------------------------------------
 -- Heatmap
 ------------------------------------------------------------------------
@@ -196,13 +198,9 @@ hmFold f b0 (HeatMatrix (V2 x y) v _ _) = go 0 0 0 b0 where
 -- >       myHM       = mkHeatMatrix (V2 5 5) f
 -- >   in  pixelHeatRender myHM viridis
 --
-pixelHeatRender
-  :: (Renderable (DImage n Embedded) b, TypeableFloat n)
-  => HeatMatrix
-  -> ColourMap
-  -> QDiagram b V2 n Any
+pixelHeatRender :: HeatMatrix -> ColourMap -> Diagram V2
 pixelHeatRender hm cm =
-  alignBL . image $ DImage (ImageRaster (ImageRGB8 img)) x y mempty
+  alignBL . image $ DImage x y (ImageRaster (ImageRGB8 img))
   where
     img    = heatImage hm cm
     V2 x y = hmSize hm
@@ -221,14 +219,9 @@ pixelHeatRender hm cm =
 -- >       myHM       = mkHeatMatrix (V2 5 5) f
 -- >   in  pixelHeatRender' 10 myHM viridis
 --
-pixelHeatRender'
-  :: (Renderable (DImage n Embedded) b, TypeableFloat n)
-  => Int
-  -> HeatMatrix
-  -> ColourMap
-  -> QDiagram b V2 n Any
+pixelHeatRender' :: Int -> HeatMatrix -> ColourMap -> Diagram V2
 pixelHeatRender' n hm cm =
-  scale (1/fromIntegral n) . alignBL . image $ DImage (ImageRaster (ImageRGB8 img)) (x*n) (y*n) mempty
+  scale (1/fromIntegral n) . alignBL . image $ DImage (x*n) (y*n) (ImageRaster (ImageRGB8 img))
   where
     img    = scaleImage n $ heatImage hm cm
     V2 x y = hmSize hm
@@ -328,11 +321,7 @@ mkColourVector cm = V.create $ do
 -- >       myHM       = mkHeatMatrix (V2 5 5) f
 -- >   in  pathHeatRender myHM viridis
 --
-pathHeatRender
-  :: (Renderable (Path V2 n) b, TypeableFloat n)
-  => HeatMatrix
-  -> ColourMap
-  -> QDiagram b V2 n Any
+pathHeatRender :: HeatMatrix -> ColourMap -> Diagram V2
 pathHeatRender hm@(HeatMatrix _ _ a b) cm = ifoldMapOf hmPoints mk hm # lwO 0
   where
     normalise d = (d - a) / (b - a)
@@ -355,23 +344,23 @@ pathHeatRender hm@(HeatMatrix _ _ a b) cm = ifoldMapOf hmPoints mk hm # lwO 0
 
 -- | A mapping from points in a 2D axis do 'Double's. These 'Double's
 --   are converted to colours using the axis 'ColourMap'.
-data HeatMap b n = HeatMap
+data HeatMap = HeatMap
   { hMatrix      :: HeatMatrix
-  , hStart       :: P2 n
-  , hSize        :: V2 n
-  , hGridSty     :: Style V2 n
+  , hStart       :: P2 Double
+  , hSize        :: V2 Double
+  , hGridSty     :: Style V2 Double
   , hGridVisible :: Bool
   , hLimits      :: Maybe (Double,Double)
-  , hDraw        :: HeatMatrix -> ColourMap -> QDiagram b V2 n Any
+  , hDraw        :: HeatMatrix -> ColourMap -> Diagram V2
   } deriving Typeable
 
-type instance V (HeatMap b n) = V2
-type instance N (HeatMap b n) = n
+type instance V HeatMap = V2
+type instance N HeatMap = Double
 
 -- | Class of things that let you change the heatmap options.
-class HasHeatMap f a b | a -> b where
+class HasHeatMap f a where
   -- | Lens onto the heatmap options.
-  heatMapOptions :: LensLike' f a (HeatMap b (N a))
+  heatMapOptions :: LensLike' f a HeatMap
 
   -- | Whether there should be grid lines draw for the heat map.
   --
@@ -383,19 +372,19 @@ class HasHeatMap f a b | a -> b where
   --   visible.
   --
   --   Default is 'mempty'.
-  heatMapGridStyle :: Functor f => LensLike' f a (Style V2 (N a))
+  heatMapGridStyle :: Functor f => LensLike' f a (Style V2 Double)
   heatMapGridStyle = heatMapOptions . lens hGridSty (\s b -> (s {hGridSty = b}))
 
   -- | The size of each individual square in the heat map.
   --
   --   Default is @'V2' 1 1@.
-  heatMapSize :: Functor f => LensLike' f a (V2 (N a))
+  heatMapSize :: Functor f => LensLike' f a (V2 Double)
   heatMapSize = heatMapOptions . lens hSize (\s b -> (s {hSize = b}))
 
   -- | The size of the full extent of the heat map.
   --
   --   Default is extent of the heat matrix.
-  heatMapExtent :: (Functor f, Fractional (N a)) => LensLike' f a (V2 (N a))
+  heatMapExtent :: Functor f => LensLike' f a (V2 Double)
   heatMapExtent = heatMapOptions . l where
     l f hm = f (hSize hm * s) <&> \x -> hm { hSize = x / s }
       where s = fmap fromIntegral (hmSize $ hMatrix hm)
@@ -403,11 +392,11 @@ class HasHeatMap f a b | a -> b where
   -- | The starting point at the bottom left corner of the heat map.
   --
   --   Default is 'origin'
-  heatMapStart :: Functor f => LensLike' f a (P2 (N a))
+  heatMapStart :: Functor f => LensLike' f a (P2 Double)
   heatMapStart = heatMapOptions . lens hStart (\s b -> (s {hStart = b}))
 
   -- | The center point of the heat map.
-  heatMapCentre :: (Functor f, Fractional (N a)) => LensLike' f a (P2 (N a))
+  heatMapCentre :: Functor f => LensLike' f a (P2 Double)
   heatMapCentre = heatMapOptions . l where
     l f hm = f (hStart hm .+^ v) <&> \p -> hm { hStart = p .-^ v }
       where v = fmap fromIntegral (hmSize $ hMatrix hm) * hSize hm / 2
@@ -421,26 +410,25 @@ class HasHeatMap f a b | a -> b where
   --   'pixelHeatRender'.
   --
   --   Default is 'pathHeatRender'.
-  heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> QDiagram b V2 (N a) Any)
+  heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> Diagram V2)
   heatMapRender = heatMapOptions . lens hDraw (\s b -> (s {hDraw = b}))
 
-instance HasHeatMap f (HeatMap b n) b where
+instance HasHeatMap f HeatMap where
   heatMapOptions = id
 
-instance (Functor f, HasHeatMap f a b) => HasHeatMap f (Plot a b) b where
+instance (Functor f, HasHeatMap f a) => HasHeatMap f (Plot a) where
   heatMapOptions = rawPlot . heatMapOptions
 
-instance OrderedField n => Enveloped (HeatMap b n) where
+instance Enveloped HeatMap where
   getEnvelope hm = getEnvelope (fromCorners p (p .+^ v))
     where p = view heatMapStart hm
           v = view heatMapExtent hm
 
-instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (HeatMap b n) b where
+instance Plotable HeatMap where
   renderPlotable s _sty HeatMap {..} =
       transform (s^.specTrans) $
         grid <> hDraw matrix' (s^.specColourMap)
-                  # transform (scaleV hSize)
+                  # scaleV hSize
                   # moveTo hStart
     where
       --- TODO
@@ -456,13 +444,8 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
   -- XXX make better
   defLegendPic sty HeatMap {..} = square 5 # applyAreaStyle sty
 
-scaleV :: (Additive v, Fractional n) => v n -> Transformation v n
-scaleV v = fromLinear f f
-  where f = (liftU2 (*) v) <-> (\u -> liftU2 (/) u v)
-
 -- | Construct a 'Heatmap' using the given 'HeatMatrix'.
-mkHeatMap :: (Renderable (Path V2 n) b, TypeableFloat n)
-          => HeatMatrix -> HeatMap b n
+mkHeatMap :: HeatMatrix -> HeatMap
 mkHeatMap mat = HeatMap
   { hMatrix      = mat
   , hStart       = origin
@@ -500,12 +483,9 @@ mkHeatMap mat = HeatMap
 heatMap
   :: (F.Foldable f,
       F.Foldable g,
-      TypeableFloat n,
-      Typeable b,
-      MonadState (Axis b V2 n) m,
-      Renderable (Path V2 n) b)
+      MonadState (Axis V2) m)
   => f (g Double)
-  -> State (Plot (HeatMap b n) b) ()
+  -> State (Plot HeatMap) ()
                    -- ^ changes to plot options
   -> m ()          -- ^ add plot to 'Axis'
 heatMap xss s = do
@@ -541,10 +521,7 @@ heatMap xss s = do
 heatMap'
   :: (F.Foldable f,
       F.Foldable g,
-      TypeableFloat n,
-      Typeable b,
-      MonadState (Axis b V2 n) m,
-      Renderable (Path V2 n) b)
+      MonadState (Axis V2) m)
   => f (g Double)
   -> m ()          -- ^ add plot to 'Axis'
 heatMap' xss = heatMap xss (return ())
@@ -574,13 +551,10 @@ heatMap' xss = heatMap xss (return ())
 --
 heatMapIndexed
   :: (VectorLike V2 Int i,
-      TypeableFloat n,
-      Typeable b,
-      MonadState (Axis b V2 n) m,
-      Renderable (Path V2 n) b)
+      MonadState (Axis V2) m)
   => i             -- ^ extent of array
   -> (i -> Double) -- ^ heat from index
-  -> State (Plot (HeatMap b n) b) ()
+  -> State (Plot HeatMap) ()
                    -- ^ changes to plot options
   -> m ()          -- ^ add plot to 'Axis'
 heatMapIndexed i f s = do
@@ -616,10 +590,7 @@ heatMapIndexed i f s = do
 --
 heatMapIndexed'
   :: (VectorLike V2 Int i,
-      TypeableFloat n,
-      Typeable b,
-      MonadState (Axis b V2 n) m,
-      Renderable (Path V2 n) b)
+      MonadState (Axis V2) m)
   => i             -- ^ extent of array
   -> (i -> Double) -- ^ heat from index
   -> m ()          -- ^ add plot to 'Axis'

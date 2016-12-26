@@ -30,18 +30,17 @@ import Diagrams.Prelude
 import Diagrams.TwoD.Text
 import Plots.Types
 
-data Title b v n = Title
+data Title v = Title
   { tVisible   :: Bool
   , tTxt       :: String
-  , tTxtFun    :: TextAlignment n -> String -> QDiagram b v n Any
-  , tStyle     :: Style v n
+  , tTxtFun    :: TextAlignment Double -> String -> Diagram v
+  , tStyle     :: Style v Double
   , tPlacement :: Placement
-  , tAlignment :: TextAlignment n
-  , tGap       :: n
+  , tAlignment :: TextAlignment Double
+  , tGap       :: Double
   } deriving Typeable
 
-instance (Renderable (Text n) b, TypeableFloat n)
-  => Default (Title b V2 n) where
+instance Default (Title V2) where
   def = Title
     { tVisible = True
     , tTxt     = ""
@@ -52,20 +51,20 @@ instance (Renderable (Text n) b, TypeableFloat n)
     , tGap = 20
     }
 
-type instance V (Title b v n) = v
-type instance N (Title b v n) = n
+type instance V (Title v) = v
+type instance N (Title v) = Double
 
-instance HasVisibility (Title b v n) where
+instance HasVisibility (Title v) where
   visible = lens tVisible (\t b -> t {tVisible = b})
 
-instance HasGap (Title b v n) where
+instance HasGap (Title v) where
   gap = lens tGap (\t g -> t {tGap = g})
 
-instance HasPlacement (Title b v n) where
+instance HasPlacement (Title v) where
   placement = titlePlacement
 
-class HasTitle a b | a -> b where
-  title :: Lens' a (Title b (V a) (N a))
+class HasTitle a where
+  title :: Lens' a (Title (V a))
 
   -- | The text used for the title. If the string is empty, no title is
   --   drawn.
@@ -77,7 +76,7 @@ class HasTitle a b | a -> b where
   -- | The style applied to the title.
   --
   --   Default is 'mempty'.
-  titleStyle :: Lens' a (Style (V a) (N a))
+  titleStyle :: Lens' a (Style (V a) Double)
   titleStyle = title . lens tStyle (\t s -> t {tStyle = s})
 
   -- | The placement of the title against the axis.
@@ -89,31 +88,30 @@ class HasTitle a b | a -> b where
   -- | The function used to draw the title text.
   --
   --   Default is 'mkText'.
-  titleTextFunction :: Lens' a (TextAlignment (N a) -> String -> QDiagram b (V a) (N a) Any)
+  titleTextFunction :: Lens' a (TextAlignment Double -> String -> Diagram (V a))
   titleTextFunction = title . lens tTxtFun (\t s -> t {tTxtFun = s})
 
   -- | The 'TextAlignment' used for the title text. This is given to the
   --   'titleTextFunction'.
   --
   --   Default is @'BoxAlignedText' 0.5 0@.
-  titleAlignment :: Lens' a (TextAlignment (N a))
+  titleAlignment :: Lens' a (TextAlignment Double)
   titleAlignment = title . lens tAlignment (\t s -> t {tAlignment = s})
 
   -- | The gap between the axis and the title.
   --
   --   Default is 'mempty'.
-  titleGap :: Lens' a (N a)
+  titleGap :: Lens' a Double
   titleGap = title . lens tGap (\t s -> t {tGap = s})
 
-instance HasTitle (Title b v n) b where
+instance HasTitle (Title v) where
   title = id
 
 -- | Render the title and place it around the bounding box.
 drawTitle
-  :: TypeableFloat n
-  => BoundingBox V2 n
-  -> Title b V2 n
-  -> QDiagram b V2 n Any
+  :: BoundingBox V2 Double
+  -> Title V2
+  -> Diagram V2
 drawTitle bb t
   | t ^. hidden || nullOf titleText t = mempty
   | otherwise = placeAgainst

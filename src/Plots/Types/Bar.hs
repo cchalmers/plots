@@ -80,8 +80,10 @@ import           Plots.Axis.Labels
 import           Plots.Util
 
 import qualified Data.List               as List
-import           Diagrams.Core.Transform (fromSymmetric)
-import           Linear.V2               (_yx)
+-- import           Diagrams.Core.Transform (fromSymmetric)
+-- import           Linear.V2               (_yx)
+
+import Geometry.TwoD.Transform
 
 import           Diagrams.Prelude
 
@@ -97,9 +99,9 @@ import           Diagrams.Prelude
 --   representation of a bar and is not intended to be used directly.
 
 -- | Construct a rectangle of size v with the bottom centre at point p.
-rectB :: (InSpace V2 n t, TrailLike t) => Point V2 n -> V2 n -> t
+rectB :: (InSpace V2 n t, Fractional n, FromTrail t) => Point V2 n -> V2 n -> t
 rectB p (V2 x y) =
-  trailLike $ fromOffsets [V2 x 0, V2 0 y, V2 (-x) 0] # closeTrail `at` p .-^ V2 (x/2) 0
+  fromLocTrail $ fromOffsets [V2 x 0, V2 0 y, V2 (-x) 0] # closeTrail `at` p .-^ V2 (x/2) 0
 
 ------------------------------------------------------------------------
 -- Bar layout
@@ -107,49 +109,49 @@ rectB p (V2 x y) =
 
 -- | The way an individual bar plot or a group of bars plots are laid
 --   out on the axis.
-data BarLayout n = BarLayout
+data BarLayout = BarLayout
   { bOrient  :: Orientation
-  , bWidth   :: n
-  , bSpacing :: n
-  , bStart   :: n
+  , bWidth   :: Double
+  , bSpacing :: Double
+  , bStart   :: Double
   } deriving Typeable
 
-instance Fractional n => Default (BarLayout n) where
+instance Default BarLayout where
   def = BarLayout Horizontal 0.8 1 1
 
-type instance N (BarLayout n) = n
+type instance N BarLayout = Double
 
-instance HasOrientation (BarLayout n) where
+instance HasOrientation BarLayout where
   orientation = lens bOrient (\bl o -> bl {bOrient = o})
 
 -- | Class of things that have a modifiable 'BarLayout'.
 class HasOrientation a => HasBarLayout a where
   -- | Lens onto the 'BarLayout'
-  barLayout :: Lens' a (BarLayout (N a))
+  barLayout :: Lens' a BarLayout
 
   -- | The width bar for single / stacked bars or the width of a group
   --   for grouped bar plot.
   --
   --   Default is @0.8@
-  barWidth :: Lens' a (N a)
+  barWidth :: Lens' a Double
   barWidth = barLayout . lens bWidth (\bl w -> bl {bWidth = w})
 
   -- | The spacing between each bar or group of bars.
   --
   --   Default is @1@
-  barSpacing :: Lens' a (N a)
+  barSpacing :: Lens' a Double
   barSpacing = barLayout . lens bSpacing (\bl s -> bl {bSpacing = s})
 
   -- | The distance from the axis to centre of the first bar.
   --
   --   Default is @1@
-  barStart :: Lens' a (N a)
+  barStart :: Lens' a Double
   barStart = barLayout . lens bStart (\bl x -> bl {bStart = x})
 
-instance HasBarLayout (BarLayout n) where
+instance HasBarLayout BarLayout where
   barLayout = id
 
-instance HasBarLayout a => HasBarLayout (Plot a b) where
+instance HasBarLayout a => HasBarLayout (Plot a) where
   barLayout = rawPlot . barLayout
 
 ------------------------------------------------------------------------
@@ -163,18 +165,18 @@ instance HasBarLayout a => HasBarLayout (Plot a b) where
 
 --   A 'BarPlot' is not intended to be constructed directly, instead use
 --   one of the helper functions.
-data BarPlot n = BarPlot
-  { bpData   :: [(n,n)]
-  , bpLayout :: BarLayout n
+data BarPlot = BarPlot
+  { bpData   :: [(Double,Double)]
+  , bpLayout :: BarLayout
   } deriving Typeable
 
-type instance V (BarPlot n) = V2
-type instance N (BarPlot n) = n
+type instance V BarPlot = V2
+type instance N BarPlot = Double
 
-instance HasOrientation (BarPlot n) where
+instance HasOrientation BarPlot where
   orientation = barLayout . orientation
 
-instance OrderedField n => Enveloped (BarPlot n) where
+instance Enveloped BarPlot where
   getEnvelope BarPlot {..} =
     getEnvelope . orient bpLayout _reflectXY id . (id :: Path v n -> Path v n) $
       ifoldMap drawBar bpData
@@ -182,8 +184,7 @@ instance OrderedField n => Enveloped (BarPlot n) where
       drawBar i (a,b) = rectB (mkP2 x a) (V2 (view barWidth bpLayout) (b - a))
         where x = view barStart bpLayout + fromIntegral i * view barSpacing bpLayout
 
-instance (TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (BarPlot n) b where
+instance Plotable BarPlot where
   renderPlotable s sty BarPlot {..} =
     ifoldMap drawBar bpData
       # orient bpLayout _reflectXY id
@@ -205,9 +206,9 @@ instance (TypeableFloat n, Renderable (Path V2 n) b)
         | otherwise         = rect 4 10
 
       -- The legend bars don't look right if the line width is too big so we limit it
-      sty' = sty & areaStyle . _lw %~ atMost (local 0.8)
+      sty' = sty & areaStyle . _lw . mapped %~ atMost (local 0.8)
 
-instance HasBarLayout (BarPlot n) where
+instance HasBarLayout BarPlot where
   barLayout = lens bpLayout (\bp l -> bp {bpLayout = l})
 
 ------------------------------------------------------------------------
@@ -215,11 +216,11 @@ instance HasBarLayout (BarPlot n) where
 ------------------------------------------------------------------------
 
 -- | Create equidistant bars using the values.
-mkBars :: (F.Foldable f, Num n) => BarLayout n -> f n -> BarPlot n
+mkBars :: F.Foldable f => BarLayout -> f Double -> BarPlot
 mkBars bl (F.toList -> ns) = mkFloatingBars bl (map (0,) ns)
 
 -- | Create equidistant bars with lower and upper bounds for each bar.
-mkFloatingBars :: F.Foldable f => BarLayout n -> f (n,n) -> BarPlot n
+mkFloatingBars :: F.Foldable f => BarLayout -> f (Double,Double) -> BarPlot
 mkFloatingBars bl (F.toList -> ns) = BarPlot
   { bpData   = ns
   , bpLayout = bl
@@ -228,10 +229,9 @@ mkFloatingBars bl (F.toList -> ns) = BarPlot
 -- | Create uniform bars from groups of data, placing one group after
 --   the other.
 mkRunningBars
-  :: Num n
-  => BarLayout n
-  -> [[(n,n)]]
-  -> [BarPlot n]
+  :: BarLayout
+  -> [[(Double, Double)]]
+  -> [BarPlot]
 mkRunningBars bl = snd . foldr f (view barStart bl, [])
   where
     f d (x, bs) = (x + dx, mkFloatingBars bl {bStart = x} d : bs)
@@ -241,10 +241,9 @@ mkRunningBars bl = snd . foldr f (view barStart bl, [])
 --   other. The first list will be the same as @mkUniformBars opts (map
 --   (0,) ys)@, subsequent lists will be placed on top.
 mkStackedBars
-  :: Num n
-  => BarLayout n
-  -> [[n]] -- values
-  -> [BarPlot n]
+  :: BarLayout
+  -> [[Double]] -- values
+  -> [BarPlot]
 mkStackedBars bl = snd . List.mapAccumR f (repeat 0)
   where
     -- y0s are the base values for this set of bars, these accumulate
@@ -255,11 +254,10 @@ mkStackedBars bl = snd . List.mapAccumR f (repeat 0)
 
 -- | Similar to 'mkMultiStacked' but stack has the same height.
 mkStackedEqualBars
-  :: Fractional n
-  => n     -- ^ value each bar reaches
-  -> BarLayout n
-  -> [[n]] -- ^ values
-  -> [BarPlot n]
+  :: Double     -- ^ value each bar reaches
+  -> BarLayout
+  -> [[Double]] -- ^ values
+  -> [BarPlot]
 mkStackedEqualBars yM bl yss = mkStackedBars bl yss'
   where
     -- Multiplier for each bar to reach the desired height.
@@ -273,11 +271,10 @@ mkStackedEqualBars yM bl yss = mkStackedBars bl yss'
 --   as a single bar when using the 'BarPlotsOpts'. There is an addition
 --   parameter to adjust the width of each individual bar.
 mkGroupedBars
-  :: Fractional n
-  => n -- ^ width factor of individual bars (1 = touching)
-  -> BarLayout n
-  -> [[n]]
-  -> [BarPlot n]
+  :: Double -- ^ width factor of individual bars (1 = touching)
+  -> BarLayout
+  -> [[Double]]
+  -> [BarPlot]
 mkGroupedBars w bl xs =
   flip imap xs $ \i ns ->
     mkBars
@@ -294,10 +291,10 @@ mkGroupedBars w bl xs =
 
 -- temporary functions that will be in next lib release
 
-_reflectionXY :: (Additive v, R2 v, Num n) => Transformation v n
-_reflectionXY = fromSymmetric $ (_xy %~ view _yx) <-> (_xy %~ view _yx)
+_reflectionXY :: (HasLinearMap v, R2 v, Num n) => Transformation v n
+_reflectionXY = reflectionX <> reflectionY
 
-_reflectXY :: (InSpace v n t, R2 v, Transformable t) => t -> t
+_reflectXY :: (InSpace v n t, R2 v, HasLinearMap v, Transformable t) => t -> t
 _reflectXY = transform _reflectionXY
 
 ----------------------------------------------------------------------------------
@@ -321,11 +318,9 @@ _reflectXY = transform _reflectionXY
 --
 -- > barExample = renderAxis barAxis
 barPlot
-  :: (MonadState (Axis b V2 n) m,
-      Plotable (BarPlot n) b,
-      F.Foldable f)
-  => f n                           -- ^ bar heights
-  -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
+  :: (MonadState (Axis V2) m, F.Foldable f)
+  => f Double                      -- ^ bar heights
+  -> State (Plot BarPlot) () -- ^ changes to the bars
   -> m ()                          -- ^ changes to the 'Axis'
 barPlot ns = addPlotable (mkBars def ns)
 
@@ -344,11 +339,9 @@ barPlot ns = addPlotable (mkBars def ns)
 --
 -- > barExample' = renderAxis barAxis'
 barPlot'
-  :: (MonadState (Axis b V2 n) m,
-      Plotable (BarPlot n) b,
-      F.Foldable f)
-  => f n  -- ^ bar heights
-  -> m () -- ^ changes to the 'Axis'
+  :: (MonadState (Axis V2) m, F.Foldable f)
+  => f Double  -- ^ bar heights
+  -> m ()      -- ^ changes to the 'Axis'
 barPlot' ns = addPlotable' (mkBars def ns)
 
 -- | A add 'BarPlot' to an 'Axis' while naming the bars.
@@ -368,11 +361,9 @@ barPlot' ns = addPlotable' (mkBars def ns)
 -- >
 -- > namedBarExample = renderAxis namedBarAxis
 namedBarPlot
-  :: (MonadState (Axis b V2 n) m,
-      Plotable (BarPlot n) b,
-      F.Foldable f)
-  => f (String,n)                  -- ^ bar heights with name
-  -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
+  :: (MonadState (Axis V2) m, F.Foldable f)
+  => f (String, Double)                  -- ^ bar heights with name
+  -> State (Plot BarPlot) () -- ^ changes to the bars
   -> m ()                          -- ^ changes to the 'Axis'
 namedBarPlot d s = do
   addPlot bp
@@ -396,20 +387,16 @@ namedBarPlot d s = do
 --
 -- > namedBarExample' = renderAxis namedBarAxis'
 namedBarPlot'
-  :: (MonadState (Axis b V2 n) m,
-      Plotable (BarPlot n) b,
-      F.Foldable f)
-  => f (String,n)  -- ^ bar heights with name
-  -> m ()          -- ^ add plot to the 'Axis'
+  :: (MonadState (Axis V2) m, F.Foldable f)
+  => f (String, Double) -- ^ bar heights with name
+  -> m ()               -- ^ add plot to the 'Axis'
 namedBarPlot' ns = namedBarPlot ns (return ())
 
 -- | Same as 'barPlot' but with lower and upper bounds for the bars.
 floatingBarPlot
-  :: (MonadState (Axis b V2 n) m,
-      Plotable (BarPlot n) b,
-      F.Foldable f)
-  => f (n,n) -- ^ bar limits
-  -> State (Plot (BarPlot n) b) () -- ^ changes to the bars
+  :: (MonadState (Axis V2) m, F.Foldable f)
+  => f (Double,Double) -- ^ bar limits
+  -> State (Plot BarPlot) () -- ^ changes to the bars
   -> m ()
 floatingBarPlot ns = addPlotable (mkFloatingBars def ns)
 
@@ -442,26 +429,26 @@ floatingBarPlot ns = addPlotable (mkFloatingBars def ns)
 --
 --   * Add labels to each (group of) bars with 'labelBars'.
 --
-data MultiBarState b n a = MultiBarState
-  { mbsLayout :: BarLayout n
+data MultiBarState a = MultiBarState
+  { mbsLayout :: BarLayout
     -- ^ options for building bar plots
 
-  , mbsMods :: [(a, Endo (PlotMods b V2 n))]
+  , mbsMods :: [(a, Endo (PlotMods V2))]
     -- ^ the data along with an adjustment to the plot properties
 
   , mbsLabels  :: [String]
     -- ^ labels to be placed at the bottom of each bar
 
-  , mbsBarFun :: BarLayout n -> [[n]] -> [BarPlot n]
+  , mbsBarFun :: BarLayout -> [[Double]] -> [BarPlot]
     -- ^ function used to build bar plots
   }
 
-type instance N (MultiBarState b n a) = n
+type instance N (MultiBarState a) = Double
 
-instance HasOrientation (MultiBarState b n a) where
+instance HasOrientation (MultiBarState a) where
   orientation = barLayout . orientation
 
-instance HasBarLayout (MultiBarState b n a) where
+instance HasBarLayout (MultiBarState a) where
   barLayout = lens mbsLayout (\mbs l -> mbs {mbsLayout = l})
 
 -- > import Plots
@@ -492,7 +479,7 @@ instance HasBarLayout (MultiBarState b n a) where
 
 -- Adding to axis ------------------------------------------------------
 
-multiFun :: Lens' (MultiBarState b n a) (BarLayout n -> [[n]] -> [BarPlot n])
+multiFun :: Lens' (MultiBarState a) (BarLayout -> [[Double]] -> [BarPlot])
 multiFun = lens mbsBarFun (\mbs f -> mbs {mbsBarFun = f})
 
 -- | Bars that are grouped together such that each group is a single
@@ -503,7 +490,7 @@ multiFun = lens mbsBarFun (\mbs f -> mbs {mbsBarFun = f})
 --
 -- <<diagrams/src_Plots_Types_Bar_groupedBarsExample.svg#diagram=groupedBarsExample&height=400>>
 
-groupedBars :: Fractional n => State (MultiBarState b n a) ()
+groupedBars :: State (MultiBarState a) ()
 groupedBars = groupedBars' 1
 
 -- | Bars that are grouped together such that each group is a single
@@ -515,7 +502,7 @@ groupedBars = groupedBars' 1
 --
 -- <<diagrams/src_Plots_Types_Bar_groupedBarsExample'.svg#diagram=groupedBarsExample'&height=400>>
 --
-groupedBars' :: Fractional n => n -> State (MultiBarState b n a) ()
+groupedBars' :: Double -> State (MultiBarState a) ()
 groupedBars' n = multiFun .= mkGroupedBars n
 
 -- | Bars stacked on top of each other.
@@ -524,7 +511,7 @@ groupedBars' n = multiFun .= mkGroupedBars n
 --
 -- <<diagrams/src_Plots_Types_Bar_stackedBarsExample.svg#diagram=stackedBarsExample&height=400>>
 --
-stackedBars :: Num n => State (MultiBarState b n a) ()
+stackedBars :: State (MultiBarState a) ()
 stackedBars = multiFun .= mkStackedBars
 
 -- | Bars stacked on top of each other where every bar is the given
@@ -535,7 +522,7 @@ stackedBars = multiFun .= mkStackedBars
 --
 -- <<diagrams/src_Plots_Types_Bar_stackedEqualBarsExample.svg#diagram=stackedEqualBarsExample&height=400>>
 --
-stackedEqualBars :: Fractional n => n -> State (MultiBarState b n a) ()
+stackedEqualBars :: Double -> State (MultiBarState a) ()
 stackedEqualBars n = multiFun .= mkStackedEqualBars n
 
 -- | Normal 'bars' where each data set follows the last.
@@ -544,7 +531,7 @@ stackedEqualBars n = multiFun .= mkStackedEqualBars n
 --
 -- <<diagrams/src_Plots_Types_Bar_runningBarsExample.svg#diagram=runningBarsExample&height=400>>
 --
-runningBars :: Num n => State (MultiBarState b n a) ()
+runningBars :: State (MultiBarState a) ()
 runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
 
 -- | Construct multiple bars, grouped together. See 'MultiBarState' for
@@ -580,13 +567,10 @@ runningBars = multiFun .= \l xs -> mkRunningBars l (map (map (0,)) xs)
 --
 -- > multiBarExample = renderAxis multiBarAxis
 multiBars
-  :: (MonadState (Axis b V2 n) m,
-      Plotable (BarPlot n) b,
-      F.Foldable f,
-      F.Foldable g)
+  :: (MonadState (Axis V2) m, F.Foldable f, F.Foldable g)
   => f a                            -- ^ data for multi plot
-  -> (a -> g n)                     -- ^ extract bar heights from each data set
-  -> State (MultiBarState b n a) () -- ^ state to make changes to the plot
+  -> (a -> g Double)                -- ^ extract bar heights from each data set
+  -> State (MultiBarState a) () -- ^ state to make changes to the plot
   -> m ()                           -- ^ changes to the 'Axis'
 multiBars (F.toList -> as) f st = do
   -- add the plots
@@ -614,9 +598,7 @@ multiBars (F.toList -> as) f st = do
 
 -- | Place labels under the centre of each bar using the 'BarLayout' by
 --   changing that 'axisTickLabels', using the provided string in order.
-barLayoutAxisLabels
-  :: (MonadState (Axis b V2 n) m, Fractional n)
-  => BarLayout n -> [String] -> m ()
+barLayoutAxisLabels :: MonadState (Axis V2) m => BarLayout -> [String] -> m ()
 barLayoutAxisLabels bl ls =
   unless (null ls) $
     axes . orient bl _y _x &= do
@@ -639,11 +621,11 @@ barLayoutAxisLabels bl ls =
 --       * 'key' - add a legend entry for that group of bars
 --
 onBars
-  :: (a -> State (PlotMods b V2 n) ())
+  :: (a -> State (PlotMods V2) ())
      -- ^ Modifier the 'PlotOptions' and 'PlotStyle' for the bars
      -- associated with the data from @a@.
 
-  -> State (MultiBarState b n a) ()
+  -> State (MultiBarState a) ()
      -- ^ Changes to each data set when executing 'multiBars'.
 onBars f =
   mods . mapped %= \(a, endo) -> (a, endo <> Endo (execState (f a)))
@@ -652,7 +634,7 @@ onBars f =
 class HasLabels a where
   labels :: Lens' a [String]
 
-instance HasLabels (MultiBarState b n a) where
+instance HasLabels (MultiBarState a) where
   labels = lens mbsLabels (\mbs ls -> mbs {mbsLabels = ls})
 
 -- | Labels to use for each bar (or group of bars) along the axis.

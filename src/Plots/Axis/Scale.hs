@@ -29,7 +29,7 @@ module Plots.Axis.Scale
   , LogScale (..)
   , logNumber
   , logPoint
-  , logDeform
+  -- , logDeform
 
     -- * Low level calculations
     -- | These functions are used by "Plots.Axis.Render".
@@ -44,7 +44,7 @@ import           Data.Bool
 import           Data.Default
 import           Data.Distributive
 import           Data.Maybe
-import qualified Data.Foldable as F
+-- import qualified Data.Foldable as F
 
 import           Diagrams
 import           Linear
@@ -71,23 +71,23 @@ data UniformScaleStrategy
 
 -- | Data type used that concerns everything to do with the size or
 --   scale of the axis.
-data AxisScaling n = Scaling
-  { asRatio          :: Maybe n
+data AxisScaling = Scaling
+  { asRatio          :: Maybe Double
   , asMode           :: ScaleMode
-  , asEnlarge        :: Extending n
-  , asBoundMin       :: Maybe n
-  , asBoundMax       :: Maybe n
-  , asSize           :: Maybe n
+  , asEnlarge        :: Extending
+  , asBoundMin       :: Maybe Double
+  , asBoundMax       :: Maybe Double
+  , asSize           :: Maybe Double
   , asLogScale       :: LogScale
 
   -- backup bound in case there's no inferred bounds to go by
-  , asBackupBoundMax :: n
-  , asBackupBoundMin :: n
+  , asBackupBoundMax :: Double
+  , asBackupBoundMin :: Double
   }
 
-type instance N (AxisScaling n) = n
+type instance N AxisScaling = Double
 
-instance Fractional n => Default (AxisScaling n) where
+instance Default AxisScaling where
   def = Scaling
     { asRatio          = Nothing
     , asMode           = AutoScale
@@ -101,24 +101,24 @@ instance Fractional n => Default (AxisScaling n) where
     }
 
 -- | How much to extend the bounds beyond any inferred bounds.
-data Extending n
-  = AbsoluteExtend n
-  | RelativeExtend n
-  deriving (Show, Ord, Eq, Functor)
+data Extending
+  = AbsoluteExtend !Double
+  | RelativeExtend !Double
+  deriving (Show, Ord, Eq)
 
 -- | Do not extend the axis beyond the inferred bounds.
-noExtend :: Num n => Extending n
+noExtend :: Extending
 noExtend = AbsoluteExtend 0
 
 -- | Class of things that have an 'AxisScaling'.
 class HasAxisScaling f a where
   -- | The way to scale in one direction.
-  axisScaling :: LensLike' f a (AxisScaling (N a))
+  axisScaling :: LensLike' f a AxisScaling
 
   -- | The ratio relative to other axis. If no ratios are set, the ratio
   --   is not enforced. If at least one is set, 'Nothing' ratios are
   --   @1@.
-  scaleAspectRatio :: Functor f => LensLike' f a (Maybe (N a))
+  scaleAspectRatio :: Functor f => LensLike' f a (Maybe Double)
   scaleAspectRatio = axisScaling . lens asRatio (\as r -> as {asRatio = r})
 
   -- | The mode to determine how to scale the bounds in a direction.
@@ -137,7 +137,7 @@ class HasAxisScaling f a where
 
   -- | How much to extend the bounds over infered bounds. This is
   --   ignored if a 'boundMax' or 'boundMin' is set.
-  axisExtend :: Functor f => LensLike' f a (Extending (N a))
+  axisExtend :: Functor f => LensLike' f a Extending
   axisExtend = axisScaling . lens asEnlarge (\as r -> as {asEnlarge = r})
 
   -- | The maximum bound the axis. There are helper functions for
@@ -149,7 +149,7 @@ class HasAxisScaling f a where
   -- @
   --
   --   Default is 'Nothing'.
-  boundMin :: Functor f => LensLike' f a (Maybe (N a))
+  boundMin :: Functor f => LensLike' f a (Maybe Double)
   boundMin = axisScaling . lens asBoundMin (\as b -> as {asBoundMin = b})
 
   -- | The maximum bound the axis. There are helper functions for
@@ -162,31 +162,30 @@ class HasAxisScaling f a where
   -- @
   --
   --   Default is 'Nothing'.
-  boundMax :: Functor f => LensLike' f a (Maybe (N a))
+  boundMax :: Functor f => LensLike' f a (Maybe Double)
   boundMax = axisScaling . lens asBoundMax (\as b -> as {asBoundMax = b})
 
   -- | The size of the rendered axis. Default is @'Just' 400@.
-  renderSize :: Functor f => LensLike' f a (Maybe (N a))
+  renderSize :: Functor f => LensLike' f a (Maybe Double)
   renderSize = axisScaling . lens asSize (\as s -> as {asSize = s})
 
   -- -- backup bound in case there's no inferred bounds to go by
   -- asBackupBoundMax :: n
   -- asBackupBoundMax :: n
 
-asSizeSpec :: (HasLinearMap v, Num n, Ord n) => Lens' (v (AxisScaling n)) (SizeSpec v n)
+asSizeSpec :: HasLinearMap v => Lens' (v AxisScaling) (SizeSpec v Double)
 asSizeSpec = column renderSize . iso mkSizeSpec getSpec
 
-instance HasAxisScaling f (AxisScaling n) where
+instance HasAxisScaling f AxisScaling where
   axisScaling = id
 
 -- calculating bounds --------------------------------------------------
 
 -- | Calculating the bounds for an axis.
 calculateBounds
-  :: OrderedField n
-  => AxisScaling n -- ^ Scaling to use for this axis
-  -> Maybe (n, n)  -- ^ Inferred bounds (from any plots)
-  -> (n, n)        -- ^ Lower and upper bounds to use for this axis
+  :: AxisScaling -- ^ Scaling to use for this axis
+  -> Maybe (Double, Double)  -- ^ Inferred bounds (from any plots)
+  -> (Double, Double)        -- ^ Lower and upper bounds to use for this axis
 calculateBounds Scaling {..} mInferred = (l', u') where
   -- bounds are only enlarged when min/max bound wasn't set
   l' = l & whenever (isNothing asBoundMin) (subtract x)
@@ -215,10 +214,10 @@ calculateBounds Scaling {..} mInferred = (l', u') where
 --     - scale to match desired 'scaleAspectRatio'
 --     - scale to match desired 'asSizeSpec'
 calculateScaling
-  :: (HasLinearMap v, OrderedField n, Applicative v)
-  => v (AxisScaling n) -- ^ axis scaling options
-  -> BoundingBox v n   -- ^ bounding box from the axis plots
-  -> (v (n,n), Transformation v n, Transformation v n)
+  :: (HasLinearMap v, Applicative v)
+  => v AxisScaling -- ^ axis scaling options
+  -> BoundingBox v Double   -- ^ bounding box from the axis plots
+  -> (v (Double,Double), Transformation v Double, Transformation v Double)
 calculateScaling aScaling bb = (bounds, aspectScaling, sizeScaling) where
 
   -- final bounds of the axis
@@ -231,8 +230,8 @@ calculateScaling aScaling bb = (bounds, aspectScaling, sizeScaling) where
     -- aScaling. Otherwise no ratios are set, ignore them and scale
     -- such that each axis is the same length
     | anyOf (folded . scaleAspectRatio) isJust aScaling
-                = vectorScaling $ view (scaleAspectRatio . non 1) <$> aScaling
-    | otherwise = inv $ vectorScaling v
+                = scalingV $ view (scaleAspectRatio . non 1) <$> aScaling
+    | otherwise = inv $ scalingV v
 
   -- scaling used so the axis fits in the size spec
   sizeScaling = requiredScaling szSpec v'
@@ -241,11 +240,6 @@ calculateScaling aScaling bb = (bounds, aspectScaling, sizeScaling) where
   v  = uncurry (flip (-)) <$> bounds
   v' = apply aspectScaling v
   szSpec = view asSizeSpec aScaling
-
--- | Scale transformation using the respective scale coefficients in the vector.
-vectorScaling :: (Additive v, Fractional n) => v n -> Transformation v n
-vectorScaling v = fromLinear f f
-  where f = liftI2 (*) v <-> liftI2 (flip (/)) v
 
 -- | Apply a function if the predicate is true.
 whenever :: Bool -> (a -> a) -> a -> a
@@ -283,9 +277,9 @@ logPoint v = _Point %~ liftI2 logNumber v
 
 -- | Deform an object according to the axis scale. Does nothing for
 --   linear scales.
-logDeform :: (InSpace v n a, F.Foldable v, Floating n, Deformable a a)
-          => v LogScale -> a -> a
-logDeform v
-  | allOf folded (== LinearAxis) v = id
-  | otherwise                      = deform (Deformation $ logPoint v)
+-- logDeform :: (InSpace v n a, F.Foldable v, Floating n, Deformable a a)
+--           => v LogScale -> a -> a
+-- logDeform v
+--   | allOf folded (== LinearAxis) v = id
+--   | otherwise                      = deform (Deformation $ logPoint v)
 

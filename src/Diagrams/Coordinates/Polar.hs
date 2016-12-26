@@ -48,8 +48,8 @@ import           Data.Functor.Rep
 import           Data.Typeable
 import           GHC.Generics        (Generic1)
 
-import           Diagrams.Angle
-import           Diagrams.TwoD.Types
+import           Geometry.Angle
+import           Geometry.TwoD.Types
 
 import           Linear.Affine
 import           Linear.Metric

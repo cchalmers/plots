@@ -89,31 +89,30 @@ import           Plots.Types
 
 -- | A general data type for scatter plots. Allows storing different
 --   types of data as well as allowing transforms depending on the data.
-data ScatterPlot v n where
-  ScatterPlot :: Typeable a => ScatterOptions v n a -> ScatterPlot v n
+data ScatterPlot v where
+  ScatterPlot :: Typeable a => ScatterOptions v a -> ScatterPlot v
   deriving Typeable
 
-type instance V (ScatterPlot v n) = v
-type instance N (ScatterPlot v n) = n
+type instance V (ScatterPlot v) = v
+type instance N (ScatterPlot v) = Double
 
 -- | A general data type for scatter plots. Allows storing different
 --   types of data as well as allowing transforms depending on the data.
-data ScatterOptions v n a = ScatterOptions
+data ScatterOptions v a = ScatterOptions
   { oData :: [a]
-  , oPos  :: a -> Point v n
-  , oTr   :: a -> Transformation v n
-  , oSty  :: a -> Style v n
+  , oPos  :: a -> Point v Double
+  , oTr   :: a -> Transformation v Double
+  , oSty  :: a -> Style v Double
   , oLine :: Bool
   } deriving Typeable
 
-type instance V (ScatterOptions v n a) = v
-type instance N (ScatterOptions v n a) = n
+type instance V (ScatterOptions v a) = v
+type instance N (ScatterOptions v a) = Double
 
-instance (Metric v, OrderedField n) => Enveloped (ScatterPlot v n) where
+instance Metric v => Enveloped (ScatterPlot v) where
   getEnvelope (ScatterPlot (ScatterOptions {..})) = getEnvelope (map oPos oData)
 
-instance (TypeableFloat n, Renderable (Path V2 n) b)
-    => Plotable (ScatterPlot V2 n) b where
+instance Plotable (ScatterPlot V2) where
   renderPlotable s sty (ScatterPlot (ScatterOptions {..})) =
     markers <> line
     where
@@ -139,15 +138,15 @@ instance (TypeableFloat n, Renderable (Path V2 n) b)
 
 -- | Low level construction of 'ScatterOptions'.
 mkScatterOptions
-  :: (PointLike v n p, F.Foldable f, Fractional n)
+  :: (PointLike v Double p, F.Foldable f)
   => f a
   -> (a -> p)
-  -> ScatterOptions v n a
+  -> ScatterOptions v a
 mkScatterOptions xs pf = ScatterOptions
   { oData = F.toList xs
   , oPos  = view unpointLike . pf
   , oTr   = mempty
-  , oSty  = const (_Wrapped ## mempty)
+  , oSty  = const mempty
   , oLine = False
   }
 
@@ -163,100 +162,100 @@ class HasConnectingLine f a where
   --   'lineStyle' from the 'PlotStyle'.
   connectingLine :: Functor f => LensLike' f a Bool
 
-instance HasConnectingLine f (ScatterOptions v n a) where
+instance HasConnectingLine f (ScatterOptions v a) where
   connectingLine = lens oLine (\o b -> o {oLine = b})
 
-instance HasConnectingLine f (ScatterPlot v n) where
+instance HasConnectingLine f (ScatterPlot v) where
   connectingLine f (ScatterPlot o@(ScatterOptions {..}))
     = f oLine <&> \b -> ScatterPlot o {oLine = b}
 
-instance HasConnectingLine f p => HasConnectingLine f (Plot p b) where
+instance HasConnectingLine f p => HasConnectingLine f (Plot p) where
   connectingLine = rawPlot . connectingLine
 
-instance (Applicative f, Typeable b, Typeable v, Typeable n)
-    => HasConnectingLine f (DynamicPlot b v n) where
-  connectingLine = (dynamicPlot :: Traversal' (DynamicPlot b v n) (Plot (ScatterPlot v n) b))
+instance (Applicative f, Typeable v)
+    => HasConnectingLine f (DynamicPlot v) where
+  connectingLine = (dynamicPlot :: Traversal' (DynamicPlot v) (Plot (ScatterPlot v)))
                  . connectingLine
 
-instance (Applicative f, Typeable v, Typeable n)
-    => HasConnectingLine f (StyledPlot b v n) where
-  connectingLine = (styledPlot :: Traversal' (StyledPlot b v n) (ScatterPlot v n))
+instance (Applicative f, Typeable v)
+    => HasConnectingLine f (StyledPlot v) where
+  connectingLine = (styledPlot :: Traversal' (StyledPlot v) (ScatterPlot v))
                  . connectingLine
 
-instance (Settable f, Typeable (BaseSpace c), Typeable n)
-    => HasConnectingLine f (Axis b c n) where
+instance (Settable f, Typeable (BaseSpace c))
+    => HasConnectingLine f (Axis c) where
   connectingLine = finalPlots . connectingLine
 
 -- Options -------------------------------------------------------------
 
 class HasScatterOptions f a d where
   -- | Lens onto the 'ScatterOptions' for a general scatter plot.
-  gscatterOptions :: LensLike' f a (ScatterOptions (V a) (N a) d)
+  gscatterOptions :: LensLike' f a (ScatterOptions (V a) d)
 
   -- | Apply a transform to the markers using the associated data.
-  scatterTransform :: Functor f => LensLike' f a (d -> Transformation (V a) (N a))
+  scatterTransform :: Functor f => LensLike' f a (d -> Transformation (V a) Double)
   scatterTransform = gscatterOptions . lens oTr (\o tr -> o {oTr = tr})
 
   -- | Apply a style to the markers using the associated data.
-  scatterStyle :: Functor f => LensLike' f a (d -> Style (V a) (N a))
+  scatterStyle :: Functor f => LensLike' f a (d -> Style (V a) Double)
   scatterStyle = gscatterOptions . lens oSty (\o sty -> o {oSty = sty})
 
   -- | Change the position of the markers depending on the data.
-  scatterPosition :: Functor f => LensLike' f a (d -> Point (V a) (N a))
+  scatterPosition :: Functor f => LensLike' f a (d -> Point (V a) Double)
   scatterPosition = gscatterOptions . lens oPos (\o pos -> o {oPos = pos})
 
-instance d ~ d' => HasScatterOptions f (ScatterOptions v n d) d' where
+instance d ~ d' => HasScatterOptions f (ScatterOptions v d) d' where
   gscatterOptions = id
 
-instance (Applicative f, Typeable v, Typeable n, Typeable d)
-    => HasScatterOptions f (ScatterPlot v n) d where
+instance (Applicative f, Typeable v, Typeable d)
+    => HasScatterOptions f (ScatterPlot v) d where
   gscatterOptions f s@(ScatterPlot p) =
     case eq p of
       Just Refl -> ScatterPlot <$> f p
       Nothing   -> pure s
     where
-      eq :: Typeable a => a -> Maybe (a :~: ScatterOptions v n d)
+      eq :: Typeable a => a -> Maybe (a :~: ScatterOptions v d)
       eq _ = eqT
 
-instance (Functor f, HasScatterOptions f p a) => HasScatterOptions f (Plot p b) a where
+instance (Functor f, HasScatterOptions f p a) => HasScatterOptions f (Plot p) a where
   gscatterOptions = rawPlot . gscatterOptions
 
-instance (Applicative f, Typeable b, Typeable v, Typeable n, Typeable a)
-    => HasScatterOptions f (DynamicPlot b v n) a where
+instance (Applicative f, Typeable v, Typeable a)
+    => HasScatterOptions f (DynamicPlot v) a where
   gscatterOptions = dynamicPlot . rawPlot
 
-instance (Applicative f, Typeable b, Typeable (BaseSpace c), Typeable n, Typeable a)
-    => HasScatterOptions f (Axis b c n) a where
+instance (Applicative f, Typeable (BaseSpace c), Typeable a)
+    => HasScatterOptions f (Axis c) a where
   gscatterOptions = axisPlots . traverse . gscatterOptions
 
 
 -- Pure scatter lenses -------------------------------------------------
 
 -- | Lens onto a scatter plot of points.
-scatterOptions :: (InSpace v n a, HasScatterOptions f a (Point v n))
-               => LensLike' f a (ScatterOptions v n (Point v n))
+scatterOptions :: (InSpace v Double a, HasScatterOptions f a (Point v Double))
+               => LensLike' f a (ScatterOptions v (Point v Double))
 scatterOptions = gscatterOptions
 
 -- -- | Lens onto a transform of a scatter plot of points. This is a
 -- --   specialised version of 'scatterTransform' for better type
 -- --   inference.
 -- _scatterTransform
---   :: (InSpace v n a, PointLike v n p, Functor f, HasScatterOptions f a (Point v n))
---   => LensLike' f a (p -> Transformation v n)
+--   :: (InSpace v a, PointLike v p, Functor f, HasScatterOptions f a (Point v))
+--   => LensLike' f a (p -> Transformation v)
 -- _scatterTransform = scatterTransform . lmapping unpointLike
 
 -- -- | Lens onto a transform of a scatter plot of points. This is a
 -- --   specialised version of 'scatterPosition' for better type inference.
 -- _scatterPosition
---   :: (InSpace v n a, PointLike v n p, Functor f, HasScatterOptions f a (Point v n))
+--   :: (InSpace v a, PointLike v p, Functor f, HasScatterOptions f a (Point v))
 --   => LensLike' f a (p -> p)
 -- _scatterPosition = scatterPos . dimapping unpointLike pointLike
 
 -- -- | Lens onto a style function of a scatter plot of points. This is a
 -- --   specialised version of 'scatterStyle' for better type inference.
 -- _scatterStyle
---   :: (InSpace v n a, PointLike v n p, Functor f, HasScatterOptions f a (Point v n))
---   => LensLike' f a (p -> Style v n)
+--   :: (InSpace v a, PointLike v p, Functor f, HasScatterOptions f a (Point v))
+--   => LensLike' f a (p -> Style v)
 -- _scatterStyle = scatterStyle . lmapping unpointLike
 
 ------------------------------------------------------------------------
@@ -275,9 +274,9 @@ scatterOptions = gscatterOptions
 -- | Add a 'ScatterPlot' to the 'AxisState' from a data set.
 --
 -- @
--- 'scatterPlot' :: [('Double', 'Double')] -> 'State' ('Plot' ('ScatterOptions' 'V2' 'Double' ('P2' 'Double')) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
--- 'scatterPlot' :: ['V2' 'Double']        -> 'State' ('Plot' ('ScatterOptions' 'V2' 'Double' ('P2' 'Double')) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
--- 'scatterPlot' :: ['P2' 'Double']        -> 'State' ('Plot' ('ScatterOptions' 'V2' 'Double' ('P2' 'Double')) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'scatterPlot' :: [('Double', 'Double')] -> 'State' ('Plot' ('ScatterOptions' 'V2' ('P2' 'Double')) b) () -> 'State' ('Axis' 'V2') ()
+-- 'scatterPlot' :: ['V2' 'Double']        -> 'State' ('Plot' ('ScatterOptions' 'V2' ('P2' 'Double')) b) () -> 'State' ('Axis' 'V2') ()
+-- 'scatterPlot' :: ['P2' 'Double']        -> 'State' ('Plot' ('ScatterOptions' 'V2' ('P2' 'Double')) b) () -> 'State' ('Axis' 'V2') ()
 -- @
 --
 -- === __Example__
@@ -289,7 +288,7 @@ scatterOptions = gscatterOptions
 -- > mydata2 = mydata1 & each . _1 *~ 0.5
 -- > mydata3 = [V2 1.2 2.7, V2 2 5.1, V2 3.2 2.6, V2 3.5 5]
 --
--- > scatterAxis :: Axis B V2 Double
+-- > scatterAxis :: Axis V2
 -- > scatterAxis = r2Axis &~ do
 -- >   scatterPlot mydata1 $ key "data 1"
 -- >   scatterPlot mydata2 $ key "data 2"
@@ -298,13 +297,12 @@ scatterOptions = gscatterOptions
 -- > scatterExample = renderAxis scatterAxis
 scatterPlot
   :: (BaseSpace c ~ v,
-      PointLike v n p,
-      Typeable n,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b,
+      PointLike v Double p,
+      MonadState (Axis c) m,
+      Plotable (ScatterPlot v),
       F.Foldable f)
   => f p  -- ^ points to plot
-  -> State (Plot (ScatterOptions v n (Point v n)) b) ()
+  -> State (Plot (ScatterOptions v (Point v Double))) ()
           -- ^ changes to plot options
   -> m () -- ^ add plot to 'Axis'
 scatterPlot xs = gscatterPlot (xs ^.. folded . unpointLike) id
@@ -336,10 +334,9 @@ scatterPlot xs = gscatterPlot (xs ^.. folded . unpointLike) id
 -- > scatterExample' = renderAxis scatterAxis'
 scatterPlot'
   :: (BaseSpace c ~ v,
-      PointLike v n p,
-      Typeable n,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b,
+      PointLike v Double p,
+      MonadState (Axis c) m,
+      Plotable (ScatterPlot v),
       F.Foldable f)
   => f p  -- ^ points to plot
   -> m () -- ^ add plot to 'Axis'
@@ -348,13 +345,12 @@ scatterPlot' xs = scatterPlot xs (return ())
 -- | Version of 'scatterPlot' that accepts a 'Fold' over the data.
 scatterPlotOf
   :: (BaseSpace c ~ v,
-      PointLike v n p,
-      Typeable n,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b)
+      PointLike v Double p,
+      Plotable (ScatterPlot v),
+      MonadState (Axis c) m)
   => Fold s p -- ^ fold over points
   -> s        -- ^ data to fold
-  -> State (Plot (ScatterOptions v n (Point v n)) b) () -- ^ changes to plot options
+  -> State (Plot (ScatterOptions v (Point v Double))) () -- ^ changes to plot options
   -> m () -- ^ add plot to 'Axis'
 scatterPlotOf f s = scatterPlot (toListOf f s)
 
@@ -362,10 +358,9 @@ scatterPlotOf f s = scatterPlot (toListOf f s)
 --   without any changes to the 'ScatterOptions'.
 scatterPlotOf'
   :: (BaseSpace c ~ v,
-      PointLike v n p,
-      Typeable n,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b)
+      PointLike v Double p,
+      MonadState (Axis c) m,
+      Plotable (ScatterPlot v))
   => Fold s p -- ^ fold over points
   -> s -- ^ data to fold
   -> m () -- ^ add plot to axis
@@ -376,15 +371,15 @@ scatterPlotOf' f s = scatterPlot' (toListOf f s)
 ------------------------------------------------------------------------
 
 -- | A bubble plot is a scatter plot using point together with a scalar.
-type BubbleOptions v n = ScatterOptions v n (n, Point v n)
+type BubbleOptions v = ScatterOptions v (Double, Point v Double)
 
 -- | Scatter plots with extra numeric parameter. By default the extra
 --   parameter is the scale of the marker but this can be changed.
 --
 -- @
--- 'bubblePlot' :: [('Double', ('Double', 'Double'))] -> 'State' ('Plot' ('BubbleOptions' v n) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
--- 'bubblePlot' :: [('Double', 'V2' 'Double')]        -> 'State' ('Plot' ('BubbleOptions' v n) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
--- 'bubblePlot' :: [('Double', 'P2' 'Double')]        -> 'State' ('Plot' ('BubbleOptions' v n) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'bubblePlot' :: [('Double', ('Double', 'Double'))] -> 'State' ('Plot' ('BubbleOptions' v) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'bubblePlot' :: [('Double', 'V2' 'Double')]        -> 'State' ('Plot' ('BubbleOptions' v) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
+-- 'bubblePlot' :: [('Double', 'P2' 'Double')]        -> 'State' ('Plot' ('BubbleOptions' v) b) () -> 'State' ('Axis' b 'V2' 'Double') ()
 -- @
 --
 -- === __Example__
@@ -406,13 +401,12 @@ type BubbleOptions v n = ScatterOptions v n (n, Point v n)
 -- > bubbleExample = renderAxis bubbleAxis
 bubblePlot
   :: (BaseSpace c ~ v,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b,
-      Typeable n,
+      PointLike v Double p,
+      MonadState (Axis c) m,
+      Plotable (ScatterPlot v),
       F.Foldable f)
-  => f (n, p) -- ^ fold over points with a size
-  -> State (Plot (BubbleOptions v n) b) () -- ^ changes to the options
+  => f (Double, p) -- ^ fold over points with a size
+  -> State (Plot (BubbleOptions v)) () -- ^ changes to the options
   -> m () -- ^ add plot to 'Axis'
 bubblePlot xs s =
   gscatterPlot (xs ^.. folded . mapping unpointLike) snd $ do
@@ -428,25 +422,23 @@ bubblePlot xs s =
 --
 bubblePlot'
   :: (v ~ BaseSpace c,
-      PointLike v n p,
-      Typeable n,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b,
+      PointLike v Double p,
+      MonadState (Axis c) m,
+      Plotable (ScatterPlot v),
       F.Foldable f)
-  => f (n, p) -- ^ fold over points with a size
+  => f (Double, p) -- ^ fold over points with a size
   -> m () -- ^ add plot to 'Axis'
 bubblePlot' xs = bubblePlot xs (return ())
 
 -- | Version of 'bubblePlot' using a 'Fold' over the data.
 bubblePlotOf
   :: (BaseSpace c ~ v,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b,
-      Typeable n)
-  => Fold s (n,p) -- ^ fold over the data
+      PointLike v Double p,
+      Plotable (ScatterPlot v),
+      MonadState (Axis c) m)
+  => Fold s (Double,p) -- ^ fold over the data
   -> s            -- ^ data
-  -> State (Plot (BubbleOptions v n) b) ()
+  -> State (Plot (BubbleOptions v)) ()
                   -- ^ changes to the options
   -> m ()         -- ^ add plot to 'Axis'
 bubblePlotOf f s = bubblePlot (toListOf f s)
@@ -455,13 +447,12 @@ bubblePlotOf f s = bubblePlot (toListOf f s)
 --   changes to the 'BubbleOptions'.
 bubblePlotOf'
   :: (BaseSpace c ~ v,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b,
-      Typeable n)
-  => Fold s (n,p) -- ^ fold over the data
+      PointLike v Double p,
+      MonadState (Axis c) m,
+      Plotable (ScatterPlot v))
+  => Fold s (Double,p) -- ^ fold over the data
   -> s            -- ^ data
-  -> State (Plot (BubbleOptions v n) b) ()
+  -> State (Plot (BubbleOptions v)) ()
                   -- ^ changes to the options
   -> m ()         -- ^ add plot to 'Axis'
 bubblePlotOf' f s = bubblePlot (toListOf f s)
@@ -469,43 +460,43 @@ bubblePlotOf' f s = bubblePlot (toListOf f s)
 -- Bubble scatter lenses -----------------------------------------------
 
 -- | LensLike onto into a 'ScatterOptions' made up of a scaler @n@, and
---   a point, @'Point' v n@
+--   a point, @'Point' v@
 --
 -- @
--- 'bubbleOptions' :: 'Lens'' ('Plot' ('BubbleOptions' v n) v) ('BubbleOptions' v n)
+-- 'bubbleOptions' :: 'Lens'' ('Plot' ('BubbleOptions' v) v) ('BubbleOptions' v)
 -- @
-bubbleOptions :: (InSpace v n a, HasScatterOptions f a (n, Point v n))
-              => LensLike' f a (BubbleOptions v n)
+bubbleOptions :: (InSpace v Double a, HasScatterOptions f a (Double, Point v Double))
+              => LensLike' f a (BubbleOptions v)
 bubbleOptions = gscatterOptions
 
 -- | Setter over the transform function for a 'bubblePlot'. Default is 'scale'.
 --
 -- @
--- 'bubbleOptions' :: 'Setter'' ('Plot' ('BubbleOptions' v n) v) (n -> 'Transformation' v n)
+-- 'bubbleOptions' :: 'Setter'' ('Plot' ('BubbleOptions' v) v) (n -> 'Transformation' v)
 -- @
 --
 --   Note that this is the less general version of @'bubblePlot' .
 --   'scatterTransform'@, which would give a 'LensLike' onto @(n,
---   'Point' v n) -> 'Transformation' v n@.
+--   'Point' v) -> 'Transformation' v@.
 --
 bubbleTransform
-  :: (InSpace v n a, HasScatterOptions f a (n, Point v n), Settable f)
-  => LensLike' f a (n -> Transformation v n)
+  :: (InSpace v Double a, HasScatterOptions f a (Double, Point v Double), Settable f)
+  => LensLike' f a (Double -> Transformation v Double)
 bubbleTransform = bubbleOptions . scatterTransform . sets nOnly
   where nOnly f g (n,p) = f (\n' -> g (n', p)) n
 
 -- | Setter over the style function for a 'bubblePlot'. Default is 'mempty'.
 --
 -- @
--- 'bubbleStyle' :: 'Setter'' ('Plot' ('BubbleOptions' v n) v) (n -> 'Style' v n)
+-- 'bubbleStyle' :: 'Setter'' ('Plot' ('BubbleOptions' v) v) (n -> 'Style' v)
 -- @
 --
 --   Note that this is the less general version of @'bubblePlot' .
 --   'scatterTransform'@, which would give a 'LensLike' onto @(n,
---   'Point' v n) -> 'Style' v n@.
+--   'Point' v) -> 'Style' v@.
 --
-bubbleStyle :: (InSpace v n a, Settable f, HasScatterOptions f a (n, Point v n))
-             => LensLike' f a (n -> Style v n)
+bubbleStyle :: (InSpace v Double a, Settable f, HasScatterOptions f a (Double, Point v Double))
+             => LensLike' f a (Double -> Style v Double)
 bubbleStyle = bubbleOptions . scatterStyle . sets nOnly
   where nOnly f g (n,p) = f (\n' -> g (n', p)) n
 
@@ -517,14 +508,14 @@ bubbleStyle = bubbleOptions . scatterStyle . sets nOnly
 --   the 'scatterTransform' and 'scatterStyle'.
 gscatterPlot
   :: (BaseSpace c ~ v,
-      PointLike v n p,
-      MonadState (Axis b c n) m,
-      Plotable (ScatterPlot v n) b,
+      PointLike v Double p,
+      MonadState (Axis c) m,
       Typeable d,
+      Plotable (ScatterPlot v),
       F.Foldable f)
   => f d -- ^ data
   -> (d -> p) -- ^ extract point from data
-  -> State (Plot (ScatterOptions v n d) b) ()
+  -> State (Plot (ScatterOptions v d)) ()
               -- ^ options for plot
   -> m ()     -- ^ add plot to 'Axis'
 gscatterPlot xs pf s = addPlot $ over rawPlot ScatterPlot p1
@@ -535,7 +526,7 @@ gscatterPlot xs pf s = addPlot $ over rawPlot ScatterPlot p1
 -- | Helper to traverse over a general scatter plot where the type of d
 --   is not infered.
 gscatterOptionsFor
-  :: (InSpace v n a, HasScatterOptions f a d)
-  => proxy d -> LensLike' f a (ScatterOptions v n d)
+  :: (InSpace v Double a, HasScatterOptions f a d)
+  => proxy d -> LensLike' f a (ScatterOptions v d)
 gscatterOptionsFor _ = gscatterOptions
 

@@ -39,7 +39,7 @@ import           Data.Foldable              as F
 import           Data.List                  (sort)
 import           Data.Typeable
 
-import           Diagrams.BoundingBox
+import           Geometry.BoundingBox
 import           Diagrams.Prelude
 import           Diagrams.TwoD.Text
 import           Linear                     hiding (rotate, translation)
@@ -62,37 +62,59 @@ import           Plots.Util
 
 import           Prelude
 
+import qualified Numeric.Interval.NonEmpty as I
+
+import Geometry.TwoD.Transform
+import Geometry.TwoD.Ellipse
+
+import Diagrams.Types (Prim (..), mkQD)
+
 ------------------------------------------------------------------------
 -- Mainable instances
 ------------------------------------------------------------------------
 
-instance (TypeableFloat n,
-          Renderable (Path V2 n) b,
-          Mainable (QDiagram b V2 n Any))
-       => Mainable (Axis b Polar n) where
-  type MainOpts (Axis b Polar n) = MainOpts (QDiagram b V2 n Any)
+instance WithOutcome (Axis Polar)
+instance WithOutcome (Axis V2)
 
-  mainRender opts = mainRender opts . renderAxis
+instance RenderOutcome t (Diagram V2) => RenderOutcome t (Axis Polar) where
+  type MainOpts t (Axis Polar) = MainOpts t (Diagram V2)
+  resultParser t _ = resultParser t (Proxy :: Proxy (Diagram V2))
+  renderOutcome t opts axis = renderOutcome t opts (renderPolarAxis axis)
 
-instance (TypeableFloat n,
-          Renderable (Path V2 n) b,
-          Mainable (QDiagram b V2 n Any))
-       => Mainable (Axis b V2 n) where
-  type MainOpts (Axis b V2 n) = MainOpts (QDiagram b V2 n Any)
+instance RenderOutcome t (Diagram V2) => RenderOutcome t (Axis V2) where
+  type MainOpts t (Axis V2) = MainOpts t (Diagram V2)
+  resultParser t _ = resultParser t (Proxy :: Proxy (Diagram V2))
+  renderOutcome t opts axis = renderOutcome t opts (renderAxis axis)
 
-  mainRender opts = mainRender opts . renderAxis
 
-instance ToResult (Axis b v n) where
-  type Args (Axis b v n) = ()
-  type ResultOf (Axis b v n) = Axis b v n
+strokePathV :: (Typeable v, Metric v, Typeable n, OrderedField n) => Path v n -> QDiagram v n Any
+strokePathV path = mkQD (Prim path) (getEnvelope path) mempty mempty
 
-  toResult d _ = d
+-- instance (TypeableFloat n, Mainable (Diagram V2))
+--        => Mainable (Axis b Polar n) where
+--   type MainOpts (Axis b Polar n) = MainOpts (Diagram V2)
+
+--   mainRender opts = mainRender opts . renderAxis
+
+-- instance (TypeableFloat n,
+--           Renderable (Path V2 n) b,
+--           Mainable (Diagram V2))
+--        => Mainable (Axis b V2 n) where
+--   type MainOpts (Axis b V2 n) = MainOpts (Diagram V2)
+
+--   mainRender opts = mainRender opts . renderAxis
+
+-- instance ToResult (Axis b v n) where
+--   type Args (Axis b v n) = ()
+--   type ResultOf (Axis b v n) = Axis b v n
+
+--   toResult d _ = d
 
 -- | 'mainWith' specialised to a 2D Axis.
 r2AxisMain
-  :: (Parseable (MainOpts (QDiagram b V2 Double Any)),
-      Mainable (Axis b V2 Double))
-  => Axis b V2 Double
+  :: RenderOutcome t (Diagram V2)
+  => t
+  -> Axis V2
   -> IO ()
 r2AxisMain = mainWith
 
@@ -108,7 +130,7 @@ r2AxisMain = mainWith
 --   legend entries can be obtained with 'styledPlotLegends'. This is
 --   what 'renderAxis' can uses internally but might be useful for
 --   debugging or generating your own legend.
-buildPlots :: BaseSpace c ~ v => Axis b c n -> [StyledPlot b v n]
+buildPlots :: BaseSpace c ~ v => Axis c -> [StyledPlot v]
 buildPlots a = map (appEndo $ a ^. plotModifier)
              $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
              -- TODO: correct order
@@ -118,21 +140,21 @@ buildPlots a = map (appEndo $ a ^. plotModifier)
 ------------------------------------------------------------------------
 
 -- | Renderable axes.
-class RenderAxis b v n where
+class RenderAxis c where
   -- | Render an axis to a diagram. The size of the diagram is
   --   determined by the 'axisSize'.
-  renderAxis :: Axis b v n -> QDiagram b (BaseSpace v) n Any
+  renderAxis :: Axis c -> Diagram (BaseSpace c)
+
+-- R2 rendering --------------------------------------------------------
 
 -- | The 'RenderAxis' class provides a default way to render an axis for
 --  each space.
-instance (TypeableFloat n, Renderable (Path V2 n) b)
-    => RenderAxis b V2 n where
+instance RenderAxis V2 where
   -- | Render an axis and its plots, as well as the legend and colour
   --   bar.
   renderAxis = renderR2Axis
 
-renderR2Axis :: (TypeableFloat n, Renderable (Path V2 n) b)
-  => Axis b V2 n -> QDiagram b V2 n Any
+renderR2Axis :: Axis V2 -> Diagram V2
 renderR2Axis a = frame 40
                $ leg
               <> ttl
@@ -159,6 +181,41 @@ renderR2Axis a = frame 40
     --
     styledPlots = buildPlots a
 
+-- R3 rendering --------------------------------------------------------
+
+
+instance RenderAxis V3 where
+  renderAxis = renderR3Axis
+
+renderR3Axis :: Axis V3 -> Diagram V3
+renderR3Axis a = -- frame 15
+               -- $ legend
+               (plots :: Diagram V3)
+              <> (drawAxis ex ey LowerLabels :: Diagram V3)
+              <> (drawAxis ey ex UpperLabels :: Diagram V3)
+              <> (drawAxis ez ey LowerLabels :: Diagram V3)
+              <> (drawAxis ey ez NoLabels :: Diagram V3)
+              -- <> (drawBackAxis ez ex NoLabels :: Diagram V3)
+              -- <> (drawBackAxis ex ez NoLabels :: Diagram V3)
+  where
+    spec  = AxisSpec xs t (a^.axes . column logScale) (a ^. axisColourMap)
+    plots = foldMap (renderStyledPlot spec) styledPlots
+    drawAxis ll ll2 = axisOnBasis origin xs (a^.axes.el ll) (a^.axes.column logScale) t ll ll2
+    --
+    (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
+    t = tv <> t'
+    --
+    bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
+    -- leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
+    --
+
+    -- The colour bar
+    -- cBar = addColourBar bb (a^.colourBar) (a ^. axisColourMap) (a^.colourBarRange)
+    -- title
+    -- ttl = drawTitle bb (a^.title)
+    --
+    styledPlots = buildPlots a
+
 -- | The position of axis labels for a
 data LabelPosition
   = NoLabels
@@ -169,23 +226,22 @@ data LabelPosition
   deriving (Show, Eq, Typeable)
 
 axisOnBasis
-  :: forall b v n. (v ~ V2, TypeableFloat n, HasLinearMap v, Metric v,
-                    Renderable (Path V2 n) b, n ~ N (v n), v ~ V (v n), OrderedField n)
-  => Point v n        -- start of axis
-  -> v (n, n)         -- calculated bounds
-  -> SingleAxis b v n -- axis data
+  :: forall v. (HasLinearMap v, Typeable v)
+  => Point v Double        -- start of axis
+  -> v (Double, Double)         -- calculated bounds
+  -> SingleAxis v  -- axis data
   -> v LogScale       -- log scale
-  -> T2 n             -- transformation to apply to positions of things
+  -> Transformation v Double        -- transformation to apply to positions of things
   -> E v              -- direction of axis
   -> E v              -- orthogonal direction of axis
   -> LabelPosition    -- where (if at all) should labels be placed?
-  -> QDiagram b V2 n Any   -- resulting axis
+  -> Diagram v   -- resulting axis
 axisOnBasis p bs a ls t e eO lp
   | a ^. hidden = phantom axis
   | otherwise   = axis
   where
     axis = tickLabels <> axLabels <> ticks <> line <> grid
-    tStroke = stroke . transform t
+    tStroke = strokePathV . transform t
 
     -- axis labels (x,y etc.)
     axLabels
@@ -263,13 +319,13 @@ axisOnBasis p bs a ls t e eO lp
         maTicks
           | a ^. majorTicks . hidden = mempty
           | otherwise = foldMap (positionTick majorTick) majorTickXs'
-                       # stroke
+                       # strokePathV
                        # applyStyle (a ^. majorTicksStyle)
         --
         miTicks
           | a ^. minorTicks . hidden = mempty
           | otherwise = foldMap (positionTick minorTick) minorTickXs'
-                       # stroke
+                       # strokePathV
                        # applyStyle (a ^. minorTicksStyle)
         --
         minorTick = someTick (a ^. minorTicksAlignment) (a ^. minorTicksLength)
@@ -300,16 +356,16 @@ axisOnBasis p bs a ls t e eO lp
       | a ^. axisLine . hidden = mempty
       | otherwise = foldMap mkline (map snd ys) -- merge with ticks?
              # transform t
-             # stroke
+             # strokePathV
              # lineCap LineCapSquare
              # applyStyle (a^.axisLineStyle)
       where
         -- TODO: Arrow for R3
         mkline y = pathFromVertices
-         $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v n
+         $ map (\x -> over lensP ((el e .~ x) . (el eO .~ y)) p) [x0, x1] :: Path v Double
 
     -- measurements
-    b@(x0,x1)  = bs ^. el e :: (n, n) -- bounds
+    b@(x0,x1)  = bs ^. el e :: (Double, Double) -- bounds
     coscale = ep e %~ coscaleNum
     coscaleNum = scaleNum (bs ^. el e) (ls ^. el e)
     yb@(y0,y1) = bs ^. el eO . if lp == UpperLabels
@@ -364,8 +420,7 @@ ep (E l) = lensP . l
 -- Polar
 ------------------------------------------------------------------------
 
-instance (TypeableFloat n, Renderable (Path V2 n) b)
-    => RenderAxis b Polar n where
+instance RenderAxis Polar where
   renderAxis = renderPolarAxis
 
 -- | An lower and upper bound for the bounding radius using @n@ envelope
@@ -373,15 +428,15 @@ instance (TypeableFloat n, Renderable (Path V2 n) b)
 --   the bound.
 boundingRadiusR :: (InSpace V2 n a, Enveloped a) => Int -> a -> (n, n)
 boundingRadiusR (max 3 -> n) e =
-  case appEnvelope (getEnvelope e) of
-    Nothing -> (0,0)
-    Just f  ->
+  case getEnvelope e of
+    EmptyEnvelope -> (0,0)
+    Envelope f  ->
       let thetas = map (@@rad) $ enumFromToN 0 tau n
           vs     = map angleV thetas
 
           -- The lower bound is the maximum distance obtained from the
           -- envelope trials. We know the radius will be at least this far.
-          lowerBound = F.foldr (\v r -> max (f v) r) 0 vs
+          lowerBound = F.foldr (\v r -> max (I.sup $ f v) r) 0 vs
 
           -- In the worst case, there will be a point at the intersection of
           -- two neighbouring bounding planes from the envelope calculations.
@@ -394,9 +449,7 @@ boundingRadiusR (max 3 -> n) e =
 
       in  (lowerBound, upperBound)
 
-renderPolarAxis
-  :: (TypeableFloat n, Renderable (Path V2 n) b)
-  => Axis b Polar n -> QDiagram b V2 n Any
+renderPolarAxis :: Axis Polar -> Diagram V2
 renderPolarAxis a = frame 15
                $ leg
               -- <> colourBar
@@ -420,9 +473,7 @@ renderPolarAxis a = frame 15
     styledPlots = map (appEndo $ a ^. plotModifier)
                 $ zipWith styleDynamic (a ^.. axisStyles) (a ^. axisPlots)
 
-drawPolarAxis
-  :: forall b n. (Renderable (Path V2 n) b, TypeableFloat n)
-  => AxisSpec V2 n -> Polar (SingleAxis b V2 n) -> QDiagram b V2 n Any
+drawPolarAxis :: AxisSpec V2 -> Polar (SingleAxis V2) -> Diagram V2
 drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx where
 
   -- use a radius of the upper x bound for the axis (this is not ideal)
@@ -449,8 +500,9 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
     where
       -- XXX for now the radial axis is on the theta=0 line. Need some
       -- way to change this
-      line = (origin ~~ mkP2 r 0) # applyStyle (rA^.axisLineStyle)
-                                  # transform t
+      line = fromVertices [origin, mkP2 r 0]
+               # applyStyle (rA^.axisLineStyle)
+               # transform t
 
   -- Radial axis label -------------------------------------------------
 
@@ -495,8 +547,8 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
 
   someTick tType d = case tType of
     TickSpec (fromRational -> aa) (fromRational -> bb)
-             -> mkP2 0 (-d*bb) ~~ mkP2 0 (d*aa)
-    AutoTick -> mkP2 0 (-d)    ~~ mkP2 0 d
+             -> fromVertices [mkP2 0 (-d*bb), mkP2 0 (d*aa)]
+    AutoTick -> fromVertices [mkP2 0 (-d)   , mkP2 0 d     ]
 
   -- Radial grid lines -------------------------------------------------
 
@@ -507,7 +559,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
   majorGridRs  = view majorGridLinesFunction rA majorTickRs (0,r)
   majorGridRs' = map (*s) $ filter rInRange majorGridRs
 
-  rMajorGridLines :: QDiagram b V2 n Any
+  rMajorGridLines :: Diagram V2
   rMajorGridLines
     | rA ^. majorGridLines . hidden = mempty
     | otherwise = F.foldMap circle (filter (>0) majorGridRs')
@@ -515,7 +567,7 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
 
   minorGridRs  = view minorGridLinesFunction rA minorTickRs (0,r)
   minorGridRs' = map (*s) $ filter rInRange minorGridRs
-  rMinorGridLines :: QDiagram b V2 n Any
+  rMinorGridLines :: Diagram V2
   rMinorGridLines
     | rA ^. minorGridLines . hidden = mempty
     | otherwise = F.foldMap circle (filter (>0) minorGridRs')
@@ -523,17 +575,17 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
 
   -- Radial tick labels ------------------------------------------------
 
-  rAxTickLabels :: QDiagram b V2 n Any
+  rAxTickLabels :: Diagram V2
   rAxTickLabels
     | rA ^. tickLabel . hidden = mempty
     | otherwise                = F.foldMap rDrawTickLabel tickLabelRs
 
   -- The positions of the tick labels.
-  tickLabelRs :: [(n, String)]
+  tickLabelRs :: [(Double, String)]
   tickLabelRs = view tickLabelFunction rA (filter rInRange majorTickRs) (0,r)
 
   -- Draw a single tick label given the position and the string to use
-  rDrawTickLabel :: (n,String) -> QDiagram b V2 n Any
+  rDrawTickLabel :: (Double,String) -> Diagram V2
   rDrawTickLabel (x,label) =
     view tickLabelTextFunction rA (BoxAlignedText 0.5 1) label
       # translate (V2 (s*x) (- view axisLabelGap rA))
@@ -607,8 +659,8 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
 
   someThetaTick tType d = case tType of
     TickSpec (fromRational -> aa) (fromRational -> bb)
-             -> mkP2 (-d*bb) 0 ~~ mkP2 (d*aa) 0
-    AutoTick -> mkP2 (-d) 0    ~~ mkP2 d 0
+             -> fromVertices [mkP2 (-d*bb) 0, mkP2 (d*aa) 0]
+    AutoTick -> fromVertices [mkP2 (-d) 0   , mkP2 d 0     ]
 
   -- Angular grid lines ------------------------------------------------
 
@@ -620,35 +672,35 @@ drawPolarAxis spec (Polar (V2 rA thetaA)) = fcA transparent $ rAx <> thetaAx whe
   majorGridThetas = view majorGridLinesFunction thetaA majorTickThetas (0,theta)
   majorGridThetas' = filter thetaInRange majorGridThetas
 
-  thetaMajorGridLines :: QDiagram b V2 n Any
+  thetaMajorGridLines :: Diagram V2
   thetaMajorGridLines
     | thetaA ^. majorGridLines . hidden = mempty
-    | otherwise = F.foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) majorGridThetas'
+    | otherwise = F.foldMap (\phi -> fromVertices [origin, mkP2 r 0] # rotate (phi@@rad)) majorGridThetas'
                     # transform t
                     # applyStyle (thetaA ^. majorGridLinesStyle)
 
   minorGridThetas    = view minorGridLinesFunction thetaA minorTickThetas (0,theta)
   minorGridThetas'   = filter thetaInRange minorGridThetas
-  thetaMinorGridLines :: QDiagram b V2 n Any
+  thetaMinorGridLines :: Diagram V2
   thetaMinorGridLines
     | thetaA ^. minorGridLines . hidden = mempty
-    | otherwise = F.foldMap (\phi -> origin ~~ mkP2 r 0 # rotate (phi@@rad)) minorGridThetas'
+    | otherwise = F.foldMap (\phi -> fromVertices [origin, mkP2 r 0] # rotate (phi@@rad)) minorGridThetas'
                     # transform t
                     # applyStyle (thetaA ^. minorGridLinesStyle)
 
   -- Angular tick labels -----------------------------------------------
 
-  thetaAxTickLabels :: QDiagram b V2 n Any
+  thetaAxTickLabels :: Diagram V2
   thetaAxTickLabels
     | thetaA ^. tickLabel . hidden = mempty
     | otherwise                    = F.foldMap thetaDrawTickLabel tickLabelThetas
 
   -- The positions of the tick labels.
-  tickLabelThetas :: [(n, String)]
+  tickLabelThetas :: [(Double, String)]
   tickLabelThetas = view tickLabelFunction thetaA majorTickThetas' (0,theta)
 
   -- Draw a single tick label given the position and the string to use
-  thetaDrawTickLabel :: (n, String) -> QDiagram b V2 n Any
+  thetaDrawTickLabel :: (Double, String) -> Diagram V2
   thetaDrawTickLabel (x,label) =
     view tickLabelTextFunction thetaA a label
       # translate v
