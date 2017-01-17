@@ -8,13 +8,15 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Plots.Axis.Labels
--- Copyright   :  (C) 2015 Christopher Chalmers
+-- Copyright   :  (C) 2015-2017 Christopher Chalmers
 -- License     :  BSD-style (see the file LICENSE)
 -- Maintainer  :  Christopher Chalmers
 -- Stability   :  experimental
 -- Portability :  non-portable
 --
--- Low level module defining types for axis labels and tick labels.
+-- There are two kinds of labels this module deals with: The 'AxisLabel'
+-- labels are placed next to an axis line. The 'TickLabels' are the
+-- numbers (usually) next to each major tick on an axis line.
 --
 ----------------------------------------------------------------------------
 module Plots.Axis.Labels
@@ -61,6 +63,17 @@ data AxisLabelPlacement
    = InsideAxisLabel
    | OutsideAxisLabel
 
+-- | 'AxisLabel' describes the label next to each axis line. They are
+--   normally set with the 'Plots.Axis.xLabel' and 'Plots.Axis.yLabel'
+--   helper function:
+--
+-- @
+-- myAxis = r2Axis &~ do
+--   'Plots.Axis.xLabel' .= "time (s)"
+--   'Plots.Axis.yLabel' .= "height (m)"
+-- @
+--
+--   See 'HasAxisLabel' for more advanced settings.
 data AxisLabel b v n = AxisLabel
   { alFun       :: TextFunction b v n
   , alText      :: String
@@ -140,8 +153,8 @@ instance (TypeableFloat n, Renderable (Text n) b)
 -- Tick labels
 ------------------------------------------------------------------------
 
--- Labels that are placed next to the ticks of an axis.
-
+-- | 'TickLabels' describes how to draw the labels next to ticks. See
+--   'HasTickLabels' for more options.
 data TickLabels b v n = TickLabels
   { tlFun     :: [n] -> (n,n) -> [(n, String)]
   , tlTextFun :: TextFunction b v n
@@ -211,9 +224,18 @@ instance HasVisibility (TickLabels b v n) where
   visible = lens tlVisible (\tl b -> tl {tlVisible = b})
 
 -- | Setter over the final positions the major ticks. This is not as
---   general as 'minorTicksFunction' because you don't have access to
---   the bounds but it can be useful when you know exactly what ticks
---   you want to add or modify existing tick positions.
+--   general as 'tickLabelFunction' because you don't have access to the
+--   bounds but it can be useful when you know exactly what ticks you
+--   want to add or modify existing tick positions or to add an extra
+--   value:
+--
+-- @
+-- xAxis . tickLabelPositions .= [(1, "apples"), (2, "oranges"), (3, "bananas"]
+-- yAxis . tickLabelPositions <>= [(1.5, "critial mass")]
+-- @
+--
+--  If you want to change or add normal ticks see 'majorTicksFunction'.
+--
 tickLabelPositions
   :: (HasTickLabels f a b, Settable f)
   => LensLike' f a [(N a, String)]
