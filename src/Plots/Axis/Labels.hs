@@ -149,6 +149,18 @@ instance Default (AxisLabel V2) where
     , alVisible   = True
     }
 
+instance Default (AxisLabel V3) where
+  def = AxisLabel
+    { alFun       = mempty
+    , alText      = ""
+    , alStyle     = mempty & fontSize (output 11)
+                           -- & backupFillColor black
+    , alGap       = 30
+    , alPos       = MiddleAxisLabel
+    , alPlacement = OutsideAxisLabel
+    , alVisible   = True
+    }
+
 ------------------------------------------------------------------------
 -- Tick labels
 ------------------------------------------------------------------------
@@ -215,6 +227,16 @@ instance Default (TickLabels V2) where
     , tlTextFun = mkText
     , tlStyle   = mempty & fontSize (output 11)
                          & backupFillColor black
+    , tlGap     = 12
+    , tlVisible = True
+    }
+
+instance Default (TickLabels V3) where
+  def = TickLabels
+    { tlFun     = atMajorTicks floatShow
+    , tlTextFun = mempty
+    , tlStyle   = mempty & fontSize (output 11)
+                         -- & sc black
     , tlGap     = 12
     , tlVisible = True
     }

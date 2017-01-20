@@ -30,6 +30,7 @@ module Plots.Axis
 
     -- * Predefined axes
   , r2Axis
+  , r3Axis
   , polarAxis
 
     -- ** Base space
@@ -116,6 +117,17 @@ type instance V (SingleAxis v) = v
 type instance N (SingleAxis v) = Double
 
 instance Default (SingleAxis V2) where
+  def = SingleAxis
+    { saLabel      = def
+    , saLine       = def
+    , saTickLabel  = def
+    , saGridLines  = def
+    , saTicks      = def
+    , saScaling    = def
+    , saVisible    = True
+    }
+
+instance Default (SingleAxis V3) where
   def = SingleAxis
     { saLabel      = def
     , saLine       = def
@@ -275,8 +287,8 @@ plotModifier = lens _plotModifier (\a f -> a {_plotModifier = f})
 
 -- Axis instances ------------------------------------------------------
 
-type instance V (Axis v) = BaseSpace v
-type instance N (Axis v) = Double
+type instance V (Axis c) = BaseSpace c
+type instance N (Axis c) = Double
 
 instance (Applicative f, Traversable c) => HasTicks f (Axis c) where
   bothTicks = axes . traverse . bothTicks
@@ -295,6 +307,9 @@ instance (Applicative f, Traversable c) => HasMajorGridLines f (Axis c) where
 
 instance (Applicative f, Traversable c) => HasMinorGridLines f (Axis c) where
   minorGridLines = axes . traverse . minorGridLines
+
+instance (Applicative f, Traversable c) => HasAxisLine f (Axis c) where
+  axisLine = axes . traverse . axisLine
 
 instance (Applicative f, Traversable c) => HasAxisLabel f (Axis c) where
   axisLabel = axes . traverse . axisLabel
@@ -319,7 +334,7 @@ instance HasTitle (Axis c) where
 
 -- | The size used for the rendered axis.
 axisSize :: HasLinearMap c => Lens' (Axis c) (SizeSpec c Double)
-axisSize = axes . column renderSize . iso mkSizeSpec getSpec -- column axisScaling . asSizeSpec -- iso mkSizeSpec getSpec
+axisSize = axes . column renderSize . iso mkSizeSpec getSpec
 
 -- | The range used for the colour bar limits. This is automatically set
 --   when using 'heatMap' or 'heatMap''
@@ -403,19 +418,19 @@ r2Axis = Axis
   }
 
 -- | The default axis for plots in the 'V2' coordinate system.
--- r3Axis :: Axis V3
--- r3Axis = Axis
---   { _axisStyle  = fadedColours3D
---   , _colourBar  = defColourBar
---   , _colourBarR = (0,1)
---   , _axisTitle  = def
+r3Axis :: Axis V3
+r3Axis = Axis
+  { _axisStyle  = fadedColours3D
+  , _colourBar  = defColourBar
+  , _colourBarR = (0,1)
+  , _axisTitle  = def
 
---   , _legend       = def
---   , _axisPlots    = []
---   , _plotModifier = mempty
+  , _legend       = def
+  , _axisPlots    = []
+  , _plotModifier = mempty
 
---   , _axes = pure def
---   }
+  , _axes = pure def
+  }
 
 -- The x-axis ----------------------------------------------------------
 

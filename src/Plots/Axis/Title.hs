@@ -51,6 +51,17 @@ instance Default (Title V2) where
     , tGap = 20
     }
 
+instance Default (Title V3) where
+  def = Title
+    { tVisible = True
+    , tTxt     = ""
+    , tTxtFun  = mempty
+    , tStyle   = mempty # fontSize (output 11)
+    , tPlacement = midAbove
+    , tAlignment = BoxAlignedText 0.5 0
+    , tGap = 20
+    }
+
 type instance V (Title v) = v
 type instance N (Title v) = Double
 

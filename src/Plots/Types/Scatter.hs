@@ -80,6 +80,8 @@ import           Plots.Axis
 import           Plots.Style
 import           Plots.Types
 
+import Diagrams.Types (mkQD, Prim (..))
+
 -- config
 -- > import Plots
 
@@ -126,6 +128,29 @@ instance Plotable (ScatterPlot V2) where
       line
         | not oLine = mempty
         | otherwise = fromVertices points # applyLineStyle sty
+      points = map (specPoint s . oPos) oData
+
+  defLegendPic sty (ScatterPlot (ScatterOptions {..})) =
+    sty ^. plotMarker
+      & applyMarkerStyle sty
+
+strokeV3 :: Path V3 Double -> Diagram V3
+strokeV3 path = mkQD (Prim path) (getEnvelope path) mempty mempty
+
+instance Plotable (ScatterPlot V3) where
+  renderPlotable s sty (ScatterPlot (ScatterOptions {..})) =
+    markers <> line
+    where
+      markers = F.foldMap mk oData # applyMarkerStyle sty
+      --
+      mk a = marker # transform (oTr a)
+                    # applyStyle (oSty a)
+                    # moveTo (specPoint s $ oPos a)
+      marker = sty ^. plotMarker
+      --
+      line
+        | not oLine = mempty
+        | otherwise = strokeV3 (fromVertices points) # applyLineStyle sty
       points = map (specPoint s . oPos) oData
 
   defLegendPic sty (ScatterPlot (ScatterOptions {..})) =

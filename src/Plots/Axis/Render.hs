@@ -75,6 +75,7 @@ import Diagrams.Types (Prim (..), mkQD)
 
 instance WithOutcome (Axis Polar)
 instance WithOutcome (Axis V2)
+instance WithOutcome (Axis V3)
 
 instance RenderOutcome t (Diagram V2) => RenderOutcome t (Axis Polar) where
   type MainOpts t (Axis Polar) = MainOpts t (Diagram V2)
@@ -84,6 +85,11 @@ instance RenderOutcome t (Diagram V2) => RenderOutcome t (Axis Polar) where
 instance RenderOutcome t (Diagram V2) => RenderOutcome t (Axis V2) where
   type MainOpts t (Axis V2) = MainOpts t (Diagram V2)
   resultParser t _ = resultParser t (Proxy :: Proxy (Diagram V2))
+  renderOutcome t opts axis = renderOutcome t opts (renderAxis axis)
+
+instance RenderOutcome t (Diagram V3) => RenderOutcome t (Axis V3) where
+  type MainOpts t (Axis V3) = MainOpts t (Diagram V3)
+  resultParser t _ = resultParser t (Proxy :: Proxy (Diagram V3))
   renderOutcome t opts axis = renderOutcome t opts (renderAxis axis)
 
 
@@ -195,8 +201,8 @@ renderR3Axis a = -- frame 15
               <> (drawAxis ey ex UpperLabels :: Diagram V3)
               <> (drawAxis ez ey LowerLabels :: Diagram V3)
               <> (drawAxis ey ez NoLabels :: Diagram V3)
-              -- <> (drawBackAxis ez ex NoLabels :: Diagram V3)
-              -- <> (drawBackAxis ex ez NoLabels :: Diagram V3)
+              <> (drawAxis ez ex NoLabels :: Diagram V3)
+              <> (drawAxis ex ez NoLabels :: Diagram V3)
   where
     spec  = AxisSpec xs t (a^.axes . column logScale) (a ^. axisColourMap)
     plots = foldMap (renderStyledPlot spec) styledPlots
@@ -205,7 +211,7 @@ renderR3Axis a = -- frame 15
     (xs, tv, t') = calculateScaling (a^.axes.column axisScaling) (boundingBox styledPlots)
     t = tv <> t'
     --
-    bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
+    -- bb = fromCorners (P . apply t $ fmap fst xs) (P . apply t $ fmap snd xs)
     -- leg = drawLegend bb (styledPlotLegends styledPlots) (a ^. legend)
     --
 
