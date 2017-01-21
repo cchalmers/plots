@@ -45,13 +45,14 @@ module Plots.Types.HeatMap
   , pixelHeatRender'
 
   -- * Heat matrix
-  , HeatMatrix
+  , HeatMatrix (..)
   , heatImage
   , hmPoints
   , hmSize
 
   -- * Low level construction
   , mkHeatMap
+  , mkHeatSurface
   , mkHeatMatrix
   , mkHeatMatrix'
 
@@ -78,8 +79,10 @@ import           Plots.Types
 
 import Diagrams.TwoD.Image
 
+import Geometry.ThreeD.Shapes
+
 ------------------------------------------------------------------------
--- Heatmap
+-- HeatMap
 ------------------------------------------------------------------------
 
 -- | 2D Array of 'Double's.
@@ -344,23 +347,23 @@ pathHeatRender hm@(HeatMatrix _ _ a b) cm = ifoldMapOf hmPoints mk hm # lwO 0
 
 -- | A mapping from points in a 2D axis do 'Double's. These 'Double's
 --   are converted to colours using the axis 'ColourMap'.
-data HeatMap = HeatMap
+data HeatMap v = HeatMap
   { hMatrix      :: HeatMatrix
   , hStart       :: P2 Double
   , hSize        :: V2 Double
-  , hGridSty     :: Style V2 Double
+  , hGridSty     :: Style v Double
   , hGridVisible :: Bool
   , hLimits      :: Maybe (Double,Double)
-  , hDraw        :: HeatMatrix -> ColourMap -> Diagram V2
+  , hDraw        :: HeatMatrix -> ColourMap -> Diagram v
   } deriving Typeable
 
-type instance V HeatMap = V2
-type instance N HeatMap = Double
+type instance V (HeatMap v) = v
+type instance N (HeatMap v) = Double
 
 -- | Class of things that let you change the heatmap options.
 class HasHeatMap f a where
   -- | Lens onto the heatmap options.
-  heatMapOptions :: LensLike' f a HeatMap
+  heatMapOptions :: LensLike' f a (HeatMap (V a))
 
   -- | Whether there should be grid lines draw for the heat map.
   --
@@ -372,7 +375,7 @@ class HasHeatMap f a where
   --   visible.
   --
   --   Default is 'mempty'.
-  heatMapGridStyle :: Functor f => LensLike' f a (Style V2 Double)
+  heatMapGridStyle :: Functor f => LensLike' f a (Style (V a) Double)
   heatMapGridStyle = heatMapOptions . lens hGridSty (\s b -> (s {hGridSty = b}))
 
   -- | The size of each individual square in the heat map.
@@ -410,21 +413,27 @@ class HasHeatMap f a where
   --   'pixelHeatRender'.
   --
   --   Default is 'pathHeatRender'.
-  heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> Diagram V2)
+  heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> Diagram (V a))
   heatMapRender = heatMapOptions . lens hDraw (\s b -> (s {hDraw = b}))
 
-instance HasHeatMap f HeatMap where
+instance HasHeatMap f (HeatMap v) where
   heatMapOptions = id
 
 instance (Functor f, HasHeatMap f a) => HasHeatMap f (Plot a) where
   heatMapOptions = rawPlot . heatMapOptions
 
-instance Enveloped HeatMap where
+instance Enveloped (HeatMap V2) where
   getEnvelope hm = getEnvelope (fromCorners p (p .+^ v))
     where p = view heatMapStart hm
           v = view heatMapExtent hm
 
-instance Plotable HeatMap where
+instance Enveloped (HeatMap V3) where
+  getEnvelope hm = getEnvelope (fromCorners (v3 p) (v3 $ p .+^ v))
+    where p = view heatMapStart hm
+          v = view heatMapExtent hm
+          v3 (P (V2 x y)) = P $ V3 x y 0
+
+instance Plotable (HeatMap V2) where
   renderPlotable s _sty HeatMap {..} =
       transform (s^.specTrans) $
         grid <> hDraw matrix' (s^.specColourMap)
@@ -444,8 +453,30 @@ instance Plotable HeatMap where
   -- XXX make better
   defLegendPic sty HeatMap {..} = square 5 # applyAreaStyle sty
 
--- | Construct a 'Heatmap' using the given 'HeatMatrix'.
-mkHeatMap :: HeatMatrix -> HeatMap
+instance Plotable (HeatMap V3) where
+  renderPlotable s _sty HeatMap {..} =
+      transform (s^.specTrans) $
+        grid <> hDraw matrix' (s^.specColourMap)
+                  # scaleV (v3 hSize)
+                  # moveTo (p3 hStart)
+    where
+      v3 (V2 x y) = V3 x y 1
+      p3 (P (V2 x y)) = P $ V3 x y 0
+      --- TODO
+      grid = mempty
+
+      --- XXX need to give _range to the axis somehow (for colour bar range)
+      matrix' = case hLimits of
+        -- Just r@(a,b) -> (r, hMatrix { hmFun = (/ (b - a)) . (+a) . hmFun hMatrix })
+        -- Nothing      -> normaliseHeatMatrix hMatrix
+        Just (a,b) -> hMatrix { hmBoundLower = a, hmBoundUpper = b }
+        Nothing    -> hMatrix
+
+  -- XXX make better
+  defLegendPic sty HeatMap {..} = cube # scale 5 # applyAreaStyle sty
+
+-- | Construct a 'HeatMap' using the given 'HeatMatrix'.
+mkHeatMap :: HeatMatrix -> HeatMap V2
 mkHeatMap mat = HeatMap
   { hMatrix      = mat
   , hStart       = origin
@@ -454,6 +485,17 @@ mkHeatMap mat = HeatMap
   , hGridVisible = False
   , hLimits      = Nothing
   , hDraw        = pathHeatRender
+  }
+
+mkHeatSurface :: HeatMatrix -> HeatMap V3
+mkHeatSurface mat = HeatMap
+  { hMatrix      = mat
+  , hStart       = origin
+  , hSize        = V2 1 1
+  , hGridSty     = mempty
+  , hGridVisible = False
+  , hLimits      = Nothing
+  , hDraw        = undefined
   }
 
 -- Adding to axis ------------------------------------------------------
@@ -485,12 +527,27 @@ heatMap
       F.Foldable g,
       MonadState (Axis V2) m)
   => f (g Double)
-  -> State (Plot HeatMap) ()
+  -> State (Plot (HeatMap V2)) ()
                    -- ^ changes to plot options
   -> m ()          -- ^ add plot to 'Axis'
 heatMap xss s = do
   let hm@(HeatMatrix _ _ a b) = mkHeatMatrix' xss
   addPlotable (mkHeatMap hm) s
+
+  -- (don't like this way of doing it)
+  colourBarRange .= over both realToFrac (a,b)
+
+heatSurface
+  :: (F.Foldable f,
+      F.Foldable g,
+      MonadState (Axis V3) m)
+  => f (g Double)
+  -> State (Plot (HeatMap V3)) ()
+                   -- ^ changes to plot options
+  -> m ()          -- ^ add plot to 'Axis'
+heatSurface xss s = do
+  let hm@(HeatMatrix _ _ a b) = mkHeatMatrix' xss
+  addPlotable (mkHeatSurface hm) s
 
   -- (don't like this way of doing it)
   colourBarRange .= over both realToFrac (a,b)
@@ -554,7 +611,7 @@ heatMapIndexed
       MonadState (Axis V2) m)
   => i             -- ^ extent of array
   -> (i -> Double) -- ^ heat from index
-  -> State (Plot HeatMap) ()
+  -> State (Plot (HeatMap V2)) ()
                    -- ^ changes to plot options
   -> m ()          -- ^ add plot to 'Axis'
 heatMapIndexed i f s = do
@@ -595,4 +652,9 @@ heatMapIndexed'
   -> (i -> Double) -- ^ heat from index
   -> m ()          -- ^ add plot to 'Axis'
 heatMapIndexed' i f = heatMapIndexed i f (return ())
+
+-- heatMapRender :: Functor f => LensLike' f a (HeatMatrix -> ColourMap -> Diagram (V a))
+
+-- surfaceRender :: HeatMatrix -> ColourMap -> Diagram V3
+-- surfaceRender hm cm =
 
