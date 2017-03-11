@@ -261,6 +261,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   tks
     | cbTicks ^. hidden = mempty
     | otherwise = F.foldMap (\x -> aTick # translate (V2 (f x) (-w/2))) tickXs'
+                    # applyStyle (cbTicks ^. majorTicksStyle)
   aTick = someTick (cbTicks ^. majorTicksAlignment) (cbTicks ^. majorTicksLength)
 
   someTick tType d = case tType of
