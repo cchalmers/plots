@@ -24,7 +24,7 @@ import           Data.Typeable
 import           Diagrams.TwoD.Text
 
 import           Geometry.BoundingBox
-import           Diagrams.Prelude
+import           Diagrams.Prelude     hiding (orient)
 
 import           Plots.Types
 

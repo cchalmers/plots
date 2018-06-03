@@ -612,7 +612,7 @@ colourMap cs
     normalise x = (x - a) / (b - a)
 
 toStops :: ColourMap -> [GradientStop]
-toStops = map (\(x,c) -> GradientStop (SomeColor c) (fromRational x))
+toStops = map (\(x,c) -> GradientStop (opaque c) (fromRational x))
         . colourList
 
 -- Colour maps ---------------------------------------------------------

@@ -131,7 +131,7 @@ import           Data.Maybe          (fromMaybe)
 import           Data.Ord            (comparing)
 import           Data.Orphans        ()
 import           Data.Typeable
-import           Diagrams.Prelude    as D
+import           Diagrams.Prelude    as D hiding (orient)
 
 import           Plots.Axis.Scale
 import           Plots.Style
@@ -185,9 +185,9 @@ class HasGap a where
 data Placement = Placement
   { pAt     :: V2 Rational
   , pAnchor :: V2 Rational
-  , pGapDir :: Direction V2 Rational
+  , pGapDir :: Direction V2 Double
   }
-  deriving (Show, Read, Eq, Ord)
+  deriving (Show, Eq)
   -- In the future the axis position may be replaced by a reader-like
   -- anchor system where you can choose parts of the rendered axis as a
   -- position.
@@ -210,7 +210,7 @@ class HasPlacement a where
   placementAnchor = placement . lens pAnchor (\p a -> p {pAnchor = a})
 
   -- | The direction to extend the 'gap' when positioning.
-  gapDirection :: Lens' a (Direction V2 Rational)
+  gapDirection :: Lens' a (Direction V2 Double)
   gapDirection = placement . lens pGapDir (\p a -> p {pGapDir = a})
 
 instance HasPlacement Placement where
@@ -223,11 +223,11 @@ pInside :: V2 Rational -> Placement
 pInside v = Placement
   { pAt     = v
   , pAnchor = v
-  , pGapDir = dirBetween' (P v) origin
+  , pGapDir = dirBetween' (P $ fromRational <$> v) origin
   }
 
 -- | @dirBetween p q@ returns the directions from @p@ to @q@
-dirBetween' :: (Additive v, Num n) => Point v n -> Point v n -> Direction v n
+dirBetween' :: (Metric v, Floating n) => Point v n -> Point v n -> Direction v n
 dirBetween' p q = direction $ q .-. p
 
 
@@ -270,7 +270,7 @@ placeAgainst
   => a -> Placement -> n -> b -> b
 placeAgainst a (Placement (V2 px py) (V2 ax ay) d) n b
   = b # anchor
-      # moveTo (pos .+^ n *^ fromDirection (fmap fromRational d))
+      # moveTo (pos .+^ n *^ fromDirection (realToFrac <$> d))
   where
     pos    = mkP2 (lerp' px xu xl) (lerp' py yu yl)
     anchor = alignBy unitX (fromRational ax) . alignBy unitY (fromRational ay)

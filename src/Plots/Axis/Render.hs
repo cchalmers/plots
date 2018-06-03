@@ -41,6 +41,7 @@ import           Data.Typeable
 
 import           Geometry.BoundingBox
 import           Diagrams.Prelude
+import           Geometry.Envelope
 import           Diagrams.TwoD.Text
 import           Linear                     hiding (rotate, translation)
 
@@ -438,7 +439,7 @@ boundingRadiusR (max 3 -> n) e =
     EmptyEnvelope -> (0,0)
     Envelope f  ->
       let thetas = map (@@rad) $ enumFromToN 0 tau n
-          vs     = map angleV thetas
+          vs     = map angleDir thetas
 
           -- The lower bound is the maximum distance obtained from the
           -- envelope trials. We know the radius will be at least this far.

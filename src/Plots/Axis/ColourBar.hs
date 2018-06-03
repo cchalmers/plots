@@ -40,7 +40,7 @@ module Plots.Axis.ColourBar
 import           Data.Bool               (bool)
 import qualified Data.Foldable           as F
 -- import           Diagrams.Core.Transform (fromSymmetric)
-import           Diagrams.Prelude
+import           Diagrams.Prelude        hiding (orient)
 import           Diagrams.TwoD.Text
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
@@ -272,7 +272,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   gLines
     | cbGridLines ^. hidden = mempty
     | otherwise             = F.foldMap mkGridLine gridXs
-                                # strokePath
+                                # (stroke :: Path V2 Double -> Diagram V2)
                                 # applyStyle (cbGridLines ^. majorGridLinesStyle)
   mkGridLine x = fromVertices [mkP2 (f x) (-w/2), mkP2 (f x) (w/2)]
 

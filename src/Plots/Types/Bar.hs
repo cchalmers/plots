@@ -85,7 +85,7 @@ import qualified Data.List               as List
 
 import Geometry.TwoD.Transform
 
-import           Diagrams.Prelude
+import           Diagrams.Prelude        hiding (orient)
 
 -- Single bar ----------------------------------------------------------
 

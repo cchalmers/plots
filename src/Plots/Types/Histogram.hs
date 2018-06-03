@@ -64,7 +64,7 @@ import           Data.Typeable
 import qualified Data.Vector                 as V
 import qualified Statistics.Sample.Histogram as Stat
 
-import           Diagrams.Prelude
+import           Diagrams.Prelude            hiding (orient)
 import           Linear.V2                   (_yx)
 
 import           Plots.Axis
