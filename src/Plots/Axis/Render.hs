@@ -196,7 +196,7 @@ instance RenderAxis V3 where
 
 renderR3Axis :: Axis V3 -> Diagram V3
 renderR3Axis a = -- frame 15
-               -- $ legend
+               -- -- $ legend
                (plots :: Diagram V3)
               <> (drawAxis ex ey LowerLabels :: Diagram V3)
               <> (drawAxis ey ex UpperLabels :: Diagram V3)
