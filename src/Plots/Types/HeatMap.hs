@@ -48,7 +48,6 @@ module Plots.Types.HeatMap
   , HeatMatrix (..)
   , heatImage
   , hmPoints
-  , hmSize
 
   -- * Low level construction
   , mkHeatMap
@@ -203,10 +202,9 @@ hmFold f b0 (HeatMatrix (V2 x y) v _ _) = go 0 0 0 b0 where
 --
 pixelHeatRender :: HeatMatrix -> ColourMap -> Diagram V2
 pixelHeatRender hm cm =
-  alignBL . image $ DImage x y (ImageRaster (ImageRGB8 img))
+  alignBL . image $ embedded (ImageRGB8 img)
   where
     img    = heatImage hm cm
-    V2 x y = hmSize hm
 
 -- | Render an heatmap as an 'ImageRGB8' with @n@ pixels per heat matrix
 --   point.
@@ -224,10 +222,9 @@ pixelHeatRender hm cm =
 --
 pixelHeatRender' :: Int -> HeatMatrix -> ColourMap -> Diagram V2
 pixelHeatRender' n hm cm =
-  scale (1/fromIntegral n) . alignBL . image $ DImage (x*n) (y*n) (ImageRaster (ImageRGB8 img))
+  scale (1/fromIntegral n) . alignBL . image $ embedded (ImageRGB8 img)
   where
     img    = scaleImage n $ heatImage hm cm
-    V2 x y = hmSize hm
 
 -- | Scale an image so each pixel takes (n*n) pixels. This can be
 --   useful for using 'heatImage' on small heat matrices to give a
