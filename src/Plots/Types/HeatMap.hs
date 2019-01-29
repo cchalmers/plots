@@ -201,10 +201,9 @@ hmFold f b0 (HeatMatrix (V2 x y) v _ _) = go 0 0 0 b0 where
 -- >   in  pixelHeatRender myHM viridis
 --
 pixelHeatRender :: HeatMatrix -> ColourMap -> Diagram V2
-pixelHeatRender hm cm =
-  alignBL . image $ embedded (ImageRGB8 img)
+pixelHeatRender hm cm = alignBL $ imageEmb (ImageRGB8 img)
   where
-    img    = heatImage hm cm
+    img = heatImage hm cm
 
 -- | Render an heatmap as an 'ImageRGB8' with @n@ pixels per heat matrix
 --   point.
@@ -222,9 +221,9 @@ pixelHeatRender hm cm =
 --
 pixelHeatRender' :: Int -> HeatMatrix -> ColourMap -> Diagram V2
 pixelHeatRender' n hm cm =
-  scale (1/fromIntegral n) . alignBL . image $ embedded (ImageRGB8 img)
+  scale (1/fromIntegral n) . alignBL $ imageEmb (ImageRGB8 img)
   where
-    img    = scaleImage n $ heatImage hm cm
+    img = scaleImage n $ heatImage hm cm
 
 -- | Scale an image so each pixel takes (n*n) pixels. This can be
 --   useful for using 'heatImage' on small heat matrices to give a
