@@ -57,6 +57,7 @@ data ColourBar b n = ColourBar
   { cbPlacement  :: Placement
   , cbVisible    :: Bool
   , cbTicks      :: MajorTicks V2 n
+  , cbMinorTicks :: MinorTicks V2 n
   , cbGridLines  :: MajorGridLines V2 n
   , cbTickLabels :: TickLabels b V2 n
   , cbDraw       :: ColourMap -> QDiagram b V2 n Any
@@ -76,6 +77,7 @@ defColourBar = ColourBar
   { cbPlacement   = rightMid
   , cbVisible     = False
   , cbTicks       = def
+  , cbMinorTicks  = def
   , cbGridLines   = def
   , cbTickLabels  = def
   , cbDraw        = gradientColourBar
@@ -187,6 +189,9 @@ instance Typeable n => HasStyle (ColourBar b n) where
 instance Functor f => HasMajorTicks f (ColourBar b n) where
   majorTicks = lens cbTicks (\c a -> c {cbTicks = a})
 
+instance Functor f => HasMinorTicks f (ColourBar b n) where
+  minorTicks = lens cbMinorTicks (\c a -> c {cbMinorTicks = a})
+
 instance Functor f => HasTickLabels f (ColourBar b n) b where
   tickLabel = lens cbTickLabels (\c a -> c {cbTickLabels = a})
 
@@ -247,7 +252,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   f x = (x - (ub + lb)/2) / (ub - lb) * l
   inRange x = x >= lb && x <= ub
 
-  bar = outline <> tks <> gLines <> colours
+  bar = outline <> tks <> minorTks <> gLines <> colours
 
   -- the outline
   outline = rect l w # applyStyle (cbStyle & _fillTexture .~ _AC ## transparent)
@@ -263,6 +268,14 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
     | otherwise = F.foldMap (\x -> aTick # translate (V2 (f x) (-w/2))) tickXs'
                     # applyStyle (cbTicks ^. majorTicksStyle)
   aTick = someTick (cbTicks ^. majorTicksAlignment) (cbTicks ^. majorTicksLength)
+
+  minorTickXs  = view minorTicksFunction cbMinorTicks tickXs bnds
+  minorTickXs' = filter inRange minorTickXs
+  minorTks
+    | cbTicks ^. hidden = mempty
+    | otherwise = F.foldMap (\x -> aMinorTick # translate (V2 (f x) (-w/2))) minorTickXs'
+                    # applyStyle (cbMinorTicks ^. minorTicksStyle)
+  aMinorTick = someTick (cbTicks ^. majorTicksAlignment) (cbTicks ^. majorTicksLength)
 
   someTick tType d = case tType of
     TickSpec (fromRational -> aa) (fromRational -> bb)
