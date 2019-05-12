@@ -10,7 +10,7 @@ bug-reports:         http://github.com/cchalmers/plots
 stability:           Experimental
 category:            Graphics
 build-type:          Simple
-cabal-version:       >=1.10
+cabal-version:       >=1.18
 extra-source-files:  README.md diagrams/*.svg
 extra-doc-files:     diagrams/*.svg
 description:         Diagrams based plotting library.
