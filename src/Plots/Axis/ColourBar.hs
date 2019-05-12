@@ -273,7 +273,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   minorTickXs  = view minorTicksFunction cbMinorTicks tickXs bnds
   minorTickXs' = filter inRange minorTickXs
   minorTks
-    | cbTicks ^. hidden = mempty
+    | cbMinorTicks ^. hidden = mempty
     | otherwise = F.foldMap (\x -> aMinorTick # translate (V2 (f x) (-w/2))) minorTickXs'
                     # applyStyle (cbMinorTicks ^. minorTicksStyle)
   aMinorTick = someTick (cbTicks ^. majorTicksAlignment) (cbTicks ^. majorTicksLength)
