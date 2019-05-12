@@ -193,6 +193,9 @@ instance Functor f => HasMajorTicks f ColourBar where
 instance Functor f => HasMinorTicks f ColourBar where
   minorTicks = lens cbMinorTicks (\c a -> c {cbMinorTicks = a})
 
+instance Functor f => HasMajorGridLines f ColourBar where
+  majorGridLines = lens cbGridLines (\c a -> c {cbGridLines = a})
+
 instance Functor f => HasTickLabels f ColourBar where
   tickLabel = lens cbTickLabels (\c a -> c {cbTickLabels = a})
 
