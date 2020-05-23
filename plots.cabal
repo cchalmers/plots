@@ -1,6 +1,6 @@
 name:                plots
 version:             0.1.1.1
-synopsis:            Diagrams based plotting library.
+synopsis:            Diagrams based plotting library
 homepage:            http://github.com/cchalmers/plots
 license:             BSD3
 license-file:        LICENSE
@@ -10,7 +10,7 @@ bug-reports:         http://github.com/cchalmers/plots
 stability:           Experimental
 category:            Graphics
 build-type:          Simple
-cabal-version:       >=1.18
+cabal-version:       1.18
 extra-source-files:  README.md diagrams/*.svg
 extra-doc-files:     diagrams/*.svg
 description:         Diagrams based plotting library.
