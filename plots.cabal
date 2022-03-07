@@ -60,7 +60,7 @@ library
     filepath,
     fingertree,
     hashable      >= 1.1 && < 1.4,
-    lens          >= 4.6 && < 5.1,
+    lens          >= 4.6 && < 5.2,
     linear        >= 1.2 && < 2.0,
     monoid-extras >= 0.3 && < 0.7,
     mtl           >= 1.0 && < 2.3,
