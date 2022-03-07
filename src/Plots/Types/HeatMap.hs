@@ -454,7 +454,7 @@ instance (Typeable b, TypeableFloat n, Renderable (Path V2 n) b)
         Nothing     -> hMatrix
 
   -- XXX make better
-  defLegendPic sty HeatMap {..} = square 5 # applyAreaStyle sty
+  defLegendPic sty HeatMap {} = square 5 # applyAreaStyle sty
 
 scaleV :: (Additive v, Fractional n) => v n -> Transformation v n
 scaleV v = fromLinear f f

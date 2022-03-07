@@ -102,7 +102,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b)
         | sOffset == 0 = zero
         | otherwise    = sOffset *^ fromDir (rotate (sWidth ^/ 2) sDir)
 
-  defLegendPic sty Wedge {..}
+  defLegendPic sty Wedge {}
       = square 5 # applyAreaStyle sty
 
 -- | Create a pie wedge with unit radius, starting at direction @d@ with

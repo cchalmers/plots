@@ -129,7 +129,7 @@ instance (TypeableFloat n, Renderable (Path V2 n) b)
         | otherwise = fromVertices points # applyLineStyle sty
       points = map (specPoint s . oPos) oData
 
-  defLegendPic sty (ScatterPlot (ScatterOptions {..})) =
+  defLegendPic sty (ScatterPlot (ScatterOptions {})) =
     sty ^. plotMarker
       & applyMarkerStyle sty
 
