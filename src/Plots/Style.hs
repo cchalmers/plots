@@ -529,7 +529,7 @@ instance Each ColourMap ColourMap (Colour Double) (Colour Double) where
   each = cmap . each
 
 instance Ixed ColourMap where
-  ix = ixColourR
+  ix x = ixColourR x
 
 -- | 'Nothing' == 'transparent'
 instance At ColourMap where
