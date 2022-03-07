@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE FlexibleInstances      #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE InstanceSigs           #-}
 {-# LANGUAGE MultiParamTypeClasses  #-}
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE RecordWildCards        #-}
@@ -58,6 +59,7 @@ module Plots.Style
   , ColourMap
   , ixColour
   , ixColourR
+  , ixColourLensR
   , cmTraverse
   , colourMap
   , colourList
@@ -533,9 +535,10 @@ instance Ixed ColourMap where
 
 -- | 'Nothing' == 'transparent'
 instance At ColourMap where
-  at x = ixColourR x . from (non black)
+--  at :: Index ColourMap -> Lens' ColourMap (Maybe (IxValue ColourMap))
+  at x = ixColourLensR x . from (non black)
 
-ixColour :: Double -> Lens' ColourMap (Colour Double)
+ixColour :: Double -> Traversal' ColourMap (Colour Double)
 ixColour x f cM@(ColourMap ncs cm)
   | isNaN x      = nanColour f cM
   | isInfinite x = if x < 0 then negInfColour f cM else infColour f cM
@@ -552,7 +555,7 @@ ixColour x f cM@(ColourMap ncs cm)
         (Nothing, Just (_,c2)) -> c2
         _                      -> black
 
-ixColourR :: Rational -> Lens' ColourMap (Colour Double)
+ixColourR :: Rational -> Traversal' ColourMap (Colour Double)
 ixColourR x f (ColourMap ncs cm) = f c <&> \c' -> ColourMap ncs (M.insert x c' cm)
   where
   c = case (M.lookupLE x cm, M.lookupGE x cm) of
@@ -564,6 +567,20 @@ ixColourR x f (ColourMap ncs cm) = f c <&> \c' -> ColourMap ncs (M.insert x c' c
         (Just (_,c1), Nothing) -> c1
         (Nothing, Just (_,c2)) -> c2
         _                      -> black
+
+ixColourLensR :: Rational -> Lens' ColourMap (Colour Double)
+ixColourLensR x f (ColourMap ncs cm) = f c <&> \c' -> ColourMap ncs (M.insert x c' cm)
+  where
+  c = case (M.lookupLE x cm, M.lookupGE x cm) of
+        (Just (i,c1), Just (j,c2))
+          | i == j    -> c1
+          | otherwise ->
+              let a = fromRational $ (x - i) / (j - i)
+              in  blend a c2 c1
+        (Just (_,c1), Nothing) -> c1
+        (Nothing, Just (_,c2)) -> c2
+        _                      -> black
+
 
 -- | Indexed traversal over the colours indexed and ordered by their
 --   position in the map.
@@ -1148,4 +1165,3 @@ viridis = colourMap $ zip [1..]
   , sRGB 0.964894 0.902323 0.123941, sRGB 0.974417 0.903590 0.130215
   , sRGB 0.983868 0.904867 0.136897, sRGB 0.993248 0.906157 0.143936
   ]
-

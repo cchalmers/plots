@@ -302,7 +302,7 @@ mkColourVector cm = V.create $ do
   let go i | i == 3*256 = return mv
            | otherwise  = do
                let x = fromIntegral i / (3*256)
-                   RGB r g b = cm ^. ixColourR x . to toSRGB24
+                   RGB r g b = cm ^. ixColourLensR x . to toSRGB24
                M.unsafeWrite mv  i    r
                M.unsafeWrite mv (i+1) g
                M.unsafeWrite mv (i+2) b
@@ -624,4 +624,3 @@ heatMapIndexed'
   -> (i -> Double) -- ^ heat from index
   -> m ()          -- ^ add plot to 'Axis'
 heatMapIndexed' i f = heatMapIndexed i f (return ())
-
