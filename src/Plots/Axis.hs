@@ -75,6 +75,7 @@ module Plots.Axis
 import           Control.Monad.State
 import           Data.Complex
 import           Data.Default
+import           Data.Kind
 import           Data.Typeable
 
 import           Diagrams.Coordinates.Polar
@@ -174,7 +175,7 @@ instance HasVisibility (SingleAxis b v n) where
 
 -- | This family is used so that we can say (Axis Polar) but use V2 for the
 --   underlying diagram.
-type family BaseSpace (c :: * -> *) :: * -> *
+type family BaseSpace (c :: Type -> Type) :: Type -> Type
 
 type instance BaseSpace V2      = V2
 type instance BaseSpace Complex = V2
