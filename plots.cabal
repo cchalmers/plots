@@ -59,7 +59,7 @@ library
     transformers,
     filepath,
     fingertree,
-    hashable      >= 1.1 && < 1.4,
+    hashable      >= 1.1 && < 1.5,
     lens          >= 4.6 && < 5.2,
     linear        >= 1.2 && < 2.0,
     monoid-extras >= 0.3 && < 0.7,
