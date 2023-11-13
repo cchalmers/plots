@@ -6,6 +6,7 @@
 {-# LANGUAGE RankNTypes                #-}
 {-# LANGUAGE RecordWildCards           #-}
 {-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE FunctionalDependencies    #-}
 {-# LANGUAGE ViewPatterns    #-}
 {-# LANGUAGE ScopedTypeVariables    #-}

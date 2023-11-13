@@ -8,6 +8,7 @@
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE ViewPatterns            #-}
+{-# LANGUAGE TypeOperators           #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Coordinates.Isomorphic
