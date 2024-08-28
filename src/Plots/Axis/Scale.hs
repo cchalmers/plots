@@ -191,7 +191,9 @@ calculateBounds Scaling {..} mInferred = (l', u') where
   -- bounds are only enlarged when min/max bound wasn't set
   l' = l & whenever (isNothing asBoundMin) (subtract x)
          & whenever (asLogScale == LogAxis) (max 1e-6)
+         & min (u - 1e-6)
   u' = u & whenever (isNothing asBoundMax) (+ x)
+         & max (l + 1e-6)
 
   -- amount to enlarge axis by
   x = case asEnlarge of
