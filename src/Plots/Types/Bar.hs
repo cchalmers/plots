@@ -68,6 +68,7 @@ module Plots.Types.Bar
   ) where
 
 import           Control.Lens            hiding (at, none, transform, ( # ))
+import           Control.Monad           (unless)
 import           Control.Monad.State
 import           Data.Typeable
 import qualified Data.Foldable as F
