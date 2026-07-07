@@ -62,7 +62,7 @@ library
     hashable      >= 1.1 && < 1.6,
     lens          >= 4.6 && < 5.4,
     linear        >= 1.2 && < 2.0,
-    monoid-extras >= 0.3 && < 0.6,
+    monoid-extras >= 0.3 && < 0.8,
     mtl           >= 1.0 && < 3.2,
     optparse-applicative,
     statistics,
