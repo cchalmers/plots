@@ -1,5 +1,5 @@
 name:                plots
-version:             0.1.1.5
+version:             2.0.0.0
 synopsis:            Diagrams based plotting library
 homepage:            http://github.com/cchalmers/plots
 license:             BSD3
@@ -40,7 +40,7 @@ library
     Plots.Types.Histogram
     Plots.Types.HeatMap
     Plots.Types.Line
-    Plots.Types.Pie
+    -- Plots.Types.Pie
     Plots.Types.Scatter
     Plots.Util
     Diagrams.Coordinates.Isomorphic
@@ -52,8 +52,8 @@ library
     colour,
     containers    >= 0.3 && < 0.8,
     data-default  >= 0.5 && < 0.9,
-    diagrams-core >= 1.3 && < 1.6,
-    diagrams-lib  >= 1.3 && < 1.6,
+    diagrams      >= 2.0 && < 2.1,
+    geometry,
     directory,
     distributive,
     transformers,
@@ -62,8 +62,8 @@ library
     hashable      >= 1.1 && < 1.6,
     lens          >= 4.6 && < 5.4,
     linear        >= 1.2 && < 2.0,
-    monoid-extras >= 0.3 && < 0.7,
-    mtl           >= 1.0 && < 2.4,
+    monoid-extras >= 0.3 && < 0.8,
+    mtl           >= 1.0 && < 3.2,
     optparse-applicative,
     statistics,
     process,

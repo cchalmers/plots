@@ -39,9 +39,8 @@ module Plots.Axis.ColourBar
 
 import           Data.Bool               (bool)
 import qualified Data.Foldable           as F
-import           Data.Typeable
-import           Diagrams.Core.Transform (fromSymmetric)
-import           Diagrams.Prelude        hiding (gap)
+-- import           Diagrams.Core.Transform (fromSymmetric)
+import           Diagrams.Prelude        hiding (orient)
 import           Diagrams.TwoD.Text
 import           Plots.Axis.Grid
 import           Plots.Axis.Labels
@@ -50,29 +49,30 @@ import           Plots.Style
 import           Plots.Types
 import           Plots.Util
 
+import Geometry.TwoD.Transform
+
 -- | Options for drawing a colour bar. Note that for an axis, the
 --   'ColourMap' is stored in the 'AxisStyle'. These options are for
 --   other aspects of the bar, not the colours used.
-data ColourBar b n = ColourBar
+data ColourBar = ColourBar
   { cbPlacement  :: Placement
   , cbVisible    :: Bool
-  , cbTicks      :: MajorTicks V2 n
-  , cbMinorTicks :: MinorTicks V2 n
-  , cbGridLines  :: MajorGridLines V2 n
-  , cbTickLabels :: TickLabels b V2 n
-  , cbDraw       :: ColourMap -> QDiagram b V2 n Any
-  , cbWidth      :: n
-  , cbLengthFun  :: n -> n
-  , cbGap        :: n
-  , cbStyle      :: Style V2 n
+  , cbTicks      :: MajorTicks V2
+  , cbMinorTicks :: MinorTicks V2
+  , cbGridLines  :: MajorGridLines V2
+  , cbTickLabels :: TickLabels V2
+  , cbDraw       :: ColourMap -> Diagram V2
+  , cbWidth      :: Double
+  , cbLengthFun  :: Double -> Double
+  , cbGap        :: Double
+  , cbStyle      :: Style V2 Double
   }
 
-type instance V (ColourBar b n) = V2
-type instance N (ColourBar b n) = n
+type instance V ColourBar = V2
+type instance N ColourBar = Double
 
 -- | The default colour bar.
-defColourBar :: (Renderable (Text n) b, Renderable (Path V2 n) b, TypeableFloat n)
-             => ColourBar b n
+defColourBar :: ColourBar
 defColourBar = ColourBar
   { cbPlacement   = rightMid
   , cbVisible     = False
@@ -87,9 +87,9 @@ defColourBar = ColourBar
   , cbStyle       = mempty
   }
 
-class HasColourBar a b | a -> b where
+class HasColourBar a where
   -- | Lens onto the 'ColourBar'.
-  colourBar :: Lens' a (ColourBar b (N a))
+  colourBar :: Lens' a ColourBar
 
   -- | How to draw the colour bar. Expects a 1 by 1 box with the
   --   gradient going from left to right, without an outline with origin
@@ -100,40 +100,40 @@ class HasColourBar a b | a -> b where
   --   'Plots.Style.axisColourMap' from "Plots.Style"
   --
   --   Default is 'gradientColourBar'.
-  colourBarDraw :: Lens' a (ColourMap -> QDiagram b V2 (N a) Any)
+  colourBarDraw :: Lens' a (ColourMap -> Diagram V2)
   colourBarDraw = colourBar . lens cbDraw (\c a -> c {cbDraw = a})
 
   -- | The width (orthogonal to the colour bar direction) of the colour
   --   bar.
   --
   --   'Default' is @20@.
-  colourBarWidth :: Lens' a (N a)
+  colourBarWidth :: Lens' a Double
   colourBarWidth = colourBar . lens cbWidth (\c a -> c {cbWidth = a})
 
   -- | Set the length of the colour bar given the length of the axis the
   --   colour bar is aligned to.
   --
   --   'Default' is 'id'.
-  colourBarLengthFunction :: Lens' a (N a -> N a)
+  colourBarLengthFunction :: Lens' a (Double -> Double)
   colourBarLengthFunction = colourBar . lens cbLengthFun (\c a -> c {cbLengthFun = a})
 
   -- | Gap between the axis and the colour bar (if rendered with an axis).
   --
   --   'Default' is @20@.
-  colourBarGap :: Lens' a (N a)
+  colourBarGap :: Lens' a Double
   colourBarGap = colourBar . lens cbGap (\c a -> c {cbGap = a})
 
   -- | Style used for the outline of a colour bar.
-  colourBarStyle :: Lens' a (Style V2 (N a))
+  colourBarStyle :: Lens' a (Style V2 Double)
   colourBarStyle = colourBar . lens cbStyle (\c a -> c {cbStyle = a})
 
-instance HasColourBar (ColourBar b n) b where
+instance HasColourBar ColourBar where
   colourBar = id
 
-instance HasGap (ColourBar b n) where
+instance HasGap ColourBar where
   gap = colourBarGap
 
-instance HasPlacement (ColourBar b n) where
+instance HasPlacement ColourBar where
   placement = lens cbPlacement (\c p -> c {cbPlacement = p})
 
 -- This is a kinda strange instance that I'm using as an experiment.
@@ -153,7 +153,7 @@ instance HasPlacement (ColourBar b n) where
 -- When reversing the direction we map E <-> S and N <-> W. The gap
 -- direction is rotated to match the new position and anchor has its x
 -- and y flipped.
-instance HasOrientation (ColourBar b n) where
+instance HasOrientation ColourBar where
   orientation = lens getter setter where
 
     getter p
@@ -183,32 +183,32 @@ instance HasOrientation (ColourBar b n) where
                           & placementAnchor    %~ flipX_Y
                           & gapDirection ._Dir %~ flipX_Y
 
-instance Typeable n => HasStyle (ColourBar b n) where
-  applyStyle sty = colourBarStyle %~ applyStyle sty
+instance ApplyStyle ColourBar
+instance HasStyle ColourBar where
+  style = colourBarStyle
 
-instance Functor f => HasMajorTicks f (ColourBar b n) where
+instance Functor f => HasMajorTicks f ColourBar where
   majorTicks = lens cbTicks (\c a -> c {cbTicks = a})
 
-instance Functor f => HasMinorTicks f (ColourBar b n) where
+instance Functor f => HasMinorTicks f ColourBar where
   minorTicks = lens cbMinorTicks (\c a -> c {cbMinorTicks = a})
 
-instance Functor f => HasMajorGridLines f (ColourBar b n) where
+instance Functor f => HasMajorGridLines f ColourBar where
   majorGridLines = lens cbGridLines (\c a -> c {cbGridLines = a})
 
-instance Functor f => HasTickLabels f (ColourBar b n) b where
+instance Functor f => HasTickLabels f ColourBar where
   tickLabel = lens cbTickLabels (\c a -> c {cbTickLabels = a})
 
-instance HasVisibility (ColourBar b n) where
+instance HasVisibility ColourBar where
   visible = lens cbVisible (\c a -> c {cbVisible = a})
 
 -- | Add a colour bar to an object, using the bounding box for the object.
 addColourBar
-  :: (TypeableFloat n, Renderable (Path V2 n) b)
-  => BoundingBox V2 n -- ^ bounding box to place against
-  -> ColourBar b n --
+  :: BoundingBox V2 Double -- ^ bounding box to place against
+  -> ColourBar
   -> ColourMap
-  -> (n,n)
-  -> QDiagram b V2 n Any
+  -> (Double,Double)
+  -> Diagram V2
 addColourBar bb cbo@ColourBar {..} cm bnds
   | cbVisible = placeAgainst bb cbPlacement cbGap cb
   | otherwise = mempty
@@ -224,12 +224,11 @@ addColourBar bb cbo@ColourBar {..} cm bnds
 -- | Render a colour bar by it's self at a given width. Note this
 --   ignores 'colourBarGap' and 'colourBarLengthFunction'.
 renderColourBar
-  :: (TypeableFloat n, Renderable (Path V2 n) b)
-  => ColourBar b n -- ^ options for colour bar
-  -> ColourMap     -- ^ map to use
-  -> (n,n)         -- ^ bounds of the values on the colour bar
-  -> n             -- ^ length of the colour bar
-  -> QDiagram b V2 n Any
+  :: ColourBar -- ^ options for colour bar
+  -> ColourMap -- ^ map to use
+  -> (Double,Double)  -- ^ bounds of the values on the colour bar
+  -> Double         -- ^ length of the colour bar
+  -> Diagram V2
 renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   | cbVisible = bar # xy id reflectY
                     # o id (reflectY . _reflectX_Y)
@@ -258,7 +257,7 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   bar = outline <> tks <> minorTks <> gLines <> colours
 
   -- the outline
-  outline = rect l w # applyStyle (cbStyle & _fillTexture .~ _AC ## transparent)
+  outline = rect l w # applyStyle (cbStyle & _fillTexture ?~ _AC ## transparent)
 
   -- displaying the colour map
   colours = cbDraw cm # centerXY # scaleX l # scaleY w
@@ -269,7 +268,6 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
   tks
     | cbTicks ^. hidden = mempty
     | otherwise = F.foldMap (\x -> aTick # translate (V2 (f x) (-w/2))) tickXs'
-                    # applyStyle (cbTicks ^. majorTicksStyle)
   aTick = someTick (cbTicks ^. majorTicksAlignment) (cbTicks ^. majorTicksLength)
 
   minorTickXs  = view minorTicksFunction cbMinorTicks tickXs bnds
@@ -282,17 +280,17 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
 
   someTick tType d = case tType of
     TickSpec (fromRational -> aa) (fromRational -> bb)
-             -> mkP2 0 (-d*bb) ~~ mkP2 0 (d*aa)
-    AutoTick -> mkP2 0 (-d)    ~~ mkP2 0 d
+             -> fromVertices [mkP2 0 (-d*bb), mkP2 0 (d*aa)]
+    AutoTick -> fromVertices [mkP2 0 (-d)   , mkP2 0 d     ]
 
   -- grid lines
   gridXs = filter inRange $ view majorGridLinesFunction cbGridLines tickXs bnds
   gLines
     | cbGridLines ^. hidden = mempty
     | otherwise             = F.foldMap mkGridLine gridXs
-                                # strokePath
+                                # (stroke :: Path V2 Double -> Diagram V2)
                                 # applyStyle (cbGridLines ^. majorGridLinesStyle)
-  mkGridLine x = mkP2 (f x) (-w/2) ~~ mkP2 (f x) (w/2)
+  mkGridLine x = fromVertices [mkP2 (f x) (-w/2), mkP2 (f x) (w/2)]
 
   -- tick labels
   tickLabelXs = view tickLabelFunction cbTickLabels tickXs' bnds
@@ -321,22 +319,21 @@ renderColourBar cb@ColourBar {..} cm bnds@(lb,ub) l
 --   This may not be supported by all backends.
 --
 --   <<diagrams/src_Plots_Axis_ColourBar_gradientColourBarExample.svg#diagram=gradientColourBarExample&width=600>>
-gradientColourBar :: (TypeableFloat n, Renderable (Path V2 n) b) => ColourMap -> QDiagram b V2 n Any
+gradientColourBar :: ColourMap -> Diagram V2
 gradientColourBar cm =
   rect 1 1
     # fillTexture grad
     # lw none
   where
-    stops = map (\(x,c) -> GradientStop (SomeColor c) (fromRational x)) (colourList cm)
-    grad  = defaultLG & _LG . lGradStops .~ stops
+    stops = map (\(x,c) -> (c,fromRational x)) (colourList cm)
+    grad  = mkLinearGradient stops origin unitX -- defaultLG & _LG . lGradStops .~ stops
 
 -- | Construct a colour bar made up of @n@ solid square paths. The final
 --   diagram is 1 by 1, with origin at the middle of the left side. This
 --   can be used as the 'colourBarDraw' function.
 --
 --   <<diagrams/src_Plots_Axis_ColourBar_pathColourBarExample.svg#diagram=pathColourBarExample&width=600>>
-pathColourBar :: (TypeableFloat n, Renderable (Path V2 n) b)
-              => Int -> ColourMap -> QDiagram b V2 n Any
+pathColourBar :: Int -> ColourMap -> Diagram V2
 pathColourBar n cm = ifoldMap mkR xs
   where
     mkR i x = rect d' 1
@@ -358,7 +355,7 @@ flipX_Y :: Num n => V2 n -> V2 n
 flipX_Y (V2 x y) = V2 (-y) (-x)
 
 _reflectionX_Y :: (Additive v, R2 v, Num n) => Transformation v n
-_reflectionX_Y = fromSymmetric $ (_xy %~ flipX_Y) <-> (_xy %~ flipX_Y)
+_reflectionX_Y = undefined -- fromSymmetric $ (_xy %~ flipX_Y) <-> (_xy %~ flipX_Y)
 
 _reflectX_Y :: (InSpace v n t, R2 v, Transformable t) => t -> t
 _reflectX_Y = transform _reflectionX_Y

@@ -8,7 +8,6 @@
 {-# LANGUAGE MultiParamTypeClasses   #-}
 {-# LANGUAGE TypeFamilies            #-}
 {-# LANGUAGE ViewPatterns            #-}
-{-# LANGUAGE TypeOperators           #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Diagrams.Coordinates.Isomorphic
@@ -39,7 +38,6 @@ module Diagrams.Coordinates.Isomorphic
 
 import           Control.Lens
 import           Data.Complex
-import           Data.Kind
 import           Data.Typeable
 
 import           Diagrams.Prelude
@@ -48,7 +46,7 @@ type HasIndexedBasis v = (HasBasis v, TraversableWithIndex (E v) v)
 
 -- | Umbrella class giving everything needed for working in the space. This is
 --   basically 'V2' or 'V3' from "linear".
-type Euclidean (v :: Type -> Type) = (HasLinearMap v, HasIndexedBasis v, Metric v)
+type Euclidean (v :: * -> *) = (HasLinearMap v, HasIndexedBasis v, Metric v)
 
 -- vector like ---------------------------------------------------------
 

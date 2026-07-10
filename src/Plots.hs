@@ -53,7 +53,7 @@ module Plots
   , module Plots.Types.Histogram
 
     -- | Wedge and annular wedge. API for wedge, annular wedge and pie.
-  , module Plots.Types.Pie
+  -- , module Plots.Types.Pie
 
     --------------------------------------------------------------------
     -- * Low level
@@ -114,6 +114,6 @@ import           Plots.Types.Bar
 import           Plots.Types.HeatMap
 import           Plots.Types.Histogram
 import           Plots.Types.Line
-import           Plots.Types.Pie
+-- import           Plots.Types.Pie
 import           Plots.Types.Scatter
 

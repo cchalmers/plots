@@ -48,20 +48,20 @@ instance Default AxisLineType where
   def = BoxAxisLine
 
 -- | Information about position and style of axis lines.
-data AxisLine v n = AxisLine
+data AxisLine v = AxisLine
   { alType      :: AxisLineType
-  , alArrowOpts :: Maybe (ArrowOpts n)
+  -- , alArrowOpts :: Maybe ArrowOpts
   , alVisible   :: Bool
-  , alStyle     :: Style v n
+  , alStyle     :: Style v Double
   } deriving Typeable
 
-type instance V (AxisLine v n) = v
-type instance N (AxisLine v n) = n
+type instance V (AxisLine v) = v
+type instance N (AxisLine v) = Double
 
 -- | Class of object that have an 'AxisLine'.
 class HasAxisLine f a where
   -- | Lens onto the 'AxisLine'.
-  axisLine :: LensLike' f a (AxisLine (V a) (N a))
+  axisLine :: LensLike' f a (AxisLine (V a))
 
   -- | The position of the axis line around the axis.
   --
@@ -75,28 +75,32 @@ class HasAxisLine f a where
   --   'Default' is 'Nothing'.
   --
   --   XXX (feature not currently implimented)
-  axisLineArrowOpts :: Functor f => LensLike' f a (Maybe (ArrowOpts (N a)))
-  axisLineArrowOpts = axisLine . lens alArrowOpts (\al sty -> al {alArrowOpts = sty})
+  -- axisLineArrowOpts :: Functor f => LensLike' f a (Maybe (ArrowOpts (N a)))
+  -- axisLineArrowOpts = axisLine . lens alArrowOpts (\al sty -> al {alArrowOpts = sty})
 
   -- | The 'Style' applied to the axis line
-  axisLineStyle :: Functor f => LensLike' f a (Style (V a) (N a))
+  axisLineStyle :: Functor f => LensLike' f a (Style (V a) Double)
   axisLineStyle = axisLine . lens alStyle (\al sty -> al {alStyle = sty})
 
-instance HasAxisLine f (AxisLine v n) where
+instance HasAxisLine f (AxisLine v) where
   axisLine = id
+
+instance ApplyStyle (AxisLine v)
+instance HasStyle (AxisLine v) where
+  style = axisLineStyle
 
 --   Note this is different from 'NoAxisLine'. Other parts that are
 --   tied to the axis line will still be present when
 --   'axisLineVisible' is 'False'. But if 'NoAxisLine' is set, there
 --   never any line for those things to attach to, so they don't
 --   exist.
-instance HasVisibility (AxisLine v n) where
+instance HasVisibility (AxisLine v) where
   visible = lens alVisible (\al b -> al {alVisible = b})
 
-instance Typeable n => Default (AxisLine v n) where
+instance Default (AxisLine v) where
   def = AxisLine
     { alType  = def
-    , alArrowOpts = def
+    -- , alArrowOpts = def
     , alVisible = True
     , alStyle = mempty
     }
